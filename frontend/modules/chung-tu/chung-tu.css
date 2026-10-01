@@ -84,3 +84,7 @@
 .ct2-bang thead th,#ct-so-bang thead th{border-bottom-color:var(--line-2);border-right-color:var(--line-2)}
 .ct2-bang tr > :last-child,#ct-so-bang tr > :last-child{border-right:0}
 .ct2-bang tbody tr:last-child td,#ct-so-bang tbody tr:last-child td{border-bottom:0}
+
+/* trạng thái thu theo hệ kế toán anh Tune (01/10) — chung.css chỉ có năm trạng thái cũ */
+.tag.dt_da_tao_so{background:var(--blue-soft);color:var(--blue)}
+.tag.dt_thu_mot_phan{background:var(--ore-soft);color:var(--ore)}

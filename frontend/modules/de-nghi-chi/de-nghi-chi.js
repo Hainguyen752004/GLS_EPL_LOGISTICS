@@ -6,6 +6,9 @@
  *     sổ thì tờ thành "Đã cấp" và tài xế xuất phát được. Khối #dnc-kt: trạng thái + Cập nhật / Gửi lại.
  *   · Phiếu đề nghị xuất kho nhiên liệu (PLNL) — mỗi kho EPL một tờ; thủ kho quét QR, cấp dầu theo tờ.
  * Việc cấp thật ở bên kho / bên quỹ (màn Cấp phát trang kế toán). Màn này tìm, xem, in — không cấp, không chi.
+ * Chi mục V–VI của chuyến (01/10): khoản quỹ trả ngay thành phiếu chi "Chi khác" bên hệ kế toán lúc KT Chi phí ghi sổ mục —
+ * khối #dnc-kt-muc cạnh khối tạm ứng: chờ chi · đã chi · lỗi / bị xoá bên đó, Cập nhật / Gửi lại (GET|POST
+ * /api/trips/{id}/chi-muc-ke-toan[/{muc}]).
  *
  * API: GET /api/vouchers?trang_thai=&loai=&q= · GET /api/trips/{id}/phieu-chi · GET /api/trips/{id}/vouchers · GET /api/trips/{id}.
  * Bãi không thấy tiền (anh Khampla A2): máy chủ không gửi số tiền — tờ tạm ứng chỉ khoản mục và số lượng.
@@ -109,8 +112,10 @@
     q('#dnc-giay').scrollTop = 0;            // tờ cuộn trong khung riêng (01/10): chọn tờ khác thì về đầu tờ
     q('#dnc-giay').hidden = !DS.length;       // danh sách trống: khung trống bên trái nói lý do, bỏ tờ "Chọn một tờ bên trái"
     q('#dnc-mo-phieu').disabled = !v; q('#dnc-in').disabled = !v;
-    if (!v) { q('#dnc-so').innerHTML = ''; q('#dnc-kt').innerHTML = ''; q('#dnc-to').innerHTML = `<div class="ct-trong">${NN.h('dn_chon_to')}</div>`; return; }
+    if (!v) { q('#dnc-so').innerHTML = ''; q('#dnc-kt').innerHTML = ''; q('#dnc-kt-muc').innerHTML = ''; q('#dnc-to').innerHTML = `<div class="ct-trong">${NN.h('dn_chon_to')}</div>`; return; }
     veKT(v, v.chi_ke_toan);
+    q('#dnc-kt-muc').innerHTML = '';
+    const hoiMuc = chiMuc(v, 'xem');
     // tờ đang chờ thủ quỹ bên kế toán: hỏi lại một lần lúc mở (thủ quỹ có khi vừa ghi sổ) — SONG SONG với tờ in, hai khối
     // riêng trên màn (rà 01/10: trước đây hỏi xong tờ mới hỏi kế toán)
     const hoiKT = v.chi_ke_toan && v.chi_ke_toan.status === 'da_gui' ? chiKT(v, 'cap-nhat', true) : null;
@@ -121,6 +126,42 @@
       if (conDung()) veTamUng(d, v);
     } catch (e) { if (conDung()) q('#dnc-to').innerHTML = `<div class="ct-trong neg">${esc(e.message)}</div>`; }
     if (hoiKT) await hoiKT;
+    await hoiMuc;
+  }
+
+  /** Phiếu chi mục V / VI bên hệ kế toán của chuyến — cùng kiểu khối tạm ứng; chỉ hiện mục có khoản quỹ trả ngay. */
+  function veKTMuc(v, g) {
+    const o = q('#dnc-kt-muc');
+    o.innerHTML = [['repair', 'V'], ['other', 'VI']].map(([m, la]) => {
+      const c = g && g[m]; if (!c || !c.o_ke_toan) return '';
+      const lan = (c.lan || []).filter(r => r.status !== 'huy'), r = lan[lan.length - 1];
+      const dau = `<b title="${esc(NN.t(m === 'repair' ? 'e_repair' : 'e_other'))}">${la}</b>`;
+      if (!r) {
+        if (!c.can_chi || !['booked', 'paid'].includes(c.muc)) return '';
+        return `<span class="dnc-kt-o">${dau} <span class="small muted">${NN.h('ck_chua_gui')}</span>${AUTH.la('expacct')
+          ? `<button class="btn sm warn" type="button" data-kt-muc="gui" data-muc="${m}">${NN.h('ck_gui_lai')}</button>` : ''}</span>`;
+      }
+      const so = `<span class="small"><b class="mono">${esc(r.document_no || '')}</b></span>`;
+      if (r.status === 'da_chi') return `<span class="dnc-kt-o">${dau} ${tag('paid', 'ck_da_chi_ngan')} ${so}</span>`;
+      if (r.status === 'da_gui') return `<span class="dnc-kt-o">${dau} ${tag('partial', 'cmt_cho_chi')} ${so}<button class="btn sm" type="button" data-kt-muc="cap-nhat" data-muc="${m}">${NN.h('ck_cap_nhat')}</button></span>`;
+      return `<span class="dnc-kt-o">${dau} ${tag('unpaid', r.error_code === 'PHIEU_CHI_MAT' ? 'ck_phieu_mat' : 'ck_loi_ngan')} <span class="small neg" title="${esc(r.error_message || '')}">${esc((r.error_message || '').slice(0, 60))}</span>${AUTH.la('expacct')
+        ? `<button class="btn sm warn" type="button" data-kt-muc="gui" data-muc="${m}">${NN.h('ck_gui_lai')}</button>` : ''}</span>`;
+    }).join('');
+    o.querySelectorAll('[data-kt-muc]').forEach(b => b.addEventListener('click', () => chiMuc(v, b.dataset.ktMuc, b.dataset.muc)));
+  }
+
+  async function chiMuc(v, viec, m) {
+    try {
+      let g;
+      if (viec === 'gui') { const c = await API.post(`/api/trips/${v.trip_id}/chi-muc-ke-toan/${m}`); g = { [m]: c }; g = Object.assign(await API.get(`/api/trips/${v.trip_id}/chi-muc-ke-toan`), g); }
+      else g = await API.get(`/api/trips/${v.trip_id}/chi-muc-ke-toan` + (viec === 'cap-nhat' ? '?cap_nhat=1' : ''));
+      if (DS.find(x => x.id === chonId) !== v) return;
+      veKTMuc(v, g);
+      if (viec !== 'xem') {
+        const lan = ((g[m] || {}).lan || []).filter(x => x.status !== 'huy'), r = lan[lan.length - 1] || {};
+        EPL.toast(NN.t(r.status === 'da_chi' ? 'ck_da_chi_ngan' : r.status === 'da_gui' ? 'cmt_cho_chi' : 'ck_loi_ngan'), r.status === 'loi' ? 'loi' : 'ok');
+      }
+    } catch (e) { if (viec !== 'xem') EPL.baoLoi(e); }
   }
 
   /** Trạng thái phiếu chi tạm ứng bên hệ kế toán của tờ đang xem — ở thanh nút, không in ra giấy. */
@@ -223,9 +264,13 @@
     destroy() { window.removeEventListener('resize', khiDoiCo); clearTimeout(henCao); },
     xuatExcel() {
       const T = NN.t;
-      return [EPL.xuatSheet(T('nav_de_nghi_chi'), [T('voucher_no'), T('do_kind'), T('doc_no'), T('truck_no'), T('driver'), T('fp_place'), T('qty_l'), T('amount_lak'), T('status'), T('c_date')],
+      // cột Thành tiền chỉ khi máy chủ trả số tiền: vai không thấy tiền (Bãi…) nhận amount_lak null — tệp xuất cũng không có cột tiền
+      const coTien = DS.some(v => v.amount_lak != null);
+      return [EPL.xuatSheet(T('nav_de_nghi_chi'), [T('voucher_no'), T('do_kind'), T('doc_no'), T('truck_no'), T('driver'), T('fp_place'), T('qty_l'),
+        ...(coTien ? [T('amount_lak')] : []), T('status'), T('c_date')],
         DS.map(v => [v.doc_no, T(v.kind === 'fuel' ? 'dn_nhien_lieu' : 'dn_tam_ung'), v.trip_doc_no || '', v.truck_no || '', v.driver_name || '', v.place_name || '',
-          v.kind === 'fuel' ? EPL.oSo(v.qty_l, 1, 'L') : null, v.kind === 'advance' ? EPL.oSo(v.amount_lak, 0, 'LAK') : null, T('v_' + v.status), EPL.oNgay(v.doc_date)]))];
+          v.kind === 'fuel' ? EPL.oSo(v.qty_l, 1, 'L') : null, ...(coTien ? [v.kind === 'advance' ? EPL.oSo(v.amount_lak, 0, 'LAK') : null] : []),
+          T('v_' + v.status), EPL.oNgay(v.doc_date)]))];
     },
   };
 })();

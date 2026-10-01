@@ -21,8 +21,8 @@
 .dnt-o:focus-visible{outline:2px solid var(--green-2);outline-offset:1px}
 .dnt-o.st-cho_khoa{border-left-color:var(--line-2)}
 .dnt-o.st-chua_lap,.dnt-o.st-cho_gui{border-left-color:var(--amber)}
-.dnt-o.st-da_gui{border-left-color:var(--blue)}
-.dnt-o.st-da_hoa_don{border-left-color:var(--ore)}
+.dnt-o.st-da_tao_so{border-left-color:var(--blue)}
+.dnt-o.st-thu_mot_phan{border-left-color:var(--ore)}
 .dnt-o.st-da_thu{border-left-color:var(--green-2)}
 .dnt-o .so{font-family:ui-monospace,Consolas,monospace;font-size:12.5px;font-weight:600}
 .dnt-o .kh{font-size:12.5px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -72,3 +72,8 @@
   border:1px solid #E3CB98;border-radius:8px;background:var(--amber-soft);color:var(--amber);font-size:12.5px;font-weight:500;line-height:1.35}
 .dnt-bao svg{flex:none;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
 .dnt-trong{display:flex;flex-direction:column;align-items:center;gap:12px}
+
+/* trạng thái thu theo hệ kế toán anh Tune (01/10) — chung.css chỉ có năm trạng thái cũ */
+.tag.dt_da_tao_so{background:var(--blue-soft);color:var(--blue)}
+.tag.dt_thu_mot_phan{background:var(--ore-soft);color:var(--ore)}
+.dnt-top #dnt-cap-nhat{height:40px;align-self:flex-end}

@@ -2,7 +2,9 @@
  *
  * DO xong (xe về, có biên bản giao nhận, kế toán Viêng Chăn KHOÁ phiếu) → máy lập tờ đề nghị thu cước (loại PDT) — gửi bên
  * công nợ (anh Tune) lập SO, xuất hoá đơn, thu tiền khách. Bên mình không thu tiền: màn này xem trạng thái bên đó chép sang
- * (chờ gửi · đã gửi · đã xuất hoá đơn · đã thu đủ), in tờ. Số tiền theo ĐÚNG tiền tệ cước của phiếu.
+ * (chờ khoá · chưa lập · chờ gửi · đã tạo SO · thu một phần · đã thu đủ), in tờ. Số tiền theo ĐÚNG tiền tệ cước của phiếu.
+ * 01/10 (bỏ trang kế toán tạm): "đã tạo SO" theo lần gửi SO, thu tiền là bản ĐỌC LẠI công nợ khách bên hệ anh Tune (chỉ xem) —
+ * nút Cập nhật đọc lại cả tháng (POST /api/de-nghi-thu/cap-nhat). Không còn cờ hoá đơn trang tạm (invoiced · inv_no).
  * 01/10 (bỏ trang kế toán tạm phần tiền): tờ không còn đẩy sang trang tạm — bỏ nút "Gửi bên công nợ" (dt_gui), lời gọi
  * /api/ke-toan/trang-thai, mã phiếu và lỗi đẩy bên trang tạm. Đường sang hệ kế toán (anh Tune) là nút Tạo SO bên dưới.
  *
@@ -12,7 +14,7 @@
  */
 (function () {
   const { API, NN, esc, so, AUTH } = EPL;
-  const TT = ['cho_gui', 'da_gui', 'da_hoa_don', 'da_thu', 'cho_khoa', ''];
+  const TT = ['chua_lap', 'cho_gui', 'da_tao_so', 'thu_mot_phan', 'da_thu', 'cho_khoa', ''];
   let root, D = { ds: [] }, tt = '', tim = '', chonId = null, hen = null;
   const q = (s) => root.querySelector(s);
   const tagTT = (s) => `<span class="tag dt_${esc(s)}">${NN.h('dt_st_' + s)}</span>`;
@@ -38,13 +40,13 @@
   function chonThang(v) { TU_DONG = false; BAO = null; q('#dnt-thang').value = v; tai(); }
 
   function loc() {
-    return D.ds.filter(x => !tt || x.trang_thai === tt || (tt === 'cho_gui' && x.trang_thai === 'chua_lap'));
+    return D.ds.filter(x => !tt || x.trang_thai === tt);
   }
 
   /* ---------------------------------------------------------------- thanh trạng thái + dải tổng */
   function veSeg() {
     const dem = {};
-    D.ds.forEach(x => { const k = x.trang_thai === 'chua_lap' ? 'cho_gui' : x.trang_thai; dem[k] = (dem[k] || 0) + 1; });
+    D.ds.forEach(x => { dem[x.trang_thai] = (dem[x.trang_thai] || 0) + 1; });
     q('#dnt-tt').innerHTML = TT.map(k => `<button data-tt="${k}" class="${tt === k ? 'on' : ''}">
       <span>${NN.h(k ? 'dt_st_' + k : 'all')}</span><b>${k ? (dem[k] || 0) : D.ds.length}</b></button>`).join('');
     root.querySelectorAll('#dnt-tt button').forEach(b => b.addEventListener('click', () => { tt = b.dataset.tt; veHet(); }));
@@ -82,8 +84,8 @@
       <div class="so">${esc(x.doc_no)}<span class="dnt-kind ${esc(x.kind)}">${NN.h(x.kind === 'gom' ? 'dn_gom' : 'dn_giao')}</span></div>
       <div class="tien">${tien(x.doanh_thu, x.ccy)}</div>
       <div class="kh" lang="lo">${esc(x.customer_name || '—')}</div>
-      <div class="tt">${tagTT(x.trang_thai)}${x.so_ke_toan && x.so_ke_toan.da_tao_so ? ` <span class="tag dt_so">SO</span>`
-        : x.so_ke_toan && x.so_ke_toan.error_message ? ` <span class="tag dt_so_loi" title="${esc(x.so_ke_toan.error_message)}">SO ⚠</span>` : ''}</div>
+      <div class="tt">${tagTT(x.trang_thai)}${x.so_ke_toan && !x.so_ke_toan.da_tao_so && x.so_ke_toan.error_message
+        ? ` <span class="tag dt_so_loi" title="${esc(x.so_ke_toan.error_message)}">SO ⚠</span>` : ''}</div>
       <div class="phu"><span lang="lo">${esc(x.origin || '')} → ${esc(x.destination || '')}</span> · ${esc(x.truck_no || '')} · ${so(x.tan_tinh, 2)} ${NN.h('ton')}</div>
       <div class="phu" style="text-align:right">${x.pdt ? esc(x.pdt.so) : EPL.ngay(x.doc_date)}</div>
     </button>`).join('');
@@ -103,7 +105,7 @@
     const laKt = AUTH.la('acct');
     const sk = x.so_ke_toan;
     nut.innerHTML = `${tagTT(d.trang_thai)}
-      ${sk && sk.da_tao_so ? `<span class="tag dt_so">${NN.h('dt_so_da', { so: sk.order_code || '' })}</span>` : ''}
+      ${sk && sk.da_tao_so ? `<span class="tag dt_so" title="${esc(sk.thu && sk.thu.doc_luc ? EPL.ngayGio(sk.thu.doc_luc) : '')}">${NN.h('dt_so_da', { so: sk.order_code || '' })}</span>` : ''}
       ${sk && !sk.da_tao_so && sk.error_message ? `<span class="small neg" title="${esc(sk.error_message)}">⚠ ${NN.h('dt_so_loi', { loi: sk.error_message.slice(0, 90) })}</span>` : ''}
       <span class="grow"></span>
       ${laKt && d.trang_thai === 'chua_lap' ? `<button class="btn primary" id="dnt-lap">${NN.h('dt_lap')}</button>` : ''}
@@ -153,7 +155,7 @@
       ${d.ccy !== 'LAK' ? `<div class="dnt-quy">≈ ${so(d.doanh_thu_lak)} LAK · ${NN.h('rate_on_slip')} 1 ${esc(d.ccy)} = ${so(d.rate_to_lak, 2)} LAK</div>` : ''}
       <div class="dnt-ben">
         <span>${NN.h('status')}: ${tagTT(d.trang_thai)}</span>
-        ${d.invoiced ? `<span>${NN.h('dt_st_da_hoa_don')}${d.inv_no ? `: <b class="mono">${esc(d.inv_no)}</b>` : ' ✓'}</span>` : ''}
+        ${d.da_tao_so ? `<span>${NN.h('dt_so_da', { so: (d.so_ke_toan || {}).order_code || '' })}</span>` : ''}
         <span>${NN.h('collected')}: <b>${so(d.da_thu_lak)} LAK</b></span>
         <span>${NN.h('ncc_con_thu')}: <b>${so(d.con_lai_lak)} LAK</b></span>
         ${d.locked_by ? `<span>${NN.h('s_locked')}: <span lang="lo">${esc(d.locked_by)}</span> · ${esc((d.locked_at || '').replace('T', ' '))}</span>` : ''}
@@ -219,6 +221,16 @@
       if (t.id) chonId = t.id;
       if (TT.includes(t.tt)) tt = t.tt;
       q('#dnt-thang').addEventListener('change', (e) => chonThang(e.target.value));
+      // đọc lại thu tiền mọi SO của tháng từ công nợ khách bên hệ kế toán (chỉ xem) rồi tải lại danh sách
+      q('#dnt-cap-nhat').addEventListener('click', async (e) => {
+        const b = e.currentTarget; b.disabled = true;
+        try {
+          const r = await API.post('/api/de-nghi-thu/cap-nhat', { thang: q('#dnt-thang').value || thangNay() });
+          EPL.toast(`${NN.t('ck_cap_nhat')} · ${r.da_doc} SO` + (r.loi ? ' — ' + r.loi : ''), r.loi ? 'loi' : 'ok');
+        } catch (er) { EPL.baoLoi(er); }
+        b.disabled = false;
+        await tai();
+      });
       window.removeEventListener('resize', khiDoiCo); window.addEventListener('resize', khiDoiCo);
       q('#dnt-tim').addEventListener('input', (e) => { clearTimeout(hen); hen = setTimeout(() => { tim = e.target.value.trim(); tai(); }, 300); });
       await tai();

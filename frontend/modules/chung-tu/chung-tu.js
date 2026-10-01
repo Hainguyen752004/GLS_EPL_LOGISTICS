@@ -59,7 +59,8 @@
   const conXk = (x) => x.nhien_lieu.some(v => v.status === 'cho');
   const conChi = (x) => x.tam_ung.some(v => v.status === 'cho')
     || Object.values(x.muc).some(m => m.status !== 'paid');
-  const choThu = (x) => ['cho_gui', 'chua_lap', 'da_gui', 'da_hoa_don'].includes(x.thu.trang_thai);
+  // chờ thu = DO đã khoá mà chưa thu đủ: chưa lập / chờ gửi / đã tạo SO / thu một phần (trạng thái theo hệ kế toán, 01/10)
+  const choThu = (x) => ['cho_gui', 'chua_lap', 'da_tao_so', 'thu_mot_phan'].includes(x.thu.trang_thai);
   function dsLoc() { return D.ds.filter(x => !loc || (loc === 'chi' ? conChi(x) : loc === 'xk' ? conXk(x) : choThu(x))); }
 
   /* ---------------------------------------------------------------- bảng DO */
@@ -120,13 +121,17 @@
     const nl = x.nhien_lieu.map(v => dong(`<a data-v="${esc(v.id)}" data-loai="fuel">${esc(v.so)}</a>`, `<span lang="lo">${esc(v.place_name || '')}</span>`,
       `${so(v.qty_l, 0)} L${v.granted_qty != null && v.granted_qty !== v.qty_l ? ' → ' + so(v.granted_qty, 0) + ' L' : ''} · <span class="ct2-chip ${esc(v.status)}">${NN.h('v_' + v.status)}</span>`)).join('');
     const muc = MUC.filter(([k]) => x.muc[k]).map(([k, la, ten]) => {
-      const m = x.muc[k];
-      return dong(`${la} · ${NN.h(ten)}`, NN.h('ct_so_dong', { n: m.so_dong }),
+      const m = x.muc[k], kt = m.ke_toan;     // mục V / VI: phiếu chi "Chi khác" bên hệ kế toán (01/10)
+      // trạng thái phiếu chi bên kế toán xuống dòng phụ (dưới tên mục) — để cột phải không đẩy tên mục vỡ dòng
+      const nhanKT = !kt ? '' : ' · ' + EPL.tag(kt.status === 'da_chi' ? 'paid' : kt.status === 'da_gui' ? 'partial' : 'unpaid',
+        kt.status === 'da_chi' ? 'ck_da_chi_ngan' : kt.status === 'da_gui' ? 'cmt_cho_chi' : kt.error_code === 'PHIEU_CHI_MAT' ? 'ck_phieu_mat' : 'ck_loi_ngan')
+        + (kt.document_no ? ` <span class="mono">${esc(kt.document_no)}</span>` : '');
+      return dong(`${la} · ${NN.h(ten)}`, NN.h('ct_so_dong', { n: m.so_dong }) + nhanKT,
         `${chi && m.tien_lak != null ? so(m.tien_lak) + ' LAK · ' : ''}<span class="ct2-muc"><i class="${esc(m.status)}">${la}</i></span> ${NN.h('stt_' + m.status)}`);
     }).join('');
     const t = x.thu;
     const thu = dong(t.pdt ? `<a data-thu="1">${esc(t.pdt.so)}</a>` : NN.h('nav_de_nghi_thu'),
-      t.inv_no ? NN.h('dt_st_da_hoa_don') + ' · <span class="mono">' + esc(t.inv_no) + '</span>' : (t.trang_thai === 'cho_khoa' ? NN.h('dt_goi_y_khoa') : ''),
+      t.da_tao_so ? NN.h('dt_so_da', { so: t.order_code || '' }) : (t.trang_thai === 'cho_khoa' ? NN.h('dt_goi_y_khoa') : ''),
       `${ban && t.doanh_thu != null ? EPL.tien(t.doanh_thu, t.ccy) + ' · ' : ''}${tagTT(t.trang_thai)}`)
       + (ban && t.doanh_thu_lak ? dong(NN.h('collected'), '', `${so(t.da_thu_lak)} LAK · ${NN.h('ncc_con_thu')} ${so(t.con_lai_lak)} LAK`) : '');
     ct.innerHTML = `<div class="ct2-dau"><h3>${esc(x.doc_no)}</h3>
@@ -156,7 +161,7 @@
     if (chonId !== x.trip_id || !ho.isConnected) return;
     ho.innerHTML = `<h4>${NN.h('ct_so_chung_tu')}<a data-so="1">${NN.h('ct_mo_man')}</a></h4>` + (r.ds.length ? r.ds.map(c => dong(
       `<span class="mono">${esc(c.so)}</span>`, esc(NN.lang === 'lo' ? c.loai_ten_lo : c.loai_ten),
-      `${c.tien != null ? EPL.tien(c.tien, c.tien_te) + ' · ' : ''}${c.da_day ? '✓ ' + NN.h('ct_da_day') : '<span class="muted">' + NN.h('ct_chua_day') + '</span>'}`)).join('')
+      `${c.tien != null ? EPL.tien(c.tien, c.tien_te) : ''}${c.loai === 'PDT' ? '' : (c.tien != null ? ' · ' : '') + (c.da_day ? '✓ ' + NN.h('ct_da_day') : '<span class="muted">' + NN.h('ct_chua_day') + '</span>')}`)).join('')
       : `<div class="ct2-trong">${NN.h('ct_khong_co')}</div>`);
     ho.querySelector('a[data-so]').addEventListener('click', () => doiTab('so'));
   }
@@ -221,7 +226,7 @@
     veSoTong(r.tong);
     const tk = (ma, ten) => ma ? `<span class="acct" title="${esc(ten || '')}">${esc(ma)}</span>` : `<span class="muted small" title="${esc(ten || '')}">?</span>`;
     const suaDuoc = AUTH.la('acct', 'expacct', 'rev', 'treasury', 'cash');   // đánh dấu đối chiếu tay
-    q('#ct-so-than').innerHTML = r.ds.length ? r.ds.map(c => `<tr class="${c.da_day ? 'da-day' : ''}" data-id="${c.id}">
+    q('#ct-so-than').innerHTML = r.ds.length ? r.ds.map(c => `<tr class="${c.da_day && c.loai !== 'PDT' ? 'da-day' : ''}" data-id="${c.id}">
       <td class="mono">${esc(c.so)}</td><td>${EPL.ngay(c.ngay)}</td>
       <td><b>${esc(c.loai)}</b><div class="small muted">${esc(NN.lang === 'lo' ? c.loai_ten_lo : c.loai_ten)}</div></td>
       <td>${c.trip_id ? `<a href="#/phieu-xuat-xe?id=${esc(c.trip_id)}" class="mono">${esc(c.trip_doc_no || '')}</a>` : '<span class="muted">—</span>'}</td>
@@ -230,8 +235,8 @@
       <td class="num">${c.tien_lak == null ? '—' : so(c.tien_lak)}</td>
       <td>${c.no || c.co || c.no_ten ? `${tk(c.no, c.no_ten)} / ${tk(c.co, c.co_ten)}` : '<span class="muted">—</span>'}</td>
       <td class="small">${esc(c.mo_ta || '')}<div class="muted">${esc(c.by_user || '')}</div></td>
-      <td class="small">${c.da_day ? `✓ ${NN.h('ct_da_day')}` : `<span class="muted">${NN.h('ct_chua_day')}</span>`}</td>
-      <td class="no-print">${suaDuoc ? `<button type="button" class="btn sm ${c.da_day ? 'quiet' : ''}" data-day="${c.id}" data-gia-tri="${c.da_day ? 0 : 1}">${NN.h(c.da_day ? 'ct_mo_lai' : 'ct_danh_dau')}</button>` : (c.da_day ? '✓' : '')}</td>
+      <td class="small">${c.loai === 'PDT' ? '<span class="muted">—</span>' : c.da_day ? `✓ ${NN.h('ct_da_day')}` : `<span class="muted">${NN.h('ct_chua_day')}</span>`}</td>
+      <td class="no-print">${c.loai === 'PDT' ? '' : suaDuoc ? `<button type="button" class="btn sm ${c.da_day ? 'quiet' : ''}" data-day="${c.id}" data-gia-tri="${c.da_day ? 0 : 1}">${NN.h(c.da_day ? 'ct_mo_lai' : 'ct_danh_dau')}</button>` : (c.da_day ? '✓' : '')}</td>
     </tr>`).join('') : `<tr><td colspan="11" class="empty small">${NN.h('ct_khong_co')}</td></tr>`;
     q('#ct-so-than').querySelectorAll('[data-day]').forEach(b => b.addEventListener('click', async () => {
       try { await API.post(`/api/chung-tu/${b.dataset.day}/da-day`, { da_day: b.dataset.giaTri === '1' }); await veSo(); } catch (e) { EPL.baoLoi(e); }
