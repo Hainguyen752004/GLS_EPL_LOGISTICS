@@ -70,6 +70,7 @@ def chay():
     s, tuyen = goi("/api/routes", vai="thabok")
     ktui = next(c for c in kh if "ຄຳຕຸ້ຍ" in c["name"]); vanna = next(c for c in kh if "ວັນນາ" in c["name"])
     lk = next(x for x in xe if x["owner_type"] == "joint"); nha = next(x for x in xe if x["owner_type"] != "joint")
+    tx = goi("/api/drivers", vai="thabok")[1]                 # 01/10: phiếu phải có xe và tài xế
     ck = next(o for o in chu if o["id"] == lk["owner_id"])
 
     # ---------------------------------------------------------------- 1. danh mục hợp đồng + phân quyền
@@ -106,7 +107,7 @@ def chay():
     s, g = goi("/api/hop-dong", vai="tx01"); phai(s, 403, "Tài xế xem hợp đồng → bị chặn", g)
 
     # ---------------------------------------------------------------- 2. phiếu tự mang số hợp đồng
-    s, p = goi("/api/trips", {"doc_no": DAU + "-1/EPL", "company": "EPL", "vehicle_id": nha["id"], "customer_id": ktui["id"],
+    s, p = goi("/api/trips", {"doc_no": DAU + "-1/EPL", "company": "EPL", "vehicle_id": nha["id"], "driver_id": tx[0]["id"], "customer_id": ktui["id"],
                               "route_id": tuyen[0]["id"], "doc_date": "2026-09-24", "weight_origin": 40,
                               "note": "thử hợp đồng"}, "thabok"); phai(s, 200, "Bãi lập phiếu cho ຄຳຕຸ້ຍ", p); TAO["trip"].append(p["id"])
     phai(p["contract_no"], DAU + "-K", "Phiếu tự điền số hợp đồng vận chuyển")
@@ -120,13 +121,13 @@ def chay():
     s, g = goi("/api/trips/%s" % p["id"], {"contract_id": hk["id"]}, "ketoan", "PUT"); phai(g["contract_no"], DAU + "-K", "Kế toán chọn lại hợp đồng")
     s, g = goi("/api/hop-dong/%s" % hk["id"], vai="ketoan", method="DELETE"); phai(s, 409, "Xoá hợp đồng đã có phiếu → bị chặn (ngưng dùng thay vì xoá)", g)
 
-    s, pl = goi("/api/trips", {"doc_no": DAU + "-2/EPL", "company": "joint", "vehicle_id": lk["id"], "customer_id": ktui["id"],
+    s, pl = goi("/api/trips", {"doc_no": DAU + "-2/EPL", "company": "joint", "vehicle_id": lk["id"], "driver_id": tx[0]["id"], "customer_id": ktui["id"],
                                "route_id": tuyen[0]["id"], "doc_date": "2026-09-24", "weight_origin": 41}, "thabok")
     phai(s, 200, "Bãi lập phiếu xe liên kết %s" % lk["truck_no"], pl); TAO["trip"].append(pl["id"])
     phai(pl["hire_contract_no"], DAU + "-T", "Phiếu xe liên kết tự điền số hợp đồng thuê xe")
 
     # ---------------------------------------------------------------- 3. POD + cảnh báo khoá
-    s, pv = goi("/api/trips", {"doc_no": DAU + "-3/EPL", "company": "EPL", "vehicle_id": nha["id"], "customer_id": vanna["id"],
+    s, pv = goi("/api/trips", {"doc_no": DAU + "-3/EPL", "company": "EPL", "vehicle_id": nha["id"], "driver_id": tx[0]["id"], "customer_id": vanna["id"],
                                "route_id": tuyen[0]["id"], "doc_date": "2026-09-24", "weight_origin": 40}, "thabok")
     phai(s, 200, "Bãi lập phiếu cho ນາງ ວັນນາ (hợp đồng đã hết hạn)", pv); TAO["trip"].append(pv["id"])
     phai(pv["contract_no"], None, "Hợp đồng hết hạn thì KHÔNG tự điền")

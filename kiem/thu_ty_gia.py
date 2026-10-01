@@ -117,9 +117,9 @@ def main():
 
     # ---------------------------------------------------------------- 7. phiếu MỚI lấy tỷ giá mới
     s, kh = goi("/api/customers", vai="ketoan")
-    s, xe = goi("/api/vehicles", vai="thabok")
+    s, xe = goi("/api/vehicles", vai="thabok"); s, tx = goi("/api/drivers", vai="thabok")
     s, pm = goi("/api/trips", {"doc_no": "THU-TG-01/EPL", "kind": "gom", "doc_date": "2026-09-21",
-                               "vehicle_id": xe[0]["id"], "customer_id": kh[0]["id"]}, vai="thabok")
+                               "vehicle_id": xe[0]["id"], "driver_id": tx[0]["id"], "customer_id": kh[0]["id"]}, vai="thabok")
     phai(s, 200, "Lập phiếu MỚI sau khi đổi tỷ giá", pm)
     # Bãi không thấy tỷ giá (anh Khampla A2) — đọc bằng vai kế toán
     assert "rate_usd" not in pm, "gói trả cho Bãi không được có tỷ giá"

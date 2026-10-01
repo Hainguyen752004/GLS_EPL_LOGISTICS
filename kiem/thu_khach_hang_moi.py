@@ -5,8 +5,12 @@ trong gói bàn giao DO.
     python kiem/thu_khach_hang_moi.py [http://127.0.0.1:8011]
 
 CHỈ chạy trên máy thử (bản sao DB): bài ghi mã khách thử rồi TRẢ LẠI mã cũ, và tạo lại khoá bàn giao của máy đang gọi.
+
+Đặt `KHOA_BAN_GIAO_TEP=<tệp chứa khoá đang dùng>` thì bài dùng khoá đó, KHÔNG tạo lại (như thu_ban_giao.py) — máy thử dùng
+chung DB với máy khác thì tạo lại khoá là làm hỏng khoá bên kia (API kế toán) đang cầm.
 """
 import json
+import os
 import sys
 import urllib.error
 import urllib.request
@@ -97,7 +101,12 @@ def main():
         dung(goi("/api/customers-cong-no")[0] == 401, "không đăng nhập → 401")
 
         print("3. Mã khách trong gói bàn giao DO")
-        khoa = goi("/api/handover/tao-khoa", method="POST", u="admin")[1]["token_nhan_qlsx"]
+        tep_khoa = os.getenv("KHOA_BAN_GIAO_TEP")              # máy thử dùng chung DB với máy khác: dùng khoá đang có
+        if tep_khoa:
+            khoa = open(tep_khoa, encoding="utf-8").read().strip()
+            print("     dùng khoá có sẵn trong %s (dài %d ký tự, không in) — không tạo lại" % (os.path.basename(tep_khoa), len(khoa)))
+        else:
+            khoa = goi("/api/handover/tao-khoa", method="POST", u="admin")[1]["token_nhan_qlsx"]
         s, g = goi("/api/handover/delivery-orders?page_size=200", khoa=khoa)
         items = g["data"]["items"]
         cua_a = [x for x in items if x["customer_ref"] == a["id"]]

@@ -345,6 +345,9 @@ def gui(db, p, user):
     if _chua_ro(b):
         body_json, key = b.request_body, b.idempotency_key
     else:
+        # kiểm gói TRƯỚC (DO đã khoá, có tuyến, mã hợp lệ…) rồi mới tạo khách bên kế toán — DO chưa đủ điều kiện thì không
+        # để lại khách thừa bên đó (rà 01/10)
+        dung_goi(db, p, ma_tam=None if _ma_khach_cua(db, p) else ma_khach_moi(p))
         dam_bao_khach(db, p)                                    # khách chưa có bên kế toán → tạo trước (lỗi 52905 cũ)
         body, _ = dung_goi(db, p)
         key = khoa(do_id)

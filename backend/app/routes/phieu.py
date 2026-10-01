@@ -526,6 +526,15 @@ def so_moi(kind: str = "giao", db: Session = Depends(get_db), _=Depends(nguoi_hi
     return {"doc_no": _so_phieu_moi(db, kind)}
 
 
+def _chan_phieu_trang(p):
+    """Phiếu xuất xe phải có xe và tài xế — chủ dự án 01/10: "Sếp lưu được phiếu trắng, không xe, không tài xế — CÓ CHẶN".
+    Áp cho mọi vai, kể cả Sếp."""
+    if not p.vehicle_id:
+        raise HTTPException(422, {"ma": "THIEU_XE", "loi": "Chọn xe trước khi lưu phiếu xuất xe."})
+    if not (p.driver_id or (p.driver_name or "").strip()):
+        raise HTTPException(422, {"ma": "THIEU_TAI_XE", "loi": "Chọn tài xế trước khi lưu phiếu xuất xe."})
+
+
 def _ap_truong(db, p, data, user, muc_tt=None):
     """Ghi các trường vào phiếu. Khi sửa, chỉ ghi trường của mục còn được sửa."""
     kh_cu, chu_cu = p.customer_id, p.owner_id
@@ -907,6 +916,7 @@ def lap_phieu(data: dict = Body(...), db: Session = Depends(get_db), user=Depend
     p.rate_usd, p.rate_thb = tg.get("USD", 22000), tg.get("THB", 700)
     p.rate_vnd, p.rate_cny = tg.get("VND", 1.2), tg.get("CNY", 3000)
     _ap_truong(db, p, data, user)
+    _chan_phieu_trang(p)
     # C4.2 (anh Khampla): phí, ngưỡng tấn, mức trừ quá tải, tiền thuê là ĐIỀU KHOẢN của từng chủ xe —
     # ô nào người lập không gửi thì lấy theo hồ sơ chủ xe, không lấy hằng số chung.
     if p.company == "joint" and p.owner_id:
@@ -985,6 +995,8 @@ def sua_phieu(tid: str, data: dict = Body(...), db: Session = Depends(get_db), u
             raise HTTPException(409, {"ma": "TRUNG_SO", "loi": "Số phiếu đã có."})
     loai_cu = p.goods_type
     _ap_truong(db, p, data, user, muc_tt)
+    if "vehicle_id" in data or "driver_id" in data or "driver_name" in data:
+        _chan_phieu_trang(p)        # sửa mà xoá xe / tài xế thì cũng chặn; sửa mục khác trên phiếu cũ thì không vướng
     if "expenses" in data:
         _ap_dong_chi(db, p, data["expenses"], user, muc_tt)
     if p.company != "joint":

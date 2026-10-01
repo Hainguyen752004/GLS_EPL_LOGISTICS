@@ -83,9 +83,9 @@ def main():
     assert kq["giuNguyen"], "PDF nhỏ phải giữ nguyên"
     print("✓ PDF nhỏ giữ nguyên")
 
-    xe = goi("/api/vehicles", vai="thabok"); kh = goi("/api/customers", vai="thabok")
+    xe = goi("/api/vehicles", vai="thabok"); kh = goi("/api/customers", vai="thabok"); tx = goi("/api/drivers", vai="thabok")
     p = goi("/api/trips", {"doc_no": "THU-NEN-%s/EPL" % time.strftime("%H%M%S"), "company": "EPL",
-                           "vehicle_id": next(x for x in xe if x["owner_type"] != "joint")["id"], "customer_id": kh[0]["id"],
+                           "vehicle_id": next(x for x in xe if x["owner_type"] != "joint")["id"], "driver_id": tx[0]["id"], "customer_id": kh[0]["id"],
                            "doc_date": time.strftime("%Y-%m-%d"), "note": "thử nén tệp"}, "thabok")
     try:
         im = Image.effect_noise((2600, 2000), 60).convert("RGB"); buf = io.BytesIO(); im.save(buf, "JPEG", quality=97)

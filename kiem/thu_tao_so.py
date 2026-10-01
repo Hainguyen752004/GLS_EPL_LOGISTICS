@@ -4,7 +4,9 @@
     python kiem/thu_tao_so.py [http://127.0.0.1:8011]
 
 KHÔNG gọi sang hệ anh Tune: chỉ đường XEM TRƯỚC (máy chủ dựng và kiểm gói, không gọi mạng) và các lần bị chặn quyền.
-Bài này gán tạm mã khách của một khách trên máy thử rồi trả lại như cũ.
+Bài này gán tạm mã khách của một khách trên máy thử rồi trả lại như cũ. Bản sao DB không còn DO đã khoá nào CHƯA có hoá
+đơn ở trang kế toán tạm (01/10) thì bài tự lập phiếu thử THU-SO-A/EPL tới khoá — không tạm ứng, không gọi hệ kế toán —
+rồi mở khoá, xoá.
 
 Kiểm: vai không thấy tiền bán (Bãi, tài xế) bị chặn · vai khác acct / admin không gửi được · DO chưa khoá bị chặn · khách
 chưa có mã bên kế toán bị chặn, câu lỗi nói rõ · mã ghép khách_tuyến quá 50 ký tự bị chặn · gói đúng khuôn: ba khoá gốc,
@@ -13,6 +15,7 @@ customer_id = mã khách bên kế toán, một dòng thu, tổng khớp chính 
 import json
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from decimal import Decimal
 
@@ -21,6 +24,7 @@ if GOC.endswith((":8020", ":8010")):
     sys.exit("Không chạy bài này trên máy thật — nó gán tạm mã khách.")
 TK = {}
 LOI = []
+SO_THU = "THU-SO-A/EPL"
 
 
 def goi(duong, body=None, u=None, method=None):
@@ -49,10 +53,49 @@ def ma_loi(g):
     return d.get("ma") if isinstance(d, dict) else None
 
 
+def don():
+    """Xoá phiếu thử của lần chạy trước (hoặc lần này)."""
+    s, ds = goi("/api/trips?q=%s&co=10" % SO_THU.split("/")[0], u="admin")
+    for p in [x for x in ds if x["doc_no"] == SO_THU]:
+        goi("/api/trips/%s/mo-khoa" % p["id"], {}, u="admin")
+        s, g = goi("/api/trips/" + p["id"], u="admin", method="DELETE")
+        print("  · xoá phiếu thử %s → %s" % (SO_THU, s))
+
+
+def lap_do_thu():
+    """Một DO đã khoá CHƯA có hoá đơn ở trang tạm: Sếp lập phiếu gom cước USD bằng xe nhà đang rảnh, tuyến không phí cao
+    tốc (không có dòng tiền mặt mục IV → không phiếu chi tạm ứng bên kế toán), Sếp báo xe tới, kế toán khoá. Trả dòng của
+    nó ở danh sách đề nghị thu."""
+    s, xe = goi("/api/vehicles", u="admin"); s, tx = goi("/api/drivers", u="admin")
+    s, kh = goi("/api/customers", u="admin"); s, tuyen = goi("/api/routes", u="admin")
+    nha = [v for v in xe if v["owner_type"] == "EPL" and v["active"]]
+    v = next((v for v in nha if v["status"] == "available"), nha[0])
+    t = next((t for t in tx if t["active"] and t["status"] == "available"), tx[0])
+    r = next((r for r in tuyen if not r.get("toll_lak")), tuyen[0])
+    s, p = goi("/api/trips", {"doc_no": SO_THU, "kind": "gom", "doc_date": "2026-09-28", "out_date": "2026-09-28",
+                              "vehicle_id": v["id"], "driver_id": t["id"], "customer_id": kh[0]["id"], "route_id": r["id"],
+                              "goods_type": "iron_ore", "weight_origin": 40, "odo_out": 100, "ore_bill_no": "KIEM-SO",
+                              "price": 45, "price_ccy": "USD"}, u="admin")
+    if s != 200:
+        sys.exit("DỪNG: không lập được phiếu thử %s — %s %s" % (SO_THU, s, p))
+    s, g = goi("/api/trips/%s/transport-status" % p["id"], {"status": "arrived", "weight_dest": 39.8, "odo_back": 100 + 2 * (r.get("total_km") or 0),
+                                                           "back_date": "2026-09-29", "pod_no": "KIEM-SO-POD"}, u="admin")
+    if s != 200:
+        sys.exit("DỪNG: phiếu thử không báo xe tới được — %s %s" % (s, g))
+    s, g = goi("/api/trips/%s/khoa" % p["id"], {"xac_nhan": True}, u="ketoan")
+    if s != 200:
+        sys.exit("DỪNG: phiếu thử không khoá được — %s %s" % (s, g))
+    s, d = goi("/api/de-nghi-thu?thang=2026-09&q=" + SO_THU.split("/")[0], u="ketoan")
+    x = next(x for x in d["ds"] if x["trip_id"] == p["id"])
+    print("  · lập phiếu thử %s (xe %s, tuyến %s) tới khoá — chưa có hoá đơn ở trang tạm" % (SO_THU, v["truck_no"], r["name"]))
+    return x
+
+
 def main():
     for u in ("ketoan", "thabok", "tx01", "doanhthu", "admin"):
         s, g = goi("/api/dang-nhap", {"username": u, "password": "1234"})
         TK[u] = g["token"]
+    don()
     khoa, mo = [], []
     for th in ("2026-08", "2026-09"):
         s, d = goi("/api/de-nghi-thu?thang=" + th, u="ketoan")
@@ -62,7 +105,11 @@ def main():
     chua_khoa = mo[0]["trip_id"] if mo else (ds_trip[0]["id"] if ds_trip else None)
     if not khoa:
         sys.exit("DỪNG: máy thử không có DO nào đã khoá")
-    x = khoa[0]
+    # 01/10: DO đã có hoá đơn / đã thu ở trang kế toán tạm thì không gửi SO được (ghi nợ hai lần) — thử trên DO chưa có;
+    # bản sao DB không còn DO nào như thế thì lập phiếu thử (trước đây rơi về khoa[0] — DO có hoá đơn — và mọi bước sau hỏng)
+    tam = lambda d: d.get("invoiced") or d.get("trang_thai") in ("da_hoa_don", "da_thu")
+    co_hd = next((d for d in khoa if tam(d)), None)
+    x = next((d for d in khoa if not tam(d)), None) or lap_do_thu()
     tid = x["trip_id"]
     print("DO thử: %s (%s) · %d DO đã khoá" % (x["doc_no"], x["customer_name"], len(khoa)))
 
@@ -78,6 +125,18 @@ def main():
     if chua_khoa:
         s, v = goi("/api/trips/%s/tao-so" % chua_khoa, u="ketoan")
         dung(s == 200 and (v.get("loi") or {}).get("ma") == "DO_CHUA_KHOA", "DO chưa khoá → DO_CHUA_KHOA", str((v.get("loi") or {}).get("ma")))
+    if co_hd:
+        s, v = goi("/api/trips/%s/tao-so" % co_hd["trip_id"], u="ketoan")
+        dung(s == 200 and (v.get("loi") or {}).get("ma") == "DA_HOA_DON_TRANG_TAM",
+             "DO đã có hoá đơn ở trang kế toán tạm → xem trước báo DA_HOA_DON_TRANG_TAM", "%s %s" % (co_hd["doc_no"], (v.get("loi") or {}).get("ma")))
+        s, g = goi("/api/trips/%s/tao-so" % co_hd["trip_id"], {}, u="ketoan")
+        dung(s == 409 and ma_loi(g) == "DA_HOA_DON_TRANG_TAM", "… và gửi → 409, không gọi sang hệ kế toán", "%s %s" % (s, ma_loi(g)))
+        s, d = goi("/api/de-nghi-thu?thang=%s&q=%s" % (co_hd["doc_date"][:7], urllib.parse.quote(co_hd["doc_no"])), u="ketoan")
+        sau = next((r for r in d["ds"] if r["trip_id"] == co_hd["trip_id"]), {}).get("so_ke_toan")
+        dung(sau == co_hd.get("so_ke_toan"), "… và không ghi lần gửi nào (trạng thái gửi SO giữ nguyên)", (sau or {}).get("status"))
+    s, v = goi("/api/trips/%s/tao-so" % tid, u="ketoan")
+    dung(s == 200 and not v.get("loi") and v.get("body"), "DO chưa có hoá đơn ở trang tạm → xem trước bình thường, có gói",
+         "%s %s" % (x["doc_no"], (v.get("loi") or {}).get("ma")))
     s, p = goi("/api/trips/" + tid, u="ketoan")
     cid = p["customer_id"]
     s, khs = goi("/api/customers", u="ketoan")
@@ -126,6 +185,7 @@ def main():
     finally:
         goi("/api/customers/" + cid, {"code": ma_cu or ""}, u="ketoan", method="PUT")
         print("  · đã trả mã khách về %r" % ma_cu)
+        don()
 
     print()
     if LOI:
