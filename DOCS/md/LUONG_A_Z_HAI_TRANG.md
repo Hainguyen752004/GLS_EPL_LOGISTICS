@@ -1,5 +1,28 @@
 # Luồng nghiệp vụ EPL Lào từ A đến Z — trang điều xe và trang kế toán
 
+> **Bản này đã cũ.** Viết 29 – 30/09, sửa sáng 01/10, theo mô hình *hai trang*: trang kế toán 8030 tự lập hoá đơn, thu tiền khách, trả chủ xe, tất toán tài xế, ghi sổ. **Từ 01 – 02/10 phần tiền và sổ đã sang hệ kế toán QLSX của anh Tune**; 8030 chỉ còn là **kho tạm**.
+>
+> **Luồng đang chạy (bản 02/10):** `DOCS/md/anh_Tune_taichinh_quaithuaram/md/THAO_TAC_A_Z_DIEU_XE_SANG_KE_TOAN_ANH_TUNE.md` — 32 bước, ba hệ (trang điều xe · kho tạm · QLSX anh Tune). Ca test bấm tay, đánh Đạt / Không đạt: `TEST_TAY_DIEU_XE_VA_KE_TOAN_ANH_TUNE.md`, cùng thư mục. Mở máy thử: `HUONG_DAN_ANH_TU_THAO_TAC.md` mục 0.1. Thư mục đó không đưa lên git.
+>
+> **Hai bộ máy:**
+>
+> | Bộ | Trang điều xe | Kho tạm | DB | Dùng để |
+> |---|---|---|---|---|
+> | Máy thật | `8020` | `8030` | `epl_lao` · `epl_ketoan` | chạy hằng ngày |
+> | Máy thử nối anh Tune | `8011` | `8031` | bản sao của hai DB trên | test luồng với QLSX: API anh Tune `5090`, Web anh Tune `5014`; 8011 bật gửi bút toán — **Khoá phiếu**, **Gửi hết** ghi thật vào DB demo anh Tune |
+>
+> **Đã đổi so với bản này (01 – 02/10):**
+> - **Tạm ứng** chi ở QLSX: ghi sổ mục IV → phiếu chi "Chi trước" bên đó, thủ quỹ chi và ghi sổ, trang điều xe đọc lại (bước 9 dưới đã sửa ngày 01/10). Tờ đề nghị tạm ứng **không còn mã QR** — tài xế đọc số DO cho thủ quỹ.
+> - **Mục V / VI khoản quỹ trả ngay** → phiếu chi "Chi khác" bên QLSX, không chi trên trang điều xe.
+> - **Kho tạm chặn cấp / xuất vượt tồn** (`VUOT_TON`): nhập dầu, phụ tùng vào kho trước.
+> - Xe thuê lấy dầu kho EPL **luôn là xuất bán cho chủ xe** — không chọn "Chủ xe tự trả" cho dòng lấy kho (`KHO_XE_THUE_XUAT_BAN`).
+> - **Khoá phiếu** bị chặn khi dầu kho chưa cấp theo đề nghị (`DAU_KHO_CHUA_CAP`), phụ tùng ghi lấy kho mà chưa xuất (`PT_KHO_CHUA_XUAT`), xe thuê lấy kho thiếu giá bán. Khoá xong máy lập **phiếu đề nghị thu** và **bút toán chờ gửi** (thuê xe 621/4022, nợ NCC 625 · 614/4021, xuất nội bộ 625 · 614/1371, xuất bán 4022/707 + 607/1371, quyết toán tạm ứng 625/1601) → gửi sang QLSX. Màn mới **Bút toán chờ gửi**. Mở khoá phiếu thì máy gỡ bút toán bên QLSX.
+> - **Thu tiền khách**: KT Thu/Chi bấm **Tạo SO bên kế toán** → SO + công nợ bên QLSX; kế toán QLSX thu nợ (phiếu thu), huỷ thu nhầm bằng nút **Huỷ phiếu thu** trên Web anh Tune. Không lập hoá đơn, ghi thu ở 8030 nữa.
+> - **Trả chủ xe, trả nhà cung cấp, tất toán tài xế**: trang điều xe lập đề nghị → phiếu chi / phiếu thu bên QLSX, thủ quỹ bên đó chi và ghi sổ.
+> - Sổ, báo cáo xem ở QLSX: **Bút toán từ Logistics**, **Báo cáo sổ quỹ** (theo quốc gia kế toán).
+>
+> Phần dưới **bước 1 – 16** (lập phiếu, dầu, kiểm, cấp dầu, đi đường, về bãi, giao hàng) về cơ bản còn đúng, trừ các điểm trên. **Bước 17 – 23, Phần 3, 7, 9, 10 không còn đúng** — đọc bản 02/10. Bản này giữ lại để tra lịch sử.
+
 Viết cho anh (chủ dự án), cập nhật **30/09/2026** (sau buổi báo cáo sếp), trước đó 29/09 sau khi làm xong đợt 7: mọi màn kho và tiền đã dời sang trang kế toán, trang điều xe giữ việc của chuyến xe và các danh mục. Tài liệu đi từ lúc Bãi lập **phiếu gom** ở mỏ cho tới lúc mọi tờ chứng từ của chuyến đã **vào sổ kế toán**. Mỗi bước ghi rõ: **ai làm**, làm ở **trang nào**, **màn nào**, **bấm nút nào** (đúng chữ trên nút), máy tự làm gì, máy chặn gì, sinh ra tờ gì, và **ai làm tiếp**.
 
 **Cách đọc:** Phần 1–3 là bức tranh chung và cách đi lại giữa hai trang, đọc một lần. Phần 4 là luồng chính một chuyến, đi từng bước. Phần 5–9 là bảng tra cứu: ai làm tiếp, việc ngoài chuyến, danh mục chứng từ, khi mất nối, và những gì đã dời. **Phần 10 là kịch bản test tay** theo đúng thứ tự luồng, mỗi ca một dòng (ai · bấm gì · thấy gì là đúng), có ô đánh dấu **Đạt** — bắt đầu test từ 10.0.
