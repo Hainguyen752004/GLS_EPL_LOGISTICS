@@ -609,7 +609,12 @@
       { id: 'currency', label: 'cur', type: 'select', value: e.currency || (e.muc === 'fuel' ? 'VND' : 'LAK'), options: EPL.TIEN_TE.map(m => [m, m]) },
     ] : [];
     // mỗi mục một bộ ô: dầu dọc đường hỏi số lít; sửa chữa hỏi kho / mua ngoài; chi khác chỉ hỏi tên khoản. Bãi không có ô tiền.
-    const o = e.muc === 'fuel' ? [{ id: 'qty_l', label: 'df_litres', type: 'number', value: e.qty_l != null ? e.qty_l : '' }].concat(gia)
+    // 02/10: dầu dọc đường — người duyệt chọn luôn trạm có cho ghi nợ không (trước đây phải nhờ Bãi tick «Ghi nợ tại trạm» trên
+    // phiếu sau khi duyệt). Có → nợ nhà cung cấp của trạm; không → tài xế trả tiền túi, chi bù lúc tất toán.
+    const o = e.muc === 'fuel' ? [
+      { id: 'qty_l', label: 'df_litres', type: 'number', value: e.qty_l != null ? e.qty_l : '' },
+      { id: 'ghi_no', label: 'df_ghi_no', type: 'select', value: '0', options: [['0', NN.t('df_ghi_no_khong')], ['1', NN.t('df_ghi_no_co')]] },
+    ].concat(gia)
       : e.muc === 'other' ? [{ id: 'item_name', label: 'item', value: e.note || '', lo: true }].concat(gia)
       : [
         { id: 'source', label: 'source', type: 'select', value: 'mua', options: [['mua', NN.t('src_mua')], ['kho', NN.t('src_kho')]] },

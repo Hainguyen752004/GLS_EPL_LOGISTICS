@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2656 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2659 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -13281,5 +13281,20 @@ window.EPL_TU_DIEN = {
   "vi": "Xe thuê: lấy từ kho EPL luôn là xuất bán cho chủ xe. Chủ xe trả tiền ngay thì lập phiếu bán ở quầy.",
   "lo": "ລົດເຊົ່າ: ເບີກຈາກສາງ EPL ແມ່ນຂາຍໃຫ້ເຈົ້າຂອງລົດສະເໝີ. ຖ້າເຈົ້າຂອງລົດຈ່າຍເງິນທັນທີ ໃຫ້ອອກໃບຂາຍຢູ່ໜ້າຮ້ານ.",
   "en": "Hired truck: goods from the EPL store are always sold to the owner. If the owner pays on the spot, make a counter sale."
+ },
+ "df_ghi_no": {
+  "vi": "Trạm cho ghi nợ?",
+  "lo": "ປໍ້າໃຫ້ຂຽນໜີ້ໄວ້ບໍ?",
+  "en": "Did the station put it on account?"
+ },
+ "df_ghi_no_khong": {
+  "vi": "Không — tài xế trả tiền túi (chi bù lúc tất toán tài xế)",
+  "lo": "ບໍ່ — ໂຊເຟີຈ່າຍເງິນເອງ (ຈ່າຍຄືນຕອນສະສາງໂຊເຟີ)",
+  "en": "No — the driver paid out of pocket (repaid at driver settlement)"
+ },
+ "df_ghi_no_co": {
+  "vi": "Có — trạm ghi nợ EPL (trả nhà cung cấp theo đợt)",
+  "lo": "ແມ່ນ — ປໍ້າຂຽນໜີ້ EPL ໄວ້ (ຈ່າຍຜູ້ສະໜອງເປັນງວດ)",
+  "en": "Yes — the station put it on EPL's account (paid to the supplier in batches)"
  }
 };

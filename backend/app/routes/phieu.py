@@ -1891,14 +1891,30 @@ def _duyet_do_dau(db, p, e, data, user):
         raise HTTPException(422, {"ma": "THIEU_SO", "loi": "Phải có số lít lớn hơn 0."})
     # giá 0 được: Bãi duyệt số lít, KT kho xăng dầu nhập giá lúc kiểm mục III (chặn giá 0 ở bước kiểm)
     diem = db.get(FuelPlace, e.place_id) if e.place_id else None
+    # 02/10 (chủ dự án): người duyệt chọn luôn "Trạm cho ghi nợ?" — có thì dòng mang ghi_no như ô "Ghi nợ tại trạm" trên
+    # phiếu: định khoản Có 4021 (nợ nhà cung cấp, bút toán lúc khoá), không vào tiền mặt tài xế / tất toán. Ghi nợ thì phải
+    # biết nợ ai: nhà cung cấp của trạm (như dòng lập trên phiếu — _ncc_theo_diem), trạm chưa gắn nhà cung cấp thì chặn.
+    ghi_no = str(data.get("ghi_no") or "").strip().lower() in ("1", "true", "co", "yes")
+    ncc = e.supplier_id or (diem.supplier_id if diem else None)
+    if ghi_no and not ncc:
+        raise BTC.loi3(422, "GHI_NO_THIEU_NCC",
+                       "Trạm %s chưa gắn nhà cung cấp — không ghi nợ được (không biết nợ ai). KT Chi phí gắn trạm với nhà cung "
+                       "cấp ở danh mục Nhà cung cấp, hoặc chọn «Không — tài xế trả tiền túi»." % (diem.name if diem else "đổ dầu"),
+                       "ປໍ້າ %s ຍັງບໍ່ໄດ້ຜູກກັບຜູ້ສະໜອງ — ຂຽນໜີ້ບໍ່ໄດ້ (ບໍ່ຮູ້ວ່າເປັນໜີ້ໃຜ). ບັນຊີລາຍຈ່າຍຜູກປໍ້າກັບຜູ້ສະໜອງ ຢູ່ລາຍການ "
+                       "ຜູ້ສະໜອງ, ຫຼື ເລືອກ «ບໍ່ — ໂຊເຟີຈ່າຍເງິນເອງ»." % (diem.name if diem else ""),
+                       "Station %s has no supplier linked — it cannot be put on account (no one to owe). The expense accountant links "
+                       "the station to a supplier in the Supplier list, or choose «No — the driver paid out of pocket»."
+                       % (diem.name if diem else ""), trip_id=p.id)
+    truoc_khoa = BTC.dau_khoa(db, p)        # phiếu đã khoá: dòng ghi nợ mới lệch bút toán nợ nhà cung cấp lúc khoá → chặn dưới
     so_dong = db.query(TripExpense).filter(TripExpense.trip_id == p.id, TripExpense.section == "fuel").count()
-    dong = TripExpense(trip_id=p.id, section="fuel", line_no=so_dong + 1, item_key="diesel",
-                       qty=lit, unit_price=gia, currency=str(data.get("currency") or e.currency or "VND").upper(),
-                       place=None, place_id=e.place_id, supplier_id=e.supplier_id, paid_by_epl=True, source="mua",
-                       acct_code=ma_tk_mac_dinh(p.company, "fuel", "mua"),
-                       note="Tài xế đổ dọc đường%s%s" % (" tại " + diem.name if diem else "",
-                                                         " — " + e.note if e.note else ""))
+    dong = _gan_tk(p, TripExpense(trip_id=p.id, section="fuel", line_no=so_dong + 1, item_key="diesel",
+                                  qty=lit, unit_price=gia, currency=str(data.get("currency") or e.currency or "VND").upper(),
+                                  place=None, place_id=e.place_id, supplier_id=ncc, paid_by_epl=True, source="mua",
+                                  ghi_no=ghi_no,
+                                  note="Tài xế đổ dọc đường%s%s" % (" tại " + diem.name if diem else "",
+                                                                    " — " + e.note if e.note else "")))
     db.add(dong); db.flush()
+    BTC.chan_sua_sau_khoa(db, p, truoc_khoa)
     e.status, e.expense_id = "approved", dong.id
     muc = _muc_cua(db, p)["fuel"]
     if muc.status not in ("wait", "entered"):
