@@ -828,6 +828,7 @@ def _ap_dong_chi(db, p, cac_dong, user, muc_tt):
             db.delete(e)
         db.flush()
         i = 0
+        da_dung = set()
         for d in theo_muc[m]:
             i += 1
             e = giu.get(d.get("id"))
@@ -841,6 +842,11 @@ def _ap_dong_chi(db, p, cac_dong, user, muc_tt):
                 _gan_tk(p, e, d.get("acct_code") or e.acct_code)
                 continue
             moi = _dong_tu_du_lieu(p, m, i, d, db, dat_gia=dat_gia)
+            # 02/10: dòng cũ gửi lại giữ đúng mã dòng — bút toán chờ (dong[].ref), phiếu chi mục V (expense_ids), sự kiện đã duyệt
+            # và màn Tổng hợp thu chi bên kế toán (line_key exp:<id>) khoá theo mã này; tạo mã mới mỗi lần lưu là đứt các dây đó
+            if d.get("id") in cu and d["id"] not in da_dung:
+                moi.id = d["id"]
+                da_dung.add(d["id"])
             if not dat_gia and d.get("id") in gia_cu and moi.source != "kho":
                 moi.unit_price, moi.currency = gia_cu[d["id"]]
             if moi.paid_by_epl is False and la_xuat_ban(p, moi):

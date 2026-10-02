@@ -14,6 +14,9 @@ Tiền: cước theo tiền của phiếu (USD / THB / LAK…), từng dòng chi
 phiếu. Định khoản từng dòng là mã thật trong danh mục Lào (`services/tai_khoan.py`); dòng chủ xe tự trả không có mã.
 Tiền thuê xe liên kết để ở `header.hire`, KHÔNG thành dòng định khoản: tài khoản chi phí thuê xe còn chờ anh Khampla chốt
 (hợp đồng kế toán, mục 8 lỗ hổng 1).
+
+Từ 02/10 (màn "Tổng hợp thu chi" bên Web anh Tune): mỗi dòng mang `line_key` (khoá ổn định) và `settlement` (dòng đã vào chứng
+từ nào, khoá hay còn lập phiếu được) — services/chung_tu_dong_do.py. Khoá cũ của gói giữ nguyên.
 """
 import json
 import os
@@ -125,8 +128,12 @@ def dong_danh_sach(p, ma_khach=None):
     }
 
 
-def dong_goi(db, p):
-    """Gói bàn giao `{header, details}` của một phiếu đã về và đã khoá."""
+def dong_goi(db, p, chung_tu=True):
+    """Gói bàn giao `{header, details}` của một phiếu đã về và đã khoá.
+
+    `chung_tu` (02/10, màn "Tổng hợp thu chi" bên Web anh Tune): mỗi dòng thêm `line_key` + `settlement` (dòng đã vào chứng từ
+    nào — services/chung_tu_dong_do.py), dòng cước thêm `debt`, header thêm `line_key_prefix`, hire thêm `line_key` · `settlement`
+    · `journal`. Gói tạo SO (gui_tune.dung_goi) không cần — truyền False."""
     from services import de_nghi_thu as DNT
     dong = _dong_chi(db, p)
     so = DNT.so_cua(db, p)
@@ -219,4 +226,8 @@ def dong_goi(db, p):
             "sale_to_owner": bool(la_xuat_ban(p, d)), "ghi_no": bool(d.ghi_no),
             "place_id": d.place_id, "supplier_id": d.supplier_id, "part_id": d.part_id, "note": d.note, "ref_id": d.id,
         })
-    return {"header": header, "details": details}
+    goi = {"header": header, "details": details}
+    if chung_tu:
+        from services import chung_tu_dong_do as CTD
+        CTD.gan(db, p, goi, dong, so)
+    return goi

@@ -163,6 +163,47 @@ def _so_json(d):
     return f
 
 
+def _so_vn(d):
+    """Số kiểu Việt: 24,7 · 30,5 · 33.000 · 1.234,56 (không đuôi 0 thừa)."""
+    d = Decimal(d).normalize()
+    nguyen, _, le = ("%f" % d).partition(".")
+    le = le.rstrip("0")
+    am = nguyen.startswith("-")
+    nguyen = "{:,}".format(abs(int(nguyen))).replace(",", ".")
+    return ("-" if am else "") + nguyen + ("," + le if le else "")
+
+
+def _ten_hang(db, p):
+    """Tên hàng chở trên DO: dòng hàng của phiếu (trip_goods, loại 'hang'), không có thì theo ô Loại hàng."""
+    from models import TripGoods
+    from routes.phieu import TEN_LOAI_HANG          # nạp muộn: routes.phieu nạp services này
+    ten = []
+    for g in db.query(TripGoods).filter(TripGoods.trip_id == p.id, TripGoods.loai == "hang").order_by(TripGoods.id):
+        if g.goods_name and g.goods_name not in ten:
+            ten.append(g.goods_name)
+    return ", ".join(ten) or TEN_LOAI_HANG.get(p.goods_type or "iron_ore", p.goods_type or "")
+
+
+def _dong_cuoc_so(db, p, h0, gia, tien):
+    """Khoá thêm cho dòng cước của gói SO (02/10, anh Khampla hỏi tên mặt hàng / đơn vị; chủ dự án chốt):
+    `uom` ton | trip, `qty` (số tấn tính cước — trọn chuyến là 1), `unit_price` (đơn giá mỗi tấn — trọn chuyến là cả cước),
+    `item_name` (tên dòng phiếu bán, ≤ 100 ký tự), `order_line_name` (tên dòng SO, ≤ 255: dòng SO bên kế toán chỉ nhận số
+    lượng nguyên nên ghi 1 Chuyến, số tấn × đơn giá nằm trong tên). Bên kế toán chỉ ghi Tấn khi qty × unit_price = cước đúng
+    từng chữ số; lệch thì 1 Chuyến × cước (sp_Logistics_CreateSalesOrder, script 20261002_logistics_sales_order_line_unit)."""
+    hang = _ten_hang(db, p)
+    tuyen = "%s → %s" % (p.origin or "", p.destination or "")
+    goc = "Cước vận chuyển %s" % hang
+    if h0.get("price_basis") == "trip":
+        return {"uom": "trip", "qty": 1, "unit_price": _so_json(gia),
+                "item_name": ("%s · %s" % (goc, tuyen))[:100],
+                "order_line_name": ("%s · trọn chuyến · %s" % (goc, tuyen))[:255]}
+    sl = _tien(h0.get("billed_qty"), "Số tấn tính cước (billed_qty)")
+    dg = _tien(h0.get("unit_price"), "Đơn giá cước mỗi tấn (unit_price)")
+    return {"uom": "ton", "qty": _so_json(sl), "unit_price": _so_json(dg),
+            "item_name": ("%s · %s" % (goc, tuyen))[:100],
+            "order_line_name": ("%s · %s tấn × %s %s · %s" % (goc, _so_vn(sl), _so_vn(dg), tien, tuyen))[:255]}
+
+
 def ma_khach_moi(p):
     """Mã khách bên kế toán máy TỰ TẠO cho khách chưa có mã (01/10: chủ dự án cho nối hết qua hệ anh Tune) — 18 ký tự,
     đúng luật mã bên đó (loi_ma_khach)."""
@@ -175,7 +216,7 @@ def dung_goi(db, p, ma_tam=None):
     toán (xem trước, hoặc gói dựng ngay sau khi tạo khách)."""
     if not BG.ban_giao_duoc(p):
         _loi("DO_CHUA_KHOA", "Phiếu %s chưa về hoặc chưa khoá — DO xong mới đề nghị thu." % p.doc_no, 409)
-    g = BG.dong_goi(db, p)
+    g = BG.dong_goi(db, p, chung_tu=False)        # gói SO chỉ lấy header + dòng thu — không cần trạng thái chứng từ từng dòng
     h0 = g["header"]
     do_id = h0["do_id"]
     if len(do_id) > 100 or not MA_HOP_LE.match(do_id):
@@ -211,6 +252,7 @@ def dung_goi(db, p, ma_tam=None):
                                                ("distance_km", tuyen.get("distance_km"))) if v is not None}})
     details = [{"line_no": 1, "kind": "thu", "charge_type": "freight",
                 "name": thu.get("name") or "Cước vận chuyển %s" % p.doc_no, "actual_amount": _so_json(gia), "currency": tien}]
+    details[0].update(_dong_cuoc_so(db, p, h0, gia, tien))
     body = {"schemaVersion": 1, "header": header, "details": details}
     tom_tat = {"do_id": do_id, "doc_no": p.doc_no, "customer_code": ma_khach, "customer_name": p.customer_name,
                "route_id": ma_tuyen, "route_name": tuyen.get("name"), "currency": tien, "final_selling_price": _so_json(gia),

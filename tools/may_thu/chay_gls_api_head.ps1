@@ -24,6 +24,9 @@ if ($kq -match "[1-9]\d* Error\(s\)") { "BUILD LỖI - không chạy 5090"; $kq 
 $env:LogisticsSource__BaseUrl = "http://127.0.0.1:8011/api/"
 $env:LogisticsSource__ApiKey = (Get-Content $tepKhoa -Raw).Trim()
 $env:ASPNETCORE_ENVIRONMENT = "Development"
+# Trang "Tổng hợp thu chi" (02/10): bật trên máy thử; phiếu chi nhánh chi = loại 60 "Chi khác"
+$env:CashVoucherCombined__Enabled = "true"
+$env:CashVoucherCombined__PaymentDocumentTypeId = "60"
 Start-Process -FilePath "dotnet" -ArgumentList (Join-Path $out "Backend.API.dll"), "--urls", $url -WorkingDirectory $api `
   -RedirectStandardOutput (Join-Path $sp "gls_api.log") -RedirectStandardError (Join-Path $sp "gls_api.err") -WindowStyle Hidden
 $ok = $false
