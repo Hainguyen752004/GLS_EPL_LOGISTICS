@@ -24,7 +24,7 @@ Tham số --dot-1: đợt 1, CHƯA đặt LogisticsSource — API (từ commit c
 ĐÚNG; các dòng cần DO thì bỏ qua.
 
 Không theo chuyển hướng, giống API anh Tune (`AllowAutoRedirect = false`): địa chỉ chuyển hướng là báo SAI.
-Thoát mã 0 khi không có dòng SAI, 1 khi có. Hướng dẫn: DOCS/md/HUONG_DAN_TRIEN_KHAI_ANH_TUNE.md, mục 8.
+Thoát mã 0 khi không có dòng SAI, 1 khi có. Hướng dẫn: DOCS/md/anh_Tune_taichinh_quaithuaram/md/HUONG_DAN_TRIEN_KHAI_ANH_TUNE.md, mục 8.
 """
 import argparse
 import datetime as dt

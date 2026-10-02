@@ -8,7 +8,7 @@
     GET  /api/handover/xem-truoc/{tid}            (Sếp, kế toán) xem đúng gói bên kia sẽ nhận của một phiếu
 
 Khoá máy: `Authorization: Bearer <khoá>` (`services/bao_mat.py:may_qlsx_goi`), riêng với khoá của trang kế toán tạm.
-Đóng gói ở `services/ban_giao.py`. Hợp đồng: `DOCS/md/HOP_DONG_API_KE_TOAN_ANH_TUNE.md`, mục 12.5 và 12.7.4.
+Đóng gói ở `services/ban_giao.py`. Hợp đồng: `DOCS/md/anh_Tune_taichinh_quaithuaram/md/HOP_DONG_API_KE_TOAN_ANH_TUNE.md`, mục 12.5 và 12.7.4.
 """
 import datetime as dt
 import secrets

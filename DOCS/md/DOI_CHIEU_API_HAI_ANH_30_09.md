@@ -5,7 +5,7 @@ Ngày 30/09/2026, chiều.
 ## 0. Em đã đọc và thử những gì
 
 - **Tài liệu:**
-  - `anh_Tune_taichinh_quaithuaram/CM-CASH-VOUCHER-DEMOLAO-API-GUIDE.md`: API thu chi DemoLao, nhánh `feat/DemoLao`.
+  - `anh_Tune_taichinh_quaithuaram/md/CM-CASH-VOUCHER-DEMOLAO-API-GUIDE.md`: API thu chi DemoLao, nhánh `feat/DemoLao`.
   - `anh_toan_kho/`:
     - bản API kho đã biên dịch `Backend.API.dll`, kèm tệp mô tả `Backend.API.xml`;
     - các tệp `appsettings` (em chỉ xem tên khoá, không đọc mật khẩu);
