@@ -59,6 +59,8 @@ for r in (dang_nhap, danh_muc, tuyen, phieu, phieu_linh, tat_toan, theo_doi, vi_
           kho, kho_hang, nha_cung_cap, quy_trinh, acc_code, chung_tu, ban_hang, chu_xe, hoa_don, sua_chua,
           the_cao_toc, anh, hop_dong, giao_nhan, can_mo, lien_thong, kho_xem, de_nghi, ban_giao):
     app.include_router(r.router)
+app.include_router(__import__("routes.ho_so_do", fromlist=["router"]).router)   # Hồ sơ DO hai bên (02/10) — chỉ đọc
+app.include_router(__import__("routes.tat_toan_doi_tac", fromlist=["router"]).router)   # Tất toán đối tác (02/10)
 
 # Giao diện: / → index.html ; mọi tệp khác lấy thẳng từ thư mục frontend
 app.mount("/css", StaticFiles(directory=os.path.join(FRONTEND, "css")), name="css")

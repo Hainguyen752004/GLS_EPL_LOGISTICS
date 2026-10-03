@@ -67,3 +67,44 @@
 }
 @media print{.tt2-than{display:block}.tt2-xem{max-height:none;overflow:visible}}
 .tt2-dong{white-space:nowrap}
+/* Bảng tính chi tiết (02/10): mỗi phiếu một dòng + ba cột cộng dồn; bấm dòng mở ra từng dòng tiền. Bảng cuộn trong khung. */
+.tt2-bt-dau{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;font-size:13px}
+.tt2-bt-dau .grow{flex:1}
+.tt2-bang{min-width:740px}
+.tt2-bang td.so-p{white-space:nowrap}
+.tt2-bang td .phu,.tt2-dong-tien td .phu{display:block;font-size:11px;color:var(--ink-3);font-weight:400}
+.tt2-bang td.tuyen{min-width:120px;max-width:200px}
+.tt2-bang td.num{white-space:nowrap}
+.tt2-dong-tien td.mono{font-size:11px;white-space:nowrap}
+.tt2-bang th.cd,.tt2-bang td.cd{background:#F7F9F6}
+.tt2-bang thead th.cd{background:var(--bg-2)}
+.tt2-bang tr.tt2-p{cursor:pointer}
+.tt2-bang tr.tt2-p.mo td{background:var(--green-soft)}
+.tt2-bang tr.tt2-p.mo td.cd{background:#D2E6DD}
+.tt2-bang .mui{display:inline-block;width:12px;color:var(--ink-3);transition:transform .15s}
+.tt2-bang tr.mo .mui{transform:rotate(90deg)}
+.tt2-bang tfoot td{white-space:nowrap}
+.tt2-mo > td{padding:8px 10px 10px 26px!important;background:#FBFCFA}
+.tt2-dong-tien{width:100%;border:1px solid var(--line);border-radius:8px;background:var(--paper)}
+.tt2-dong-tien td,.tt2-dong-tien th{font-size:12px}
+.tt2-dong-tien tr.ngoai td{color:var(--ink-3)}
+.tt2-dong-tien .tag{font-size:11px;padding:1px 7px}
+.tt2-rong{padding:8px 10px;font-size:12px;color:var(--ink-3);border:1px dashed var(--line-2);border-radius:8px;background:var(--paper)}
+/* thanh trên một hàng ở 1366–1440: ô tìm co theo chỗ trống, không đẩy ô Kỳ xuống hàng hai */
+.tt2-top .o-tim{width:auto;flex:1 1 160px;min-width:150px;max-width:280px}
+.tt2-top .grow{flex:0 0 0}
+/* phần mở ra (từng dòng tiền) không nong bảng — khối bọc rộng 0, tối thiểu bằng ô, tự cuộn ngang nếu cần */
+.tt2-mo-boc{width:0;min-width:100%;overflow-x:auto}
+.tt2-bang thead th{white-space:normal;vertical-align:bottom;line-height:1.25}
+/* cột cố định: bảng con của phiếu đang mở không làm rộng cột (vừa khung 1440 × 900); cột tuyến lấy phần còn lại */
+.tt2-bang{table-layout:fixed;width:100%}
+.tt2-bang col.c-so{width:150px} .tt2-bang col.c-n{width:86px}
+.tt2-bang td{overflow:hidden;text-overflow:ellipsis}
+.tt2-bang tr.tt2-mo > td{overflow:visible}
+.tt2-mo-boc{width:auto;min-width:0}
+@media print{.tt2-bang{table-layout:auto}.tt2-bang col{width:auto!important}}
+.tt2-so small.tt2-cho,.tt2-bang .tt2-cho{display:block;margin-top:2px;font-size:11px;font-weight:600;color:var(--amber)}
+/* 03/10 — nút Chốt khoá khi còn tạm ứng chờ thủ quỹ bên kế toán */
+.tt2-khoa{display:inline-flex;flex-direction:column;align-items:flex-end;gap:2px}
+.tt2-khoa .btn[disabled]{opacity:.5;cursor:not-allowed}
+.tt2-khoa small{font-size:11px;font-weight:600;color:var(--amber)}

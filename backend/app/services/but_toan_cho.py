@@ -35,7 +35,9 @@ GIAO ƯỚC (module khác gọi — giữ cố định):
 XUẤT KHO CHO CHUYẾN (chủ dự án 01/10: "xuất dầu là xuất nội bộ và còn là xuất bán") — cũng ghi lúc khoá phiếu
 (ghi_khoa_phieu), một LẦN XUẤT một bút toán, ngày = ngày xuất thật (dong_xuat_kho):
     xuat_noi_bo   xe nhà: dầu kho Nợ 625 / Có 1371 · phụ tùng kho Nợ 614 / Có 1371 — giá vốn bình quân kho
-    xuat_ban      xe thuê, EPL ứng: Nợ 4022 / Có 707 theo GIÁ BÁN (đối tượng chủ xe) + Nợ 607 / Có 1371 theo giá vốn
+    xuat_ban      xe thuê, EPL ứng: Nợ 607 / Có 1371 theo giá vốn. Phần BÁN (theo giá bán, công nợ đối tác) từ 02/10 là SO
+                  nhiên liệu bên hệ anh Tune (services/so_nhien_lieu.py) — không còn vế Nợ 4022 / Có 707 (chủ dự án chốt 02/10);
+                  bản đã gửi trước đó (có hai vế) đứng yên.
     xe thuê chủ xe tự trả: không có. Khác `ban_chu_xe` (services/tra_chu_xe.py): đó là phiếu BÁN Ở QUẦY của kho tạm, trừ
     riêng vào tiền trả (tinh_tru); còn đây là dòng kho trên phiếu xuất xe, trừ qua `ung_truoc` của tinh_phieu.
 
@@ -68,7 +70,7 @@ NGUON_KHOA_PHIEU = (THUE_XE, NO_NCC)
 # XUẤT KHO cho chuyến (chủ dự án 01/10: "xuất dầu là xuất nội bộ và còn là xuất bán") — cũng ghi lúc khoá phiếu, nhưng MỘT
 # LẦN XUẤT KHO một bút toán (ma_nguon "dau:<mã lần xuất>" · "pt:<mã lần xuất>" của kho tạm), để ngày chứng từ là ngày xuất thật
 XUAT_NOI_BO = "xuat_noi_bo"  # xe nhà: dầu kho Nợ 625 / Có 1371 · phụ tùng kho Nợ 614 / Có 1371, theo giá vốn bình quân kho
-XUAT_BAN = "xuat_ban"        # xe thuê, EPL ứng: Nợ 4022 / Có 707 theo GIÁ BÁN + Nợ 607 / Có 1371 theo giá vốn bình quân kho
+XUAT_BAN = "xuat_ban"        # xe thuê, EPL ứng: Nợ 607 / Có 1371 theo giá vốn bình quân kho (phần bán: SO nhiên liệu, 02/10)
 NGUON_XUAT_KHO = (XUAT_NOI_BO, XUAT_BAN)
 
 
@@ -413,16 +415,16 @@ def dong_xuat_kho(db, p, cac_dong=None):
     dầu có thể gồm nhiều dòng cùng kho) — một lần xuất một bút toán, ngày chứng từ = ngày xuất thật (`_lan_xuat`).
 
       · xe nhà → `xuat_noi_bo`: định khoản của dòng (tai_khoan.tk_dong — luật: dầu 625/1371, phụ tùng 614/1371) bằng GIÁ VỐN.
-      · xe thuê → `xuat_ban`: hai dòng — doanh thu theo định khoản của dòng (luật: 4022/707) bằng GIÁ BÁN (`sale_price`, đúng
-        số tinh_toan.tien_dong trừ vào tiền trả chủ xe; chưa gõ giá bán thì tiền trừ tạm theo giá vốn — bút toán theo đúng số
-        đó, ghi rõ `gia_ban_tam`), đối tượng chủ xe; và giá vốn Nợ 607 / Có 1371 bằng GIÁ VỐN, không đối tượng.
+      · xe thuê → `xuat_ban`: giá vốn Nợ 607 / Có 1371 bằng GIÁ VỐN, không đối tượng. Phần bán theo GIÁ BÁN (công nợ đối tác)
+        là SO nhiên liệu bên hệ anh Tune từ 02/10 (services/so_nhien_lieu.py) — trước đó là dòng doanh thu Nợ 4022 / Có 707
+        ngay trong bút toán này.
     GIÁ VỐN = số lượng × `unit_price` của dòng: giá bình quân của đúng kho LÚC XUẤT do kho tạm trả về (dầu: cap_phat chép
     `unit_cost_lak` của dòng sổ lên dòng; phụ tùng: giá bình quân đọc ngay trước khi xuất, cùng giá kho tạm ghi trên dòng sổ).
     Dòng đã xuất không sửa được giá (phieu._ap_gia, _ap_dong_chi) nên số này đứng yên.
     Dòng mang mã người dùng tự chọn có vế Có 4021 thì đã nằm trong `no_ncc` — bỏ ở đây để không ghi hai lần."""
     from models import TripExpense
     from services.ban_giao import _ten as ten_dong
-    from services.tinh_toan import la_xuat_ban, tien_dong, ty_gia
+    from services.tinh_toan import la_xuat_ban, ty_gia
     if cac_dong is None:
         cac_dong = (db.query(TripExpense).filter(TripExpense.trip_id == p.id)
                     .order_by(TripExpense.section, TripExpense.line_no).all())
@@ -458,17 +460,9 @@ def dong_xuat_kho(db, p, cac_dong=None):
             if (d.currency or "LAK").upper() != "LAK":
                 chung["ty_gia"] = ty
             if thue and la_xuat_ban(p, d) and co != TK.KHO:
-                ban_tam = d.sale_price is None
-                gia_ban = d.unit_price if ban_tam else d.sale_price
-                x = dict(chung, no=no, co=co, tien=round(tien_dong(p, d)), ve="doanh_thu", don_gia=gia_ban,
-                         doi_tuong={"loai": "chu_xe", "ref_id": p.owner_id} if p.owner_id else None,
-                         dien_giai="Xuất bán cho chủ xe — doanh thu %s × %s (%s) · %s" % (
-                             ten, _so_doc(gia_ban), "chưa có giá bán, tạm theo giá vốn" if ban_tam else "giá bán", p.doc_no))
-                if ban_tam:
-                    x["gia_ban_tam"] = True
-                dong.append(x)
+                # 02/10: chỉ vế GIÁ VỐN — phần bán (giá bán, công nợ đối tác) là SO nhiên liệu bên kế toán (so_nhien_lieu)
                 dong.append(dict(chung, no=TK.GIA_VON, co=TK.KHO, tien=von, ve="gia_von", don_gia=gia_von, doi_tuong=None,
-                                 dien_giai="Xuất bán cho chủ xe — giá vốn %s × %s (bình quân kho) · %s" % (
+                                 dien_giai="Xuất bán cho chủ xe — giá vốn %s × %s (bình quân kho; phần bán: SO nhiên liệu) · %s" % (
                                      ten, _so_doc(gia_von), p.doc_no)))
             else:
                 dong.append(dict(chung, no=no, co=co, tien=von, ve="gia_von", don_gia=gia_von, doi_tuong=None,
@@ -493,10 +487,10 @@ def ghi_khoa_phieu(db, p, by_user=None, cac_dong=None):
     (`xuat_noi_bo` / `xuat_ban`, một bản mỗi lần xuất). Nguồn nào không còn dòng thì huỷ bản chưa gửi.
     Trả {nguon: bản} cho thue_xe / no_ncc, {nguon: [bản, …]} cho hai nguồn xuất kho.
 
-    Vì sao bút toán xuất kho ghi LÚC KHOÁ chứ không lúc cấp dầu / xuất phụ tùng (dù hàng rời kho trước đó): GIÁ BÁN cho chủ
-    xe chỉ có khi KT kho xăng dầu (mục III) / KT Chi phí (mục V) kiểm mục, sau lúc xuất; tiền trả chủ xe tính từ phiếu ĐÃ
-    KHOÁ — ghi lúc khoá thì Nợ 4022 / Có 707 đúng bằng số trừ vào tiền trả; mở khoá huỷ / gỡ cùng thue_xe, no_ncc. Ngày
-    chứng từ vẫn là ngày xuất thật (bút toán chưa gửi nên ghi muộn không lệch kỳ)."""
+    Vì sao bút toán xuất kho ghi LÚC KHOÁ chứ không lúc cấp dầu / xuất phụ tùng (dù hàng rời kho trước đó): phiếu chỉ đứng yên
+    (giá, số lượng, ai trả) từ lúc khoá; mở khoá huỷ / gỡ cùng thue_xe, no_ncc. Phần BÁN cho đối tác (giá bán) từ 02/10 là SO
+    nhiên liệu gửi cùng nút «Tạo SO bên kế toán» sau khoá — không nằm trong bút toán này. Ngày chứng từ vẫn là ngày xuất thật
+    (bút toán chưa gửi nên ghi muộn không lệch kỳ)."""
     ngay = dt.date.today()
     bo = dong_khoa_phieu(db, p, cac_dong)
     ra = {}

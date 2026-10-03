@@ -1,29 +1,37 @@
-/* Đề nghị theo DO — ໃບສະເໜີຕາມ DO (sếp 30/09).
+/* Đề nghị theo DO — HỒ SƠ DO HAI BÊN (chủ dự án 02/10/2026).
  *
- * "DO nào phiếu chi gì, trạng thái gì; DO nào phiếu thu gì, trạng thái gì." Mỗi DO một dòng:
- *   · Đề nghị chi — đi theo từng bước của chuyến: tạm ứng (TU), xuất nhiên liệu (NL, mỗi kho một tờ), chi các mục III–VI
- *     (chờ nhập → đã nhập → đã kiểm → đã ghi sổ → đã chi);
- *   · Đề nghị thu — một tờ khi DO xong (khoá phiếu), gửi bên công nợ (anh Tune);
- *   · Chứng từ — bao nhiêu tờ của DO đã đối chiếu (đánh dấu tay ở tab Sổ chứng từ).
- * Bấm một DO → khung phải kể từng tờ, bấm tờ mở màn Phiếu đề nghị chi / thu để in.
- *
- * Tab "Sổ chứng từ": tờ bên mình sinh ở mỗi bước, để in / xem / định khoản và đánh dấu đối chiếu tay. Chủ dự án chốt 01/10
- * bỏ trang kế toán tạm phần tiền (8030 chỉ còn là kho tạm, việc tiền đi qua hệ kế toán anh Tune): bỏ thanh "Kết nối kế
- * toán", nút Đẩy hết / Đẩy từng tờ, lỗi đẩy, mã phiếu bên trang tạm; hộp Cấu hình chỉ còn hai mã bên kế toán cấp.
- * API: GET /api/de-nghi-theo-do?thang=&q= · GET /api/chung-tu?trip_id= · sổ: /api/chung-tu, POST /api/chung-tu/{id}/da-day ·
- * hai mã: GET/PUT /api/kho-tam/cau-hinh (máy chủ trước 52f673c: /api/ke-toan/cau-hinh).
+ * Chủ dự án hỏi "trang này có chức năng gì, có phải để xem qua lại giữa bên mình và anh Tune không" — đúng: mỗi DO, bên điều
+ * xe (trang này) đề nghị chi / xuất kho / thu những gì, và bên kế toán (hệ anh Tune) đã lập chứng từ nào, trạng thái ra sao.
+ * Bảy nhóm, mỗi nhóm một cặp "bên điều xe ↔ bên kế toán":
+ *   tam_ung  Tạm ứng           PTU                     ↔ phiếu chi «Chi trước» CTR
+ *   chi_muc  Chi mục V / VI     mục V · VI quỹ trả ngay  ↔ phiếu chi «Chi khác» CKH
+ *   xuat_kho Xuất kho           PLNL · phụ tùng kho     ↔ bút toán xuất nội bộ (625 · 614/1371) · xuất bán (4022/707 + 607/1371)
+ *   but_toan Thuê xe · nợ NCC   khoá phiếu              ↔ bút toán 621/4022 · …/4021 (GL…)
+ *   thu      Đề nghị thu        PDT                     ↔ SO dịch vụ vận chuyển TK-… · đã thu bao nhiêu
+ *   so_nl    SO nhiên liệu      xe thuê lấy dầu kho EPL ↔ SO nhiên liệu ghi công nợ đối tác (đường mới — sắp có)
+ *   tra_dt   Trả đối tác        đề nghị TCX             ↔ phiếu chi «Chi khác»
+ * Mỗi nhóm một chữ trạng thái (máy chủ tính): khong · chua (bên điều xe chưa xong) · cho_gui · cho_kt (kế toán đã lập, chờ chi /
+ * thu / ghi sổ) · xong · loi. Trái: DO của tháng, bảy ô màu mỗi DO. Phải: một DO — tab "Hai bên theo nhóm" (bảy thẻ) và tab
+ * "Từng dòng tiền" (settlement của gói DO: dòng nào đã vào chứng từ nào).
+ * API: GET /api/ho-so-do?thang=&q= · GET /api/ho-so-do/{trip_id} (routes/ho_so_do.py, chỉ đọc) · sổ: /api/chung-tu,
+ * POST /api/chung-tu/{id}/da-day · hai mã: GET/PUT /api/kho-tam/cau-hinh (máy chủ trước 52f673c: /api/ke-toan/cau-hinh).
+ * SO nhiên liệu xe thuê: đọc thêm GET /api/tat-toan-doi-tac?ky=&owner_id= (nếu máy chủ có) — không có thì "sắp có".
  */
 (function () {
   const { API, NN, esc, so, AUTH } = EPL;
-  let root, tab = 'do', D = { ds: [] }, loc = '', tim = '', chonId = null, hen = null;
+  let root, tab = 'do', D = { ds: [] }, loc = '', tim = '', chonId = null, hen = null, tabCt = 'nhom';
   let SO_LOAI = [], soLoaiChon = '';
+  const CT = {};                     // trip_id → hồ sơ đầy đủ (GET /api/ho-so-do/{id})
+  const NL = {};                     // trip_id → dòng tất toán đối tác (SO nhiên liệu) | null
   const XEM_SO = ['acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel', 'depot', 'admin'];
   // loại đối tượng của tờ (services/chung_tu.py) → nhãn đã dịch; trước đây hiện mã thô "tai_xe", "khach"… dưới tên
   const DOI_TUONG = { khach: 'customer', tai_xe: 'driver', chu_xe: 'owner', kho: 'fuel_kho', ncc: 'supplier' };
-  const MUC = [['fuel', 'III', 'e_fuel'], ['travel', 'IV', 'e_travel'], ['repair', 'V', 'e_repair'], ['other', 'VI', 'e_other']];
+  const NHOM = ['tam_ung', 'chi_muc', 'xuat_kho', 'but_toan', 'thu', 'so_nl', 'tra_dt'];
+  const MUC = ['xong', 'cho_kt', 'cho_gui', 'chua', 'loi', 'khong'];
+  const LOC = ['', 'em', 'kt', 'loi', 'xong'];
   const q = (s) => root.querySelector(s);
   const thangNay = () => EPL.thangNay();    // giờ máy — toISOString là giờ UTC, 0–7 giờ sáng ngày 1 ra tháng trước
-  const tagTT = (s) => `<span class="tag dt_${esc(s)}">${NN.h('dt_st_' + s)}</span>`;
+  const duocVao = (id) => EPL.manCuaVai(AUTH.role).some(m => m.id === id);
   /** Tên loại chứng từ theo tiếng đang xem — từ điển `ctl_<mã>` (rà 02/10: máy chủ chỉ gửi tên Việt / Lào, tiếng Anh hiện chữ
    *  Việt). Loại mới chưa có khoá thì lấy tên máy chủ gửi. `tho` = chữ thuần (cho <option>). */
   function tenLoai(ma, vi, lo, tho) {
@@ -37,7 +45,7 @@
   };
   /* Tháng trống (01/10): mở màn đầu tháng thấy "Chưa có dữ liệu", tưởng hỏng. TU_DONG = lượt tải đầu khi vào màn không kèm
    * tháng → tháng trống thì sang tháng gần nhất có DO, BAO giữ dòng báo; GAN = tháng cho nút ở khung trống. */
-  let TU_DONG = false, BAO = null, GAN = null;
+  let TU_DONG = false, BAO = null, GAN = null, GIU_CT = null;
   const nhanThang = (v) => (v ? v.slice(5, 7) + '/' + v.slice(0, 4) : '');
 
   /** Tháng `th` có phiếu không; không có thì tháng nào GẦN NHẤT có (cùng bộ lọc `loc` của /api/trips). Hỏi hai lần, mỗi lần
@@ -66,67 +74,121 @@
       ${!D.ds.length && GAN ? `<button type="button" class="btn sm primary" data-thang="${esc(GAN)}">${NN.h('thang_xem_gan', { thang: nhanThang(GAN) })}</button>` : ''}</div>`;
   }
 
-  /* ---------------------------------------------------------------- lọc */
-  const conXk = (x) => x.nhien_lieu.some(v => v.status === 'cho');
-  const conChi = (x) => x.tam_ung.some(v => v.status === 'cho')
-    || Object.values(x.muc).some(m => m.status !== 'paid');
-  // chờ thu = DO đã khoá mà chưa thu đủ: chưa lập / chờ gửi / đã tạo SO / thu một phần (trạng thái theo hệ kế toán, 01/10)
-  const choThu = (x) => ['cho_gui', 'chua_lap', 'da_tao_so', 'thu_mot_phan'].includes(x.thu.trang_thai);
-  function dsLoc() { return D.ds.filter(x => !loc || (loc === 'chi' ? conChi(x) : loc === 'xk' ? conXk(x) : choThu(x))); }
-
-  /* ---------------------------------------------------------------- bảng DO */
-  function chipDeNghi(x) {
-    const tu = x.tam_ung.map(v => `<span class="ct2-chip ${esc(v.status)}" title="${esc(v.so)}">TU · ${NN.h('v_' + v.status)}</span>`).join('');
-    const nl = x.nhien_lieu.length ? (() => {
-      const cho = x.nhien_lieu.filter(v => v.status === 'cho').length;
-      return `<span class="ct2-chip ${cho ? 'cho' : 'da_cap'}" title="${esc(x.nhien_lieu.map(v => v.so).join(', '))}">NL ×${x.nhien_lieu.length} · ${NN.h(cho ? 'v_cho' : 'v_da_cap')}</span>`;
-    })() : '';
-    const muc = `<span class="ct2-muc">${MUC.map(([k, la, ten]) => {
-      const m = x.muc[k];
-      return m ? `<i class="${esc(m.status)}" title="${esc(NN.t(ten))} · ${esc(NN.t('stt_' + m.status))}">${la}</i>`
-        : `<i class="khong" title="${esc(NN.t(ten))} · —">${la}</i>`;
-    }).join('')}</span>`;
-    return { chi: tu + muc, xk: nl || '<span class="muted">—</span>' };
+  /* ---------------------------------------------------------------- lọc theo trạng thái hai bên */
+  const mucCua = (x, k) => ((x.nhom || {})[k] || {}).muc || 'khong';
+  const coMuc = (x, ...m) => NHOM.some(k => m.includes(mucCua(x, k)));
+  const xongHet = (x) => NHOM.some(k => mucCua(x, k) !== 'khong') && NHOM.every(k => ['khong', 'xong'].includes(mucCua(x, k)));
+  const KHOP = { '': () => true, em: (x) => coMuc(x, 'chua'), kt: (x) => coMuc(x, 'cho_gui', 'cho_kt'), loi: (x) => coMuc(x, 'loi'), xong: xongHet };
+  const NHAN_LOC = { '': 'all', em: 'hs_loc_em', kt: 'hs_loc_kt', loi: 'hs_loc_loi', xong: 'hs_loc_xong' };
+  function dsLoc() { return D.ds.filter(KHOP[loc] || KHOP['']); }
+  function veLoc() {
+    q('#ct2-loc').innerHTML = LOC.map(k => `<button type="button" data-loc="${k}" class="${loc === k ? 'on' : ''}">
+      <span>${NN.h(NHAN_LOC[k])}</span><b>${D.ds.filter(KHOP[k]).length}</b></button>`).join('');
+    q('#ct2-loc').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { loc = b.dataset.loc; veBang(); veCt(); }));
   }
 
+  /* ---------------------------------------------------------------- nhãn */
+  const tagMuc = (m) => `<span class="tag hs-tm-${esc(m)}">${NN.h('hs_m_' + m)}</span>`;
+  const tag = (mau, khoa) => EPL.tag(mau, khoa);
+  const PC = { da_gui: ['transit', 'tt_cho_chi'], da_chi: ['paid', 'ck_da_chi_ngan'], loi: ['unpaid', 'ck_loi_ngan'], phieu_mat: ['unpaid', 'ck_phieu_mat'] };
+  const SO_TT = { chua_thu: ['dispatched', 'hs_so_chua_thu'], thu_mot_phan: ['partial', 'dt_st_thu_mot_phan'], da_thu: ['paid', 'dt_st_da_thu'],
+    khong_thay: ['unpaid', 'hs_so_khong_thay'], failed: ['unpaid', 'ck_loi_ngan'], conflict: ['unpaid', 'hs_so_trung'] };
+  const STT = { wait: 'plain', entered: 'dispatched', verified: 'dispatched', booked: 'transit', paid: 'paid' };
+  const tagPC = (tt) => tag(...(PC[tt] || ['plain', 'v_' + tt]));
+  function tagGL(it) {
+    if (it.tt === 'can_dao') return tag('unpaid', 'btc_can_dao');
+    if (it.loi) return tag('unpaid', 'ck_loi_ngan');
+    if (it.tt === 'cho_gui') return tag('transit', 'dt_st_cho_gui');
+    return it.chinh_thuc ? tag('paid', 'hs_gl_chinh_thuc') : tag('dispatched', 'hs_gl_so_tam');
+  }
+  const tienLak = (v) => (v == null ? '' : `<span class="tien">${so(v)} LAK</span>`);
+  const tienCcy = (v, ma) => (v == null ? '' : `<span class="tien">${EPL.tien(v, ma)}</span>`);
+  const mono = (s) => `<span class="mono">${esc(s)}</span>`;
+  const rong = (k, thay) => `<div class="t"><span class="rong">${NN.h(k, thay)}</span></div>`;
+  const dongT = (...p) => `<div class="t">${p.filter(Boolean).join(' ')}</div>`;
+
+  /** Một tờ / chứng từ trong một bên của thẻ. */
+  function oTo(it) {
+    switch (it.loai) {
+      case 'ptu': return dongT(mono(it.so), tag(it.tt === 'da_cap' ? 'paid' : 'transit', 'v_' + it.tt), tienLak(it.tien_lak));
+      case 'ctr': case 'ckh':
+        return dongT(it.so ? mono(it.so) : `<span class="rong">${NN.h('hs_chua_co_so')}</span>`, tagPC(it.tt), tienLak(it.tien_lak),
+          it.ref && it.ref !== it.so ? `<span class="small muted">${esc(it.ref)}</span>` : '')
+          + (it.loi ? `<div class="t"><span class="small neg">${esc(it.loi)}</span></div>` : '');
+      case 'muc': return dongT(`<b>${NN.h('hs_muc', { m: it.muc })}</b>`, tag(STT[it.tt] || 'plain', 'stt_' + it.tt),
+        it.so ? mono(it.so) : '', tienLak(it.tien_lak));
+      case 'plnl': return dongT(mono(it.so), tag(it.tt === 'da_cap' ? 'paid' : 'transit', 'v_' + it.tt), `<span class="tien">${so(it.lit, 0)} L</span>`,
+        it.kho ? `<span class="small muted" lang="lo">${esc(it.kho)}</span>` : '');
+      case 'pt_kho': return dongT(NN.h('hs_pt_kho', { da: it.da_xuat, n: it.n }));
+      case 'khoa': return dongT(tag(it.tt === 'da_khoa' ? 'paid' : 'plain', it.tt === 'da_khoa' ? 's_locked' : 'hs_chua_khoa'),
+        `<span class="small muted">${[it.thue ? NN.h('hs_kt_thue') : '', it.ncc ? NN.h('hs_kt_ncc') : ''].filter(Boolean).join(' · ')}</span>`);
+      case 'gl': return dongT(it.so ? mono(it.so) : `<span class="rong">${NN.h('hs_chua_co_so')}</span>`, tagGL(it),
+        `<span class="small muted">${NN.h('btc_nguon_' + it.nguon)}</span>`, tienCcy(it.tien, it.ccy),
+        it.id && duocVao('but-toan-cho') ? `<a data-bt="${esc(it.id)}">${NN.h('hs_xem_but_toan')}</a>` : '');
+      case 'pdt': return dongT(it.so ? mono(it.so) : '', tag('dt_' + it.tt, 'dt_st_' + it.tt), tienCcy(it.tien, it.ccy));
+      case 'so': return dongT(it.so ? mono(it.so) : '', tag(...(SO_TT[it.tt] || ['plain', 'hs_so_chua_thu'])),
+        it.tong != null ? `<span class="tien">${NN.h('collected')} ${EPL.tien(it.da_thu || 0, it.ccy)} / ${EPL.tien(it.tong, it.ccy)}</span>` : '')
+        + (it.loi ? `<div class="t"><span class="small neg">${esc(it.loi)}</span></div>` : '');
+      case 'tcx': return dongT(mono(it.so), tagPC(it.tt), tienCcy(it.tien, it.ccy), it.so_phieu ? `<span class="small muted">${it.so_phieu} ${NN.h('cx_phieu')}</span>` : '');
+      case 'nl_em': return dongT(`<b>${NN.h('hs_nl_dau_ban')}</b>`, it.so_dong ? `<span class="small muted">${NN.h('ct_so_dong', { n: it.so_dong })}</span>` : '', tienLak(it.tien_lak));
+      case 'nl_so': return dongT(it.so ? mono(it.so) : '', tag(...({ chua_tao: ['plain', 'hs_nl_chua_tao'], da_tao: ['dispatched', 'hs_nl_da_tao'],
+        da_thu: ['paid', 'dt_st_da_thu'], can_tru: ['paid', 'hs_nl_can_tru'], loi: ['unpaid', 'ck_loi_ngan'] }[it.tt] || ['plain', 'hs_nl_chua_tao'])),
+        it.con_no_lak ? `<span class="tien">${NN.h('hs_nl_con_no')} ${so(it.con_no_lak)} LAK</span>` : '')
+        + (it.loi ? `<div class="t"><span class="small neg">${esc(it.loi)}</span></div>` : '');
+      case 'tkn': return dongT(it.so ? mono(it.so) : `<span class="rong">${NN.h('hs_chua_co_so')}</span>`,
+        tag(...({ da_gui: ['paid', 'hs_nl_can_tru'], loi: ['unpaid', 'ck_loi_ngan'] }[it.tt] || ['plain', 'hs_nl_can_tru'])),
+        `<span class="small muted">${NN.h('hs_tkn')}${it.ref ? ' · ' + esc(it.ref) : ''}</span>`, tienLak(it.tien_lak))
+        + (it.loi ? `<div class="t"><span class="small neg">${esc(it.loi)}</span></div>` : '');
+      default: return '';
+    }
+  }
+
+  /** Thẻ một nhóm: tên + trạng thái cả nhóm, câu giải thích, cặp "bên điều xe → bên kế toán", ghi chú. */
+  function theNhom(k, g) {
+    const giai = k === 'tam_ung' || k === 'xuat_kho' ? 'hs_d_' + k + '_' + (g.hinh_thuc || 'noi_bo') : 'hs_d_' + k;
+    const em = g.em.length ? g.em.map(oTo).join('') : rong(k === 'so_nl' ? 'hs_sap_co' : 'hs_em_chua');
+    const kt = g.kt.length ? g.kt.map(oTo).join('') : rong(k === 'so_nl' ? 'hs_sap_co' : 'hs_kt_chua');
+    const chu = g.ghi_chu && !(k === 'so_nl' && g.kt.length) ? `<div class="hs-chu ${g.muc === 'loi' ? 'loi' : g.muc === 'xong' || k === 'so_nl' ? 'nhe' : ''}">${NN.h('hs_c_' + g.ghi_chu)}</div>` : '';
+    return `<div class="hs-the hs-b-${esc(g.muc)}">
+      <div class="hs-the-dau"><h4>${NN.h('hs_g_' + k)}</h4>${tagMuc(g.muc)}</div>
+      <div class="hs-giai">${NN.h(giai)}</div>
+      <div class="hs-cap"><span class="hs-nhan">${NN.h('hs_ben_em')}</span><div class="hs-ben">${em}</div>
+        <span class="hs-nhan kt"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v14M6 12l6 6 6-6"/></svg>${NN.h('hs_ben_kt')}</span><div class="hs-ben kt">${kt}</div></div>${chu}</div>`;
+  }
+
+  /* ---------------------------------------------------------------- bảng DO */
+  function o7(x) {
+    return `<div class="hs-o7">${NHOM.map(k => { const m = mucCua(x, k);
+      return `<i class="hs-m-${m}" title="${esc(NN.t('hs_g_' + k))} · ${esc(NN.t('hs_m_' + m))}">${NN.h('hs_k_' + k)}</i>`; }).join('')}</div>`;
+  }
   function veBang() {
     const b = q('#ct2-bang'), ds = dsLoc();
-    q('#ct2-n-all').textContent = D.ds.length;
-    q('#ct2-n-chi').textContent = D.ds.filter(conChi).length;
-    q('#ct2-n-xk').textContent = D.ds.filter(conXk).length;
-    q('#ct2-n-thu').textContent = D.ds.filter(choThu).length;
-    root.querySelectorAll('#ct2-loc button').forEach(x => x.classList.toggle('on', x.dataset.loc === loc));
-    const ban = D.thay_tien_ban;
-    b.innerHTML = `<thead><tr><th>DO</th><th>${NN.h('truck_no')} · ${NN.h('driver')}</th><th>${NN.h('customer')} · ${NN.h('route')}</th>
-      <th>${NN.h('ct_c_chi')}</th><th>${NN.h('ct_c_xk')}</th><th>${NN.h('ct_c_thu')}</th><th>${NN.h('ct_da_day')}</th></tr></thead>
+    veLoc();
+    b.innerHTML = `<thead><tr><th>DO</th><th>${NN.h('truck_no')} · ${NN.h('driver')}<span class="lo-sub" style="display:block;font-weight:500">${NN.h('customer')} · ${NN.h('route')}</span></th>
+      <th>${NN.h('hs_c_hai_ben')}<div class="hs-o7 dau" style="margin-top:4px">${NHOM.map(k => `<i>${NN.h('hs_k_' + k)}</i>`).join('')}</div></th></tr></thead>
       <tbody>${ds.length ? ds.map(x => `<tr data-id="${esc(x.trip_id)}" class="${x.trip_id === chonId ? 'sel' : ''}">
-        <td><span class="so">${esc(x.doc_no)}</span><span class="ct2-k ${esc(x.kind)}">${NN.h(x.kind === 'gom' ? 'dn_gom' : 'dn_giao')}</span>${x.company === 'joint' ? `<span class="ct2-k joint">${NN.h('dn_xe_thue')}</span>` : ''}
-          <span class="phu">${EPL.ngay(x.doc_date)}${x.locked ? ' · ' + NN.h('s_locked') : ''}</span></td>
-        <td>${esc(x.truck_no || '—')}<span class="phu" lang="lo">${esc(x.driver_name || '')}</span></td>
-        <td><span lang="lo">${esc(x.customer_name || '—')}</span>${x.origin || x.destination ? `<span class="phu" lang="lo">${esc(x.origin || '—')} → ${esc(x.destination || '—')}</span>` : ''}</td>
-        <td>${chipDeNghi(x).chi}</td><td>${chipDeNghi(x).xk}</td>
-        <td>${tagTT(x.thu.trang_thai)}${ban && x.thu.doanh_thu ? `<span class="phu">${EPL.tien(x.thu.doanh_thu, x.thu.ccy)}</span>` : ''}</td>
-        <td class="ct2-ho">${x.ho_so.da_day}/${x.ho_so.tong}</td></tr>`).join('')
-        : `<tr><td class="empty" colspan="7">${oTrong()}</td></tr>`}</tbody>`;
+        <td><span class="so">${esc(x.doc_no)}</span>
+          <span class="phu">${EPL.ngay(x.doc_date)}<span class="ct2-k ${esc(x.kind)}">${NN.h(x.kind === 'gom' ? 'dn_gom' : 'dn_giao')}</span>${x.company === 'joint' ? `<span class="ct2-k joint">${NN.h('dn_xe_thue')}</span>` : ''}${x.locked ? `<span class="ct2-k khoa">${NN.h('s_locked')}</span>` : ''}</span></td>
+        <td>${esc(x.truck_no || '—')} · <span lang="lo">${esc(x.driver_name || '')}</span>
+          <span class="phu" lang="lo">${esc(x.customer_name || '—')}${x.origin || x.destination ? ` · ${esc(x.origin || '—')} → ${esc(x.destination || '—')}` : ''}</span></td>
+        <td>${o7(x)}</td></tr>`).join('')
+        : `<tr><td class="empty" colspan="3">${oTrong()}</td></tr>`}</tbody>`;
     b.querySelectorAll('tbody tr[data-id]').forEach(tr => tr.addEventListener('click', () => { chonId = tr.dataset.id; veBang(); veCt(); }));
     const nutThang = b.querySelector('[data-thang]'); if (nutThang) nutThang.addEventListener('click', () => chonThang(nutThang.dataset.thang));
     const nutHet = b.querySelector('[data-tat-ca]'); if (nutHet) nutHet.addEventListener('click', () => { loc = ''; chonId = D.ds[0] ? D.ds[0].trip_id : null; veBang(); veCt(); });
     // bảng trống: bỏ khung "Chọn một dòng" bên phải, bảng (và khung trống của nó) chiếm cả bề ngang
     q('#ct2-do').classList.toggle('trong', !ds.length); q('#ct2-ct').hidden = !ds.length;
     veBao();
-    datCao();
-    // chú thích màu bốn mục chi — nằm ngay dưới bảng, không chiếm hàng riêng trên đầu
+    // chú thích sáu màu — ngay dưới bảng, không chiếm hàng riêng trên đầu
     let chu = root.querySelector('.ct2-chu');
     if (!chu) { chu = document.createElement('div'); chu.className = 'ct2-chu'; q('.ct2-trai').appendChild(chu); }
-    chu.innerHTML = `<span>III · IV · V · VI = ${NN.h('ct_bon_muc')}</span>` + ['wait', 'entered', 'verified', 'booked', 'paid'].map(s =>
-      `<span><span class="ct2-muc"><i class="${s}">·</i></span>${NN.h('stt_' + s)}</span>`).join('');
+    chu.innerHTML = MUC.map(m => `<span><i class="hs-m-${m}"></i>${NN.h('hs_m_' + m)}</span>`).join('');
     datCao();
   }
 
-  /* ---------------------------------------------------------------- khung phải */
+  /* ---------------------------------------------------------------- khung phải: một DO */
   /** Tờ / tháng đang xem ghi vào địa chỉ (rà 01/10): bấm "Mở phiếu" sang Phiếu xuất xe rồi Quay lại, hay tải lại trang, là về
-   *  đúng tờ đó — trước đây màn mở lại từ đầu, tờ vừa xem như biến mất. init đã đọc sẵn các tham số này. replaceState: không
-   *  thêm bước lịch sử, không bắn hashchange (khung không nạp lại màn); màn đã bị rời (gốc tháo khỏi trang) thì thôi. */
+   *  đúng tờ đó. replaceState: không thêm bước lịch sử, không bắn hashchange; màn đã bị rời (gốc tháo khỏi trang) thì thôi. */
   function ghiDiaChi(ts) {
     if (!root || !root.isConnected) return;
     [...ts.keys()].forEach(k => { if (!ts.get(k)) ts.delete(k); });
@@ -134,65 +196,119 @@
     if (location.hash !== moi) history.replaceState(null, '', moi);
   }
 
+  /** SO nhiên liệu của một chuyến xe thuê — dòng chi tiết màn Tất toán đối tác (GET /api/tat-toan-doi-tac). Máy chủ chưa có
+   *  đường đó (404) hay vai không xem được thì null: thẻ giữ chữ "sắp có". Hỏi một lần mỗi chuyến. */
+  async function taiNL(x) {
+    if (x.trip_id in NL) return NL[x.trip_id];
+    NL[x.trip_id] = null;
+    if (x.company !== 'joint' || !x.owner_id || !duocVao('tat-toan-doi-tac')) return null;
+    try {
+      const r = await API.get('/api/tat-toan-doi-tac?ky=' + encodeURIComponent((x.doc_date || '').slice(0, 7)) + '&owner_id=' + encodeURIComponent(x.owner_id) + '&cap_nhat=0');
+      NL[x.trip_id] = ((r && r.chi_tiet) || []).find(c => c.trip_id === x.trip_id) || null;
+    } catch (e) { NL[x.trip_id] = null; }
+    return NL[x.trip_id];
+  }
+  /** Ghép SO nhiên liệu (nếu đọc được) vào nhóm so_nl của hồ sơ. */
+  function ghepNL(nhom, c) {
+    const n = c && c.nhien_lieu;
+    if (!n || !nhom.so_nl || !nhom.so_nl.sap_co || !n.tien_lak) return nhom;      // máy chủ đã đọc SO nhiên liệu thì giữ         // chuyến không lấy dầu kho EPL: giữ nhóm như máy chủ tính
+    const g = { ...nhom.so_nl, em: [{ loai: 'nl_em', tien_lak: n.tien_lak }],
+      kt: n.trang_thai && n.trang_thai !== 'chua_tao' ? [{ loai: 'nl_so', so: n.order_code, tt: n.trang_thai, con_no_lak: n.con_no_lak }] : [] };
+    g.muc = n.trang_thai === 'da_thu' || n.trang_thai === 'can_tru' ? 'xong' : n.trang_thai === 'da_tao' ? 'cho_kt' : 'chua';
+    g.ghi_chu = g.kt.length ? null : 'nl_cho_tao';
+    return { ...nhom, so_nl: g };
+  }
+
+  const KIND = { sales_order: 'hs_x_sales_order', fuel_so: 'hs_x_fuel_so', journal: 'hs_x_journal', advance: 'hs_x_advance', pay_now: 'hs_x_pay_now',
+    driver_settlement: 'hs_x_driver_settlement', owner_payment: 'hs_x_owner_payment', owner_paid: 'hs_x_owner_paid',
+    payroll: 'hs_x_payroll', toll_card: 'hs_x_toll_card' };
+  const MUC_LA = { III: 'III', IV: 'IV', V: 'V', VI: 'VI' };
+  /** Bảng từng dòng tiền của DO: mỗi dòng đã vào chứng từ nào (settlement), xếp theo mục. */
+  function bangDong(h) {
+    const coTien = h.thay_tien_chi;
+    const st = (s) => `<span class="tag hs-${esc(s.state)}" ${NN.lang === 'vi' || NN.lang === 'both' ? `title="${esc(s.label || '')}"` : ''}>${NN.h('hs_s_' + s.state)}</span>`;
+    // mã nguồn bút toán (EPLLAO-<nguồn>-<mã máy>) là khoá máy, không phải số người đọc — chỉ hiện số tờ người dùng (PTU-, PCSC-, TCX-…)
+    const ref = (r) => (r && !/^EPLLAO-/.test(r) ? r : '');
+    const ma = (s) => `${st(s)}${s.doc_no ? `<b>${esc(s.doc_no)}</b>` : ''}${ref(s.ref_no) && s.ref_no !== s.doc_no ? `<span class="phu">${esc(s.ref_no)}</span>` : ''}`;
+    const dongTr = (cls, muc, ten, sl, tien, s) => `<tr class="hs-s-${esc(s.state)} ${cls}"><td>${muc}</td><td lang="lo">${ten}</td><td class="num">${sl}</td>
+      ${coTien ? `<td class="num">${tien}</td>` : ''}<td>${NN.h(KIND[s.kind] || 'hs_x_khac')}</td><td class="ma">${ma(s)}</td></tr>`;
+    // SO nhiên liệu của DO xe thuê (header.fuel_so gói DO) — một dòng trên đầu, như tiền thuê
+    const fs = h.fuel_so;
+    // cột "Thành tiền (LAK)": số Kíp, tiền gốc (nếu khác Kíp) ở dòng phụ — như dòng cước
+    const kip = (lak, v, ma) => `${lak != null ? so(lak) : '—'}${ma && ma !== 'LAK' && v != null ? `<span class="phu">${EPL.tien(v, ma)}</span>` : ''}`;
+    const soNl = fs ? dongTr('hs-dong-thue', '—', NN.h('hs_so_nl_dong'), '', (fs.currency || 'LAK') === 'LAK' ? (fs.total != null ? so(fs.total) : '—') : kip(null, fs.total, fs.currency),
+      { state: fs.order_code ? 'has_voucher' : 'pending', kind: 'fuel_so', doc_no: fs.order_code, ref_no: null }) : '';
+    const thue = h.thue ? [h.thue.settlement && dongTr('hs-dong-thue', '—', NN.h('hs_tien_thue_dt'), '', kip(h.thue.amount_lak, h.thue.amount, h.thue.currency), h.thue.settlement),
+      h.thue.journal && dongTr('hs-dong-thue', '—', NN.h('btc_nguon_thue_xe'), '', kip(h.thue.amount_lak, h.thue.amount, h.thue.currency), h.thue.journal)].filter(Boolean).join('') : '';
+    const rows = (h.dong || []).map(d => {
+      const s = d.settlement || { state: 'open' };
+      const ten = d.kind === 'thu' ? NN.h('hs_cuoc') : esc(NN.lang === 'lo' ? d.name_lo || d.name : d.name || d.name_lo || '');
+      const sl = d.unit_price != null ? `${so(d.qty, EPL.leTien(d.currency) ? 2 : (Number.isInteger(+d.qty) ? 0 : 2))} × ${EPL.tien(d.unit_price, d.currency)}` : so(d.qty, Number.isInteger(+d.qty) ? 0 : 2);
+      const tien = d.kind === 'thu' ? `${d.amount_lak != null ? so(d.amount_lak) : '—'}${d.currency && d.currency !== 'LAK' ? `<span class="phu">${EPL.tien(d.actual_amount, d.currency)}</span>` : ''}`
+        : (d.amount_lak != null ? so(d.amount_lak) : '—');
+      const phu = [d.source === 'kho' ? NN.h(d.sale_to_owner ? 'hs_xuat_ban_ngan' : 'hs_xuat_noi_bo_ngan') : '', d.ghi_no ? NN.h('ncc_ghi_no') : '',
+        d.paid_by === 'chu_xe' ? NN.h('pay_own') : ''].filter(Boolean).join(' · ');
+      // dòng xuất bán (kind sales_order trên dòng chi): phần bán là SO nhiên liệu, giá vốn 607/1371 — không hiện như "cước → SO"
+      const s2 = d.kind !== 'thu' && s.kind === 'sales_order' ? { ...s, kind: 'fuel_so' } : s;
+      return dongTr('', d.kind === 'thu' ? NN.h('hs_thu_ngan') : MUC_LA[d.section] || '—', ten + (phu ? `<span class="phu">${phu}</span>` : ''), sl, tien, s2);
+    }).join('');
+    const dem = {}; (h.dong || []).forEach(d => { const k = (d.settlement || {}).state || 'open'; dem[k] = (dem[k] || 0) + 1; });
+    return `<div class="tbl-wrap hs-dong"><table class="tbl tbl-compact"><thead><tr><th>${NN.h('hs_cot_muc')}</th><th>${NN.h('item')}</th>
+        <th class="num">${NN.h(coTien ? 'hs_cot_sl_gia' : 'qty')}</th>${coTien ? `<th class="num">${NN.h('amount_lak')}</th>` : ''}<th>${NN.h('hs_cot_xu_ly')}</th>
+        <th>${NN.h('hs_cot_chung_tu')}</th></tr></thead>
+      <tbody>${soNl + thue + rows || `<tr><td colspan="6" class="empty">${h.loi_dong ? `<span class="neg">${NN.h('hs_loi_dong')}</span>` : NN.h('no_data')}</td></tr>`}</tbody></table></div>
+      <div class="hs-chu-dong">${['has_voucher', 'pending', 'open', 'not_payable'].map(k => `<span><span class="tag hs-${k}">${NN.h('hs_s_' + k)} · ${dem[k] || 0}</span> ${NN.h('hs_sg_' + k)}</span>`).join('')}</div>`;
+  }
+
   async function veCt() {
     const ct = q('#ct2-ct'), x = D.ds.find(y => y.trip_id === chonId);
     if (tab === 'do') ghiDiaChi(new URLSearchParams({ thang: q('#ct2-thang').value || '', id: x ? x.trip_id : '' }));
     if (!x) { ct.innerHTML = `<div class="ct2-chon">${NN.h('kx_chon')}</div>`; return; }
-    const chi = D.thay_tien_chi, ban = D.thay_tien_ban;
-    const dong = (t, n, r) => `<div class="ct2-dong"><div><div class="t">${t}</div>${n ? `<div class="n">${n}</div>` : ''}</div><div class="r">${r}</div></div>`;
-    const tu = x.tam_ung.map(v => dong(`<a data-v="${esc(v.id)}" data-loai="advance">${esc(v.so)}</a>`, NN.h('v_advance'),
-      `${chi && v.amount_lak != null ? so(v.amount_lak) + ' LAK · ' : ''}<span class="ct2-chip ${esc(v.status)}">${NN.h('v_' + v.status)}</span>`)).join('');
-    const nl = x.nhien_lieu.map(v => dong(`<a data-v="${esc(v.id)}" data-loai="fuel">${esc(v.so)}</a>`, `<span lang="lo">${esc(v.place_name || '')}</span>`,
-      `${so(v.qty_l, 0)} L${v.granted_qty != null && v.granted_qty !== v.qty_l ? ' → ' + so(v.granted_qty, 0) + ' L' : ''} · <span class="ct2-chip ${esc(v.status)}">${NN.h('v_' + v.status)}</span>`)).join('');
-    const muc = MUC.filter(([k]) => x.muc[k]).map(([k, la, ten]) => {
-      const m = x.muc[k], kt = m.ke_toan;     // mục V / VI: phiếu chi "Chi khác" bên hệ kế toán (01/10)
-      // trạng thái phiếu chi bên kế toán xuống dòng phụ (dưới tên mục) — để cột phải không đẩy tên mục vỡ dòng
-      const nhanKT = !kt ? '' : ' · ' + EPL.tag(kt.status === 'da_chi' ? 'paid' : kt.status === 'da_gui' ? 'partial' : 'unpaid',
-        kt.status === 'da_chi' ? 'ck_da_chi_ngan' : kt.status === 'da_gui' ? 'cmt_cho_chi' : kt.error_code === 'PHIEU_CHI_MAT' ? 'ck_phieu_mat' : 'ck_loi_ngan')
-        + (kt.document_no ? ` <span class="mono">${esc(kt.document_no)}</span>` : '');
-      return dong(`${la} · ${NN.h(ten)}`, NN.h('ct_so_dong', { n: m.so_dong }) + nhanKT,
-        `${chi && m.tien_lak != null ? so(m.tien_lak) + ' LAK · ' : ''}<span class="ct2-muc"><i class="${esc(m.status)}">${la}</i></span> ${NN.h('stt_' + m.status)}`);
-    }).join('');
-    const t = x.thu;
-    const thu = dong(t.pdt ? `<a data-thu="1">${esc(t.pdt.so)}</a>` : NN.h('nav_de_nghi_thu'),
-      t.da_tao_so ? NN.h('dt_so_da', { so: t.order_code || '' }) : (t.trang_thai === 'cho_khoa' ? NN.h('dt_goi_y_khoa') : ''),
-      `${ban && t.doanh_thu != null ? EPL.tien(t.doanh_thu, t.ccy) + ' · ' : ''}${tagTT(t.trang_thai)}`)
-      + (ban && t.doanh_thu_lak ? dong(NN.h('collected'), '', `${so(t.da_thu_lak)} LAK · ${NN.h('ncc_con_thu')} ${so(t.con_lai_lak)} LAK`) : '');
-    ct.innerHTML = `<div class="ct2-dau"><h3>${esc(x.doc_no)}</h3>
+    const h = CT[x.trip_id];
+    const nhom = ghepNL(h ? h.nhom : x.nhom, NL[x.trip_id]);
+    const coDong = h && h.dong ? h.dong.length + (h.thue ? 1 : 0) : null;
+    const nut = [
+      duocVao('phieu-xuat-xe') ? `<button type="button" class="btn sm" data-mo="phieu">${NN.h('open_slip')}</button>` : '',
+      duocVao('but-toan-cho') ? `<button type="button" class="btn sm" data-mo="bt">${NN.h('hs_bt_cua_phieu')}</button>` : '',
+      x.company === 'joint' && duocVao('tat-toan-doi-tac') ? `<button type="button" class="btn sm" data-mo="ttdt">${NN.h('nav_tt_doi_tac')}</button>` : '',
+    ].join('');
+    const coNhom = NHOM.filter(k => nhom[k] && nhom[k].muc !== 'khong'), khong = NHOM.filter(k => !nhom[k] || nhom[k].muc === 'khong');
+    const dem = {}; coNhom.forEach(k => { dem[nhom[k].muc] = (dem[nhom[k].muc] || 0) + 1; });
+    const than = tabCt === 'dong'
+      ? (h ? bangDong(h) : `<div class="ct2-chon">${NN.h('loading')}</div>`)
+      : `<div class="hs-luoi">${coNhom.map(k => theNhom(k, nhom[k])).join('')}
+          ${khong.length ? `<div class="hs-khong"><span>${NN.h('hs_khong_phat_sinh')}:</span>${khong.map(k => `<span class="tag">${NN.h('hs_g_' + k)}</span>`).join('')}</div>` : ''}</div>`;
+    ct.innerHTML = `<div class="ct2-dau"><div><h3>${esc(x.doc_no)}</h3>
         <div class="phu"><span lang="lo">${esc(x.customer_name || '')}</span>${x.origin || x.destination ? ` · <span lang="lo">${esc(x.origin || '—')} → ${esc(x.destination || '—')}</span>` : ''}</div>
-        <div class="phu">${esc(x.truck_no || '')} · <span lang="lo">${esc(x.driver_name || '')}</span>${x.company === 'joint' ? ' · ' + NN.h('co_joint') + ' <span lang="lo">' + esc(x.owner_name || '') + '</span>' : ''}</div></div>
-      <div class="ct2-cuon">
-        <div class="ct2-nhom"><h4>${NN.h('nav_de_nghi_chi')}<a data-mo-chi="1">${NN.h('ct_mo_man')}</a></h4>
-          ${tu || `<div class="ct2-trong">${NN.h('ct_chua_de_nghi_chi')}</div>`}</div>
-        <div class="ct2-nhom"><h4>${NN.h('nav_de_nghi_xuat_kho')}<a data-mo-xk="1">${NN.h('ct_mo_man')}</a></h4>
-          ${nl || `<div class="ct2-trong">${NN.h('ct_chua_de_nghi_xk')}</div>`}</div>
-        <div class="ct2-nhom"><h4>${NN.h('ct_chi_theo_muc')}</h4>${muc || `<div class="ct2-trong">${NN.h('no_data')}</div>`}</div>
-        ${ban || t.pdt ? `<div class="ct2-nhom"><h4>${NN.h('nav_de_nghi_thu')}${ban ? `<a data-thu="1">${NN.h('ct_mo_man')}</a>` : ''}</h4>${thu}</div>` : ''}
-        <div class="ct2-nhom" id="ct2-ho-so"><h4>${NN.h('ct_so_chung_tu')}</h4><div class="ct2-trong">${NN.h('loading')}</div></div>
-        <div class="ct2-nhom"><h4><a data-mo-phieu="1" style="margin-left:0">${NN.h('open_slip')} →</a></h4></div>
-      </div>`;
-    ct.querySelectorAll('a[data-v]').forEach(a => a.addEventListener('click', () => a.dataset.loai === 'fuel'
-      ? EPL.di('de-nghi-xuat-kho', { id: x.trip_id, v: a.dataset.v }) : EPL.di('de-nghi-chi', { id: x.trip_id, v: a.dataset.v })));
-    ct.querySelectorAll('a[data-mo-chi]').forEach(a => a.addEventListener('click', () => EPL.di('de-nghi-chi', { id: x.trip_id })));
-    ct.querySelectorAll('a[data-mo-xk]').forEach(a => a.addEventListener('click', () => EPL.di('de-nghi-xuat-kho', { id: x.trip_id })));
-    ct.querySelectorAll('a[data-thu]').forEach(a => a.addEventListener('click', () => EPL.di('de-nghi-thu', { id: x.trip_id, thang: (x.doc_date || '').slice(0, 7) })));
-    ct.querySelectorAll('a[data-mo-phieu]').forEach(a => a.addEventListener('click', () => EPL.di('phieu-xuat-xe', { id: x.trip_id })));
-    // chứng từ của DO này — vai không xem sổ (Bãi) thì bỏ khối
-    const ho = q('#ct2-ho-so');
-    if (!XEM_SO.includes(AUTH.role)) { ho.remove(); return; }
-    let r;
-    try { r = await API.get('/api/chung-tu?trip_id=' + encodeURIComponent(x.trip_id)); } catch (e) { ho.querySelector('.ct2-trong').textContent = e.message; return; }
-    if (chonId !== x.trip_id || !ho.isConnected) return;
-    ho.innerHTML = `<h4>${NN.h('ct_so_chung_tu')}<a data-so="1">${NN.h('ct_mo_man')}</a></h4>` + (r.ds.length ? r.ds.map(c => dong(
-      `<span class="mono">${esc(c.so)}</span>`, tenLoai(c.loai, c.loai_ten, c.loai_ten_lo),
-      `${c.tien != null ? EPL.tien(c.tien, c.tien_te) : ''}${c.loai === 'PDT' ? '' : (c.tien != null ? ' · ' : '') + (c.da_day ? '✓ ' + NN.h('ct_da_day') : '<span class="muted">' + NN.h('ct_chua_day') + '</span>')}`)).join('')
-      : `<div class="ct2-trong">${NN.h('ct_khong_co')}</div>`);
-    ho.querySelector('a[data-so]').addEventListener('click', () => doiTab('so'));
+        <div class="phu">${esc(x.truck_no || '')} · <span lang="lo">${esc(x.driver_name || '')}</span>${x.company === 'joint' ? ' · ' + NN.h('co_joint') + ' <span lang="lo">' + esc(x.owner_name || '') + '</span>' : ' · ' + NN.h('co_epl')}
+          · ${x.locked ? NN.h('s_locked') + (x.locked_at ? ' ' + EPL.ngay(x.locked_at) : '') : NN.h('hs_chua_khoa')}</div></div>
+        <div class="nut no-print">${nut}</div></div>
+      <div class="hs-tab no-print"><button type="button" data-tct="nhom" class="${tabCt === 'nhom' ? 'on' : ''}">${NN.h('hs_tab_nhom')}<b>${coNhom.length}</b></button>
+        <button type="button" data-tct="dong" class="${tabCt === 'dong' ? 'on' : ''}">${NN.h('hs_tab_dong')}${coDong != null ? `<b>${coDong}</b>` : ''}</button>
+        <span class="grow"></span><span class="tom">${MUC.filter(m => dem[m]).map(m => `${dem[m]} ${esc(NN.t('hs_m_' + m).toLowerCase())}`).join(' · ')}</span></div>
+      <div class="ct2-cuon">${than}</div>`;
+    ct.querySelectorAll('[data-tct]').forEach(b => b.addEventListener('click', () => { tabCt = b.dataset.tct; veCt(); }));
+    ct.querySelectorAll('[data-mo]').forEach(b => b.addEventListener('click', () => {
+      const m = b.dataset.mo;
+      if (m === 'phieu') EPL.di('phieu-xuat-xe', { id: x.trip_id });
+      else if (m === 'bt') EPL.di('but-toan-cho', { trip_id: x.trip_id, doc: x.doc_no });
+      else EPL.di('tat-toan-doi-tac', { ky: (x.doc_date || '').slice(0, 7), owner_id: x.owner_id || '' });
+    }));
+    ct.querySelectorAll('a[data-bt]').forEach(a => a.addEventListener('click', () => EPL.di('but-toan-cho', { trip_id: x.trip_id, doc: x.doc_no, id: a.dataset.bt })));
+    datCao();
+    // nạp hồ sơ đầy đủ (từng dòng tiền) và SO nhiên liệu — xong thì vẽ lại nếu vẫn đang xem DO này
+    const id = x.trip_id;
+    const viec = [];
+    if (!h) viec.push(API.get('/api/ho-so-do/' + encodeURIComponent(id)).then(r => { CT[id] = r; }, e => { EPL.baoLoi(e); CT[id] = { nhom: x.nhom, dong: [], thay_tien_chi: D.thay_tien_chi }; }));
+    if (!(id in NL) && x.company === 'joint' && ((x.nhom || {}).so_nl || {}).sap_co) viec.push(taiNL(x));
+    if (!viec.length) return;
+    await Promise.all(viec);
+    if (chonId === id && root && root.isConnected && tab === 'do') veCt();
   }
 
-  /* Bảng cao VỪA cửa sổ (rà 01/10: 22 DO là trang dài 1.700 px, Sổ chứng từ 17.000 px — khung chi tiết bên phải trôi mất):
-   * đo từ đầu khung bảng của tab đang mở tới đáy cửa sổ, trừ lề đáy trang và dòng chú thích dưới bảng, đặt vào --ct-cao.
-   * Bảng tự cuộn trong khung, dòng tiêu đề dính trên. Toạ độ là px màn hình, px CSS bên trong .app (zoom --ty-le) nên chia. */
+  /* Bảng cao VỪA cửa sổ (rà 01/10): đo từ đầu khung bảng của tab đang mở tới đáy cửa sổ, trừ lề đáy trang và dòng chú thích
+   * dưới bảng, đặt vào --ct-cao (bảng) và --ct-cao-phai (khung phải). Toạ độ là px màn hình, px CSS bên trong .app (zoom
+   * --ty-le) nên chia. */
   let henCao = null;
   function datCao() {
     const w = root && root.querySelector(tab === 'so' ? '#ct-so-ct .tbl-wrap' : '.ct2-trai .tbl-wrap');
@@ -202,8 +318,14 @@
     const le = (parseFloat(getComputedStyle(document.getElementById('noi-dung')).paddingBottom) || 0) * tl;
     const chu = tab === 'so' ? null : root.querySelector('.ct2-chu');
     const duoi = chu ? chu.getBoundingClientRect().height + 8 * tl : 0;
-    const cao = (window.innerHeight - (w.getBoundingClientRect().top + window.scrollY) - le - duoi) / tl;
+    const dinh = w.getBoundingClientRect().top + window.scrollY;
+    const cao = (window.innerHeight - dinh - le - duoi) / tl;
     root.style.setProperty('--ct-cao', Math.max(260, Math.floor(cao)) + 'px');
+    const p = root.querySelector('.ct2-phai');
+    if (p && tab === 'do') {
+      const top = p.getBoundingClientRect().top + window.scrollY;
+      p.style.maxHeight = Math.max(300, Math.floor((window.innerHeight - top - le) / tl)) + 'px';
+    }
   }
   const khiDoiCo = () => { clearTimeout(henCao); henCao = setTimeout(datCao, 150); };
 
@@ -214,9 +336,11 @@
     const th = new URLSearchParams({ thang });
     if (tim) th.set('q', tim);
     let duoc = true, ve;
-    try { ve = await API.get('/api/de-nghi-theo-do?' + th.toString()); } catch (e) { ve = { ds: [] }; duoc = false; if (luot === LUOT) EPL.baoLoi(e); }
+    try { ve = await API.get('/api/ho-so-do?' + th.toString()); } catch (e) { ve = { ds: [] }; duoc = false; if (luot === LUOT) EPL.baoLoi(e); }
     if (luot !== LUOT) return;
     D = ve; GAN = null;
+    Object.keys(CT).forEach(k => { if (k !== GIU_CT) delete CT[k]; });   // tải lại là đọc lại — trừ hồ sơ vừa nạp lúc vào màn
+    GIU_CT = null;
     if (duoc && !D.ds.length) {
       const r = await thangGan(thang, tim ? { q: tim } : {});
       if (luot !== LUOT) return;
@@ -293,22 +417,34 @@
     q('#ct2-do').hidden = tab !== 'do'; q('#ct-so-ct').hidden = tab !== 'so';
     if (tab === 'so') {
       ghiDiaChi(new URLSearchParams({ tab: 'so', loai: soLoaiChon || '' }));
-      // danh mục loại nạp một lần trong phiên, nhưng ô chọn thì của GỐC MÀN MỚI mỗi lần vào màn — luôn vẽ lại (trước đây lần
-      // vào màn thứ hai ô Loại chứng từ chỉ còn "Tất cả")
+      // danh mục loại nạp một lần trong phiên, nhưng ô chọn thì của GỐC MÀN MỚI mỗi lần vào màn — luôn vẽ lại
       if (!SO_LOAI.length) SO_LOAI = await API.get('/api/chung-tu/loai').catch(() => []);
       veOLoai();
       await veSo();
     } else await taiDo();
   }
 
+  /** Chữ thuần của một nhóm cho tệp Excel: "PTU-… · Đã cấp → 1368-CTR-… · Đã chi". */
+  function chuNhom(g) {
+    if (!g || g.muc === 'khong') return '';
+    const t = (it) => [it.so || '', it.loai === 'gl' ? NN.t('btc_nguon_' + it.nguon) : ''].filter(Boolean).join(' ');
+    const em = g.em.map(t).filter(Boolean).join('; '), kt = g.kt.map(t).filter(Boolean).join('; ');
+    return NN.t('hs_m_' + g.muc) + (em || kt ? ` · ${em || '—'} → ${kt || '—'}` : '');
+  }
+
   EPL.modules['chung-tu'] = {
     async init(r, ctx) {
-      root = r; D = { ds: [] }; tim = ''; loc = ''; chonId = null;
+      root = r; D = { ds: [] }; tim = ''; loc = ''; chonId = null; tabCt = 'nhom';
+      Object.keys(CT).forEach(k => delete CT[k]); Object.keys(NL).forEach(k => delete NL[k]);
       const t = (ctx && ctx.tham) || {};
       // đường cũ ?tab=chi / ?tab=linh (tờ in) → màn Phiếu đề nghị chi
       if (t.tab === 'chi') return EPL.di('de-nghi-chi', { id: t.id || '', v: t.v || '' });
       if (t.tab === 'linh') return EPL.di('de-nghi-xuat-kho', { id: t.id || '', v: t.v || '' });
-      // ô tháng mặc định là tháng này THEO GIỜ MÁY (EPL.doiOThang) — toISOString là giờ UTC, 0–7 giờ sáng ngày 1 ra tháng trước
+      // mở từ màn khác chỉ kèm mã phiếu (Bút toán chờ gửi, Tất toán…): hỏi hồ sơ trước để biết DO thuộc tháng nào
+      if (t.id && !t.thang) {
+        try { const h = await API.get('/api/ho-so-do/' + encodeURIComponent(t.id)); CT[t.id] = h; GIU_CT = t.id; if (h && h.do && h.do.doc_date) t.thang = h.do.doc_date.slice(0, 7); }
+        catch (e) { /* không có thì vào như thường */ }
+      }
       if (t.thang) q('#ct2-thang').value = t.thang;
       BAO = null; GAN = null; TU_DONG = !t.thang;
       if (t.id) chonId = t.id;
@@ -316,7 +452,6 @@
       q('#ct-cau-hinh').hidden = AUTH.role !== 'admin';
       q('#ct-cau-hinh').addEventListener('click', moCauHinh);
       root.querySelectorAll('#ct2-tab button').forEach(b => b.addEventListener('click', () => doiTab(b.dataset.tab)));
-      root.querySelectorAll('#ct2-loc button').forEach(b => b.addEventListener('click', () => { loc = b.dataset.loc; veBang(); }));
       q('#ct2-thang').addEventListener('change', (e) => chonThang(e.target.value));
       q('#ct2-tim').addEventListener('input', (e) => { clearTimeout(hen); hen = setTimeout(() => { tim = e.target.value.trim(); taiDo(); }, 300); });
       q('#ct-so-loai').addEventListener('change', e => { soLoaiChon = e.target.value; veSo(); });
@@ -330,13 +465,18 @@
     xuatExcel() {
       if (tab === 'so') return EPL._xlsx.sheetMacDinh(root);
       const T = NN.t;
-      return [EPL.xuatSheet(T('nav_vouchers'), ['DO', T('do_kind'), T('c_date'), T('truck_no'), T('driver'), T('customer'), T('route'),
-        T('v_advance'), T('v_fuel'), 'III', 'IV', 'V', 'VI', T('nav_de_nghi_thu'), T('ct_da_day')],
+      const sh = [EPL.xuatSheet(T('hs_tab'), ['DO', T('do_kind'), T('c_date'), T('truck_no'), T('driver'), T('customer'), T('route'),
+        ...NHOM.map(k => T('hs_g_' + k))],
         dsLoc().map(x => [x.doc_no, T(x.kind === 'gom' ? 'dn_gom' : 'dn_giao'), EPL.oNgay(x.doc_date), x.truck_no || '', x.driver_name || '', x.customer_name || '',
-          (x.origin || '') + ' → ' + (x.destination || ''), x.tam_ung.map(v => v.so + ' · ' + T('v_' + v.status)).join('; '),
-          x.nhien_lieu.map(v => v.so + ' · ' + T('v_' + v.status)).join('; '),
-          ...MUC.map(([k]) => x.muc[k] ? T('stt_' + x.muc[k].status) : ''),
-          (x.thu.pdt ? x.thu.pdt.so + ' · ' : '') + T('dt_st_' + x.thu.trang_thai), x.ho_so.da_day + '/' + x.ho_so.tong]))];
+          (x.origin || '') + ' → ' + (x.destination || ''), ...NHOM.map(k => chuNhom((x.nhom || {})[k]))]))];
+      const h = CT[chonId], x = D.ds.find(y => y.trip_id === chonId);
+      if (h && x && (h.dong || []).length) {
+        sh.push(EPL.xuatSheet(x.doc_no, [T('hs_cot_muc'), T('item'), T('qty'), T('unit_price'), T('cur'), T('amount_lak'), T('hs_cot_xu_ly'), T('hs_cot_chung_tu'), T('status')],
+          h.dong.map(d => { const s = d.settlement || {}; return [d.kind === 'thu' ? T('hs_thu_ngan') : d.section || '', d.kind === 'thu' ? T('hs_cuoc') : (d.name || ''),
+            EPL.oSo(d.qty, 2), d.unit_price == null ? null : EPL.oSo(d.unit_price, 2), d.currency || '', d.amount_lak == null ? null : EPL.oSo(d.amount_lak),
+            T(KIND[s.kind] || 'hs_x_khac'), [s.doc_no, s.ref_no].filter(Boolean).join(' · '), T('hs_s_' + (s.state || 'open'))]; })));
+      }
+      return sh;
     },
   };
 })();

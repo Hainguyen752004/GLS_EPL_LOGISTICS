@@ -27,6 +27,15 @@ $env:ASPNETCORE_ENVIRONMENT = "Development"
 # Trang "Tổng hợp thu chi" (02/10): bật trên máy thử; phiếu chi nhánh chi = loại 60 "Chi khác"
 $env:CashVoucherCombined__Enabled = "true"
 $env:CashVoucherCombined__PaymentDocumentTypeId = "60"
+# SO "Nhiên liệu" cho đối tác + cấn trừ khi trả đối tác (02/10 tối): bật trên máy thử SAU khi anh áp 2 script 20261002_logistics_fuel_sales_order / 20261002_sales_debt_collection_offset
+$env:LogisticsFuelSalesOrder__Enabled = "true"
+$env:LogisticsFuelSalesOrder__BranchId = "1368"
+$env:LogisticsFuelSalesOrder__CreatedByObjectId = "4"
+$env:SalesDebtCollectionOffset__Enabled = "true"
+$env:SalesDebtCollectionOffset__AllowedUserIds__0 = "846"
+$env:SalesDebtCollectionOffset__CountryId = "11"
+$env:SalesDebtCollectionOffset__PayableAccountRole = "PARTNER_PAYABLE"
+$env:SalesDebtCollectionOffset__ReceivableAccountRole = "CUSTOMER_GOODS"
 Start-Process -FilePath "dotnet" -ArgumentList (Join-Path $out "Backend.API.dll"), "--urls", $url -WorkingDirectory $api `
   -RedirectStandardOutput (Join-Path $sp "gls_api.log") -RedirectStandardError (Join-Path $sp "gls_api.err") -WindowStyle Hidden
 $ok = $false

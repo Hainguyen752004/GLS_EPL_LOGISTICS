@@ -90,10 +90,21 @@
     return esc(b.source_ref || '');
   }
 
+  /* 02/10 — mỗi nguồn: định khoản ngắn + một câu nói khoản đó là gì, ghi lúc nào (khung chi tiết). */
+  const DK = { thue_xe: '621 / 4022', no_ncc: '625 · 614 / 4021', xuat_noi_bo: '625 · 614 / 1371', xuat_ban: '607 / 1371',
+    tat_toan: '625 / 1601', ban_chu_xe: '4022 / 707' };
+  const duocVao = (id) => EPL.manCuaVai(EPL.AUTH.role).some(m => m.id === id);
+  /** Chú thích bốn trạng thái (đầu màn): nhãn + nghĩa. */
+  function veChuTT() {
+    const o = q('#btc-chu-tt'); if (!o) return;
+    o.innerHTML = [['cho_gui', 'transit', 'dt_st_cho_gui'], ['da_gui', 'paid', 'dt_st_da_gui'], ['huy', 'plain', 'v_huy'], ['can_dao', 'unpaid', 'btc_can_dao']]
+      .map(([k, mau, nhan]) => `<div>${EPL.tag(mau, nhan)}<span>${NN.h('btc_tt_' + k + '_d')}</span></div>`).join('');
+  }
+
   /* ---------------------------------------------------------------- lọc + dải tổng */
   function veLoc() {
     const dem = {}; DS.forEach(b => { const k = trangThai(b).k; dem[k] = (dem[k] || 0) + 1; });
-    q('#btc-loc').innerHTML = LOC.map(k => `<button type="button" data-loc="${k}" class="${loc === k ? 'on' : ''}">
+    q('#btc-loc').innerHTML = LOC.map(k => `<button type="button" data-loc="${k}" class="${loc === k ? 'on' : ''}" ${k ? `title="${esc(NN.t('btc_tt_' + k + '_d'))}"` : ''}>
       <span>${NN.h(NHAN_LOC[k])}</span><b>${k ? (dem[k] || 0) : DS.length}</b></button>`).join('');
     q('#btc-loc').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { loc = b.dataset.loc; veHet(); }));
   }
@@ -145,10 +156,14 @@
       <tbody>${rows}</tbody></table></div>`;
     if (!b) { o.innerHTML = bang(`<tr><td colspan="6" class="empty">${NN.h('btc_trong')}</td></tr>`); return; }
     const s = trangThai(b);
+    // phần BÁN của bút toán xuất bán (Nợ 4022 / Có 707) — chốt 02/10: nay là SO nhiên liệu bên kế toán, không còn bút toán này;
+    // bản cũ còn dòng đó thì hiện nhãn, giữ mã cũ ở dòng phụ để đối soát
+    const laBanCu = (d) => b.nguon === 'xuat_ban' && String(d.no) === '4022' && String(d.co) === '707';
     const rows = (b.dong || []).map((d, i) => `<tr>
       <td>${i + 1}</td>
+      ${laBanCu(d) ? `<td colspan="2"><span class="tag unpaid">${NN.h('px_tk_xb')}</span><span class="ten">${NN.h('btc_ban_cu', { ma: '4022 / 707' })}</span></td>` : `
       <td><span class="ma">${esc(d.no)}</span><span class="ten" lang="lo">${tenTK(d, 'no')}</span></td>
-      <td><span class="ma">${esc(d.co)}</span><span class="ten" lang="lo">${tenTK(d, 'co')}</span></td>
+      <td><span class="ma">${esc(d.co)}</span><span class="ten" lang="lo">${tenTK(d, 'co')}</span></td>`}
       <td class="num">${tien(d.tien, d.ccy)}${d.ccy_goc ? `<small>${NN.h('btc_tien_goc')}: ${so(d.tien_goc, ['LAK', 'VND'].includes(d.ccy_goc) ? 0 : 2)} ${esc(d.ccy_goc)}</small>` : ''}
         ${d.ccy !== 'LAK' && d.tien_lak ? `<small>≈ ${so(d.tien_lak)} LAK</small>` : ''}</td>
       <td>${d.doi_tuong || !d.doi_tuong_no ? tenDoiTuong(d.doi_tuong) : ''}${d.doi_tuong_no ? `${d.doi_tuong ? '<br>' : ''}${tenDoiTuong(d.doi_tuong_no)}` : ''}</td>
@@ -157,7 +172,10 @@
         <div><h3>${NN.h(nhanNguon(b.nguon))}</h3><div class="small muted mono">${esc(b.source_ref || '')}</div></div>
         <div class="grow"></div>${EPL.tag(s.mau, s.nhan)}
         ${guiDuoc() && (b.status === 'cho_gui' || b.can_dao) ? `<button type="button" class="btn sm primary" data-btc="gui">${NN.h('btc_gui')}</button>` : ''}
-        ${guiDuoc() && b.status === 'da_gui' && !b.can_dao ? `<button type="button" class="btn sm" data-btc="cap-nhat">${NN.h('ck_cap_nhat')}</button>` : ''}</div>
+        ${guiDuoc() && b.status === 'da_gui' && !b.can_dao ? `<button type="button" class="btn sm" data-btc="cap-nhat">${NN.h('ck_cap_nhat')}</button>` : ''}
+        ${b.trip_id && b.trip_doc_no && duocVao('chung-tu') ? `<button type="button" class="btn sm" data-mo-do="hs">${NN.h('btc_mo_ho_so')}</button>` : ''}
+        ${b.trip_id && b.trip_doc_no && duocVao('phieu-xuat-xe') ? `<button type="button" class="btn sm" data-mo-do="phieu">${NN.h('btc_mo_do')}</button>` : ''}</div>
+      <div class="btc-nguon-gt">${DK[b.nguon] ? `<b>${esc(DK[b.nguon])}</b>` : ''}<span>${NN.h(NGUON.includes(b.nguon) ? 'btc_g_' + b.nguon : 'btc_g_khac')}</span></div>
       <div class="btc-the">
         <div><span>${NN.h('btc_ngay')}</span><b>${EPL.ngay(b.ngay)}</b></div>
         <div><span>${NN.h('btc_goc')}</span><b>${goc(b)}</b></div>
@@ -173,6 +191,8 @@
         ${b.loi_gui && b.status !== 'huy' ? `<span class="neg">${b.attempts ? '#' + b.attempts + ' · ' : ''}${esc(b.loi_gui)}</span>` : ''}
       </div>`;
     o.querySelectorAll('[data-btc]').forEach(n => n.addEventListener('click', () => viec(b, n.dataset.btc, n)));
+    o.querySelectorAll('[data-mo-do]').forEach(n => n.addEventListener('click', () => (n.dataset.moDo === 'hs'
+      ? EPL.di('chung-tu', { id: b.trip_id }) : EPL.di('phieu-xuat-xe', { id: b.trip_id }))));
   }
 
   /** Gửi / đảo / hỏi lại MỘT bút toán, hoặc Gửi hết — rồi tải lại (lỗi bên kế toán hiện ngay, bản ghi giữ lỗi). */
@@ -250,7 +270,7 @@
       const t = (ctx && ctx.tham) || {};
       PHIEU = t.trip_id ? { id: t.trip_id, doc: t.doc || null } : null;
       if (t.id) CHON = t.id;
-      veNguon();
+      veNguon(); veChuTT();
       if (t.ky) q('#btc-ky').value = t.ky;
       if (t.nguon) q('#btc-nguon').value = t.nguon;
       q('#btc-ky').addEventListener('change', () => { CHON = null; tai(); });
@@ -262,7 +282,7 @@
       await Promise.all([napTen(), tai()]);
       veXem();
     },
-    onLang() { if (root) { veTieuDe(); veNguon(); veHet(); } },
+    onLang() { if (root) { veTieuDe(); veNguon(); veChuTT(); veHet(); } },
     destroy() { window.removeEventListener('resize', khiDoiCo); clearTimeout(henCao); clearTimeout(hen); },
     xuatExcel() {
       const T = NN.t, rows = [];

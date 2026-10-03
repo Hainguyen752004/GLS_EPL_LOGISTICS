@@ -4,8 +4,9 @@ services/chung_tu_dong_do.py gọi từ ban_giao.dong_goi.
 
     python kiem/thu_chung_tu_dong_do.py [số phiếu …]
 
-CHỈ ĐỌC bản sao DB _d7: chuỗi nối lấy từ .may_thu/url_epl_lao_d7.txt (không in ra), phiên mở ở chế độ chỉ đọc
-(default_transaction_read_only) — bài không ghi được gì kể cả khi mã có lỗi. Không gọi mạng, không cần máy chủ chạy.
+CHỈ ĐỌC bản sao DB _d7: chuỗi nối lấy từ .may_thu/url_epl_lao_d7.txt (không in ra). Bài chạy trong MỘT giao dịch rồi ROLLBACK
+— không commit gì; bảng mới của đợt 02/10 tối (gui_so_nhien_lieu_tune, can_tru_tune) chưa có trên bản sao thì dựng trong chính
+giao dịch đó (rollback xoá luôn). Không gọi mạng, không cần máy chủ chạy.
 
   A Hai phiếu mẫu THU-KBAZ (khoá 01/10): in line_key + settlement từng dòng, đối chiếu với số chứng từ thật trong DB:
       G1 xe nhà  — cước SO · dầu kho (chưa có bút toán xuất kho — khoá trước luật) · dầu mua dọc đường (ngoài tạm ứng → tất
@@ -111,8 +112,10 @@ def kiem_t1(g, p):
     dung(s["state"] == "has_voucher" and s["kind"] == "sales_order" and s["doc_no"] == "TK-20261001-000165",
          "T1 cước → SO TK-20261001-000165 (%s %s)" % (s["state"], s["doc_no"]))
     s = mot(g, "diesel", "kho")
-    dung(s["kind"] == "journal" and s["state"] in ("has_voucher", "pending") and "xuat_ban" in (s["ref_no"] or ""),
-         "T1 dầu kho 200 l → xuất bán (%s %s %s)" % (s["state"], s["ref_no"], s["doc_no"]))
+    # 02/10 tối: phần bán dầu kho cho đối tác là SO nhiên liệu (services/so_nhien_lieu.py) — chưa bấm Tạo SO thì pending
+    dung(s["kind"] == "sales_order" and s["state"] in ("has_voucher", "pending"),
+         "T1 dầu kho 200 l → xuất bán = SO nhiên liệu (%s %s %s)" % (s["state"], s["ref_no"], s["doc_no"]))
+    dung("fuel_so" in g["header"], "T1 header.fuel_so có khoá (%s)" % (g["header"].get("fuel_so"),))
     for k in ("x_vn", "x_phone", "x_toll"):
         s = mot(g, k)
         dung(s["state"] == "has_voucher" and s["kind"] == "advance" and s["doc_no"] == "1368-CTR-261001-00073"
@@ -130,7 +133,7 @@ def kiem_t1(g, p):
 
 
 def bo_khoa_moi(g):
-    h = {k: v for k, v in g["header"].items() if k != "line_key_prefix"}
+    h = {k: v for k, v in g["header"].items() if k not in ("line_key_prefix", "fuel_so")}
     if isinstance(h.get("hire"), dict):
         h["hire"] = {k: v for k, v in h["hire"].items() if k not in ("line_key", "settlement", "journal")}
     return {"header": h, "details": [{k: v for k, v in x.items() if k not in MOI} for x in g["details"]]}
@@ -164,8 +167,13 @@ def kiem_mot_do(db, p, dem):
 
 
 def main():
-    eng = create_engine(URL, connect_args={"options": "-c default_transaction_read_only=on -c timezone=UTC"})
-    db = sessionmaker(bind=eng)()
+    import models as M
+    eng = create_engine(URL, connect_args={"options": "-c timezone=UTC"})
+    conn = eng.connect()
+    ngoai = conn.begin()
+    for t in ("gui_so_nhien_lieu_tune", "can_tru_tune"):
+        M.Base.metadata.tables[t].create(bind=conn, checkfirst=True)
+    db = sessionmaker(bind=conn, autoflush=False)()
     try:
         print("A. hai phiếu mẫu THU-KBAZ")
         for so, ham in (("THU-KBAZ-G1/EPL", kiem_g1), ("THU-KBAZ-T1/EPL", kiem_t1)):
@@ -206,8 +214,9 @@ def main():
         for (st, k), n in sorted(dem.items(), key=lambda kv: (-kv[1], str(kv[0]))):
             print("    %-12s %-18s %d" % (st, k, n))
     finally:
-        db.rollback()
         db.close()
+        ngoai.rollback()
+        conn.close()
     print("=" * 110)
     print("XONG — %s" % ("không có lỗi" if not LOI else "%d chỗ SAI: %s" % (len(LOI), " | ".join(LOI))))
     sys.exit(1 if LOI else 0)

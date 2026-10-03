@@ -17,6 +17,8 @@ thì hiện số và KHOÁ; chỉ dòng tiền CHƯA có chứng từ mới đư
 
 PHÂN DÒNG CHI — đọc BẢN GHI THẬT trước, rồi mới theo luật của chính các đường tự động (không viết lại công thức):
   1. xe thuê, chủ xe tự trả (paid_by_epl False — cùng cờ `paid_by` của gói) ......................... not_payable · owner_paid
+  1b. xe thuê, dầu / phụ tùng kho EPL XUẤT BÁN cho đối tác (so_nhien_lieu.dong_ban) → sales_order theo SO NHIÊN LIỆU (02/10):
+     SO đã tạo → has_voucher (doc_no = số SO), chưa → pending. Giá vốn 607/1371 của dòng vẫn là bút toán xuat_ban (journal).
   2. dòng nằm trong một bút toán chờ chưa huỷ (but_toan_cho nguồn no_ncc · xuat_noi_bo · xuat_ban, `dong[].ref` = id dòng)
      → journal: bên kia đã nhận (da_gui) thì has_voucher, còn cho_gui thì pending
   3. dòng nằm trong một phiếu chi "Chi khác" mục V chưa huỷ (chi_muc_tune.expense_ids) → pay_now: da_gui · da_chi has_voucher,
@@ -38,7 +40,8 @@ CHI TẠI QUỸ TRANG ĐIỀU XE (trước 01/10, hoặc Sếp chi tay — route
 chứng từ bên em (bảng chung_tu: PC_TU, PC_SC, PXK_NL / PXK_PT), không có phiếu bên kế toán → pending, câu nói "đối soát, không
 lập lại". Tờ đó từng sang trang kế toán tạm — số bên đó là số thử, không coi là chứng từ kế toán.
 Tiền thuê xe liên kết (header.hire): settlement theo đề nghị trả chủ xe (chi_chu_xe_tune / trips.owner_payment_id) ·
-owner_payment, kèm `journal` = bút toán thue_xe (Nợ 621 / Có 4022).
+owner_payment, kèm `journal` = bút toán thue_xe (Nợ 621 / Có 4022). Xe thuê có xuất bán: header.fuel_so {order_code, total, paid,
+remaining, status, read_at} — bản đọc lại thu tiền SO nhiên liệu (gui_so_nhien_lieu_tune).
 
 Chỉ ĐỌC: không ghi gì, không hỏi sang hệ kế toán — trạng thái là bản chép lần đọc lại gần nhất của từng đường.
 """
@@ -276,6 +279,32 @@ def _tat_toan(db, p):
                 ref_no=ref, doc_status=rec.status if rec is not None else (bt.status if bt is not None else x.status))
 
 
+# ================================================================ SO nhiên liệu cho đối tác (02/10)
+def so_nl(b):
+    """settlement của dòng xuất bán cho đối tác theo lần gửi SO nhiên liệu của DO."""
+    if b is not None and b.status == "synced":
+        con = "" if b.thu_con_no is None else " · còn nợ %s %s" % (_so(b.thu_con_no), b.currency or "LAK")
+        return _ket("has_voucher", "sales_order", "Xuất bán cho đối tác — SO nhiên liệu %s%s (giá vốn: bút toán xuất kho)" % (
+            b.order_code or "—", con), doc_no=b.order_code, doc_status=b.status)
+    if b is not None and b.status == "conflict":
+        return _ket("pending", "sales_order", "Xuất bán cho đối tác — gửi SO nhiên liệu bị bên kế toán báo trùng (409); đối soát, không "
+                    "lập lại.", doc_status=b.status)
+    if b is not None:
+        return _ket("pending", "sales_order", "Xuất bán cho đối tác — chưa tạo được SO nhiên liệu (%s); KT Thu/Chi bấm lại «Tạo SO bên kế "
+                    "toán» ở màn Đề nghị thu." % (b.error_message or b.error_code or "lỗi"), doc_status=b.status)
+    return _ket("pending", "sales_order", "Xuất bán cho đối tác — chưa tạo SO nhiên liệu; KT Thu/Chi bấm «Tạo SO bên kế toán» ở màn Đề "
+                "nghị thu (cùng SO cước).")
+
+
+def fuel_so(b):
+    """header.fuel_so của gói DO — None khi DO chưa gửi SO nhiên liệu."""
+    if b is None:
+        return None
+    return {"order_code": b.order_code if b.status == "synced" else None, "status": b.status, "currency": b.currency or "LAK",
+            "total": b.total_amount if b.status == "synced" else None, "paid": b.thu_da_thu, "remaining": b.thu_con_no,
+            "read_at": b.thu_doc_luc.replace(microsecond=0).isoformat() + "+00:00" if b.thu_doc_luc else None}
+
+
 # ================================================================ tiền thuê xe liên kết (header.hire)
 def thue(db, p):
     """(settlement trả chủ xe, settlement bút toán thue_xe) của phiếu xe thuê."""
@@ -293,9 +322,14 @@ def thue(db, p):
             if p.id in ids and (tot is None or HANG.get(r.status, 0) > HANG.get(tot.status, 0)):
                 tot = r
     if tot is not None and tot.status in ("da_gui", "da_chi"):
-        tra = _ket("has_voucher", "owner_payment", "Trả chủ xe %s — phiếu chi «Chi khác» %s %s" % (
-            p.owner_name or "", tot.document_no or tot.real_id or "", "đã chi" if tot.status == "da_chi" else "chờ thủ quỹ chi"),
-            ref_no=tot.ref_no, doc_no=tot.document_no, doc_status=tot.status)
+        if tot.status == "da_chi" and not (tot.document_no or tot.real_id):
+            # 02/10: cấn trừ hết SO nhiên liệu — đề nghị xong không có phiếu chi
+            tra = _ket("has_voucher", "owner_payment", "Trả chủ xe %s — đã cấn trừ hết vào SO nhiên liệu (đề nghị %s), không có phiếu chi" % (
+                p.owner_name or "", tot.ref_no), ref_no=tot.ref_no, doc_status=tot.status)
+        else:
+            tra = _ket("has_voucher", "owner_payment", "Trả chủ xe %s — phiếu chi «Chi khác» %s %s" % (
+                p.owner_name or "", tot.document_no or tot.real_id or "", "đã chi" if tot.status == "da_chi" else "chờ thủ quỹ chi"),
+                ref_no=tot.ref_no, doc_no=tot.document_no, doc_status=tot.status)
     elif tot is not None:
         tra = _ket("pending", "owner_payment", "Đề nghị trả chủ xe %s chưa tạo được phiếu chi bên kế toán (%s) — KT Thu/Chi gửi lại ở "
                    "màn Xe liên kết." % (tot.ref_no, tot.error_message or tot.error_code or "lỗi"), ref_no=tot.ref_no, doc_status=tot.status)
@@ -314,12 +348,16 @@ def thue(db, p):
 def gan(db, p, goi, dong, so):
     """Gắn line_key + settlement vào từng dòng của gói `{header, details}` (sửa tại chỗ). `dong` = dòng chi của phiếu (cùng
     danh sách dong_goi dựng details), `so` = lần gửi SO của DO (GuiSoTune | None)."""
+    from services import so_nhien_lieu as NL
     h = goi["header"]
     h["line_key_prefix"] = tien_to(h["do_id"])
     lk = p.company == "joint"
     if lk and isinstance(h.get("hire"), dict):
         h["hire"]["line_key"] = khoa_dong("thue", p.id)
         h["hire"]["settlement"], h["hire"]["journal"] = thue(db, p)
+    ban = {d.id for d in NL.dong_ban(p, dong)} if lk else set()
+    nl = NL.so_cua(db, p) if lk else None
+    h["fuel_so"] = fuel_so(nl)
 
     theo_id = {d.id: d for d in dong}
     bt, cm = _but_toan_theo_dong(db, p), _chi_muc_theo_dong(db, p)
@@ -353,6 +391,8 @@ def gan(db, p, goi, dong, so):
     def chia(d):
         if lk and d.paid_by_epl is False:
             return _ket("not_payable", "owner_paid", "Chủ xe tự trả — không phải tiền của EPL.")
+        if d.id in ban:
+            return so_nl(nl)
         if d.id in bt:
             r = bt[d.id]
             return _but_toan(r, _ten_no(d) if r.nguon == BTC.NO_NCC else TEN_NGUON.get(r.nguon, r.nguon))

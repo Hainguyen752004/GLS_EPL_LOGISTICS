@@ -1,26 +1,29 @@
-<!-- Đề nghị theo DO (sếp 30/09: "trang quản lý DO nào phiếu chi gì trạng thái gì, DO nào phiếu thu gì trạng thái gì").
-     Tab "Theo DO": mỗi DO một dòng — đề nghị chi (tạm ứng, nhiên liệu, chi các mục III–VI), đề nghị thu, số tờ chứng từ đã
-     đối chiếu; bấm một DO → khung phải kể từng tờ. Tờ để in ở hai màn Phiếu đề nghị chi / Phiếu đề nghị thu.
-     Tab "Sổ chứng từ" (01/10, bỏ trang kế toán tạm phần tiền): tờ chứng từ bên mình sinh để in / xem / định khoản và đánh
-     dấu đối chiếu tay — không còn đẩy sang đâu; việc tiền đi qua hệ kế toán (anh Tune). -->
+<!-- Đề nghị theo DO — HỒ SƠ DO HAI BÊN (chủ dự án 02/10: "trang này có chức năng gì, có phải để xem qua lại giữa bên mình và
+     anh Tune không" — đúng vậy). Mỗi DO: bên điều xe đề nghị chi / xuất kho / thu những gì, và bên kế toán (hệ anh Tune) đã lập
+     chứng từ nào, trạng thái ra sao — bảy nhóm, mỗi nhóm một cặp "bên điều xe ↔ bên kế toán".
+     Trái: danh sách DO của tháng, mỗi DO bảy ô màu (một ô một nhóm). Phải: một DO — tab "Hai bên theo nhóm" (bảy thẻ cặp
+     chứng từ) và tab "Từng dòng tiền" (mỗi dòng của DO đã vào chứng từ nào — settlement của gói DO).
+     Tab "Sổ chứng từ": tờ bên mình sinh để in / xem / định khoản và đánh dấu đối chiếu tay (không đổi).
+     API: GET /api/ho-so-do?thang=&q= · GET /api/ho-so-do/{trip_id} (routes/ho_so_do.py, chỉ đọc). -->
 <div class="ct2">
   <div class="ct2-top no-print">
     <div class="seg" id="ct2-tab">
-      <button class="on" data-tab="do"><span data-i18n="ct_theo_do"></span></button>
+      <button class="on" data-tab="do"><span data-i18n="hs_tab"></span></button>
       <button data-tab="so"><span data-i18n="ct_so_chung_tu"></span></button>
     </div>
-    <div class="seg ct2-khi-do" id="ct2-loc">
-      <button class="on" data-loc=""><span data-i18n="all"></span><b id="ct2-n-all">·</b></button>
-      <button data-loc="chi"><span data-i18n="ct_loc_chi"></span><b id="ct2-n-chi">·</b></button>
-      <button data-loc="xk"><span data-i18n="ct_loc_xk"></span><b id="ct2-n-xk">·</b></button>
-      <button data-loc="thu"><span data-i18n="ct_loc_thu"></span><b id="ct2-n-thu">·</b></button>
-    </div>
+    <div class="seg ct2-khi-do" id="ct2-loc"></div>
     <label class="o-tim ct2-khi-do">
       <svg viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14M21 21l-5-5"/></svg>
-      <input id="ct2-tim" type="search" autocomplete="off" data-i18n-ph="td_search">
+      <input id="ct2-tim" type="search" autocomplete="off" data-i18n-ph="hs_tim">
     </label>
     <div class="grow"></div>
     <div class="field ct2-khi-do"><label data-i18n="month"></label><input type="month" id="ct2-thang"></div>
+  </div>
+
+  <!-- dòng giới thiệu: màn này để làm gì — một dòng, không chiếm chỗ -->
+  <div class="ct2-gt ct2-khi-do no-print" id="ct2-gt">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h7v10H4zM13 7h7v10h-7zM11 12h2"/></svg>
+    <span data-i18n="hs_gioi_thieu"></span>
   </div>
 
   <div class="ct2-than" id="ct2-do">

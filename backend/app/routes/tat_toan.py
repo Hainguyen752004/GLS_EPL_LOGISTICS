@@ -36,7 +36,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import ChiTune, Driver, Trip, TripExpense, Voucher
 from services.bao_mat import nguoi_hien_tai
-from services.tinh_toan import CACH_TRA, CACH_TRA_MAC_DINH, la_tien_mat_tai_xe, ty_gia
+from services.tinh_toan import CACH_TRA, CACH_TRA_MAC_DINH, cach_tra, la_tien_mat_tai_xe, ty_gia
 from services import dem_bao_cao as DEM
 
 router = APIRouter()
@@ -202,11 +202,84 @@ def bang_thang(db, ky):
 
 
 def mot(db, driver_id, ky):
-    """Một tài xế một kỳ, kèm danh sách phiếu — khung chi tiết và lúc chốt."""
+    """Một tài xế một kỳ, kèm danh sách phiếu — khung chi tiết và lúc chốt. Mỗi phiếu thêm chi tiết từng dòng tiền (02/10 — màn
+    Tất toán tài xế là bảng tính chi tiết): `chi_tiet_phieu`."""
     t = db.get(Driver, driver_id)
     if not t:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có tài xế này."})
-    return tinh_ky_lo(db, [t], ky)[0]          # nạp theo lô, không mỗi phiếu một câu
+    d = tinh_ky_lo(db, [t], ky)[0]             # nạp theo lô, không mỗi phiếu một câu
+    ct = chi_tiet_phieu(db, [x["trip_id"] for x in d["phieu"]])
+    for x in d["phieu"]:
+        x.update(ct.get(x["trip_id"]) or {"dong": [], "da_ung_lak": 0, "da_chi_that_lak": 0, "chenh_lak": 0})
+    return d
+
+
+MUC_SO = {"fuel": "III", "travel": "IV", "other": "VI"}
+
+
+def _cach(d, company):
+    """Cách trả một dòng cho bảng tất toán: kho · the (trừ thẻ cao tốc) · ncc (ghi nợ trạm / nhà cung cấp) · luong · tien_mat."""
+    if d.source == "kho":
+        return "kho"
+    if getattr(d, "toll_card_id", None):
+        return "the"
+    if d.ghi_no:
+        return "ncc"
+    c = cach_tra(d, company) if d.section in ("travel", "other") else "tien_mat"
+    return c if c in ("ncc", "luong") else "tien_mat"
+
+
+def chi_tiet_phieu(db, trip_ids):
+    """{trip_id: {dong, da_ung_lak, da_chi_that_lak, chenh_lak}} — TỪNG DÒNG TIỀN mục III, IV, VI của mỗi phiếu xe nhà (giao ước
+    màn Tất toán tài xế, 02/10). Bốn câu cho cả kỳ (dòng chi, phiếu, tờ tạm ứng, phiếu chi bên kế toán).
+
+      dong[]   {muc III|IV|VI, khoan, sl, don_gia, tien_te, tien_lak, cach_tra: tien_mat | luong | ncc | the | kho,
+                nguon: tam_ung (nằm trong số đã ứng theo tờ PTU) | tu_chi (tài xế tự bỏ tiền ngoài tạm ứng — dầu mua dọc đường…) |
+                cung_luong | ncc | the | kho (không vào tất toán, hiện cho tài xế thấy đủ), so_ptu, phieu_chi}
+      da_ung_lak       tờ PTU ĐÃ CẤP: số phiếu chi bên kế toán đã ghi sổ, không có thì số của tờ (cùng luật tinh_ky)
+      da_chi_that_lak  Σ dòng tiền mặt tài xế (tinh_toan.la_tien_mat_tai_xe — cùng luật tờ tạm ứng)
+      chenh_lak        da_chi_that − da_ung (dương: công ty chi bù)
+    Dòng nào nằm trong số đã ứng: tờ PTU chỉ giữ tổng — chia theo chung_tu_dong_do._trong_tam_ung (cùng cách gói DO)."""
+    from services.ban_giao import _ten
+    from services.chung_tu_dong_do import _trong_tam_ung
+    ids = [i for i in trip_ids if i] or [""]
+    phieu = {p.id: p for p in db.query(Trip).filter(Trip.id.in_(ids))}
+    dong = defaultdict(list)
+    for d in (db.query(TripExpense).filter(TripExpense.trip_id.in_(ids), TripExpense.section.in_(tuple(MUC_SO)))
+              .order_by(TripExpense.trip_id, TripExpense.section, TripExpense.line_no)):
+        dong[d.trip_id].append(d)
+    ptu = {v.trip_id: v for v in db.query(Voucher).filter(Voucher.trip_id.in_(ids), Voucher.kind == "advance", Voucher.status != "huy")}
+    chi = {r.voucher_id: r for r in db.query(ChiTune).filter(ChiTune.trip_id.in_(ids))}
+    ra = {}
+    for tid, p in phieu.items():
+        v = ptu.get(tid)
+        rc = chi.get(v.id) if v is not None else None
+        tm = [d for d in dong[tid] if la_tien_mat_tai_xe(d, p.company)]
+        lak = {d.id: round((d.qty or 0) * (d.unit_price or 0) * ty_gia(p, d.currency)) for d in dong[tid]}
+        so_ung = (rc.amount_lak if rc is not None and rc.amount_lak is not None else (v.amount_lak if v is not None else 0))
+        trong = _trong_tam_ung(p, tm, so_ung)[0] if v is not None else set()
+        da_ung = 0.0
+        if v is not None and v.status == "da_cap":
+            da_ung = rc.amount_lak if (rc is not None and rc.status == "da_chi" and rc.amount_lak is not None) else (v.amount_lak or 0)
+        ds = []
+        for d in dong[tid]:
+            cach = _cach(d, p.company)
+            if d in tm:
+                nguon = "tam_ung" if d.id in trong else "tu_chi"
+            else:
+                nguon = {"luong": "cung_luong", "tien_mat": "tu_chi"}.get(cach, cach)
+            ten = _ten(db, d)
+            # item_key + khoan_lo (03/10): màn dịch tên khoản theo khoá chuẩn khi có; dòng tự gõ / phụ tùng thì khoan_lo = tên gõ
+            ds.append({"id": d.id, "muc": MUC_SO.get(d.section), "khoan": ten[0], "khoan_lo": ten[1], "item_key": d.item_key,
+                       "sl": d.qty, "don_gia": d.unit_price,
+                       "tien_te": d.currency or "LAK", "tien_lak": lak[d.id], "cach_tra": cach, "nguon": nguon,
+                       "tinh_tat_toan": d in tm,
+                       "so_ptu": v.doc_no if (v is not None and nguon == "tam_ung") else None,
+                       "phieu_chi": rc.document_no if (rc is not None and nguon == "tam_ung") else None})
+        chi_that = sum(lak[d.id] for d in tm)
+        ra[tid] = {"dong": ds, "da_ung_lak": round(da_ung), "da_chi_that_lak": round(chi_that), "chenh_lak": round(chi_that - da_ung),
+                   "so_ptu": v.doc_no if v is not None else None, "phieu_chi_tam_ung": rc.document_no if rc is not None else None}
+    return ra
 
 
 # ---------------------------------------------------------------- màn Tất toán tài xế (01/10: tiền ở hệ kế toán anh Tune)

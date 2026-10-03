@@ -39,8 +39,6 @@ TOI_DA = 3000              # số bản lưu tối đa trong bộ nhớ một ti
 SONG_TOI_DA = 1800         # giây
 _KHO, _KHOA = {}, threading.Lock()
 _CO_BANG = []
-_TANG = ("INSERT INTO phien_ban_thang (khoa, so) VALUES (:k, 1) "
-         "ON CONFLICT (khoa) DO UPDATE SET so = phien_ban_thang.so + 1")
 
 
 def _thang(d):
@@ -104,8 +102,11 @@ def _truoc_commit(session):
         if not _CO_BANG:                     # DB cũ chưa có bảng (công cụ chạy trước khi máy chủ mới khởi động)
             c.execute(text(_BANG_SQL))
             _CO_BANG.append(True)
-        for k in sorted(thang):
-            c.execute(text(_TANG), {"k": k})
+        # MỘT câu cho mọi khoá (02/10: trước đây một câu mỗi khoá — tháng + ngày + … — mỗi câu một lượt tới DB ở xa). Dòng ghi
+        # theo đúng thứ tự VALUES (đã xếp) nên thứ tự lấy khoá vẫn cố định như cũ; khoá trong tập không trùng nhau.
+        ks = sorted(thang)
+        c.execute(text("INSERT INTO phien_ban_thang (khoa, so) VALUES %s ON CONFLICT (khoa) DO UPDATE SET so = phien_ban_thang.so + 1"
+                       % ", ".join("(:k%d, 1)" % i for i in range(len(ks)))), {"k%d" % i: k for i, k in enumerate(ks)})
 
 
 @event.listens_for(Session, "after_rollback")

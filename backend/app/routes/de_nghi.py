@@ -40,6 +40,7 @@ from services import chi_tune as CHI
 from services import chung_tu as CT
 from services import de_nghi_thu as DNT
 from services import gui_tune as GT
+from services import so_nhien_lieu as NL
 from services.bao_mat import nguoi_hien_tai
 from services.phan_quyen import thay_tien_ban, thay_tien_chi
 from services.tinh_toan import tien_dong, tinh_phieu
@@ -249,19 +250,44 @@ GUI_SO = ("acct", "admin")          # người khoá phiếu (KT Thu/Chi Viêng 
 @router.get("/api/trips/{tid}/tao-so")
 def xem_tao_so(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     """Gói SẼ gửi và trạng thái lần gửi trước. Không gọi mạng. Lỗi dữ liệu (thiếu mã khách, thiếu tuyến, cước THB…) nằm
-    trong `loi` để màn nói rõ phải sửa gì trước khi bấm gửi."""
+    trong `loi` để màn nói rõ phải sửa gì trước khi bấm gửi. Xe thuê có dầu / phụ tùng kho xuất bán: `nhien_lieu` là phần SO
+    nhiên liệu cho đối tác gửi cùng nút (02/10) — {can, trang_thai, body, tom_tat, loi, gui_lai_goi_cu}."""
     _chan_tai_xe(user); _chan_tien_ban(user)
-    return GT.xem_truoc(db, _phieu(db, tid))
+    p = _phieu(db, tid)
+    return dict(GT.xem_truoc(db, p), nhien_lieu=NL.xem_truoc(db, p))
 
 
 @router.post("/api/trips/{tid}/tao-so")
 def tao_so(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
-    """Gửi DO đã về + đã khoá sang bên công nợ; bên đó tạo SO và ghi công nợ khách. Đã có SO thì trả lại, không gọi nữa."""
+    """Gửi DO đã về + đã khoá sang bên công nợ; bên đó tạo SO và ghi công nợ khách. Đã có SO thì trả lại, không gọi nữa.
+    Cùng nút (02/10): xe thuê có dầu / phụ tùng kho xuất bán → SO NHIÊN LIỆU cho đối tác (services/so_nhien_lieu.py). Hai phần gửi
+    độc lập: SO cước đã có mà SO nhiên liệu chưa thì bấm lại chỉ gửi phần thiếu. Phần nào hỏng → HTTP lỗi của phần đó, `detail` kèm
+    kết quả phần kia (`trang_thai` cước, `nhien_lieu`). → {trang_thai, da_co_truoc, nhien_lieu: {trang_thai, da_co_truoc} | null}."""
     if user.role not in GUI_SO:
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN",
                                   "loi": "Chỉ KT Thu/Chi Viêng Chăn (người khoá phiếu) hoặc Sếp gửi đề nghị thu sang bên công nợ."})
-    kq, da_co = GT.gui(db, _phieu(db, tid), user)
-    return {"trang_thai": kq, "da_co_truoc": da_co}
+    p = _phieu(db, tid)
+    kq, da_co, loi = None, None, None
+    try:
+        kq, da_co = GT.gui(db, p, user)
+    except HTTPException as e:
+        loi = e
+    nl, loi_nl = None, None
+    try:
+        r = NL.gui(db, p, user)
+        nl = {"trang_thai": r[0], "da_co_truoc": r[1]} if r is not None else None
+    except HTTPException as e:
+        loi_nl = e
+        nl = {"trang_thai": NL.xuat(NL.so_cua(db, p)), "da_co_truoc": False,
+              "loi": e.detail if isinstance(e.detail, dict) else {"loi": str(e.detail)}}
+    if loi is not None or loi_nl is not None:
+        e = loi if loi is not None else loi_nl
+        d = dict(e.detail) if isinstance(e.detail, dict) else {"ma": "LOI", "loi": str(e.detail)}
+        if loi is None:
+            d["loi"] = "SO cước %s. Chưa tạo SO nhiên liệu: %s" % ("đã có" if da_co else "đã tạo", d.get("loi") or d.get("ma"))
+        d.update({"trang_thai": kq if loi is None else GT.xuat(DNT.so_cua(db, p)), "da_co_truoc": da_co, "nhien_lieu": nl})
+        raise HTTPException(e.status_code, d)
+    return {"trang_thai": kq, "da_co_truoc": da_co, "nhien_lieu": nl}
 
 
 # ---------------------------------------------------------------- tạm ứng: phiếu chi bên hệ kế toán (01/10)

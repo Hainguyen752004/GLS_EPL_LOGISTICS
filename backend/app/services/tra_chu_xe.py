@@ -13,6 +13,11 @@ bên đó chi và ghi sổ, rồi gọi `danh_dau_tra` với mã đợt "TUNE:<s
      (EPL_KETOAN, ba đường máy /api/lien-thong/ban-hang/…). Đề nghị trả lấy SỐ TRẢ THỰC = Σ phiếu − Σ hàng mua: `tinh_tru`.
      Lúc lập đề nghị giữ chỗ các phiếu bán ("TUNE-CHO:<số đề nghị>"), thủ quỹ đã chi thì chốt ("TUNE:<số phiếu chi>") và ghi
      bút toán chờ Nợ 4022 / Có 707, đề nghị bị bỏ thì trả phiếu bán về chờ trừ.
+  4. **TẤT TOÁN ĐỐI TÁC** (chủ dự án chốt 02/10) — `phan_tra`: trả đối tác = tiền thuê − phí quản lý − cắt quá tải − tạm ứng EPL
+     đưa (tiền mặt) − nợ nhà cung cấp EPL trả thay − SO NHIÊN LIỆU còn nợ. Dầu / phụ tùng kho xuất bán cho đối tác không trừ thẳng
+     nữa mà thành SO nhiên liệu bên kế toán (services/so_nhien_lieu.py); lập đề nghị trả thì máy CẤN TRỪ phần SO còn nợ (phiếu cấn
+     trừ bên kế toán, bảng can_tru_tune), rồi phiếu chi phần còn lại. Đối tác tự mua tự trả hết → trả đủ tiền thuê. Khi SO nhiên
+     liệu chưa thu đồng nào, số còn trả đúng bằng `tra_chu_xe` cũ của tinh_phieu (EPL ứng gồm cả dầu theo giá bán).
 """
 import datetime as dt
 from urllib.parse import quote
@@ -20,24 +25,91 @@ from urllib.parse import quote
 from fastapi import HTTPException
 
 from models import Owner, Trip, TripExpense
-from services.tinh_toan import lam_tron, tinh_phieu
+from services.tinh_toan import la_tien_mat_tai_xe, la_xuat_ban, lam_tron, tien_dong, tinh_phieu, ty_gia
 
 TIEN_TO_TUNE = "TUNE:"          # chỉ đề nghị trả qua hệ kế toán anh Tune mới đánh "đã trả" (cắt sổ 01/10)
 GIU_CHO = "TUNE-CHO:"           # phiếu bán đang nằm trong một đề nghị trả chưa chi (kho tạm không cho thu, không cho bỏ)
 NGUON_BAN = "ban_chu_xe"        # bút toán chờ Nợ 4022 / Có 707 của hàng bán cho chủ xe — một phiếu bán một bút toán
 
 
-def dong_phieu(db, p, dong=None):
-    """Một phiếu cho màn trả chủ xe: số trả và các phần trừ, cùng trạng thái (khoá, đã trả)."""
-    k = tinh_phieu(p, db.query(TripExpense).filter(TripExpense.trip_id == p.id).order_by(TripExpense.section, TripExpense.line_no).all()
-                   if dong is None else dong)
-    return {"id": p.id, "doc_no": p.doc_no, "doc_date": p.doc_date.isoformat() if p.doc_date else None,
-            "truck_no": p.truck_no, "customer_name": p.customer_name, "company": p.company, "owner_id": p.owner_id,
-            "owner_name": p.owner_name, "locked": bool(p.locked),
-            "owner_paid": bool(p.owner_paid or p.owner_payment_id), "owner_payment_id": p.owner_payment_id,
-            "tan_tinh": k["tan_tinh"], "hire_ccy": k.get("hire_ccy"), "tien_thue": k.get("tien_thue"), "phi": k.get("phi"),
-            "tru_vuot": k.get("tru_vuot"), "ung_truoc": k.get("ung_truoc"), "tra_chu_xe": k.get("tra_chu_xe"),
-            "tra_chu_xe_lak": k.get("tra_chu_xe_lak")}
+def phan_tra(p, dong, so=None):
+    """Các phần của tiền trả đối tác cho MỘT phiếu xe thuê (chủ dự án chốt 02/10). `so` = lần gửi SO nhiên liệu của DO
+    (GuiSoNhienLieuTune | None) — còn nợ theo bản đọc lại. Tiền theo TIỀN THUÊ của phiếu, kèm số Kíp (tỷ giá khoá trên phiếu).
+
+      tam_ung     dòng EPL ứng TIỀN MẶT (tinh_toan.la_tien_mat_tai_xe — tờ tạm ứng PTU)
+      nhien_lieu  dầu / phụ tùng kho EPL XUẤT BÁN cho đối tác theo giá bán (tinh_toan.la_xuat_ban) — SO nhiên liệu
+      no_ncc      mọi khoản EPL ứng còn lại (ghi nợ trạm / nhà cung cấp, chipping, thẻ cao tốc, garage quỹ trả ngay…) — EPL trả
+                  thay. Ba phần cộng lại đúng bằng tổng chi EPL ứng của tinh_phieu (`ung_truoc`).
+      tra_truoc_can_tru = tiền thuê − phí − quá tải − (tam_ung + no_ncc)
+      can_tru     phần SO nhiên liệu còn nợ cấn vào tiền trả = min(còn nợ, tra_truoc_can_tru nếu dương) — Kíp (SO tính bằng Kíp)
+      con_tra     = tra_truoc_can_tru − can_tru → số phiếu chi
+    Phiếu có xuất bán mà SO nhiên liệu chưa tạo: `cho_so` True, cấn trừ giả định đủ phần nhiên liệu (con_tra = tra_chu_xe cũ) —
+    chỉ để xem; lập đề nghị bị chặn cho tới khi tạo SO."""
+    t = tinh_phieu(p, dong)
+    h = t.get("hire_ccy") or "LAK"
+    r_h = ty_gia(p, h)
+    epl = [d for d in dong if d.paid_by_epl is not False and (d.qty or 0) > 0]
+    ban = [d for d in epl if la_xuat_ban(p, d)]
+    tm = [d for d in epl if not la_xuat_ban(p, d) and la_tien_mat_tai_xe(d, p.company)]
+    nl_lak = round(sum(tien_dong(p, d) for d in ban))
+    tu_lak = round(sum(tien_dong(p, d) for d in tm))
+    ncc_lak = max(0, round(t.get("tong_chi_lak") or 0) - nl_lak - tu_lak)
+    tien_thue, phi, vuot = t.get("tien_thue") or 0, t.get("phi") or 0, t.get("tru_vuot") or 0
+    goc = lam_tron(tien_thue - phi - vuot - lam_tron((tu_lak + ncc_lak) / r_h, h), h)
+    goc_lak = round(goc * r_h)
+    co_so = so is not None and so.status == "synced"
+    if co_so:
+        con_no = so.thu_con_no if so.thu_con_no is not None else (so.total_amount or 0)
+        con_no_lak = max(0, round(float(con_no)))
+    else:
+        con_no_lak = nl_lak                                   # chưa có SO: coi như chưa thu đồng nào
+    can_lak = min(con_no_lak, max(0, goc_lak))
+    can = goc if can_lak == goc_lak else lam_tron(can_lak / r_h, h)
+    con = lam_tron(goc - can, h)
+    return {"hire_ccy": h, "ty_gia_thue": r_h, "tien_thue": tien_thue, "phi": phi, "tru_vuot": vuot,
+            "tam_ung_lak": tu_lak, "tam_ung": lam_tron(tu_lak / r_h, h), "no_ncc_lak": ncc_lak, "no_ncc": lam_tron(ncc_lak / r_h, h),
+            "nhien_lieu_lak": nl_lak, "nhien_lieu": lam_tron(nl_lak / r_h, h), "dong_ban": ban, "dong_tam_ung": tm,
+            "so_nhien_lieu": so.order_code if co_so else None, "so_nhien_lieu_status": so.status if so is not None else None,
+            "cho_so": bool(ban) and not co_so, "nhien_lieu_con_no_lak": con_no_lak if (ban or co_so) else 0,
+            "tra_truoc_can_tru": goc, "tra_truoc_can_tru_lak": goc_lak, "can_tru_lak": can_lak, "can_tru": can,
+            "con_tra": con, "con_tra_lak": round(con * r_h)}
+
+
+COT_TAT_TOAN = ("tam_ung", "tam_ung_lak", "no_ncc", "no_ncc_lak", "nhien_lieu", "nhien_lieu_lak", "so_nhien_lieu", "cho_so",
+                "nhien_lieu_con_no_lak", "tra_truoc_can_tru", "tra_truoc_can_tru_lak", "can_tru", "can_tru_lak", "con_tra", "con_tra_lak")
+
+
+def dong_phieu(db, p, dong=None, so=False):
+    """Một phiếu cho màn trả chủ xe: số trả và các phần trừ, cùng trạng thái (khoá, đã trả). Từ 02/10 thêm các phần của tất toán
+    đối tác (`phan_tra`, khoá COT_TAT_TOAN) — `tra_chu_xe` giữ nguyên số cũ (= cấn trừ đủ phần dầu).
+    `so`: lần gửi SO nhiên liệu đã nạp sẵn (False = chưa nạp → hỏi DB)."""
+    from services import so_nhien_lieu as NL
+    dong = (db.query(TripExpense).filter(TripExpense.trip_id == p.id).order_by(TripExpense.section, TripExpense.line_no).all()
+            if dong is None else dong)
+    k = tinh_phieu(p, dong)
+    ra = {"id": p.id, "doc_no": p.doc_no, "doc_date": p.doc_date.isoformat() if p.doc_date else None,
+          "truck_no": p.truck_no, "customer_name": p.customer_name, "company": p.company, "owner_id": p.owner_id,
+          "owner_name": p.owner_name, "locked": bool(p.locked),
+          "owner_paid": bool(p.owner_paid or p.owner_payment_id), "owner_payment_id": p.owner_payment_id,
+          "tan_tinh": k["tan_tinh"], "hire_ccy": k.get("hire_ccy"), "tien_thue": k.get("tien_thue"), "phi": k.get("phi"),
+          "tru_vuot": k.get("tru_vuot"), "ung_truoc": k.get("ung_truoc"), "tra_chu_xe": k.get("tra_chu_xe"),
+          "tra_chu_xe_lak": k.get("tra_chu_xe_lak")}
+    if p.company == "joint":
+        x = phan_tra(p, dong, NL.so_cua(db, p) if so is False else so)
+        ra.update({c: x[c] for c in COT_TAT_TOAN})
+    return ra
+
+
+def sau_can_tru(chon):
+    """Bản sao các dòng phiếu (dong_phieu) với tra_chu_xe / tra_chu_xe_lak = số CÒN TRẢ sau cấn trừ SO nhiên liệu — đầu vào của
+    tinh_tru (trừ hàng quầy) và phiếu chi. Dòng không có phần tất toán đối tác giữ nguyên."""
+    ra = []
+    for x in chon:
+        y = dict(x)
+        if "con_tra" in x:
+            y["tra_chu_xe"], y["tra_chu_xe_lak"] = x["con_tra"], x["con_tra_lak"]
+        ra.append(y)
+    return ra
 
 
 def cho_tra(db, owner_id):

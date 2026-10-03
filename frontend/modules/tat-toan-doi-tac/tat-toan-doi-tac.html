@@ -1,0 +1,26 @@
+<!-- Tất toán đối tác — ສະສາງຄູ່ຮ່ວມ (02/10). Đối tác = chủ xe liên kết (xe thuê). Mỗi kỳ (tháng):
+       Trả đối tác = tiền thuê − phí quản lý − cắt quá tải − tạm ứng EPL đưa − nợ NCC EPL trả thay − SO nhiên liệu còn nợ.
+     Máy tự cấn trừ SO nhiên liệu khi lập đề nghị rồi lập phiếu chi phần còn lại (hệ kế toán anh Tune); đối tác tự mua tự trả hết
+     thì trả đủ tiền thuê. Trái: đối tác của kỳ. Phải: bảng tính từng chuyến (mở từng chuyến xem tạm ứng · nợ NCC · dầu bán),
+     dòng tổng, chọn chuyến → Lập đề nghị trả; tab Lịch sử đề nghị (TCX, cấn trừ TKN, phiếu chi).
+     API: GET /api/tat-toan-doi-tac?ky=&owner_id= · lập: POST /api/owners/{id}/de-nghi-tra · bỏ / hỏi lại: POST /api/chi-chu-xe/{id}/huy|cap-nhat. -->
+<div class="ttd">
+  <div class="ttd-top no-print">
+    <div class="seg" id="ttd-loc"></div>
+    <label class="o-tim">
+      <svg viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14M21 21l-5-5"/></svg>
+      <input id="ttd-tim" type="search" autocomplete="off" data-i18n-ph="ttd_tim">
+    </label>
+    <div class="grow"></div>
+    <button class="btn" id="ttd-lam-moi" type="button" data-i18n="ck_cap_nhat"></button>
+    <div class="field"><label data-i18n="tt_period"></label><input type="month" id="ttd-ky"></div>
+  </div>
+
+  <div class="ttd-gt" id="ttd-gt"></div>
+  <div class="ttd-tong" id="ttd-tong"></div>
+
+  <div class="ttd-than">
+    <aside class="ttd-ds no-print" id="ttd-ds"></aside>
+    <section class="card ttd-xem" id="ttd-xem"></section>
+  </div>
+</div>

@@ -59,14 +59,44 @@ def da_nhap_kho(db, trip):
         raise
 
 
+def _gon_hang(d):
+    """Một dòng hàng gửi lên / đang lưu về cùng dạng để so: (loại, tên, tấn 3 số lẻ, lô, ghi chú)."""
+    g = d if isinstance(d, dict) else {"loai": d.loai, "goods_name": d.goods_name, "qty_t": d.qty_t, "tu_phieu_id": d.tu_phieu_id,
+                                       "note": d.note}
+    try:
+        sl = round(float(str(g.get("qty_t") or 0).replace(",", "")), 3)
+    except ValueError:
+        return None                                   # số sai: để dat_dong_hang báo lỗi như cũ
+    loai = (g.get("loai") or "hang").strip()
+    return (loai, (g.get("goods_name") or "").strip(), sl, ((g.get("tu_phieu_id") or "").strip() or None) if loai == "hang" else None,
+            (g.get("note") or "").strip() or None)
+
+
+def hang_khong_doi(db, trip, dong, cu=None):
+    """Dòng hàng gửi lên y hệt dòng HÀNG đang lưu (không kể thứ tự) — bản phiếu gửi lên mang cả bảng hàng mỗi lần lưu (02/10).
+    `cu`: dòng hàng của phiếu đã nạp sẵn (mọi loại)."""
+    if dong is None:
+        return True
+    moi = [_gon_hang(d) for d in dong]
+    if any(x is None or x[0] != "hang" for x in moi):
+        return False
+    if cu is None:
+        cu = db.query(TripGoods).filter(TripGoods.trip_id == trip.id).all()
+    return sorted(moi, key=str) == sorted((_gon_hang(g) for g in cu if g.loai == "hang"), key=str)
+
+
 # ---------------------------------------------------------------- ghi
-def dat_dong_hang(db, trip, dong, user, gd):
+def dat_dong_hang(db, trip, dong, user, gd, so_sanh=True):
     """Ghi lại toàn bộ dòng hàng của một phiếu (thay thế, không cộng dồn).
 
     DO giao: mỗi dòng phải chỉ rõ lấy từ lô nào; sổ kho bên trang kế toán thay phần XUẤT của phiếu theo dòng mới và
     không cho lấy quá tồn của lô. DO gom: chỉ ghi hàng bốc ở mỏ, hàng chỉ vào kho khi xe VỀ TỚI BÃI.
+    Dòng gửi lên y hệt dòng đang lưu → không làm gì (02/10: trước đây mỗi lần lưu phiếu giao là xoá + ghi lại dòng hàng và một
+    lời gọi kho tạm thay phần xuất bằng đúng số cũ). `so_sanh=False`: người gọi đã so rồi (sua_phieu).
     """
     if dong is None:
+        return
+    if so_sanh and hang_khong_doi(db, trip, dong):
         return
     cu = db.query(TripGoods).filter(TripGoods.trip_id == trip.id).all()
     co_xuat_cu = trip.kind == "giao" and any(g.loai == "hang" and (g.qty_t or 0) > 0 for g in cu)

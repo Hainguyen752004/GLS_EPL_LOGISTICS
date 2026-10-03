@@ -55,12 +55,23 @@ def dong_quy_chi(db, p, muc, cac_dong=None):
     """Các dòng của mục `muc` mà QUỸ TRẢ NGAY bằng tiền mặt — đúng tập dòng tờ PC_SC cũ (rà định khoản 30/09)."""
     if muc != "repair":
         return []                                   # mục VI: không có dòng quỹ trả ngay (xem đầu tệp)
-    from routes.nha_cung_cap import khoan_muc_ncc
-    ncc = khoan_muc_ncc(db)
     cac_dong = cac_dong if cac_dong is not None else _dong_phieu(db, p)
+    if not any(d.section == muc for d in cac_dong):
+        return []
+    ncc = _khoan_muc_ncc(db)
     return [d for d in cac_dong if d.section == muc and d.paid_by_epl and d.source != "kho"
             and not la_tien_mat_tai_xe(d, p.company) and not d.ghi_no and not d.toll_card_id
             and not (d.supplier_id is None and d.item_key in ncc)]
+
+
+def _khoan_muc_ncc(db):
+    """routes/nha_cung_cap.khoan_muc_ncc nhớ trong MỘT yêu cầu (db.info) — một lần dựng phiếu gọi dong_quy_chi 2–4 lần (tom_tat
+    mục V, bút toán khoá phiếu, gói DO), mỗi lần một câu SQL tới DB ở xa (02/10). Danh mục nhà cung cấp không đổi giữa chừng
+    một yêu cầu dựng phiếu (màn sửa nhà cung cấp không đi qua đây)."""
+    if "_khoan_muc_ncc" not in db.info:
+        from routes.nha_cung_cap import khoan_muc_ncc
+        db.info["_khoan_muc_ncc"] = khoan_muc_ncc(db)
+    return db.info["_khoan_muc_ncc"]
 
 
 def _lak(p, d):

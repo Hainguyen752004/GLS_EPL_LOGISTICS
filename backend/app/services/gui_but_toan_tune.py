@@ -161,6 +161,11 @@ def _ty_gia(d):
     return 1
 
 
+# Diễn giải / ghi chú dòng bên kế toán nằm ở PUBDOCUMENT.DOC_DESCRIPTION / PUBENTRY.ET_NOTE nvarchar(200) (DB Lào, đo 03/10) — thủ
+# tục bên đó không cắt ngầm mà từ chối (52508); cắt ở 250 như trước thì diễn giải 201–250 ký tự làm hỏng cả bút toán.
+DAI_DIEN_GIAI = 200
+
+
 def dung_goi(db, rec):
     """Gói POST journal-entries từ một bút toán chờ. Đối tượng: `doi_tuong` của dòng (không có thì `doi_tuong_no`)."""
     from services import chi_tune as CHI
@@ -175,10 +180,10 @@ def dung_goi(db, rec):
             tien[ccy] = CHI.ma_tien(ccy)
         e = {"DebitAccount": d["no"], "CreditAccount": d["co"], "Amount": d["tien"], "ExchangeRate": _ty_gia(d),
              "CurrencyId": tien[ccy], "ObjectId": _doi_tuong(db, d.get("doi_tuong") or d.get("doi_tuong_no")),
-             "Note": (d.get("dien_giai") or rec.dien_giai or "")[:250] or None}
+             "Note": (d.get("dien_giai") or rec.dien_giai or "")[:DAI_DIEN_GIAI] or None}
         entries.append(e)
     body = {"SourceRef": rec.source_ref, "DocumentDate": rec.ngay.isoformat(), "CountryId": CHI._cfg("QLSX_COUNTRY_ID", 11),
-            "OrgId": CHI._cfg("QLSX_ORG_ID", 1368), "Description": (rec.dien_giai or rec.source_ref)[:250], "Entries": entries}
+            "OrgId": CHI._cfg("QLSX_ORG_ID", 1368), "Description": (rec.dien_giai or rec.source_ref)[:DAI_DIEN_GIAI], "Entries": entries}
     try:
         body["FiciAutoId"] = CHI.ma_ky(rec.ngay)
     except HTTPException as e:

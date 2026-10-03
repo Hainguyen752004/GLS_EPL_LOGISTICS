@@ -1,0 +1,140 @@
+/* Tất toán đối tác (02/10) — dàn ngang như Tất toán tài xế: đối tác bên trái, bảng tính bên phải; cao vừa cửa sổ, bảng rộng
+ * cuộn ngang trong khung của nó. */
+.ttd{display:flex;flex-direction:column;gap:10px;min-width:0}
+.ttd-top{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.ttd-top .field input,.ttd-top .field select{height:40px}
+.ttd-top .btn{height:40px}
+.ttd-top .o-tim{width:auto;flex:1 1 140px;min-width:130px;max-width:220px}
+.ttd-top .grow{flex:0 0 0}
+
+/* công thức — một dòng, đọc là hiểu màn làm gì */
+.ttd-gt{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:7px 12px;border:1px solid var(--line);border-radius:8px;background:var(--paper);
+  font-size:12.5px;color:var(--ink-2);line-height:1.45}
+.ttd-gt .ct{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px}
+.ttd-gt .ct b{padding:1px 7px;border-radius:5px;background:var(--bg-2);color:var(--ink);font-weight:600;white-space:nowrap}
+.ttd-gt .ct b.kq{background:var(--green-soft);color:var(--green)}
+.ttd-gt .ct i{font-style:normal;color:var(--ink-3);font-weight:700}
+.ttd-gt .them{flex:1 1 320px;color:var(--ink-3);font-size:12px}
+
+/* dải tổng */
+.ttd-tong{display:flex;gap:8px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin}
+.ttd-tong .o{flex:1 0 auto;display:flex;flex-direction:column;gap:1px;min-width:118px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--paper)}
+.ttd-tong .o .l{font-size:11.5px;color:var(--ink-2);white-space:nowrap}
+.ttd-tong .o .v{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ttd-tong .o .v small{margin-left:3px;font-size:11px;color:var(--ink-3);font-weight:500}
+.ttd-tong .o.tru .v{color:var(--red)}
+.ttd-tong .o.kq{border-color:#B7D8CB;background:linear-gradient(0deg,var(--green-soft),var(--paper) 70%)}
+.ttd-tong .o.kq .v{color:var(--green)}
+
+/* hai cột */
+.ttd-than{display:grid;grid-template-columns:minmax(230px,260px) minmax(0,1fr);gap:12px;align-items:start}
+.ttd-ds{display:flex;flex-direction:column;gap:6px;overflow:auto;padding:2px 4px 2px 0;max-height:var(--ttd-cao, calc(100vh / var(--ty-le, 1) - 330px))}
+.ttd-o{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;width:100%;padding:9px 12px;text-align:left;
+  border:1px solid var(--line);border-left:4px solid var(--line-2);border-radius:10px;background:var(--paper);font:inherit;color:var(--ink);cursor:pointer}
+.ttd-o:hover{background:#FAFBF9}
+.ttd-o.chon{border-color:var(--green-2);background:var(--green-soft)}
+.ttd-o:focus-visible{outline:2px solid var(--green-2);outline-offset:1px}
+.ttd-o.st-chua_lap{border-left-color:var(--ink-3)}
+.ttd-o.st-cho_so_nhien_lieu{border-left-color:var(--amber)}
+.ttd-o.st-cho_thu_quy{border-left-color:var(--blue)}
+.ttd-o.st-da_tra{border-left-color:var(--green-2)}
+.ttd-o.st-loi{border-left-color:var(--red)}
+.ttd-o .ten{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ttd-o .tien{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.ttd-o .phu{font-size:11.5px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ttd-o .tt{text-align:right;white-space:nowrap}
+.ttd-trong{padding:26px 16px;text-align:center;color:var(--ink-3);font-size:13px;border:1px dashed var(--line-2);border-radius:10px}
+
+/* một đối tác */
+.ttd-xem{display:flex;flex-direction:column;gap:10px;min-width:0;padding:12px 14px;overflow:hidden;
+  max-height:var(--ttd-cao, calc(100vh / var(--ty-le, 1) - 330px))}
+.ttd-dau{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ttd-dau h3{margin:0;font-size:16.5px}
+.ttd-dau .grow{flex:1}
+.ttd-dau .btn{white-space:nowrap}
+.ttd-cong{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;padding:7px 10px;border:1px dashed var(--line-2);border-radius:8px;font-size:12.5px}
+.ttd-cong span{white-space:nowrap;font-variant-numeric:tabular-nums}
+.ttd-cong i{font-style:normal;color:var(--ink-3);font-weight:700}
+.ttd-cong .kq{font-weight:700;color:var(--green)}
+.ttd-tab{display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line)}
+.ttd-tab button{position:relative;height:32px;padding:0 4px;border:0;background:none;color:var(--ink-2);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.ttd-tab button.on{color:var(--green)}
+.ttd-tab button.on::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;border-radius:2px;background:var(--green-2)}
+.ttd-tab button b{margin-left:5px;padding:0 6px;border-radius:999px;background:var(--bg-2);font-size:11px}
+.ttd-tab .grow{flex:1}
+.ttd-tab .chon{font-size:12px;color:var(--ink-2);white-space:nowrap}
+.ttd-bang{flex:1 1 auto;min-height:0;overflow:auto}
+.ttd-bang table{min-width:860px;font-size:12px}
+.ttd-bang thead th{white-space:normal;vertical-align:bottom;line-height:1.25}
+.ttd-bang thead th .phu{display:block;font-size:10.5px;color:var(--ink-3);font-weight:500}
+.ttd-bang td .phu.tt{margin-top:3px}
+.ttd-bang td .phu.tt .tag{font-size:10.5px;padding:1px 7px}
+.ttd-bang td{white-space:nowrap}
+.ttd-bang td.tuyen{white-space:normal;min-width:150px;max-width:230px}
+.ttd-bang td .phu{display:block;font-size:11px;color:var(--ink-3);font-weight:400}
+.ttd-bang td.tru{color:var(--red)}
+.ttd-bang td.kq{font-weight:700}
+.ttd-bang tr.dong-chuyen{cursor:pointer}
+.ttd-bang tr.dong-chuyen.mo td{background:#F6F8F5}
+.ttd-bang tr.dong-chuyen.da_tra td{color:var(--ink-3)}
+.ttd-bang .mui{display:inline-block;width:14px;transition:transform .15s;color:var(--ink-3)}
+.ttd-bang tr.mo .mui{transform:rotate(90deg)}
+.ttd-bang input[type="checkbox"]{width:16px;height:16px;vertical-align:middle}
+/* phần mở ra của một chuyến: ba khối nhỏ cạnh nhau */
+.ttd-mo td{padding:0!important;background:#FBFCFA}
+/* phần mở ra không được nong bảng: khối bọc rộng 0, tối thiểu bằng ô — ba khối co theo bề ngang bảng */
+.ttd-mo-boc{width:0;min-width:100%}
+.ttd-ba{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:10px 12px 12px 34px}
+.ttd-khoi{min-width:0;border:1px solid var(--line);border-radius:8px;background:var(--paper);overflow:hidden}
+.ttd-khoi h5{display:flex;align-items:center;gap:6px;margin:0;padding:6px 10px;font-size:12px;font-weight:700;color:var(--ink-2);background:var(--bg);border-bottom:1px solid var(--line)}
+.ttd-khoi h5 .grow{flex:1}
+.ttd-khoi table{width:100%;min-width:0!important;border-collapse:collapse;font-size:11.5px}
+.ttd-khoi td{padding:4px 8px;border-bottom:1px dotted var(--line);white-space:normal!important}
+.ttd-khoi tr:last-child td{border-bottom:0}
+.ttd-khoi .rong{padding:8px 10px;font-size:11.5px;color:var(--ink-3)}
+.ttd-khoi .mono{font-size:11px}
+.ttd-bang tfoot td{white-space:nowrap}
+.ttd-chu{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-2)}
+.tag.ttd-chua_lap,.tag.ttd-chua_tra,.tag.ttd-chua_tao{background:var(--bg-2);color:var(--ink-2)}
+.tag.ttd-cho_so_nhien_lieu,.tag.ttd-trong_de_nghi,.tag.ttd-da_tao{background:var(--amber-soft);color:var(--amber)}
+.tag.ttd-cho_thu_quy,.tag.ttd-da_gui{background:var(--blue-soft);color:var(--blue)}
+.tag.ttd-da_tra,.tag.ttd-da_chi,.tag.ttd-da_thu,.tag.ttd-can_tru{background:var(--green-soft);color:var(--green)}
+.tag.ttd-loi{background:var(--red-soft);color:var(--red)}
+.tag.ttd-huy{background:var(--bg-2);color:var(--ink-3)}
+
+@media (max-width:1100px){.ttd-than{grid-template-columns:1fr}.ttd-ds,.ttd-xem{max-height:none}.ttd-ba{grid-template-columns:1fr}}
+@media print{.ttd-than{display:block}.ttd-xem{max-height:none;overflow:visible}.ttd-bang{overflow:visible}.ttd-bang table{min-width:0}}
+/* bảng tính cột cố định: nội dung phần mở ra không làm rộng cột — vừa khung ở 1440 × 900 (cột tuyến lấy phần còn lại) */
+.ttd-bang table.ttd-co-dinh{table-layout:fixed;width:100%;min-width:960px}
+.ttd-co-dinh col.c-chk{width:30px} .ttd-co-dinh col.c-so{width:138px} .ttd-co-dinh col.c-thue{width:112px} .ttd-co-dinh col.c-phi{width:88px}
+.ttd-co-dinh col.c-qt{width:78px} .ttd-co-dinh col.c-tu{width:108px} .ttd-co-dinh col.c-ncc{width:102px} .ttd-co-dinh col.c-nl{width:122px}
+.ttd-co-dinh col.c-tra{width:126px}
+.ttd-co-dinh td{overflow:hidden;text-overflow:ellipsis}
+.ttd-co-dinh td.tuyen{min-width:0;max-width:none;white-space:normal}
+.ttd-co-dinh td .phu{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ttd-co-dinh .ttd-mo td,.ttd-co-dinh tr.ttd-mo > td{overflow:visible}
+.ttd-mo-boc{width:auto;min-width:0;overflow-x:auto}
+@media print{.ttd-co-dinh col{width:auto!important}.ttd-bang table.ttd-co-dinh{table-layout:auto;min-width:0}}
+/* UAT 03/10: ở 1440 thanh bên, cột hẹp hơn tính — số và dòng phụ xuống dòng thay vì bị cắt "…" */
+.ttd-co-dinh td{overflow:visible;text-overflow:clip;white-space:normal}
+.ttd-co-dinh td .phu{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
+.ttd-co-dinh td.num{white-space:normal;overflow-wrap:anywhere}
+.ttd-co-dinh td .mono{overflow-wrap:anywhere}
+.ttd-khoi h5{flex-wrap:wrap}
+.ttd-khoi td{overflow-wrap:anywhere}
+/* 03/10 — lịch sử đề nghị: lý do lỗi từ bên kế toán dài, xuống dòng trong ô trạng thái thay vì tràn khỏi mép */
+.ttd-bang td.ttd-ls-tt{white-space:normal;min-width:240px;max-width:380px}
+.ttd-ls-loi{margin-top:4px;line-height:1.35;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.ttd-bang td.ttd-ls-ct{white-space:normal;min-width:180px;max-width:260px}
+.ttd-bang td.ttd-ls-ct .mono{overflow-wrap:anywhere}
+.ttd-bang td.ttd-ls-nut{white-space:nowrap;width:1%}
+.ttd-bang td.ttd-ls-nut .btn{display:flex;width:100%;justify-content:center;margin:0 0 4px}
+/* 03/10 — chuyến đã nằm trong đề nghị chưa xong: ô tích khoá + một dòng nói rõ số đề nghị */
+.ttd-tich-khoa{cursor:not-allowed;opacity:.45}
+.ttd-khoa-dem{padding:5px 10px;border-radius:6px;background:var(--amber-soft, #fdf3e0);color:var(--amber, #a56a00);font-size:12px;line-height:1.4}
+/* 03/10 — thẻ đối tác: nhãn trạng thái dài («Chưa sang được kế toán») kéo rộng cột phải làm tên bị cắt — cho nhãn xuống dòng riêng */
+.ttd-o .phu{grid-column:1 / -1}
+.ttd-o .tt{grid-column:1 / -1;text-align:left}
+.ttd-bang td.ttd-ls-nut{white-space:normal;width:auto;min-width:120px;max-width:170px}
+.ttd-bang td.ttd-ls-nut .btn{white-space:normal;text-align:center;line-height:1.25}
+.ttd-bang td.ttd-ls-tt{min-width:220px}

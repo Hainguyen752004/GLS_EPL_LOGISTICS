@@ -265,7 +265,10 @@
         const eplDuoc = khoaDuoc || (khoXeThue && !d.paid_by_epl && suaTienDuoc(m));
         const pay = `<td class="px-lk"><span class="px-xuat" aria-hidden="true">${esc(NN.t(d.paid_by_epl ? 'pay_epl' : 'pay_own'))}</span><span class="px-pay"><button type="button" class="${d.paid_by_epl ? 'on' : ''}" data-i="${i}" data-pay="1" ${eplDuoc ? '' : 'disabled'}>${esc(NN.t('pay_epl'))}</button><button type="button" class="${!d.paid_by_epl ? 'on' : ''}" data-i="${i}" data-pay="0" ${khoaDuoc && !khoXeThue ? '' : 'disabled'}${khoXeThue ? ` title="${esc(NN.t('pay_kho_xe_thue'))}"` : ''}>${esc(NN.t('pay_own'))}</button></span></td>`;
         const tkd = tkDong(d);
-        const acct = `<td class="px-gia">${tkd ? `<span class="px-xuat" aria-hidden="true">${esc(tkd)}</span>` : ''}<button type="button" class="acct px-acct" data-acct="${i}" ${AUTH.la('acct', 'fuel', 'rev') && tkd && guiMuc(m) ? '' : 'disabled'} title="${esc(tkd ? tkTen(tkd) : NN.t('pay_own'))}">${esc(tkd || '—')}</button></td>`;
+        // xuất bán (02/10): mã máy đặt 4022/707 không còn là bút toán — phần bán thành SO nhiên liệu, chỉ giá vốn 607/1371.
+        // Người dùng tự chọn mã khác (ngoài tập hệ thống) thì vẫn hiện mã đó.
+        const xb = xuatBan(d) && tkd && !(d.acct_code && !(KM.acct_rule.he_thong || []).includes(d.acct_code));
+        const acct = `<td class="px-gia">${tkd ? `<span class="px-xuat" aria-hidden="true">${esc(xb ? NN.t('px_tk_xb') + ' · ' + NN.t('px_tk_gv') : tkd)}</span>` : ''}<button type="button" class="acct px-acct${xb ? ' px-acct-xb' : ''}" data-acct="${i}" ${AUTH.la('acct', 'fuel', 'rev') && tkd && guiMuc(m) ? '' : 'disabled'} title="${esc(xb ? NN.t('px_tk_xb_t') : tkd ? tkTen(tkd) : NN.t('pay_own'))}">${xb ? `${NN.h('px_tk_xb')}<small>${NN.h('px_tk_gv')}</small>` : esc(tkd || '—')}</button></td>`;
         const xoa = `<td class="no-print">${khoaDuoc ? `<button type="button" class="x" data-xoa="${i}" title="${esc(NN.t('delete'))}">×</button>` : ''}</td>`;
         if (m === 'fuel') {
           // Đổ dầu ở trạm ngoài (nhất là bên Việt Nam): tài xế trả tiền mặt, hay TRẠM GHI NỢ để cuối
@@ -281,7 +284,7 @@
           return `<tr data-i="${i}" class="${lk && !d.paid_by_epl ? 'own' : ''}"><td>${n + 1}</td><td>${sel}</td><td>${inp('qty')}</td><td class="px-gia">${inp('unit_price')}${ban}</td>
           <td class="px-gia"><select data-i="${i}" data-f="currency" ${giaMo ? '' : 'disabled'}>${['LAK', 'VND', 'THB', 'USD'].map(c => `<option ${c === d.currency ? 'selected' : ''}>${c}</option>`).join('')}</select></td><td class="num amt px-gia"></td>
           <td><select data-i="${i}" data-f="place_id" ${khoaDuoc ? '' : 'disabled'}>${diemChon(d)}</select>
-            <div class="small muted px-nguon">${NN.h(nguonCuaDiem(d) === 'kho' ? 'src_kho' : 'src_mua')}</div>${noSel}</td>${pay}${acct}${xoa}</tr>`;
+            <div class="small muted px-nguon">${NN.h(nguonCuaDiem(d) === 'kho' ? 'src_kho' : 'src_mua')}</div>${nguonCuaDiem(d) === 'kho' ? xkChip(d) : ''}${noSel}</td>${pay}${acct}${xoa}</tr>`;
         }
         let nguon = '', banMucV = '';
         if (m === 'repair') {
@@ -291,13 +294,23 @@
           banMucV = !(banPt && ('sale_price' in d || giaBanMoPt)) ? '' : `<div class="px-ban"><div class="small muted">${NN.h('sale_price')}</div><div><input class="num${giaBanMoPt && EPL.doc(d.qty) > 0 && !EPL.doc(d.sale_price) ? ' px-can-gia' : ''}" data-i="${i}" data-f="sale_price" value="${esc(d.sale_price == null ? '' : d.sale_price)}" ${giaBanMoPt ? '' : 'disabled'} inputmode="decimal"></div></div>`;
           nguon = `<td><select data-i="${i}" data-f="source" ${khoaDuoc && !daXuat ? '' : 'disabled'}><option value="mua" ${!kho ? 'selected' : ''}>${esc(NN.t('src_mua'))}</option><option value="kho" ${kho ? 'selected' : ''}>${esc(NN.t('src_kho'))}</option></select>${
             kho ? `<select data-i="${i}" data-f="part_id" ${khoaDuoc && !daXuat ? '' : 'disabled'} style="margin-top:4px"><option value="">—</option>${DM.parts.map(p => `<option value="${p.id}" ${p.id === d.part_id ? 'selected' : ''}>${esc(p.name)} · ${so(p.qty)}</option>`).join('')}</select>` : ''}${
-            daXuat ? `<div class="small muted">${esc(NN.t('fs_out'))} ✓</div>` : ''}</td>`;
+            daXuat ? `<div class="small muted">${esc(NN.t('fs_out'))} ✓</div>` : ''}${kho ? xkChip(d) : ''}</td>`;
         }
         return `<tr data-i="${i}" class="${lk && !d.paid_by_epl ? 'own' : ''}"><td>${n + 1}</td><td>${sel}${theSel}${caSel}</td>${nguon}<td>${inp('qty')}</td><td class="px-gia">${inp('unit_price')}${banMucV}</td><td class="num amt px-gia"></td>${pay}${acct}${xoa}</tr>`;
       }).join('') : `<tr><td colspan="10" class="empty small">${NN.h('no_data')}</td></tr>`;
     });
     // dòng bản chất ở đầu mục III, IV: nội bộ (xe nhà) · xuất bán / ghi công nợ chủ xe (xe thuê) — 29/09
     root.querySelectorAll('.px-ht').forEach(el => { el.innerHTML = EPL.banChat(el.dataset.ht, EPL.maBanChat(el.dataset.ht, P.company), P.owner_name); });
+    // 02/10 — mục có dòng lấy kho: một câu nói rõ lấy kho là gì với loại xe này (nội bộ → chi phí chuyến · xuất bán → công nợ đối tác)
+    root.querySelectorAll('.px-xk-y').forEach(el => {
+      const m = el.dataset.xk, co = (P.expenses || []).some(d => d.section === m && nguonKho(m, d));
+      el.hidden = !co;
+      const so = P.company === 'joint' && SO_NL[P.id] && SO_NL[P.id].trang_thai;
+      el.innerHTML = co ? NN.h(P.company === 'joint' ? 'px_xk_y_ban_' + m : 'px_xk_y_noi_' + m)
+        + (so ? ` <span class="px-xk-so">${so.status === 'synced' && so.order_code ? NN.h('px_so_nl_co', { so: so.order_code })
+          : NN.h(so.status === 'synced' ? 'px_so_nl_co' : 'px_so_nl_loi', { so: so.order_code || '' })}</span>` : '') : '';
+    });
+    napSoNL();
     q('#px-phieu').querySelectorAll('.px-chi [data-f]').forEach(el => el.addEventListener('input', e => {
       const d = P.expenses[+el.dataset.i], f = el.dataset.f; d[f] = el.value; delete d._goiY;   // người lập đã sửa → không còn là dòng gợi ý
       if (f === 'item_key') { if (el.value === '') d.item_name = d.item_name || ''; else d.item_name = null; if (!['x_toll', 'x_bridge'].includes(el.value)) d.toll_card_id = null; d.pay_channel = null; veChi(); }
@@ -337,6 +350,25 @@
   // mục còn "đã nhập"; dòng lấy từ kho thì giá là bình quân của kho, không ai gõ tay (C5.3). Chép luật máy chủ.
   const thayChi = () => vai() !== 'yard';
   const nguonKho = (m, d) => (m === 'fuel' && nguonCuaDiem(d) === 'kho') || (m === 'repair' && d.source === 'kho');
+  /** SO nhiên liệu của DO xe thuê có dòng xuất bán (GET /api/trips/{id}/tao-so → nhien_lieu, chỉ đọc, không gọi mạng) — một lần mỗi
+   *  phiếu, chỉ vai thấy tiền bán; đọc xong vẽ lại dòng nghĩa ở đầu mục III / V. */
+  const SO_NL = {};
+  async function napSoNL() {
+    if (!P || !P.id || moi || P.company !== 'joint' || P.id in SO_NL || !thayTienBan()) return;
+    if (!(P.expenses || []).some(d => xuatBan(d))) return;
+    const id = P.id; SO_NL[id] = null;
+    try { const r = await API.get('/api/trips/' + encodeURIComponent(id) + '/tao-so'); SO_NL[id] = (r && r.nhien_lieu) || null; }
+    catch (e) { SO_NL[id] = null; return; }
+    if (P && P.id === id && root && root.isConnected && SO_NL[id] && SO_NL[id].trang_thai) veChi();
+  }
+  /** Nhãn dòng lấy kho (02/10): xe nhà "Xuất nội bộ — xe nhà"; xe thuê "Xuất bán cho đối tác · giá bán …" (giá bán chỉ hiện với vai
+   *  thấy tiền chi, khi KT kho xăng dầu / KT Chi phí đã gõ). Soi gương tinh_toan.la_xuat_ban. */
+  function xkChip(d) {
+    if (P.company !== 'joint') return `<div class="px-xk noi">${NN.h('px_xk_noi')}</div>`;
+    const gb = thayChi() && d.sale_price != null && d.sale_price !== '' && EPL.doc(d.sale_price) > 0
+      ? ` · ${NN.h('px_gia_ban')} ${so(EPL.doc(d.sale_price))} ${esc(d.currency || 'LAK')}` : '';
+    return `<div class="px-xk ban">${NN.h('px_xk_ban')}${gb}</div>`;            // tên đối tác đã ở dòng bản chất đầu mục
+  }
   function giaDuoc(m, d) {
     if (!thayChi() || nguonKho(m, d)) return false;
     if (moi) return true;
@@ -404,7 +436,7 @@
       if (AUTH.la('acct') && P.locked && (!P.da_tao_so || vai() === 'admin')) ta.push(`<button class="btn sm" data-hd-phieu="mo-khoa">${NN.h('a_unlock_slip')}</button>`);
       // Trả chủ xe (01/10): KHÔNG còn nút sang trang kế toán tạm — tiền đi qua hệ kế toán anh Tune: KT Thu/Chi lập đề nghị trả ở
       // màn Xe liên kết ("Trả qua kế toán"), thủ quỹ chi và ghi sổ bên đó; phiếu bên này chỉ còn thẻ "Đã trả chủ xe"
-      if (AUTH.la('yard') && !P.locked && P.transport_status === 'dispatched') ta.push(`<button class="btn sm" data-tt="transit">${NN.h('mark_transit')}</button>`);
+      if (AUTH.la('yard') && !P.locked && P.transport_status === 'dispatched') ta.push(`<button class="btn sm" data-tt="transit">${NN.h('mark_transit')}</button>${nhacUngTruocChay()}`);
       // Xe hỏng nặng giữa đường thì đổi xe NGAY TRÊN PHIẾU NÀY (C2.2) — không lập phiếu mới, vì hàng,
       // khách, tuyến và tiền đã chi vẫn là của chuyến này.
       if (AUTH.la('yard') && !P.locked && P.transport_status !== 'arrived') ta.push(`<button class="btn sm" data-hd-phieu="doi-xe">${NN.h('change_truck')}</button>`);
@@ -450,7 +482,9 @@
     const s = P.sections || {}, pq = perm();
     const cua = MUC.filter(m => pq.edit.includes(m) || pq.verify.includes(m) || pq.book.includes(m) || pq.pay.includes(m));
     if (!cua.length || vai() === 'admin') return 'all';
-    return cua.find(m => coViec(m, s[m] || 'wait')) || cua[0];
+    // mục V / VI chưa có dòng nào là "Không phát sinh" — không tính là việc (Bãi mở phiếu từng rơi vào tab VI trống)
+    const rong = (m) => (m === 'repair' || m === 'other') && !(P.expenses || []).some(d => d.section === m);
+    return cua.find(m => !rong(m) && coViec(m, s[m] || 'wait')) || cua[0];
   }
   function datTab(t, tay) {
     tab = t; if (tay) tabTay = true;
@@ -706,6 +740,12 @@
       napDs().then(() => { if (P) veChon(); }).catch(() => {});
       return true;
     } catch (e) { baoLoiLuu(e); return false; }
+  }
+  /** Cạnh nút «Xe đã lăn bánh»: phiếu chi tạm ứng bên kế toán chưa ghi sổ thì nhắc ngay (vẫn để bấm — Sếp / Bãi quyết cho xe chạy). */
+  function nhacUngTruocChay() {
+    const c = P.chi_tam_ung || {};
+    if (!c.o_ke_toan || !c.status || c.status === 'da_chi') return '';
+    return `<span class="px-nhac-ung ${c.status === 'loi' ? 'loi' : ''}">${c.status === 'loi' ? NN.h('px_nhac_ung_loi') : NN.h('px_nhac_ung_cho', { so: c.document_no || '' })}</span>`;
   }
   /** Ô trạng thái phiếu chi tạm ứng bên hệ kế toán, cạnh nút của mục IV (từ lúc ghi sổ). */
   function oChiKeToan(st) {

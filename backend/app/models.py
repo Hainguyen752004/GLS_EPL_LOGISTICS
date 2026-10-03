@@ -1218,6 +1218,47 @@ class GuiSoTune(Base):
     thu_loi = Column(Text)                                        # lần đọc gần nhất hỏng vì sao (None = đọc được)
 
 
+class GuiSoNhienLieuTune(Base):
+    """Lượt gửi SO "NHIÊN LIỆU" của một DO xe thuê sang hệ kế toán anh Tune — `POST /api/v1/integrations/logistics/fuel-sales-orders`
+    (chủ dự án chốt 02/10): dầu / phụ tùng kho EPL xuất bán cho đối tác (chủ xe) không còn bút toán 4022/707 mà thành một SO,
+    khách của SO = đối tác (PUBOBJECT EPLCX-<owner_id>), treo công nợ như SO cước. Giá vốn 607/1371 vẫn là bút toán xuat_ban.
+
+    Cùng khuôn GuiSoTune: một dòng một DO, Idempotency-Key `logistics-fuel:EPLLAO-<Trip.id>`, lưu NGUYÊN gói đã gửi để lần gửi
+    lại khi kết quả chưa rõ (mất mạng, 5xx, 52953 bận) dùng đúng key, đúng gói. `status`: synced · failed · conflict.
+    Thu tiền của SO (đọc lại `sales/debt/customer-detail` của đối tác theo `order_code`) ở thu_* — cấn trừ lúc trả đối tác
+    (can_tru_tune) làm giảm còn nợ."""
+    __tablename__ = "gui_so_nhien_lieu_tune"
+    do_id = Column(String(100), primary_key=True)                 # EPLLAO-<Trip.id>
+    trip_id = Column(String, ForeignKey("trips.id", ondelete="SET NULL"), index=True)
+    owner_id = Column(String, index=True)                         # đối tác lúc gửi
+    partner_code = Column(String(50))                             # EPLCX-<owner_id>
+    idempotency_key = Column(String(100), nullable=False)
+    status = Column(String(16), nullable=False, default="failed")
+    http_status = Column(Integer)
+    request_body = Column(Text, nullable=False)
+    response_body = Column(Text)
+    replayed = Column(Boolean, default=False)
+    order_id = Column(Integer)
+    order_code = Column(String(64))
+    retk_auto_id = Column(Integer)
+    retk_code = Column(String(64))
+    currency = Column(String(3))
+    total_amount = Column(Float)
+    error_code = Column(String(64))
+    error_message = Column(Text)
+    attempts = Column(Integer, nullable=False, default=0)
+    pushed_by = Column(String)
+    first_attempt_at = Column(DateTime)
+    last_attempt_at = Column(DateTime)
+    synced_at = Column(DateTime)
+    thu_tong = Column(Float)
+    thu_da_thu = Column(Float)
+    thu_con_no = Column(Float)
+    thu_trang_thai = Column(String(16))                           # chua_thu · thu_mot_phan · da_thu · khong_thay
+    thu_doc_luc = Column(DateTime)
+    thu_loi = Column(Text)
+
+
 class DoiTuongTune(Base):
     """Đối tượng (PUBOBJECT) bên hệ kế toán anh Tune ứng với một người bên em. Phiếu chi bên đó bắt buộc ObjectId > 0, mà danh
     mục bên đó chưa có tài xế Lào — bên em tạo qua `master-data/staff/upsert` (mã `EPLTX-<Driver.id>`) rồi nhớ ở đây."""
@@ -1409,3 +1450,36 @@ class ChiChuXeTune(Base):
     # từng dòng phiếu (tra_thuc), các phiếu bán bị trừ — kèm "chot": thủ quỹ đã chi và phiếu bán đã chốt "TUNE:<số phiếu chi>"
     # chưa. amount / amount_lak ở trên là SỐ TRẢ THỰC sau khi trừ.
     tru_hang = Column(Text)
+
+
+class CanTruTune(Base):
+    """CẤN TRỪ SO nhiên liệu của đối tác vào tiền trả đối tác (chủ dự án chốt 02/10) — `POST /api/v1/sales/debt/collection-offset`
+    bên hệ anh Tune: lập đề nghị trả đối tác (chi_chu_xe_tune) thì máy tự cấn trừ phần SO nhiên liệu còn nợ của từng chuyến
+    (phiếu cấn trừ "TKN" bên đó), rồi phiếu chi phần còn lại. Một đề nghị một SO một dòng: (de_nghi_id, order_code).
+    Idempotency-Key `logistics-offset:<số đề nghị>:<order_code>`; lưu nguyên gói để gửi lại đúng gói khi chưa rõ kết quả.
+    Bỏ đề nghị → `…/collection-offset/cancel`. `status`: da_gui (bên đó đã cấn trừ, có số TKN) · loi · huy."""
+    __tablename__ = "can_tru_tune"
+    __table_args__ = (UniqueConstraint("de_nghi_id", "order_code", name="uq_can_tru_tune_so"),)
+    id = Column(String, primary_key=True, default=ma_moi)
+    de_nghi_id = Column(String, ForeignKey("chi_chu_xe_tune.id", ondelete="CASCADE"), nullable=False, index=True)
+    trip_id = Column(String, index=True)
+    do_id = Column(String(100))
+    order_code = Column(String(64), nullable=False)
+    currency = Column(String(3), nullable=False, default="LAK")
+    amount = Column(Float, nullable=False)                        # theo tiền SO (LAK)
+    ref_no = Column(String(64), nullable=False)                   # số đề nghị bên em (TCX-…)
+    idempotency_key = Column(String(100), nullable=False)
+    status = Column(String(16), nullable=False, default="loi")
+    so_tkn = Column(String(64))                                   # số phiếu cấn trừ bên kế toán
+    real_id = Column(Integer)
+    request_body = Column(Text)
+    response_body = Column(Text)
+    http_status = Column(Integer)
+    error_code = Column(String(64))
+    error_message = Column(Text)
+    attempts = Column(Integer, nullable=False, default=0)
+    created_by = Column(String)
+    created_at = Column(DateTime, default=bay_gio)
+    last_attempt_at = Column(DateTime)
+    huy_luc = Column(DateTime)
+    huy_body = Column(Text)

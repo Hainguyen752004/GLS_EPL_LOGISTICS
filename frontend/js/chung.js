@@ -444,6 +444,10 @@
     { id: 'xe-lien-ket',    nhom: 'mod_transport', nav: 'nav_joint', vai: ['acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel'],    ic: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8' },
     // 'tat-toan' (Tất toán tài xế) dựng lại 01/10 — chốt ở đây, tiền ở hệ kế toán anh Tune (TT_CHI "Chi khác" · TT_THU "Thu khác")
     { id: 'tat-toan',       nhom: 'mod_transport', nav: 'nav_settle',   ic: 'M9 3h6l1 4H8zM5 7h14l1 13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM12 11v6M9.5 13h5M9.5 16h5', vai: ['expacct', 'cash', 'treasury'] },
+    // 'tat-toan-doi-tac' (Tất toán đối tác, 02/10) — bảng tính trả đối tác xe thuê từng chuyến: thuê − phí − quá tải − tạm ứng −
+    // nợ NCC − SO nhiên liệu còn nợ; lập đề nghị trả (TCX → phiếu chi bên kế toán). Cùng vai xem tiền trả chủ xe (routes/chu_xe.py)
+    { id: 'tat-toan-doi-tac', nhom: 'mod_transport', nav: 'nav_tt_doi_tac', vai: ['acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel'],
+      ic: 'M3 7h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H3zM3 7l12-4v4M16 13h2' },
     // 'but-toan-cho' (Bút toán chờ gửi, 01/10) — khoản không qua tiền chờ API bút toán bên kế toán; chỉ xem (máy chủ: but_toan_cho.VAI_XEM)
     { id: 'but-toan-cho',   nhom: 'mod_transport', nav: 'btc_title',    ic: 'M4 4h16v16H4zM12 4v16M7 9h2M15 9h2M7 13h2M15 13h2', vai: ['acct', 'expacct'] },
     // 'tien-tai-xe' (Tiền chuyến & tiền nước tài xế) và 'tat-toan' (Tất toán tài xế) dời sang trang kế toán 28/09 (đợt 7c) —

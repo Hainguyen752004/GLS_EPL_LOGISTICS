@@ -224,7 +224,8 @@ def hang_quay(oid: str, trip_ids: str = "", db: Session = Depends(get_db), user=
     if len({x["hire_ccy"] or "LAK" for x in chon}) > 1:
         raise HTTPException(422, {"ma": "KHAC_TIEN", "loi": "Các phiếu chọn khác tiền thuê — mỗi đề nghị một loại tiền."})
     hang = TC.hang_cho_tru(db, oid, user)
-    return {"hang": hang, "uoc_tinh": TC.tinh_tru(chon, hang) if chon else None}
+    # 02/10: ước tính theo số CÒN TRẢ sau cấn trừ SO nhiên liệu (theo bản đọc lại gần nhất) — đúng số đề nghị sẽ lập
+    return {"hang": hang, "uoc_tinh": TC.tinh_tru(TC.sau_can_tru(chon), hang) if chon else None}
 
 
 @router.post("/api/owners/{oid}/de-nghi-tra")

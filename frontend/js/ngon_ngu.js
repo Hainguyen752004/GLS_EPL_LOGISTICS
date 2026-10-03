@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2659 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2879 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -4743,9 +4743,9 @@ window.EPL_TU_DIEN = {
   "en": "Requests by DO"
  },
  "title_chung_tu": {
-  "vi": "Đề nghị theo DO<span class=\"sub\">DO nào đề nghị chi gì, đề nghị thu gì · trạng thái</span>",
-  "lo": "ໃບສະເໜີ ຕາມ DO<span class=\"sub\">ໃບສະເໜີຈ່າຍ · ໃບສະເໜີຮັບເງິນ · ສະຖານະ</span>",
-  "en": "Requests by DO<span class=\"sub\">What each DO asked to pay and to collect · status</span>"
+  "vi": "Đề nghị theo DO<span class=\"sub\">Hồ sơ DO hai bên · bên điều xe đề nghị gì ↔ bên kế toán đã lập chứng từ nào</span>",
+  "lo": "ໃບສະເໜີ ຕາມ DO<span class=\"sub\">ເອກະສານ DO ສອງຝ່າຍ · ຝ່າຍຈັດລົດສະເໜີຫຍັງ ↔ ຝ່າຍບັນຊີອອກເອກະສານໃດແລ້ວ</span>",
+  "en": "Requests by DO<span class=\"sub\">Two-sided DO file · what dispatch requested ↔ which documents accounting has made</span>"
  },
  "voucher_payment": {
   "vi": "Phiếu đề nghị tạm ứng",
@@ -5273,9 +5273,9 @@ window.EPL_TU_DIEN = {
   "en": "Printable transport invoice"
  },
  "d_chung_tu": {
-  "vi": "DO nào đề nghị chi gì, đề nghị thu gì · hồ sơ gửi kế toán",
-  "lo": "ໃບສະເໜີ ຕາມ DO · ເອກະສານສົ່ງບັນຊີ",
-  "en": "Requests per DO · records sent to accounting"
+  "vi": "Hồ sơ DO hai bên: đề nghị chi, xuất kho, thu ↔ chứng từ bên kế toán",
+  "lo": "ເອກະສານ DO ສອງຝ່າຍ: ສະເໜີຈ່າຍ, ເບີກສາງ, ຮັບເງິນ ↔ ເອກະສານຝ່າຍບັນຊີ",
+  "en": "Two-sided DO file: payment, stock and collection requests ↔ accounting documents"
  },
  "d_phieu_cua_toi": {
   "vi": "Phiếu của tài xế, khai dầu, vị trí",
@@ -13296,5 +13296,1105 @@ window.EPL_TU_DIEN = {
   "vi": "Có — trạm ghi nợ EPL (trả nhà cung cấp theo đợt)",
   "lo": "ແມ່ນ — ປໍ້າຂຽນໜີ້ EPL ໄວ້ (ຈ່າຍຜູ້ສະໜອງເປັນງວດ)",
   "en": "Yes — the station put it on EPL's account (paid to the supplier in batches)"
+ },
+ "hs_tab": {
+  "vi": "Hồ sơ DO hai bên",
+  "lo": "ເອກະສານ DO ສອງຝ່າຍ",
+  "en": "Two-sided DO file"
+ },
+ "hs_tim": {
+  "vi": "Tìm số DO, số xe, tài xế, khách, chủ xe…",
+  "lo": "ຊອກເລກ DO, ເບີລົດ, ໂຊເຟີ, ລູກຄ້າ, ເຈົ້າຂອງລົດ…",
+  "en": "Search DO no., truck, driver, customer, owner…"
+ },
+ "hs_gioi_thieu": {
+  "vi": "<b>Màn này để đối chiếu hai bên theo từng DO.</b> Mỗi DO: bên điều xe đã đề nghị chi, xuất kho, thu những gì — và bên kế toán (hệ anh Tune) đã lập chứng từ nào (phiếu chi, SO, bút toán), trạng thái ra sao. Bảy ô màu = bảy nhóm; bấm một DO để xem từng cặp chứng từ.",
+  "lo": "<b>ໜ້ານີ້ໃຊ້ທຽບສອງຝ່າຍຕາມແຕ່ລະ DO.</b> ແຕ່ລະ DO: ຝ່າຍຈັດລົດສະເໜີຈ່າຍ, ເບີກສາງ, ຮັບເງິນຫຍັງແດ່ — ແລະ ຝ່າຍບັນຊີ (ລະບົບຂອງອ້າຍ Tune) ອອກເອກະສານໃດແລ້ວ (ໃບຈ່າຍ, SO, ບັນທຶກບັນຊີ), ສະຖານະເປັນແນວໃດ. ເຈັດຫ້ອງສີ = ເຈັດກຸ່ມ; ກົດ DO ເພື່ອເບິ່ງແຕ່ລະຄູ່ເອກະສານ.",
+  "en": "<b>This screen lines up both sides, DO by DO.</b> For each DO: what dispatch requested to pay, issue from stock and collect — and which documents accounting (Tune's system) has made (payment vouchers, SO, journal entries) and their status. Seven coloured cells = seven groups; click a DO to see each pair of documents."
+ },
+ "hs_loc_em": {
+  "vi": "Bên điều xe còn việc",
+  "lo": "ຝ່າຍຈັດລົດຍັງມີວຽກ",
+  "en": "Dispatch still to do"
+ },
+ "hs_loc_kt": {
+  "vi": "Chờ bên kế toán",
+  "lo": "ລໍຖ້າຝ່າຍບັນຊີ",
+  "en": "Waiting for accounting"
+ },
+ "hs_loc_loi": {
+  "vi": "Có lỗi",
+  "lo": "ມີຂໍ້ຜິດພາດ",
+  "en": "Has errors"
+ },
+ "hs_loc_xong": {
+  "vi": "Xong cả hai bên",
+  "lo": "ສຳເລັດທັງສອງຝ່າຍ",
+  "en": "Done on both sides"
+ },
+ "hs_m_khong": {
+  "vi": "Không phát sinh",
+  "lo": "ບໍ່ມີລາຍການ",
+  "en": "Not applicable"
+ },
+ "hs_m_chua": {
+  "vi": "Bên điều xe chưa xong",
+  "lo": "ຝ່າຍຈັດລົດຍັງບໍ່ແລ້ວ",
+  "en": "Dispatch not done yet"
+ },
+ "hs_m_cho_gui": {
+  "vi": "Chờ gửi sang kế toán",
+  "lo": "ລໍຖ້າສົ່ງໄປບັນຊີ",
+  "en": "Waiting to be sent"
+ },
+ "hs_m_cho_kt": {
+  "vi": "Kế toán đang xử lý",
+  "lo": "ບັນຊີກຳລັງດຳເນີນ",
+  "en": "With accounting"
+ },
+ "hs_m_xong": {
+  "vi": "Xong cả hai bên",
+  "lo": "ສຳເລັດທັງສອງຝ່າຍ",
+  "en": "Done on both sides"
+ },
+ "hs_m_loi": {
+  "vi": "Lỗi — cần xử lý",
+  "lo": "ຜິດພາດ — ຕ້ອງແກ້",
+  "en": "Error — needs action"
+ },
+ "hs_c_hai_ben": {
+  "vi": "Hai bên · bảy nhóm",
+  "lo": "ສອງຝ່າຍ · ເຈັດກຸ່ມ",
+  "en": "Both sides · seven groups"
+ },
+ "hs_k_tam_ung": {
+  "vi": "TU",
+  "lo": "ລ່ວງໜ້າ",
+  "en": "Adv"
+ },
+ "hs_k_chi_muc": {
+  "vi": "V·VI",
+  "lo": "V·VI",
+  "en": "V·VI"
+ },
+ "hs_k_xuat_kho": {
+  "vi": "Kho",
+  "lo": "ສາງ",
+  "en": "Stock"
+ },
+ "hs_k_but_toan": {
+  "vi": "GL",
+  "lo": "GL",
+  "en": "GL"
+ },
+ "hs_k_thu": {
+  "vi": "Thu",
+  "lo": "ຮັບ",
+  "en": "Coll"
+ },
+ "hs_k_so_nl": {
+  "vi": "NL",
+  "lo": "ນ້ຳມັນ",
+  "en": "Fuel"
+ },
+ "hs_k_tra_dt": {
+  "vi": "Trả",
+  "lo": "ຈ່າຍ",
+  "en": "Pay"
+ },
+ "hs_g_tam_ung": {
+  "vi": "Tạm ứng",
+  "lo": "ເງິນລ່ວງໜ້າ",
+  "en": "Advance"
+ },
+ "hs_g_chi_muc": {
+  "vi": "Chi mục V / VI",
+  "lo": "ຈ່າຍໝວດ V / VI",
+  "en": "Sections V / VI payments"
+ },
+ "hs_g_xuat_kho": {
+  "vi": "Xuất kho",
+  "lo": "ເບີກສາງ",
+  "en": "Stock issue"
+ },
+ "hs_g_but_toan": {
+  "vi": "Thuê xe · nợ nhà cung cấp",
+  "lo": "ຄ່າເຊົ່າລົດ · ໜີ້ຜູ້ສະໜອງ",
+  "en": "Truck hire · supplier payable"
+ },
+ "hs_g_thu": {
+  "vi": "Đề nghị thu",
+  "lo": "ສະເໜີຮັບເງິນ",
+  "en": "Collection request"
+ },
+ "hs_g_so_nl": {
+  "vi": "SO nhiên liệu",
+  "lo": "SO ນ້ຳມັນ",
+  "en": "Fuel SO"
+ },
+ "hs_g_tra_dt": {
+  "vi": "Trả đối tác",
+  "lo": "ຈ່າຍຄູ່ຮ່ວມ",
+  "en": "Partner payout"
+ },
+ "hs_d_tam_ung_noi_bo": {
+  "vi": "Tiền mặt tài xế cầm đi: tờ PTU → phiếu chi «Chi trước» (CTR) đứng tên tài xế, Nợ 1601 / Có tiền.",
+  "lo": "ເງິນສົດໂຊເຟີຖືໄປ: ໃບ PTU → ໃບຈ່າຍ «ຈ່າຍລ່ວງໜ້າ» (CTR) ໃນນາມໂຊເຟີ, ໜີ້ 1601 / ມີ ເງິນ.",
+  "en": "Cash the driver takes: PTU slip → \"Advance payment\" voucher (CTR) in the driver's name, Dr 1601 / Cr cash."
+ },
+ "hs_d_tam_ung_cong_no_chu_xe": {
+  "vi": "Xe thuê: tờ PTU → phiếu chi «Chi trước» (CTR) đứng tên đối tác, Nợ 4022 — trừ vào tiền trả đối tác.",
+  "lo": "ລົດເຊົ່າ: ໃບ PTU → ໃບຈ່າຍ «ຈ່າຍລ່ວງໜ້າ» (CTR) ໃນນາມຄູ່ຮ່ວມ, ໜີ້ 4022 — ຫັກຈາກເງິນຈ່າຍຄູ່ຮ່ວມ.",
+  "en": "Hired truck: PTU slip → \"Advance payment\" voucher (CTR) in the partner's name, Dr 4022 — deducted from the partner payout."
+ },
+ "hs_d_chi_muc": {
+  "vi": "Khoản quỹ trả ngay (sửa xe garage…) → phiếu chi «Chi khác» (CKH) lập khi KT Chi phí ghi sổ mục.",
+  "lo": "ລາຍການຄັງເງິນຈ່າຍທັນທີ (ສ້ອມລົດຢູ່ອູ່…) → ໃບຈ່າຍ «ລາຍຈ່າຍອື່ນ» (CKH) ອອກເມື່ອບັນຊີລາຍຈ່າຍລົງບັນຊີໝວດ.",
+  "en": "Items the cash desk pays at once (garage repairs…) → \"Other payment\" voucher (CKH), made when cost accounting posts the section."
+ },
+ "hs_d_xuat_kho_noi_bo": {
+  "vi": "Xe nhà lấy dầu · phụ tùng kho: tờ PLNL → kho cấp → bút toán xuất nội bộ Nợ 625 · 614 / Có 1371 theo giá vốn (ghi lúc khoá phiếu).",
+  "lo": "ລົດບໍລິສັດເອົານ້ຳມັນ · ອາໄຫຼ່ສາງ: ໃບ PLNL → ສາງຈ່າຍ → ບັນທຶກເບີກໃຊ້ພາຍໃນ ໜີ້ 625 · 614 / ມີ 1371 ຕາມລາຄາທຶນ (ບັນທຶກຕອນລັອກໃບ).",
+  "en": "Company truck takes store fuel · parts: PLNL slip → store issues → internal-issue entry Dr 625 · 614 / Cr 1371 at cost (made at lock)."
+ },
+ "hs_d_xuat_kho_xuat_ban": {
+  "vi": "Xe thuê lấy dầu · phụ tùng kho EPL: tờ PLNL → kho cấp → xuất bán cho đối tác: SO nhiên liệu ghi công nợ đối tác theo giá bán + bút toán giá vốn Nợ 607 / Có 1371.",
+  "lo": "ລົດເຊົ່າເອົານ້ຳມັນ · ອາໄຫຼ່ສາງ EPL: ໃບ PLNL → ສາງຈ່າຍ → ຂາຍໃຫ້ຄູ່ຮ່ວມ: SO ນ້ຳມັນ ບັນທຶກໜີ້ຄູ່ຮ່ວມຕາມລາຄາຂາຍ + ບັນທຶກລາຄາທຶນ ໜີ້ 607 / ມີ 1371.",
+  "en": "Hired truck takes EPL store fuel · parts: PLNL slip → store issues → sale to the partner: a fuel SO charges the partner at the sale price + cost entry Dr 607 / Cr 1371."
+ },
+ "hs_d_but_toan": {
+  "vi": "Khoản không qua tiền ghi lúc khoá phiếu → bút toán tổng hợp (GL): thuê xe Nợ 621 / Có 4022 · nợ nhà cung cấp …/4021.",
+  "lo": "ລາຍການທີ່ບໍ່ຜ່ານເງິນ ບັນທຶກຕອນລັອກໃບ → ບັນທຶກບັນຊີລວມ (GL): ຄ່າເຊົ່າລົດ ໜີ້ 621 / ມີ 4022 · ໜີ້ຜູ້ສະໜອງ …/4021.",
+  "en": "Non-cash items recorded at lock → general journal entry (GL): truck hire Dr 621 / Cr 4022 · supplier payable …/4021."
+ },
+ "hs_d_thu": {
+  "vi": "DO khoá → tờ PDT → SO dịch vụ vận chuyển (TK-…) ghi công nợ khách; kế toán thu tiền, bên này đọc lại đã thu.",
+  "lo": "DO ລັອກ → ໃບ PDT → SO ບໍລິການຂົນສົ່ງ (TK-…) ບັນທຶກໜີ້ລູກຄ້າ; ບັນຊີຮັບເງິນ, ຝ່າຍນີ້ອ່ານຄືນວ່າຮັບແລ້ວ.",
+  "en": "DO locked → PDT slip → transport-service SO (TK-…) records the customer debt; accounting collects, this side reads back what was collected."
+ },
+ "hs_d_so_nl": {
+  "vi": "Xe thuê lấy dầu kho EPL → SO nhiên liệu ghi công nợ đối tác theo giá bán, cấn trừ khi trả đối tác.",
+  "lo": "ລົດເຊົ່າເອົານ້ຳມັນສາງ EPL → SO ນ້ຳມັນ ບັນທຶກໜີ້ຄູ່ຮ່ວມຕາມລາຄາຂາຍ, ຫັກລົບຕອນຈ່າຍຄູ່ຮ່ວມ.",
+  "en": "Hired truck takes EPL store fuel → fuel SO records the partner's debt at the sale price, offset when the partner is paid."
+ },
+ "hs_d_tra_dt": {
+  "vi": "Tiền thuê − phí − quá tải − tạm ứng − nợ NCC − nhiên liệu còn nợ → đề nghị TCX → phiếu chi «Chi khác» đứng tên đối tác.",
+  "lo": "ຄ່າເຊົ່າ − ຄ່າທຳນຽມ − ແກ່ເກີນ − ເງິນລ່ວງໜ້າ − ໜີ້ຜູ້ສະໜອງ − ນ້ຳມັນຄ້າງ → ໃບສະເໜີ TCX → ໃບຈ່າຍ «ລາຍຈ່າຍອື່ນ» ໃນນາມຄູ່ຮ່ວມ.",
+  "en": "Hire − fee − overload − advance − supplier debt − unpaid fuel → TCX request → \"Other payment\" voucher in the partner's name."
+ },
+ "hs_ben_em": {
+  "vi": "Bên điều xe",
+  "lo": "ຝ່າຍຈັດລົດ",
+  "en": "Dispatch side"
+ },
+ "hs_ben_kt": {
+  "vi": "Bên kế toán",
+  "lo": "ຝ່າຍບັນຊີ",
+  "en": "Accounting side"
+ },
+ "hs_em_chua": {
+  "vi": "Chưa có tờ nào",
+  "lo": "ຍັງບໍ່ມີໃບ",
+  "en": "No slip yet"
+ },
+ "hs_kt_chua": {
+  "vi": "Chưa có chứng từ",
+  "lo": "ຍັງບໍ່ມີເອກະສານ",
+  "en": "No document yet"
+ },
+ "hs_sap_co": {
+  "vi": "Sắp có",
+  "lo": "ກຳລັງຈະມີ",
+  "en": "Coming soon"
+ },
+ "hs_chua_co_so": {
+  "vi": "chưa có số",
+  "lo": "ຍັງບໍ່ມີເລກ",
+  "en": "no number yet"
+ },
+ "hs_muc": {
+  "vi": "Mục {m}",
+  "lo": "ໝວດ {m}",
+  "en": "Section {m}"
+ },
+ "hs_pt_kho": {
+  "vi": "Phụ tùng lấy kho: {da}/{n} dòng đã xuất",
+  "lo": "ອາໄຫຼ່ເບີກສາງ: {da}/{n} ແຖວເບີກແລ້ວ",
+  "en": "Parts from store: {da}/{n} lines issued"
+ },
+ "hs_chua_khoa": {
+  "vi": "Chưa khoá phiếu",
+  "lo": "ຍັງບໍ່ລັອກໃບ",
+  "en": "Not locked"
+ },
+ "hs_kt_thue": {
+  "vi": "thuê xe",
+  "lo": "ຄ່າເຊົ່າລົດ",
+  "en": "truck hire"
+ },
+ "hs_kt_ncc": {
+  "vi": "nợ nhà cung cấp",
+  "lo": "ໜີ້ຜູ້ສະໜອງ",
+  "en": "supplier payable"
+ },
+ "hs_xem_but_toan": {
+  "vi": "Xem bút toán",
+  "lo": "ເບິ່ງບັນທຶກບັນຊີ",
+  "en": "View entry"
+ },
+ "hs_gl_so_tam": {
+  "vi": "Đã sang kế toán · ghi sổ tạm",
+  "lo": "ສົ່ງໄປບັນຊີແລ້ວ · ລົງບັນຊີຊົ່ວຄາວ",
+  "en": "With accounting · provisional"
+ },
+ "hs_gl_chinh_thuc": {
+  "vi": "Kế toán đã ghi sổ chính thức",
+  "lo": "ບັນຊີລົງບັນຊີທາງການແລ້ວ",
+  "en": "Posted by accounting"
+ },
+ "hs_so_chua_thu": {
+  "vi": "Đã tạo SO · chưa thu",
+  "lo": "ສ້າງ SO ແລ້ວ · ຍັງບໍ່ຮັບ",
+  "en": "SO created · not collected"
+ },
+ "hs_so_khong_thay": {
+  "vi": "Không thấy SO bên kế toán",
+  "lo": "ບໍ່ພົບ SO ຢູ່ບັນຊີ",
+  "en": "SO not found in accounting"
+ },
+ "hs_so_trung": {
+  "vi": "Bên kế toán báo trùng — đối soát",
+  "lo": "ບັນຊີແຈ້ງຊ້ຳ — ກວດທຽບ",
+  "en": "Duplicate reported by accounting — reconcile"
+ },
+ "hs_nl_dau_ban": {
+  "vi": "Dầu bán cho đối tác",
+  "lo": "ນ້ຳມັນຂາຍໃຫ້ຄູ່ຮ່ວມ",
+  "en": "Fuel sold to the partner"
+ },
+ "hs_nl_chua_tao": {
+  "vi": "Chưa tạo SO nhiên liệu",
+  "lo": "ຍັງບໍ່ສ້າງ SO ນ້ຳມັນ",
+  "en": "Fuel SO not created"
+ },
+ "hs_nl_da_tao": {
+  "vi": "Đã tạo SO · còn nợ",
+  "lo": "ສ້າງ SO ແລ້ວ · ຍັງຄ້າງ",
+  "en": "SO created · outstanding"
+ },
+ "hs_nl_can_tru": {
+  "vi": "Đã cấn trừ",
+  "lo": "ຫັກລົບແລ້ວ",
+  "en": "Offset"
+ },
+ "hs_nl_con_no": {
+  "vi": "còn nợ",
+  "lo": "ຍັງຄ້າງ",
+  "en": "outstanding"
+ },
+ "hs_c_chua_lap_ptu": {
+  "vi": "Chưa lập tờ tạm ứng — Bãi bấm «Phiếu đề nghị tạm ứng» trên phiếu xuất xe.",
+  "lo": "ຍັງບໍ່ໄດ້ອອກໃບເງິນລ່ວງໜ້າ — ທ່າບົກກົດ «ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ» ໃນໃບອອກລົດ.",
+  "en": "No advance slip yet — the yard presses \"Advance request\" on the dispatch slip."
+ },
+ "hs_c_cho_ghi_so_iv": {
+  "vi": "Phiếu chi «Chi trước» được lập khi KT Chi phí ghi sổ mục IV.",
+  "lo": "ໃບຈ່າຍ «ຈ່າຍລ່ວງໜ້າ» ອອກເມື່ອບັນຊີລາຍຈ່າຍລົງບັນຊີໝວດ IV.",
+  "en": "The \"Advance payment\" voucher is made when cost accounting posts section IV."
+ },
+ "hs_c_chi_tai_quy": {
+  "vi": "Đã chi tại quỹ trang điều xe (trước 01/10) — đối soát, không lập lại.",
+  "lo": "ຈ່າຍຢູ່ຄັງເງິນໜ້າຈັດລົດແລ້ວ (ກ່ອນ 01/10) — ກວດທຽບ, ບໍ່ອອກຊ້ຳ.",
+  "en": "Paid at the dispatch-site cash desk (before 1 Oct) — reconcile, do not redo."
+ },
+ "hs_c_cho_ghi_so_v": {
+  "vi": "Phiếu chi «Chi khác» được lập khi KT Chi phí ghi sổ mục V (khoản quỹ trả ngay).",
+  "lo": "ໃບຈ່າຍ «ລາຍຈ່າຍອື່ນ» ອອກເມື່ອບັນຊີລາຍຈ່າຍລົງບັນຊີໝວດ V (ລາຍການຈ່າຍທັນທີ).",
+  "en": "The \"Other payment\" voucher is made when cost accounting posts section V (items paid at once)."
+ },
+ "hs_c_cho_kho_cap": {
+  "vi": "Kho chưa cấp / chưa xuất hết theo đề nghị.",
+  "lo": "ສາງຍັງບໍ່ຈ່າຍ / ຍັງເບີກບໍ່ຄົບຕາມໃບສະເໜີ.",
+  "en": "The store has not issued everything requested yet."
+ },
+ "hs_c_cho_khoa": {
+  "vi": "Ghi khi KT Thu/Chi khoá phiếu.",
+  "lo": "ບັນທຶກເມື່ອບັນຊີຮັບ/ຈ່າຍລັອກໃບ.",
+  "en": "Recorded when receipts/payments accounting locks the slip."
+ },
+ "hs_c_khoa_truoc_luat": {
+  "vi": "Phiếu khoá trước khi có luật bút toán này — không có bút toán, đối soát với kế toán.",
+  "lo": "ໃບລັອກກ່ອນມີກົດບັນທຶກບັນຊີນີ້ — ບໍ່ມີບັນທຶກ, ກວດທຽບກັບບັນຊີ.",
+  "en": "Locked before this entry rule existed — no entry, reconcile with accounting."
+ },
+ "hs_c_cho_tao_so": {
+  "vi": "KT Thu/Chi bấm «Tạo SO bên kế toán» ở màn Phiếu đề nghị thu.",
+  "lo": "ບັນຊີຮັບ/ຈ່າຍກົດ «ສ້າງ SO ຢູ່ບັນຊີ» ໃນໜ້າໃບສະເໜີຮັບເງິນ.",
+  "en": "Receipts/payments accounting presses \"Create SO in accounting\" on the Collection requests screen."
+ },
+ "hs_c_sap_co": {
+  "vi": "Máy chủ chưa có bảng SO nhiên liệu (chưa khởi động lại bản mới): xe thuê lấy dầu kho EPL → SO nhiên liệu ghi công nợ đối tác, cấn trừ khi trả đối tác.",
+  "lo": "ເຊີບເວີຍັງບໍ່ມີຕາຕະລາງ SO ນ້ຳມັນ (ຍັງບໍ່ເປີດຄືນລຸ້ນໃໝ່): ລົດເຊົ່າເອົານ້ຳມັນສາງ EPL → SO ນ້ຳມັນ ບັນທຶກໜີ້ຄູ່ຮ່ວມ, ຫັກລົບຕອນຈ່າຍຄູ່ຮ່ວມ.",
+  "en": "The server has no fuel-SO table yet (new version not restarted): a hired truck taking EPL store fuel → a fuel SO charges the partner, offset when the partner is paid."
+ },
+ "hs_c_nl_cho_tao": {
+  "vi": "SO nhiên liệu được tạo cùng nút «Tạo SO bên kế toán» (sau SO cước) ở màn Phiếu đề nghị thu.",
+  "lo": "SO ນ້ຳມັນສ້າງພ້ອມປຸ່ມ «ສ້າງ SO ຢູ່ບັນຊີ» (ຫຼັງ SO ຄ່າຂົນສົ່ງ) ໃນໜ້າໃບສະເໜີຮັບເງິນ.",
+  "en": "The fuel SO is created by the same \"Create SO in accounting\" button (after the freight SO) on the Collection requests screen."
+ },
+ "hs_c_cho_de_nghi_tra": {
+  "vi": "Chưa đề nghị trả — KT Thu/Chi lập ở màn Tất toán đối tác.",
+  "lo": "ຍັງບໍ່ສະເໜີຈ່າຍ — ບັນຊີຮັບ/ຈ່າຍອອກໃນໜ້າສະສາງຄູ່ຮ່ວມ.",
+  "en": "No payout request yet — receipts/payments accounting raises it on Partner settlement."
+ },
+ "hs_c_tra_trang_tam": {
+  "vi": "Đã trả ở trang kế toán tạm (trước 01/10) — đối soát.",
+  "lo": "ຈ່າຍຢູ່ໜ້າບັນຊີຊົ່ວຄາວແລ້ວ (ກ່ອນ 01/10) — ກວດທຽບ.",
+  "en": "Paid on the temporary accounting site (before 1 Oct) — reconcile."
+ },
+ "hs_tab_nhom": {
+  "vi": "Hai bên theo nhóm",
+  "lo": "ສອງຝ່າຍຕາມກຸ່ມ",
+  "en": "Both sides by group"
+ },
+ "hs_tab_dong": {
+  "vi": "Từng dòng tiền",
+  "lo": "ແຕ່ລະແຖວເງິນ",
+  "en": "Each money line"
+ },
+ "hs_khong_phat_sinh": {
+  "vi": "Không phát sinh",
+  "lo": "ບໍ່ມີລາຍການ",
+  "en": "Not applicable"
+ },
+ "hs_bt_cua_phieu": {
+  "vi": "Bút toán của phiếu",
+  "lo": "ບັນທຶກບັນຊີຂອງໃບ",
+  "en": "Entries of this slip"
+ },
+ "hs_cot_muc": {
+  "vi": "Mục",
+  "lo": "ໝວດ",
+  "en": "Section"
+ },
+ "hs_cot_sl_gia": {
+  "vi": "SL × đơn giá",
+  "lo": "ຈຳນວນ × ລາຄາ",
+  "en": "Qty × price"
+ },
+ "hs_cot_xu_ly": {
+  "vi": "Đi đường nào",
+  "lo": "ໄປທາງໃດ",
+  "en": "Handled as"
+ },
+ "hs_cot_chung_tu": {
+  "vi": "Chứng từ",
+  "lo": "ເອກະສານ",
+  "en": "Document"
+ },
+ "hs_x_sales_order": {
+  "vi": "Cước → SO",
+  "lo": "ຄ່າຂົນສົ່ງ → SO",
+  "en": "Freight → SO"
+ },
+ "hs_x_journal": {
+  "vi": "Bút toán tổng hợp",
+  "lo": "ບັນທຶກບັນຊີລວມ",
+  "en": "General journal"
+ },
+ "hs_x_advance": {
+  "vi": "Tạm ứng (Chi trước)",
+  "lo": "ເງິນລ່ວງໜ້າ (ຈ່າຍລ່ວງໜ້າ)",
+  "en": "Advance (advance payment)"
+ },
+ "hs_x_pay_now": {
+  "vi": "Quỹ trả ngay (Chi khác)",
+  "lo": "ຄັງເງິນຈ່າຍທັນທີ (ລາຍຈ່າຍອື່ນ)",
+  "en": "Paid at once (other payment)"
+ },
+ "hs_x_driver_settlement": {
+  "vi": "Tất toán tài xế",
+  "lo": "ສະສາງໂຊເຟີ",
+  "en": "Driver settlement"
+ },
+ "hs_x_owner_payment": {
+  "vi": "Trả đối tác",
+  "lo": "ຈ່າຍຄູ່ຮ່ວມ",
+  "en": "Partner payout"
+ },
+ "hs_x_owner_paid": {
+  "vi": "Đối tác tự trả",
+  "lo": "ຄູ່ຮ່ວມຈ່າຍເອງ",
+  "en": "Partner paid it"
+ },
+ "hs_x_payroll": {
+  "vi": "Trả cùng lương",
+  "lo": "ຈ່າຍພ້ອມເງິນເດືອນ",
+  "en": "Paid with salary"
+ },
+ "hs_x_toll_card": {
+  "vi": "Trừ thẻ cao tốc",
+  "lo": "ຫັກບັດທາງດ່ວນ",
+  "en": "Toll card"
+ },
+ "hs_x_khac": {
+  "vi": "Khác",
+  "lo": "ອື່ນໆ",
+  "en": "Other"
+ },
+ "hs_s_has_voucher": {
+  "vi": "Đã có chứng từ",
+  "lo": "ມີເອກະສານແລ້ວ",
+  "en": "Has a document"
+ },
+ "hs_s_pending": {
+  "vi": "Đang chờ (tự lập)",
+  "lo": "ກຳລັງລໍຖ້າ (ສ້າງເອງ)",
+  "en": "Pending (automatic)"
+ },
+ "hs_s_open": {
+  "vi": "Chưa có chứng từ",
+  "lo": "ຍັງບໍ່ມີເອກະສານ",
+  "en": "No document"
+ },
+ "hs_s_not_payable": {
+  "vi": "EPL không chi",
+  "lo": "EPL ບໍ່ຈ່າຍ",
+  "en": "Not paid by EPL"
+ },
+ "hs_sg_has_voucher": {
+  "vi": "bên kế toán đã có phiếu / SO / bút toán",
+  "lo": "ບັນຊີມີໃບ / SO / ບັນທຶກແລ້ວ",
+  "en": "accounting already has a voucher / SO / entry"
+ },
+ "hs_sg_pending": {
+  "vi": "đi đường tự động, chứng từ sẽ sinh ở bước sau — không lập tay",
+  "lo": "ໄປທາງອັດຕະໂນມັດ, ເອກະສານຈະອອກຂັ້ນຕໍ່ໄປ — ບໍ່ອອກເອງ",
+  "en": "automatic flow, the document comes at a later step — do not make it by hand"
+ },
+ "hs_sg_open": {
+  "vi": "EPL chi mà chưa vào chứng từ nào — kế toán lập phiếu được",
+  "lo": "EPL ຈ່າຍແຕ່ຍັງບໍ່ເຂົ້າເອກະສານໃດ — ບັນຊີອອກໃບໄດ້",
+  "en": "EPL pays but no document yet — accounting may make one"
+ },
+ "hs_sg_not_payable": {
+  "vi": "không phải tiền EPL chi",
+  "lo": "ບໍ່ແມ່ນເງິນ EPL ຈ່າຍ",
+  "en": "not money EPL pays"
+ },
+ "hs_tien_thue_dt": {
+  "vi": "Tiền thuê đối tác",
+  "lo": "ຄ່າເຊົ່າຄູ່ຮ່ວມ",
+  "en": "Partner hire"
+ },
+ "hs_cuoc": {
+  "vi": "Cước vận chuyển",
+  "lo": "ຄ່າຂົນສົ່ງ",
+  "en": "Freight"
+ },
+ "hs_thu_ngan": {
+  "vi": "Thu",
+  "lo": "ຮັບ",
+  "en": "Coll"
+ },
+ "hs_xuat_noi_bo_ngan": {
+  "vi": "xuất nội bộ",
+  "lo": "ເບີກພາຍໃນ",
+  "en": "internal issue"
+ },
+ "hs_xuat_ban_ngan": {
+  "vi": "xuất bán cho đối tác",
+  "lo": "ຂາຍໃຫ້ຄູ່ຮ່ວມ",
+  "en": "sold to the partner"
+ },
+ "btc_gt_t": {
+  "vi": "Bút toán chờ gửi — các khoản KHÔNG qua tiền",
+  "lo": "ບັນຊີລໍຖ້າສົ່ງ — ລາຍການທີ່ບໍ່ຜ່ານເງິນ",
+  "en": "Pending journal entries — items with NO cash movement"
+ },
+ "btc_gt_d": {
+  "vi": "Thuê xe 621/4022, nợ nhà cung cấp 625 · 614/4021, xuất kho nội bộ 625 · 614/1371, giá vốn xuất bán 607/1371, quyết toán tạm ứng 625/1601… Trang điều xe ghi lúc khoá phiếu / chốt tất toán, rồi gửi sang hệ anh Tune thành chứng từ Tổng hợp; kế toán bên đó ghi sổ chính thức.",
+  "lo": "ຄ່າເຊົ່າລົດ 621/4022, ໜີ້ຜູ້ສະໜອງ 625 · 614/4021, ເບີກສາງພາຍໃນ 625 · 614/1371, ລາຄາທຶນຂາຍ 607/1371, ສະສາງເງິນລ່ວງໜ້າ 625/1601… ໜ້າຈັດລົດບັນທຶກຕອນລັອກໃບ / ປິດການສະສາງ, ແລ້ວສົ່ງໄປລະບົບຂອງອ້າຍ Tune ເປັນເອກະສານລວມ; ບັນຊີຢູ່ນັ້ນລົງບັນຊີທາງການ.",
+  "en": "Truck hire 621/4022, supplier payable 625 · 614/4021, internal stock issue 625 · 614/1371, cost of sales 607/1371, advance clearing 625/1601… The dispatch site records them at lock / settlement close, then sends them to Tune's system as general vouchers; accounting there posts them officially."
+ },
+ "btc_tt_cho_gui_d": {
+  "vi": "đã ghi ở trang điều xe, chưa sang kế toán (chưa bật gửi, hoặc lần gửi lỗi)",
+  "lo": "ບັນທຶກຢູ່ໜ້າຈັດລົດແລ້ວ, ຍັງບໍ່ໄປບັນຊີ (ຍັງບໍ່ເປີດສົ່ງ, ຫຼື ສົ່ງບໍ່ສຳເລັດ)",
+  "en": "recorded here, not yet with accounting (sending off, or the last send failed)"
+ },
+ "btc_tt_da_gui_d": {
+  "vi": "kế toán đã nhận: chứng từ Tổng hợp GL…, ghi sổ tạm — kế toán ghi sổ chính thức trong QLSX",
+  "lo": "ບັນຊີຮັບແລ້ວ: ເອກະສານລວມ GL…, ລົງບັນຊີຊົ່ວຄາວ — ບັນຊີລົງທາງການໃນ QLSX",
+  "en": "accounting has it: general voucher GL…, provisional — accounting posts it officially in QLSX"
+ },
+ "btc_tt_huy_d": {
+  "vi": "nguồn bị huỷ trước khi gửi (mở khoá phiếu, bỏ chốt) — không còn hiệu lực",
+  "lo": "ແຫຼ່ງຖືກຍົກເລີກກ່ອນສົ່ງ (ປົດລັອກໃບ, ຍົກເລີກການປິດ) — ບໍ່ມີຜົນແລ້ວ",
+  "en": "source cancelled before sending (slip unlocked, close undone) — no longer valid"
+ },
+ "btc_tt_can_dao_d": {
+  "vi": "đã gửi mà nguồn bị huỷ — chờ gỡ bên kế toán; gỡ được thì thành Đã huỷ",
+  "lo": "ສົ່ງແລ້ວແຕ່ແຫຼ່ງຖືກຍົກເລີກ — ລໍຖ້າຖອນຢູ່ບັນຊີ; ຖອນໄດ້ແລ້ວເປັນ ຍົກເລີກແລ້ວ",
+  "en": "sent, then the source was cancelled — waiting for removal in accounting; once removed it becomes Cancelled"
+ },
+ "btc_mo_do": {
+  "vi": "Mở DO",
+  "lo": "ເປີດ DO",
+  "en": "Open DO"
+ },
+ "btc_mo_ho_so": {
+  "vi": "Hồ sơ DO",
+  "lo": "ເອກະສານ DO",
+  "en": "DO file"
+ },
+ "btc_g_thue_xe": {
+  "vi": "Xe thuê: lúc khoá phiếu ghi chi phí thuê xe — Nợ 621 / Có 4022 phải trả đối tác, bằng tiền thuê.",
+  "lo": "ລົດເຊົ່າ: ຕອນລັອກໃບ ບັນທຶກຄ່າເຊົ່າລົດ — ໜີ້ 621 / ມີ 4022 ຕ້ອງຈ່າຍຄູ່ຮ່ວມ, ເທົ່າຄ່າເຊົ່າ.",
+  "en": "Hired truck: at lock the hire cost is recorded — Dr 621 / Cr 4022 payable to the partner, for the hire amount."
+ },
+ "btc_g_no_ncc": {
+  "vi": "Dòng chi ghi nợ nhà cung cấp (chipping, dầu trạm ghi nợ, garage cho nợ…) — Nợ 625 · 614 (xe thuê 4022) / Có 4021, trả nhà cung cấp theo đợt.",
+  "lo": "ແຖວຈ່າຍທີ່ຕິດໜີ້ຜູ້ສະໜອງ (chipping, ນ້ຳມັນປໍ້າຂຽນໜີ້, ອູ່ໃຫ້ຕິດ…) — ໜີ້ 625 · 614 (ລົດເຊົ່າ 4022) / ມີ 4021, ຈ່າຍຜູ້ສະໜອງເປັນງວດ.",
+  "en": "Lines on supplier credit (chipping, station fuel on account, garage on credit…) — Dr 625 · 614 (hired truck 4022) / Cr 4021, paid to the supplier in batches."
+ },
+ "btc_g_xuat_noi_bo": {
+  "vi": "Xe nhà lấy dầu / phụ tùng kho — chi phí chuyến: Nợ 625 (dầu) · 614 (phụ tùng) / Có 1371 theo giá vốn bình quân; một lần xuất một bút toán, ngày = ngày xuất.",
+  "lo": "ລົດບໍລິສັດເອົານ້ຳມັນ / ອາໄຫຼ່ສາງ — ຕົ້ນທຶນຖ້ຽວ: ໜີ້ 625 (ນ້ຳມັນ) · 614 (ອາໄຫຼ່) / ມີ 1371 ຕາມລາຄາທຶນສະເລ່ຍ; ເບີກເທື່ອໜຶ່ງ ບັນທຶກໜຶ່ງ, ວັນທີ = ວັນເບີກ.",
+  "en": "Company truck takes store fuel / parts — trip cost: Dr 625 (fuel) · 614 (parts) / Cr 1371 at average cost; one entry per issue, dated the issue day."
+ },
+ "btc_g_xuat_ban": {
+  "vi": "Xe thuê lấy dầu / phụ tùng kho EPL — xuất bán cho đối tác: ở đây là phần giá vốn Nợ 607 / Có 1371; phần bán theo giá bán là SO nhiên liệu ghi công nợ đối tác bên kế toán (phiếu khoá trước 02/10 còn dòng Nợ 4022 / Có 707).",
+  "lo": "ລົດເຊົ່າເອົານ້ຳມັນ / ອາໄຫຼ່ສາງ EPL — ຂາຍໃຫ້ຄູ່ຮ່ວມ: ຢູ່ນີ້ແມ່ນສ່ວນລາຄາທຶນ ໜີ້ 607 / ມີ 1371; ສ່ວນຂາຍຕາມລາຄາຂາຍແມ່ນ SO ນ້ຳມັນ ບັນທຶກໜີ້ຄູ່ຮ່ວມຢູ່ບັນຊີ (ໃບລັອກກ່ອນ 02/10 ຍັງມີແຖວ ໜີ້ 4022 / ມີ 707).",
+  "en": "Hired truck takes EPL store fuel / parts — sale to the partner: this entry is the cost part Dr 607 / Cr 1371; the sale at the sale price is a fuel SO charging the partner in accounting (slips locked before 2 Oct still carry Dr 4022 / Cr 707)."
+ },
+ "btc_g_tat_toan": {
+  "vi": "Chốt tất toán tài xế: số tài xế đã chi thật sang chi phí — Nợ 625 / Có 1601 tạm ứng, ngày cuối kỳ.",
+  "lo": "ປິດການສະສາງໂຊເຟີ: ເງິນທີ່ໂຊເຟີຈ່າຍຈິງເຂົ້າຕົ້ນທຶນ — ໜີ້ 625 / ມີ 1601 ເງິນລ່ວງໜ້າ, ວັນທ້າຍງວດ.",
+  "en": "Driver settlement closed: what the driver really spent becomes cost — Dr 625 / Cr 1601 advance, dated the period end."
+ },
+ "btc_g_ban_chu_xe": {
+  "vi": "Hàng đối tác mua ở quầy, trừ vào tiền trả đối tác — Nợ 4022 / Có 707 theo giá bán, khi thủ quỹ đã chi phiếu trả.",
+  "lo": "ສິນຄ້າຄູ່ຮ່ວມຊື້ຢູ່ໜ້າຮ້ານ, ຫັກຈາກເງິນຈ່າຍຄູ່ຮ່ວມ — ໜີ້ 4022 / ມີ 707 ຕາມລາຄາຂາຍ, ເມື່ອຄັງເງິນຈ່າຍໃບຈ່າຍແລ້ວ.",
+  "en": "Goods the partner bought at the counter, deducted from the payout — Dr 4022 / Cr 707 at sale price, once the cashier has paid."
+ },
+ "btc_g_khac": {
+  "vi": "Khoản không qua tiền do một màn khác ghi.",
+  "lo": "ລາຍການບໍ່ຜ່ານເງິນ ທີ່ໜ້າອື່ນບັນທຶກ.",
+  "en": "A non-cash item recorded by another screen."
+ },
+ "tt_bang_tinh": {
+  "vi": "Bảng tính từng phiếu",
+  "lo": "ຕາຕະລາງຄິດໄລ່ແຕ່ລະໃບ",
+  "en": "Per-slip worksheet"
+ },
+ "tt_bang_tinh_d": {
+  "vi": "Bấm một phiếu để mở từng dòng tiền: trong tạm ứng, tài xế tự chi, cùng lương, nợ NCC, thẻ, kho.",
+  "lo": "ກົດໃບເພື່ອເປີດແຕ່ລະແຖວເງິນ: ໃນເງິນລ່ວງໜ້າ, ໂຊເຟີຈ່າຍເອງ, ພ້ອມເງິນເດືອນ, ໜີ້ຜູ້ສະໜອງ, ບັດ, ສາງ.",
+  "en": "Click a slip to open each money line: in the advance, driver paid, with salary, supplier credit, card, store."
+ },
+ "tt_cd_ung": {
+  "vi": "Cộng dồn đã ứng",
+  "lo": "ສະສົມເບີກລ່ວງໜ້າ",
+  "en": "Running advanced"
+ },
+ "tt_cd_chi": {
+  "vi": "Cộng dồn chi thật",
+  "lo": "ສະສົມຈ່າຍຈິງ",
+  "en": "Running spent"
+ },
+ "tt_cd_chenh": {
+  "vi": "Cộng dồn chênh",
+  "lo": "ສະສົມຜົນຕ່າງ",
+  "en": "Running difference"
+ },
+ "tt_theo_chot": {
+  "vi": "Theo bảng kỳ (ứng / chi):",
+  "lo": "ຕາມຕາຕະລາງງວດ (ເບີກ / ຈ່າຍ):",
+  "en": "Per period table (adv. / spent):"
+ },
+ "tt_cach_tra": {
+  "vi": "Cách trả",
+  "lo": "ວິທີຈ່າຍ",
+  "en": "How paid"
+ },
+ "tt_nguon": {
+  "vi": "Nguồn tiền",
+  "lo": "ແຫຼ່ງເງິນ",
+  "en": "Money source"
+ },
+ "tt_so_ptu": {
+  "vi": "Số PTU",
+  "lo": "ເລກ PTU",
+  "en": "PTU no."
+ },
+ "tt_phieu_chi_kt": {
+  "vi": "Phiếu chi bên kế toán",
+  "lo": "ໃບຈ່າຍຝ່າຍບັນຊີ",
+  "en": "Accounting voucher"
+ },
+ "tt_vao_chi": {
+  "vi": "Vào chi thật",
+  "lo": "ເຂົ້າຈ່າຍຈິງ",
+  "en": "Counts as spent"
+ },
+ "tt_cong_chi_that": {
+  "vi": "Cộng phần vào chi thật",
+  "lo": "ລວມສ່ວນທີ່ເຂົ້າຈ່າຍຈິງ",
+  "en": "Total counted as spent"
+ },
+ "tt_chua_dong": {
+  "vi": "Máy chủ chưa gửi chi tiết từng dòng của phiếu này (đang cập nhật) — xem trên phiếu xuất xe.",
+  "lo": "ເຊີບເວີຍັງບໍ່ສົ່ງລາຍລະອຽດແຕ່ລະແຖວຂອງໃບນີ້ (ກຳລັງອັບເດດ) — ເບິ່ງໃນໃບອອກລົດ.",
+  "en": "The server has not sent this slip's line details yet (being updated) — see the dispatch slip."
+ },
+ "tt_ng_tam_ung": {
+  "vi": "Trong tạm ứng",
+  "lo": "ໃນເງິນລ່ວງໜ້າ",
+  "en": "In the advance"
+ },
+ "tt_ng_tu_chi": {
+  "vi": "Tài xế tự chi",
+  "lo": "ໂຊເຟີຈ່າຍເອງ",
+  "en": "Driver paid"
+ },
+ "tt_ng_cung_luong": {
+  "vi": "Trả cùng lương",
+  "lo": "ຈ່າຍພ້ອມເງິນເດືອນ",
+  "en": "With salary"
+ },
+ "tt_ng_ncc": {
+  "vi": "Nợ NCC",
+  "lo": "ໜີ້ຜູ້ສະໜອງ",
+  "en": "Supplier credit"
+ },
+ "tt_ng_the": {
+  "vi": "Trừ thẻ",
+  "lo": "ຫັກບັດ",
+  "en": "Card"
+ },
+ "tt_ng_kho": {
+  "vi": "Lấy kho",
+  "lo": "ເບີກສາງ",
+  "en": "From store"
+ },
+ "tt_ng_khac": {
+  "vi": "Khác",
+  "lo": "ອື່ນໆ",
+  "en": "Other"
+ },
+ "tt_ct_the": {
+  "vi": "Thẻ cao tốc",
+  "lo": "ບັດທາງດ່ວນ",
+  "en": "Toll card"
+ },
+ "tt_ct_kho": {
+  "vi": "Lấy kho",
+  "lo": "ເບີກສາງ",
+  "en": "From store"
+ },
+ "nav_tt_doi_tac": {
+  "vi": "Tất toán đối tác",
+  "lo": "ສະສາງຄູ່ຮ່ວມ",
+  "en": "Partner settlement"
+ },
+ "title_tat_toan_doi_tac": {
+  "vi": "Tất toán đối tác<span class=\"sub\">Trả chủ xe liên kết theo kỳ · bảng tính từng chuyến</span>",
+  "lo": "ສະສາງຄູ່ຮ່ວມ<span class=\"sub\">ຈ່າຍເຈົ້າຂອງລົດຮ່ວມຕາມງວດ · ຕາຕະລາງຄິດໄລ່ແຕ່ລະຖ້ຽວ</span>",
+  "en": "Partner settlement<span class=\"sub\">Pay joint-truck owners by period · per-trip worksheet</span>"
+ },
+ "d_tat_toan_doi_tac": {
+  "vi": "Trả đối tác xe thuê: thuê − phí − quá tải − tạm ứng − nợ NCC − nhiên liệu",
+  "lo": "ຈ່າຍຄູ່ຮ່ວມລົດເຊົ່າ: ຄ່າເຊົ່າ − ຄ່າທຳນຽມ − ແກ່ເກີນ − ລ່ວງໜ້າ − ໜີ້ຜູ້ສະໜອງ − ນ້ຳມັນ",
+  "en": "Hired-truck partner payout: hire − fee − overload − advance − supplier debt − fuel"
+ },
+ "ttd_tim": {
+  "vi": "Tìm đối tác, mã kế toán",
+  "lo": "ຊອກຄູ່ຮ່ວມ, ເລກບັນຊີ",
+  "en": "Search partner, account code"
+ },
+ "ttd_gioi_thieu": {
+  "vi": "Máy tự cấn trừ SO nhiên liệu còn nợ khi lập đề nghị, rồi lập phiếu chi phần còn lại bên kế toán. Đối tác tự mua tự trả hết thì trả đủ tiền thuê.",
+  "lo": "ເຄື່ອງຫັກລົບ SO ນ້ຳມັນທີ່ຍັງຄ້າງເອງເມື່ອອອກໃບສະເໜີ, ແລ້ວອອກໃບຈ່າຍສ່ວນທີ່ເຫຼືອຢູ່ບັນຊີ. ຄູ່ຮ່ວມຊື້ເອງຈ່າຍເອງໝົດ ກໍຈ່າຍຄ່າເຊົ່າເຕັມ.",
+  "en": "When the request is raised the system offsets the unpaid fuel SO itself, then makes a payment voucher for the rest in accounting. If the partner bought and paid everything themselves, the full hire is paid."
+ },
+ "ttd_c_thue": {
+  "vi": "Tiền thuê",
+  "lo": "ຄ່າເຊົ່າ",
+  "en": "Hire"
+ },
+ "ttd_c_phi": {
+  "vi": "Phí quản lý",
+  "lo": "ຄ່າທຳນຽມ",
+  "en": "Management fee"
+ },
+ "ttd_c_qua_tai": {
+  "vi": "Cắt quá tải",
+  "lo": "ຫັກແກ່ເກີນ",
+  "en": "Overload cut"
+ },
+ "ttd_c_tam_ung": {
+  "vi": "Tạm ứng EPL đưa",
+  "lo": "ເງິນລ່ວງໜ້າ EPL ໃຫ້",
+  "en": "EPL advance"
+ },
+ "ttd_c_no_ncc": {
+  "vi": "Nợ NCC EPL trả thay",
+  "lo": "ໜີ້ຜູ້ສະໜອງ EPL ຈ່າຍແທນ",
+  "en": "Supplier debt EPL paid"
+ },
+ "ttd_c_nhien_lieu": {
+  "vi": "SO nhiên liệu còn nợ",
+  "lo": "SO ນ້ຳມັນຍັງຄ້າງ",
+  "en": "Unpaid fuel SO"
+ },
+ "ttd_c_nhien_lieu_no": {
+  "vi": "Nhiên liệu còn nợ",
+  "lo": "ນ້ຳມັນຍັງຄ້າງ",
+  "en": "Fuel outstanding"
+ },
+ "ttd_c_con_tra": {
+  "vi": "Còn trả",
+  "lo": "ຍັງຕ້ອງຈ່າຍ",
+  "en": "To pay"
+ },
+ "ttd_so_doi_tac": {
+  "vi": "Đối tác",
+  "lo": "ຄູ່ຮ່ວມ",
+  "en": "Partners"
+ },
+ "ttd_da_tra": {
+  "vi": "Đã trả",
+  "lo": "ຈ່າຍແລ້ວ",
+  "en": "Paid"
+ },
+ "ttd_st_chua_lap": {
+  "vi": "Chưa lập đề nghị",
+  "lo": "ຍັງບໍ່ອອກໃບສະເໜີ",
+  "en": "Not raised"
+ },
+ "ttd_st_cho_so_nhien_lieu": {
+  "vi": "Chờ SO nhiên liệu",
+  "lo": "ລໍຖ້າ SO ນ້ຳມັນ",
+  "en": "Waiting for fuel SO"
+ },
+ "ttd_st_cho_thu_quy": {
+  "vi": "Chờ thủ quỹ chi",
+  "lo": "ລໍຖ້າຄັງເງິນຈ່າຍ",
+  "en": "Waiting for the cashier"
+ },
+ "ttd_st_da_tra": {
+  "vi": "Đã trả",
+  "lo": "ຈ່າຍແລ້ວ",
+  "en": "Paid"
+ },
+ "ttd_st_loi": {
+  "vi": "Chưa sang được kế toán",
+  "lo": "ຍັງສົ່ງໄປບັນຊີບໍ່ໄດ້",
+  "en": "Not sent to accounting"
+ },
+ "ttd_tr_chua_tra": {
+  "vi": "Chưa trả",
+  "lo": "ຍັງບໍ່ຈ່າຍ",
+  "en": "Unpaid"
+ },
+ "ttd_tr_trong_de_nghi": {
+  "vi": "Trong đề nghị",
+  "lo": "ຢູ່ໃນໃບສະເໜີ",
+  "en": "In a request"
+ },
+ "ttd_tr_da_tra": {
+  "vi": "Đã trả",
+  "lo": "ຈ່າຍແລ້ວ",
+  "en": "Paid"
+ },
+ "ttd_chua_co": {
+  "vi": "Chưa có dữ liệu — máy chủ chưa có bảng tính tất toán đối tác.",
+  "lo": "ຍັງບໍ່ມີຂໍ້ມູນ — ເຊີບເວີຍັງບໍ່ມີຕາຕະລາງສະສາງຄູ່ຮ່ວມ.",
+  "en": "No data yet — the server has no partner settlement worksheet yet."
+ },
+ "ttd_chua_co_chi_tiet": {
+  "vi": "Chưa có dữ liệu. Trong lúc chờ, lập đề nghị trả ở màn Xe liên kết → Trả qua kế toán.",
+  "lo": "ຍັງບໍ່ມີຂໍ້ມູນ. ໃນລະຫວ່າງລໍຖ້າ, ອອກໃບສະເໜີຈ່າຍຢູ່ໜ້າລົດຮ່ວມ → ຈ່າຍຜ່ານບັນຊີ.",
+  "en": "No data yet. Meanwhile, raise payout requests on Joint trucks → Pay via accounting."
+ },
+ "ttd_trong_ky": {
+  "vi": "Kỳ này không có chuyến xe thuê nào.",
+  "lo": "ງວດນີ້ບໍ່ມີຖ້ຽວລົດເຊົ່າ.",
+  "en": "No hired-truck trips in this period."
+ },
+ "ttd_chon": {
+  "vi": "Chọn một đối tác bên trái",
+  "lo": "ເລືອກຄູ່ຮ່ວມທາງຊ້າຍ",
+  "en": "Pick a partner on the left"
+ },
+ "ttd_lap": {
+  "vi": "Lập đề nghị trả ({n})",
+  "lo": "ອອກໃບສະເໜີຈ່າຍ ({n})",
+  "en": "Raise payout request ({n})"
+ },
+ "ttd_tab_bang": {
+  "vi": "Bảng tính từng chuyến",
+  "lo": "ຕາຕະລາງແຕ່ລະຖ້ຽວ",
+  "en": "Per-trip worksheet"
+ },
+ "ttd_tab_ls": {
+  "vi": "Lịch sử đề nghị",
+  "lo": "ປະຫວັດໃບສະເໜີ",
+  "en": "Request history"
+ },
+ "ttd_mo_het": {
+  "vi": "Mở hết",
+  "lo": "ເປີດທັງໝົດ",
+  "en": "Expand all"
+ },
+ "ttd_thu_het": {
+  "vi": "Thu hết",
+  "lo": "ປິດທັງໝົດ",
+  "en": "Collapse all"
+ },
+ "ttd_da_chon": {
+  "vi": "Đã chọn {n} chuyến · còn trả {tien}",
+  "lo": "ເລືອກ {n} ຖ້ຽວ · ຍັງຕ້ອງຈ່າຍ {tien}",
+  "en": "{n} trip(s) selected · to pay {tien}"
+ },
+ "ttd_goi_y_mo": {
+  "vi": "Bấm một chuyến để mở dòng tạm ứng, nợ NCC, dầu bán. Tích chuyến chưa trả rồi bấm «Lập đề nghị trả».",
+  "lo": "ກົດຖ້ຽວເພື່ອເປີດແຖວເງິນລ່ວງໜ້າ, ໜີ້ຜູ້ສະໜອງ, ນ້ຳມັນຂາຍ. ໝາຍຖ້ຽວທີ່ຍັງບໍ່ຈ່າຍ ແລ້ວກົດ «ອອກໃບສະເໜີຈ່າຍ».",
+  "en": "Click a trip to open its advance, supplier-debt and fuel lines. Tick unpaid trips, then press \"Raise payout request\"."
+ },
+ "ttd_gia_thue": {
+  "vi": "Giá thuê",
+  "lo": "ລາຄາເຊົ່າ",
+  "en": "Hire rate"
+ },
+ "ttd_phi_pct": {
+  "vi": "Phí %",
+  "lo": "ຄ່າທຳນຽມ %",
+  "en": "Fee %"
+ },
+ "ttd_nl_cot": {
+  "vi": "Nhiên liệu (SO · còn nợ)",
+  "lo": "ນ້ຳມັນ (SO · ຍັງຄ້າງ)",
+  "en": "Fuel (SO · outstanding)"
+ },
+ "ttd_phieu_chi": {
+  "vi": "Phiếu chi",
+  "lo": "ໃບຈ່າຍ",
+  "en": "Payment voucher"
+ },
+ "ttd_khong_dong": {
+  "vi": "Có số tạm ứng nhưng máy chủ chưa gửi từng dòng.",
+  "lo": "ມີເງິນລ່ວງໜ້າ ແຕ່ເຊີບເວີຍັງບໍ່ສົ່ງແຕ່ລະແຖວ.",
+  "en": "There is an advance, but the server has not sent its lines."
+ },
+ "ttd_khong_tam_ung": {
+  "vi": "Không có tạm ứng",
+  "lo": "ບໍ່ມີເງິນລ່ວງໜ້າ",
+  "en": "No advance"
+ },
+ "ttd_khong_no_ncc": {
+  "vi": "Không có nợ NCC",
+  "lo": "ບໍ່ມີໜີ້ຜູ້ສະໜອງ",
+  "en": "No supplier debt"
+ },
+ "ttd_dau_ban": {
+  "vi": "Dầu bán (SO nhiên liệu)",
+  "lo": "ນ້ຳມັນຂາຍ (SO ນ້ຳມັນ)",
+  "en": "Fuel sold (fuel SO)"
+ },
+ "ttd_khong_dau": {
+  "vi": "Không lấy dầu kho EPL",
+  "lo": "ບໍ່ເອົານ້ຳມັນສາງ EPL",
+  "en": "No EPL store fuel"
+ },
+ "ttd_gia_von": {
+  "vi": "giá vốn",
+  "lo": "ລາຄາທຶນ",
+  "en": "cost"
+ },
+ "ttd_khong_chuyen": {
+  "vi": "Đối tác này không có chuyến trong kỳ",
+  "lo": "ຄູ່ຮ່ວມນີ້ບໍ່ມີຖ້ຽວໃນງວດ",
+  "en": "This partner has no trips in the period"
+ },
+ "ttd_so_dn": {
+  "vi": "Số đề nghị (TCX)",
+  "lo": "ເລກໃບສະເໜີ (TCX)",
+  "en": "Request no. (TCX)"
+ },
+ "ttd_can_tru": {
+  "vi": "Cấn trừ SO nhiên liệu (TKN)",
+  "lo": "ຫັກລົບ SO ນ້ຳມັນ (TKN)",
+  "en": "Fuel SO offset (TKN)"
+ },
+ "ttd_chua_dn": {
+  "vi": "Chưa có đề nghị trả nào",
+  "lo": "ຍັງບໍ່ມີໃບສະເໜີຈ່າຍ",
+  "en": "No payout requests yet"
+ },
+ "ttd_hoi_lap": {
+  "vi": "Lập đề nghị trả {n} chuyến cho <b>{ten}</b>?",
+  "lo": "ອອກໃບສະເໜີຈ່າຍ {n} ຖ້ຽວ ໃຫ້ <b>{ten}</b>?",
+  "en": "Raise a payout request for {n} trip(s) to <b>{ten}</b>?"
+ },
+ "ttd_hoi_can_tru": {
+  "vi": "Máy sẽ cấn trừ {tien} SO nhiên liệu còn nợ trước, rồi lập phiếu chi phần còn lại bên kế toán.",
+  "lo": "ເຄື່ອງຈະຫັກລົບ SO ນ້ຳມັນທີ່ຄ້າງ {tien} ກ່ອນ, ແລ້ວອອກໃບຈ່າຍສ່ວນທີ່ເຫຼືອຢູ່ບັນຊີ.",
+  "en": "The system first offsets {tien} of unpaid fuel SO, then makes a payment voucher for the rest in accounting."
+ },
+ "ttd_hoi_bo": {
+  "vi": "Bỏ đề nghị {so}? Phiếu chi chưa ghi sổ bên kế toán sẽ bị rút, các chuyến về chờ trả.",
+  "lo": "ຍົກເລີກໃບສະເໜີ {so}? ໃບຈ່າຍທີ່ຍັງບໍ່ລົງບັນຊີຈະຖືກຖອນ, ຖ້ຽວກັບຄືນລໍຖ້າຈ່າຍ.",
+  "en": "Cancel request {so}? The unposted payment voucher in accounting is withdrawn and the trips go back to awaiting payment."
+ },
+ "ttd_khong_thay_dn": {
+  "vi": "Không tìm thấy đề nghị này — bấm Cập nhật rồi thử lại.",
+  "lo": "ບໍ່ພົບໃບສະເໜີນີ້ — ກົດ ອັບເດດ ແລ້ວລອງໃໝ່.",
+  "en": "Request not found — press Refresh and try again."
+ },
+ "px_xk_noi": {
+  "vi": "Xuất nội bộ — xe nhà",
+  "lo": "ເບີກພາຍໃນ — ລົດບໍລິສັດ",
+  "en": "Internal issue — company truck"
+ },
+ "px_xk_ban": {
+  "vi": "Xuất bán cho đối tác",
+  "lo": "ຂາຍໃຫ້ຄູ່ຮ່ວມ",
+  "en": "Sold to the partner"
+ },
+ "px_gia_ban": {
+  "vi": "giá bán",
+  "lo": "ລາຄາຂາຍ",
+  "en": "sale price"
+ },
+ "px_xk_y_noi_fuel": {
+  "vi": "Dầu lấy kho cho xe nhà = <b>xuất nội bộ</b>: chi phí chuyến — bút toán Nợ 625 / Có 1371 theo giá vốn bình quân, ghi lúc khoá phiếu.",
+  "lo": "ນ້ຳມັນເບີກສາງໃຫ້ລົດບໍລິສັດ = <b>ເບີກພາຍໃນ</b>: ຕົ້ນທຶນຖ້ຽວ — ບັນທຶກ ໜີ້ 625 / ມີ 1371 ຕາມລາຄາທຶນສະເລ່ຍ, ບັນທຶກຕອນລັອກໃບ.",
+  "en": "Store fuel for a company truck = <b>internal issue</b>: trip cost — entry Dr 625 / Cr 1371 at average cost, made at lock."
+ },
+ "px_xk_y_noi_repair": {
+  "vi": "Phụ tùng lấy kho cho xe nhà = <b>xuất nội bộ</b>: chi phí sửa chữa — bút toán Nợ 614 / Có 1371 theo giá vốn bình quân, ghi lúc khoá phiếu.",
+  "lo": "ອາໄຫຼ່ເບີກສາງໃຫ້ລົດບໍລິສັດ = <b>ເບີກພາຍໃນ</b>: ຕົ້ນທຶນສ້ອມແປງ — ບັນທຶກ ໜີ້ 614 / ມີ 1371 ຕາມລາຄາທຶນສະເລ່ຍ, ບັນທຶກຕອນລັອກໃບ.",
+  "en": "Store parts for a company truck = <b>internal issue</b>: repair cost — entry Dr 614 / Cr 1371 at average cost, made at lock."
+ },
+ "px_xk_y_ban_fuel": {
+  "vi": "Xe thuê lấy dầu kho EPL = <b>xuất bán cho đối tác</b>: SO nhiên liệu ghi công nợ đối tác theo giá bán (cấn trừ khi trả đối tác) + giá vốn Nợ 607 / Có 1371.",
+  "lo": "ລົດເຊົ່າເອົານ້ຳມັນສາງ EPL = <b>ຂາຍໃຫ້ຄູ່ຮ່ວມ</b>: SO ນ້ຳມັນ ບັນທຶກໜີ້ຄູ່ຮ່ວມຕາມລາຄາຂາຍ (ຫັກລົບຕອນຈ່າຍຄູ່ຮ່ວມ) + ລາຄາທຶນ ໜີ້ 607 / ມີ 1371.",
+  "en": "Hired truck takes EPL store fuel = <b>sale to the partner</b>: a fuel SO charges the partner at the sale price (offset when the partner is paid) + cost Dr 607 / Cr 1371."
+ },
+ "px_xk_y_ban_repair": {
+  "vi": "Xe thuê lấy phụ tùng kho EPL = <b>xuất bán cho đối tác</b>: SO nhiên liệu ghi công nợ đối tác theo giá bán (cấn trừ khi trả đối tác) + giá vốn Nợ 607 / Có 1371.",
+  "lo": "ລົດເຊົ່າເອົາອາໄຫຼ່ສາງ EPL = <b>ຂາຍໃຫ້ຄູ່ຮ່ວມ</b>: SO ນ້ຳມັນ ບັນທຶກໜີ້ຄູ່ຮ່ວມຕາມລາຄາຂາຍ (ຫັກລົບຕອນຈ່າຍຄູ່ຮ່ວມ) + ລາຄາທຶນ ໜີ້ 607 / ມີ 1371.",
+  "en": "Hired truck takes EPL store parts = <b>sale to the partner</b>: a fuel SO charges the partner at the sale price (offset when the partner is paid) + cost Dr 607 / Cr 1371."
+ },
+ "hs_tkn": {
+  "vi": "Cấn trừ (TKN)",
+  "lo": "ຫັກລົບ (TKN)",
+  "en": "Offset (TKN)"
+ },
+ "hs_loi_dong": {
+  "vi": "Không đọc được từng dòng tiền của DO này — báo kỹ thuật xem log máy chủ.",
+  "lo": "ອ່ານແຕ່ລະແຖວເງິນຂອງ DO ນີ້ບໍ່ໄດ້ — ແຈ້ງວິຊາການເບິ່ງບັນທຶກເຊີບເວີ.",
+  "en": "Could not read this DO's money lines — ask IT to check the server log."
+ },
+ "ttd_da_lap_dn": {
+  "vi": "Đã lập đề nghị {so}",
+  "lo": "ອອກໃບສະເໜີ {so} ແລ້ວ",
+  "en": "Request {so} raised"
+ },
+ "ttd_da_can_tru": {
+  "vi": "cấn trừ SO nhiên liệu {tien}",
+  "lo": "ຫັກລົບ SO ນ້ຳມັນ {tien}",
+  "en": "fuel SO offset {tien}"
+ },
+ "px_tk_xb": {
+  "vi": "Xuất bán → SO nhiên liệu",
+  "lo": "ຂາຍ → SO ນ້ຳມັນ",
+  "en": "Sale → fuel SO"
+ },
+ "px_tk_gv": {
+  "vi": "giá vốn 607/1371",
+  "lo": "ລາຄາທຶນ 607/1371",
+  "en": "cost 607/1371"
+ },
+ "px_tk_xb_t": {
+  "vi": "Xe thuê lấy kho EPL: phần bán thành SO nhiên liệu ghi công nợ đối tác (không còn bút toán 4022/707); bút toán chỉ còn giá vốn Nợ 607 / Có 1371.",
+  "lo": "ລົດເຊົ່າເອົາສາງ EPL: ສ່ວນຂາຍເປັນ SO ນ້ຳມັນ ບັນທຶກໜີ້ຄູ່ຮ່ວມ (ບໍ່ມີບັນທຶກ 4022/707 ອີກ); ບັນທຶກບັນຊີເຫຼືອແຕ່ລາຄາທຶນ ໜີ້ 607 / ມີ 1371.",
+  "en": "Hired truck takes EPL store goods: the sale becomes a fuel SO charging the partner (no more 4022/707 entry); the only entry left is cost Dr 607 / Cr 1371."
+ },
+ "px_so_nl_co": {
+  "vi": "SO nhiên liệu {so}",
+  "lo": "SO ນ້ຳມັນ {so}",
+  "en": "Fuel SO {so}"
+ },
+ "px_so_nl_loi": {
+  "vi": "SO nhiên liệu chưa tạo được",
+  "lo": "ຍັງສ້າງ SO ນ້ຳມັນບໍ່ໄດ້",
+  "en": "Fuel SO not created yet"
+ },
+ "hs_x_fuel_so": {
+  "vi": "Xuất bán → SO nhiên liệu",
+  "lo": "ຂາຍ → SO ນ້ຳມັນ",
+  "en": "Sale → fuel SO"
+ },
+ "hs_so_nl_dong": {
+  "vi": "SO nhiên liệu (đối tác)",
+  "lo": "SO ນ້ຳມັນ (ຄູ່ຮ່ວມ)",
+  "en": "Fuel SO (partner)"
+ },
+ "btc_ban_cu": {
+  "vi": "phiếu khoá trước 02/10 còn dòng {ma} — nay phần bán là SO nhiên liệu bên kế toán",
+  "lo": "ໃບລັອກກ່ອນ 02/10 ຍັງມີແຖວ {ma} — ດຽວນີ້ສ່ວນຂາຍແມ່ນ SO ນ້ຳມັນຢູ່ບັນຊີ",
+  "en": "slip locked before 2 Oct still has a {ma} line — the sale is now a fuel SO in accounting"
+ },
+ "tt_ung_cho": {
+  "vi": "+ {tien} LAK chờ thủ quỹ chi bên kế toán (chưa tính)",
+  "lo": "+ {tien} ກີບ ລໍຖ້າຄັງເງິນຈ່າຍຢູ່ບັນຊີ (ຍັງບໍ່ນັບ)",
+  "en": "+ {tien} LAK awaiting the cashier in accounting (not counted)"
+ },
+ "tt_ung_cho_ngan": {
+  "vi": "chờ chi {tien}",
+  "lo": "ລໍຖ້າຈ່າຍ {tien}",
+  "en": "awaiting {tien}"
+ },
+ "tt_chenh_tam": {
+  "vi": "tạm tính — tạm ứng chưa ghi sổ bên kế toán",
+  "lo": "ຄິດຊົ່ວຄາວ — ເງິນລ່ວງໜ້າຍັງບໍ່ລົງບັນຊີ",
+  "en": "provisional — advance not yet posted in accounting"
+ },
+ "ttd_khoa_tich": {
+  "vi": "Đã nằm trong đề nghị {so} chưa xong — bỏ hoặc gửi lại đề nghị đó ở tab Lịch sử đề nghị",
+  "lo": "ຢູ່ໃນໃບສະເໜີ {so} ທີ່ຍັງບໍ່ແລ້ວ — ຍົກເລີກ ຫຼື ສົ່ງຄືນໃບນັ້ນຢູ່ແຖບ ປະຫວັດໃບສະເໜີ",
+  "en": "Already in unfinished request {so} — cancel or resend it on the Request history tab"
+ },
+ "ttd_khoa_dem": {
+  "vi": "{n} chuyến đang nằm trong đề nghị chưa xong <b class=\"mono\">{so}</b> nên không tích lại được — bỏ hoặc gửi lại đề nghị đó ở tab Lịch sử đề nghị.",
+  "lo": "{n} ຖ້ຽວຢູ່ໃນໃບສະເໜີທີ່ຍັງບໍ່ແລ້ວ <b class=\"mono\">{so}</b> ຈຶ່ງເລືອກຄືນບໍ່ໄດ້ — ຍົກເລີກ ຫຼື ສົ່ງຄືນໃບນັ້ນຢູ່ແຖບ ປະຫວັດໃບສະເໜີ.",
+  "en": "{n} trip(s) are in unfinished request <b class=\"mono\">{so}</b> and cannot be ticked again — cancel or resend that request on the Request history tab."
+ },
+ "tt_chot_khoa": {
+  "vi": "Chưa chốt được: chờ thủ quỹ bên kế toán ghi sổ phiếu chi tạm ứng {so}",
+  "lo": "ຍັງປິດບໍ່ໄດ້: ລໍຖ້າຄັງເງິນຢູ່ບັນຊີລົງບັນຊີໃບຈ່າຍເງິນລ່ວງໜ້າ {so}",
+  "en": "Cannot close yet: waiting for the accounting cashier to post advance payment {so}"
+ },
+ "tt_chot_khoa_ngan": {
+  "vi": "chờ thủ quỹ ghi sổ tạm ứng",
+  "lo": "ລໍຖ້າຄັງເງິນລົງບັນຊີເງິນລ່ວງໜ້າ",
+  "en": "awaiting cashier posting of advance"
+ },
+ "px_nhac_ung_cho": {
+  "vi": "Chờ thủ quỹ ghi sổ phiếu chi tạm ứng <b class=\"mono\">{so}</b> bên kế toán",
+  "lo": "ລໍຖ້າຄັງເງິນລົງບັນຊີໃບຈ່າຍເງິນລ່ວງໜ້າ <b class=\"mono\">{so}</b> ຢູ່ບັນຊີ",
+  "en": "Waiting for the cashier to post advance payment <b class=\"mono\">{so}</b> in accounting"
+ },
+ "px_nhac_ung_loi": {
+  "vi": "Phiếu chi tạm ứng chưa sang được bên kế toán — báo KT Chi phí gửi lại",
+  "lo": "ໃບຈ່າຍເງິນລ່ວງໜ້າຍັງສົ່ງໄປບັນຊີບໍ່ໄດ້ — ແຈ້ງບັນຊີຄ່າໃຊ້ຈ່າຍໃຫ້ສົ່ງຄືນ",
+  "en": "The advance payment has not reached accounting — ask the expense accountant to resend"
+ },
+ "dt_so_xong_nl": {
+  "vi": "Bên kế toán đã tạo SO cước {so} và SO nhiên liệu {nl}",
+  "lo": "ຝ່າຍບັນຊີສ້າງ SO ຄ່າຂົນສົ່ງ {so} ແລະ SO ນໍ້າມັນ {nl} ແລ້ວ",
+  "en": "Accounting created freight SO {so} and fuel SO {nl}"
  }
 };
