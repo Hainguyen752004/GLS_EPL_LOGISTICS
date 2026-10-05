@@ -248,6 +248,41 @@ def main():
              r.status_code)
         r = c.post("/api/handover/fuel-vouchers/PLNL-khong-co/cancelled", json={}, headers=H)
         dung(r.status_code == 404, "SourceRef không có → 404", r.status_code)
+
+        print("== 8. phiếu xuất phụ tùng mục V bị huỷ ở kho QLSX (05/10 đợt 3)")
+        e = (db.query(M.TripExpense).filter(M.TripExpense.section == "repair", M.TripExpense.source == "kho",
+                                            M.TripExpense.stock_move_id.like("qlsx:%")).first())
+        dung(e is not None, "d7 có dòng phụ tùng đã xuất ở kho QLSX", e and e.stock_move_id)
+        if e is not None:
+            pe = db.get(M.Trip, e.trip_id)
+            sr = "EPLLAO:trip_expense:" + e.id
+            so_pt = e.stock_move_id[len("qlsx:"):]
+            r = c.get("/api/handover/stock-issues/" + sr)
+            dung(r.status_code == 401, "không khoá → 401", r.status_code)
+            pe.locked = True; db.commit()
+            r = c.get("/api/handover/stock-issues/" + sr, headers=H)
+            x = r.json().get("data") or {}
+            dung(r.status_code == 200 and x.get("trip_locked") is True and x.get("status") == "da_xuat" and x.get("stock_doc_no") == so_pt
+                 and x.get("do_code") == pe.doc_no, "đọc dòng: DO, đang khoá, đã xuất theo phiếu kho", x)
+            r = c.post("/api/handover/stock-issues/%s/cancelled" % sr, json={"stock_doc_no": so_pt}, headers=H)
+            dung(r.status_code == 409 and r.json()["detail"]["ma"] == "DA_KHOA", "DO đang khoá → 409 DA_KHOA", r.status_code)
+            pe.locked = False; db.commit()
+            r = c.post("/api/handover/stock-issues/%s/cancelled" % sr, json={"stock_doc_no": "1368-XKK-khac"}, headers=H)
+            dung(r.status_code == 409 and r.json()["detail"]["ma"] == "KHAC_PHIEU_KHO", "khác số phiếu kho → 409", r.status_code)
+            r = c.post("/api/handover/stock-issues/%s/cancelled" % sr,
+                       json={"stock_doc_no": so_pt, "reason": "Xoá phiếu trên màn kho Web", "cancelled_by": "tune"}, headers=H)
+            db.expire_all()
+            e2 = db.get(M.TripExpense, e.id)
+            dung(r.status_code == 200 and r.json()["data"]["replayed"] is False and e2.stock_move_id is None and (e2.unit_price or 0) == 0
+                 and r.json()["data"]["status"] == "chua_xuat", "gỡ phiếu kho: dòng về lấy kho, chưa xuất", (r.status_code, e2.stock_move_id))
+            nk = db.query(M.TripLog).filter(M.TripLog.trip_id == pe.id, M.TripLog.action.like("Kho QLSX huỷ phiếu xuất phụ tùng%")).all()
+            dung(len(nk) == 1 and so_pt in nk[0].action, "ghi nhật ký phiếu", [z.action for z in nk])
+            r = c.post("/api/handover/stock-issues/%s/cancelled" % sr, json={"stock_doc_no": so_pt}, headers=H)
+            dung(r.status_code == 200 and r.json()["data"]["replayed"] is True, "báo lại → replayed", r.status_code)
+        r = c.get("/api/handover/stock-issues/PLNL-G4-0004-10.EPL-1", headers=H)
+        dung(r.status_code == 404 and r.json()["detail"]["ma"] == "KHONG_PHAI_PHU_TUNG", "SourceRef phiếu dầu → 404", r.status_code)
+        r = c.get("/api/handover/stock-issues/EPLLAO:trip_expense:khongco", headers=H)
+        dung(r.status_code == 404, "dòng không có → 404", r.status_code)
     finally:
         app.dependency_overrides.clear()
         db.close()

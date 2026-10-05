@@ -8,6 +8,10 @@
     POST /api/handover/fuel-vouchers/{voucher_ref}/cancelled  kho QLSX báo đã huỷ phiếu xuất → tờ về chờ cấp (05/10) — gọi lại an toàn
 GET chi tiết và /cancelled nhận mã tờ HOẶC SourceRef (bên kho chỉ giữ SourceRef).
 
+Phiếu xuất PHỤ TÙNG mục V (SourceRef EPLLAO:trip_expense:<mã dòng>, services/ban_giao_phu_tung.py — 05/10 đợt 3):
+    GET  /api/handover/stock-issues/{source_ref}            dòng phụ tùng của phiếu kho (DO, khoá chưa, đã xuất chưa)
+    POST /api/handover/stock-issues/{source_ref}/cancelled  kho QLSX báo đã huỷ phiếu xuất → dòng về «lấy kho, chưa xuất» — gọi lại an toàn
+
 Gói và luật ở services/ban_giao_dau.py; route chỉ đọc tham số, gọi service, bọc {message, data}.
 """
 from typing import Optional
@@ -17,6 +21,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from services import ban_giao_dau as BGD
+from services import ban_giao_phu_tung as BGP
 from services.bao_mat import may_qlsx_goi
 
 router = APIRouter()
@@ -55,3 +60,17 @@ def da_huy(voucher_ref: str, d: dict = Body(default={}), db: Session = Depends(g
     x = BGD.ghi_da_huy(db, voucher_ref, d or {})
     return {"message": ("Phiếu %s đã ở trạng thái chờ cấp — không đổi gì." if x.get("replayed")
                         else "Đã mở lại phiếu %s (kho QLSX huỷ phiếu xuất).") % x["voucher_no"], "data": x}
+
+
+@router.get("/api/handover/stock-issues/{source_ref}")
+def phu_tung(source_ref: str, db: Session = Depends(get_db), may=Depends(may_qlsx_goi)):
+    x = BGP.goi(db, source_ref)
+    return {"message": "Dòng phụ tùng %s của DO %s." % (x["item_name"] or x["line_id"], x["do_code"]), "data": x}
+
+
+@router.post("/api/handover/stock-issues/{source_ref}/cancelled")
+def phu_tung_da_huy(source_ref: str, d: dict = Body(default={}), db: Session = Depends(get_db), may=Depends(may_qlsx_goi)):
+    x = BGP.ghi_da_huy(db, source_ref, d or {})
+    return {"message": ("Dòng phụ tùng %s đã ở trạng thái chưa xuất — không đổi gì." if x.get("replayed")
+                        else "Đã gỡ phiếu kho khỏi dòng phụ tùng %s (kho QLSX huỷ phiếu xuất).") % (x["item_name"] or x["line_id"]),
+            "data": x}
