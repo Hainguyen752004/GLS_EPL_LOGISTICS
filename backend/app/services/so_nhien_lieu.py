@@ -18,9 +18,15 @@ cùng khoá) · 422 52955 đối tác chưa có… Cùng luật GuiSoTune (servi
 
 Gửi cùng nút «Tạo SO bên kế toán» (POST /api/trips/{tid}/tao-so) sau SO cước. Tiền: Kíp — giá bán theo tiền của dòng quy Kíp
 theo tỷ giá khoá trên phiếu (dòng kho luôn LAK).
+
+05/10 (chủ dự án hỏi "anh chưa thấy xuất bán"): mỗi dòng details gửi kèm trường TUỲ CHỌN `stock_doc_no` = số phiếu xuất kho QLSX của
+dòng chi (stock_move_id "qlsx:<số phiếu kho>" — dầu cấp theo phiếu đề nghị / phụ tùng xuất theo chuyến, DOTY 48 PARTNER_SALE). Bên kế
+toán lưu nguyên gói tạo SO nên chi tiết SO nhiên liệu hiện đúng các phiếu xuất kho đã xuất bán cho SO. Bên đó (bản cũ lẫn mới) bỏ qua
+khoá lạ ở dòng → không đổi luồng; gói đã gửi trước đó (gửi lại khi kết quả chưa rõ) giữ nguyên, không thêm trường.
 """
 import datetime as dt
 import json
+import re
 import urllib.error
 import urllib.request
 from decimal import Decimal
@@ -38,6 +44,10 @@ TIEN = "LAK"
 DVT = {"u_pc": "Cái", "u_set": "Bộ", "u_l": "Lít"}
 KET_QUA_CHUA_RO = ("QLSX_KHONG_GOI_DUOC", "LOGISTICS_FUEL_52953")
 MUC = {"fuel": "III", "repair": "V"}
+# TripExpense.stock_move_id của dòng đã rời kho QLSX (cùng tiền tố services/kho_qlsx.TIEN_TO_MV, ban_giao_dau.TIEN_TO_MV)
+TIEN_TO_KHO = "qlsx:"
+# Số phiếu kho QLSX (DOC_DOCUMENTNO ≤ 50), ví dụ 1368-XKK-261005-00002 — cùng luật kiểm stock_doc_no bên kế toán
+SO_PHIEU_KHO = re.compile(r"\A[A-Za-z0-9][A-Za-z0-9_./-]{0,49}\Z")
 
 
 def _loi(ma, loi, http=422, **them):
@@ -88,6 +98,16 @@ def tien_dong(p, d):
     return dg, Decimal(lam_tron(float(Decimal(str(d.qty or 0)) * dg), TIEN))
 
 
+def so_phieu_kho(d):
+    """Số phiếu xuất kho QLSX của dòng chi (stock_move_id "qlsx:<số phiếu>") → gửi kèm dòng SO (stock_doc_no). Dòng không đi kho
+    QLSX hoặc số phiếu không đúng dạng → None (không gửi trường; SO vẫn tạo, dòng đó hiện "chưa có liên kết")."""
+    mv = (d.stock_move_id or "").strip()
+    if not mv.startswith(TIEN_TO_KHO):
+        return None
+    so = mv[len(TIEN_TO_KHO):].strip()
+    return so if SO_PHIEU_KHO.match(so) else None
+
+
 def _ten_dong(db, d):
     """(mã khoá dòng gửi bên kế toán, tên mặt hàng, ĐVT): dầu theo khoản mục (diesel → mã EPLNL-diesel), phụ tùng theo mã phụ
     tùng bên em (EPLPT-<Part.id>)."""
@@ -124,6 +144,9 @@ def dung_goi(db, p, dong=None):
         ma, ten, dvt = _ten_dong(db, d)
         x = {"line_no": i, "ref": d.id, **ma, "item_name": ten, "section": MUC.get(d.section, d.section), "qty": GT._so_json(GT._tien(d.qty, "qty")),
              "unit": dvt, "unit_price": GT._so_json(GT._tien(dg, "unit_price")), "amount": GT._so_json(GT._tien(tt, "amount")), "currency": TIEN}
+        so_kho = so_phieu_kho(d)                                # 05/10: liên kết dòng SO ↔ phiếu xuất kho đã xuất bán
+        if so_kho:
+            x["stock_doc_no"] = so_kho
         details.append(x)
         tong += tt
     tuyen = db.get(Route, p.route_id) if p.route_id else None
