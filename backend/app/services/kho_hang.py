@@ -13,6 +13,9 @@ Chia hai nơi (chủ dự án chốt 28/09: trang điều xe không xem được
     Bảng `goods_moves` bên này đứng yên từ ngày dời (tools/doi_kho_hang.py bên đó đã chép sang), không đọc nữa.
 Phiếu đụng tới sổ (xe gom về bãi, lưu phiếu giao có lấy lô, xoá phiếu) thì gọi sang qua `GiaoDichKho`; trang kế
 toán tắt → 503, việc đó chưa làm được (chặn và báo rõ). Việc không đụng sổ vẫn chạy như thường.
+
+05/10 (bỏ kho tạm, KHO_NGUON=qlsx mặc định): sổ goods_moves + tờ PNK_HH / PXK_HH / DC_HH + đơn điều chỉnh lại ở BÊN NÀY,
+cùng giao dịch với phiếu — services/kho_hang_dia.py (GiaoDichKho rẽ sang đó). Màn Kho hàng: routes/kho_hang.py.
 """
 import datetime as dt
 
@@ -141,19 +144,25 @@ def dat_dong_hang(db, trip, dong, user, gd, so_sanh=True):
         trip.weight_origin = tong
 
 
-def nhap_kho(db, trip, user, gd):
-    """DO gom về tới bãi → hàng vào kho (sổ bên trang kế toán). Gọi lại lần nữa không nhập trùng.
+THIEU_CAN_BAI = {"ma": "THIEU_CAN_BAI", "loi": "Chưa có cân tại bãi — nhập số tấn cân ở bãi Thà Bốc rồi mới báo xe tới: hàng vào kho "
+                                                "theo cân bãi (cân mỏ chỉ để tính hao hụt)."}
 
-    Nhập theo **cân tại bãi** nếu có (đó mới là số thật vào kho); chênh với cân ở mỏ ghi thành một
-    dòng hao hụt trên chính DO gom để hai bên cân đối.
+
+def nhap_kho(db, trip, user, gd):
+    """DO gom về tới bãi → hàng vào kho (sổ goods_moves bên này + tờ PNK_HH, 05/10). Gọi lại lần nữa không nhập trùng.
+
+    Nhập theo **cân tại bãi** — BẮT BUỘC từ 05/10 (trước đó trống thì lấy cân mỏ: hàng vào kho theo số chưa ai cân ở bãi);
+    thiếu → 422 THIEU_CAN_BAI. Chênh với cân ở mỏ ghi thành một dòng hao hụt trên chính DO gom để hai bên cân đối.
     """
     if trip.kind != "gom":
         return
     hang = db.query(TripGoods).filter(TripGoods.trip_id == trip.id, TripGoods.loai == "hang").all()
     if not hang:
         return
+    if trip.weight_dest is None or trip.weight_dest <= 0:
+        raise HTTPException(422, THIEU_CAN_BAI)
     bocLen = round(sum(g.qty_t for g in hang), 3)
-    thucNhap = trip.weight_dest if trip.weight_dest is not None else bocLen
+    thucNhap = trip.weight_dest
     ngay = trip.back_date or trip.doc_date or dt.date.today()
     # Chia số thực nhập theo tỷ lệ các dòng hàng (thường chỉ có một dòng).
     dong = [{"goods_name": g.goods_name, "qty_t": round(thucNhap * (g.qty_t / bocLen), 3) if bocLen else 0} for g in hang]

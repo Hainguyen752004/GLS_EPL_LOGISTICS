@@ -447,6 +447,30 @@ class GoodsMove(Base):
     created_at = Column(DateTime, default=bay_gio)
 
 
+class DieuChinhHang(Base):
+    """ĐƠN ĐIỀU CHỈNH KHO HÀNG khách gửi ở bãi (05/10) — cân bãi sai, hao ở bãi, kiểm kê, đóng lô dư lẻ.
+
+    Bãi (yard) lập → `cho` (CHƯA đổi tồn); KT Thu/Chi Viêng Chăn (acct) hoặc Sếp duyệt → `da_duyet`: ghi MỘT dòng
+    goods_moves kind=adj (qty_t có dấu) + tờ DC_HH; từ chối → `tu_choi`. Lý do bắt buộc. Duyệt mà tồn lô âm → 409.
+    Không khoá ngoại (như các bảng mới 01–05/10): tạo bảng có REFERENCES trips là khoá cả bảng trips lúc dựng; xoá DO gom thì
+    services/kho_hang_dia.huy xoá đơn của lô. Xem services/kho_hang_dia.py."""
+    __tablename__ = "dieu_chinh_hang"
+    id = Column(String, primary_key=True, default=ma_moi)
+    lo_trip_id = Column(String, nullable=False, index=True)       # lô = DO gom
+    tan = Column(Float, nullable=False)                           # có dấu: âm = giảm, dương = tăng
+    ly_do = Column(Text, nullable=False)
+    trang_thai = Column(String(12), nullable=False, default="cho", index=True)   # cho · da_duyet · tu_choi
+    ngay = Column(Date, nullable=False)                           # ngày lập
+    nguoi_lap = Column(String)
+    lap_luc = Column(DateTime, default=bay_gio)
+    nguoi_duyet = Column(String)                                  # người duyệt / từ chối
+    duyet_luc = Column(DateTime)
+    ngay_duyet = Column(Date)                                     # ngày dòng sổ adj + tờ DC_HH
+    ghi_chu = Column(Text)                                        # ghi chú lúc duyệt / lý do từ chối
+    goods_move_id = Column(String)                                # dòng adj sinh ra khi duyệt
+    so_phieu = Column(String)                                     # số tờ DC_HH
+
+
 class TripExpense(Base):
     """Một dòng chi trên phiếu: nhiên liệu (III), đi đường (IV), sửa chữa (V), khác (VI)."""
     __tablename__ = "trip_expenses"

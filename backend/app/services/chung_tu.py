@@ -203,10 +203,14 @@ def ghi(db, loai, *, nguon_bang, nguon_id, trip=None, ngay=None, doi_tuong_loai=
                               "loi": "Không cấp được số chứng từ %s, thử lại giúp em." % loai})
 
 
-def rut(db, *, nguon_bang=None, nguon_id=None, trip_id=None):
+def rut(db, *, nguon_bang=None, nguon_id=None, trip_id=None, loai=None):
     """Nguồn bị xoá (bỏ chốt tất toán, xoá phiếu thử, xoá dòng kho) → rút các tờ CHƯA đối chiếu của nó.
-    Tờ đã đối chiếu thì giữ: bên kế toán đã nhận, rút đi là hai bên lệch nhau mà không ai biết."""
+    Tờ đã đối chiếu thì giữ: bên kế toán đã nhận, rút đi là hai bên lệch nhau mà không ai biết.
+    `loai` (05/10, kho hàng): chỉ rút các loại tờ này — một nguồn "trips" mang cả tờ DO, PDT…, rút PNK_HH / PXK_HH không được
+    kéo theo tờ khác của phiếu."""
     q = db.query(ChungTu).filter(ChungTu.da_day.is_(False))
+    if loai:
+        q = q.filter(ChungTu.loai.in_((loai,) if isinstance(loai, str) else tuple(loai)))
     if trip_id is not None:
         q = q.filter(ChungTu.trip_id == trip_id)
     else:

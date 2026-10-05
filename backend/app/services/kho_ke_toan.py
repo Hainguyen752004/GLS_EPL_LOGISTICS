@@ -142,6 +142,14 @@ def huy_hang(db, nguoi, trip_id):
     return KT.goi(db, "POST", "/api/lien-thong/kho-hang/huy", {"trip_id": trip_id}, nguoi=nguoi)
 
 
+def dam_bao_to_hang(db, nguoi, trip):
+    """05/10: tờ PNK_HH / PXK_HH theo DO, idempotent — DO đã có dòng sổ kho hàng mà thiếu tờ thì sinh từ dòng sổ đó (lưu lại /
+    báo tới lại phiếu cũ). Kho tạm (quay lui): tờ ở bên đó, bỏ qua."""
+    if KQ.bat():
+        return KHD.dam_bao_to(db, trip, getattr(nguoi, "full_name", None))
+    return None
+
+
 def _ma_hang_gui(db):
     from services import day_ke_toan as DK
     return DK.cau_hinh(db, "ma_hang_khach_gui") or None
@@ -234,8 +242,9 @@ class GiaoDichKho:
 
     def nhap_hang(self, trip, dong, *, ngay, tan, boc_len, hao_hut):
         """Phiếu gom về tới bãi → nhập kho hàng bên trang kế toán. Trả {da_co}: đã nhập từ trước thì không làm gì."""
-        if KQ.bat():                     # hàng khách gửi: sổ goods_moves bên này, cùng giao dịch
-            return KHD.nhap(self.db, trip, dong, ngay, getattr(self.nguoi, "full_name", None))
+        if KQ.bat():                     # hàng khách gửi: sổ goods_moves bên này + tờ PNK_HH (05/10), cùng giao dịch
+            return KHD.nhap(self.db, trip, dong, ngay, getattr(self.nguoi, "full_name", None), tan=tan, boc_len=boc_len,
+                            hao_hut=hao_hut)
         r = KT.goi(self.db, "POST", "/api/lien-thong/kho-hang/nhap", {
             "trip_id": trip.id, "trip_doc_no": trip.doc_no, "ngay": ngay.isoformat() if ngay else None, "dong": dong,
             "customer_name": trip.customer_name, "origin": trip.origin, "truck_no": trip.truck_no, "company": trip.company,

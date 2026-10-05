@@ -114,7 +114,23 @@ def _kho_qlsx(db):
     pt = [{"id": p["id"], "name": p["name"], "unit": p["unit"], "active": p["active"], "ton": p["qty"], "min_qty": p["min_qty"],
            "gia_bq": p["unit_price"], "unit_price": p["unit_price"], "nhap_thang": None, "xuat_thang": None, "gan_day": []}
           for p in KK.ds_phu_tung(db)]
-    return {"nhien_lieu": dau, "phu_tung": pt, "nguon": "qlsx"}
+    return {"nhien_lieu": dau, "phu_tung": pt, "hang": _hang_khach_gui(db), "nguon": "qlsx"}
+
+
+def _hang_khach_gui(db):
+    """Hàng khách gửi ở bãi (05/10, sổ goods_moves bên này — services/kho_hang_dia.py): mỗi tên hàng một dòng kèm các lô còn hàng,
+    cùng khuôn kho tạm từng trả (name, ton_t, lo[]). Nhập / xuất trong tháng, sổ gần đây: xem màn Kho hàng (GET /api/kho-hang/ton)."""
+    from services import kho_hang_dia as KHD
+    hang = {}
+    for o in KHD.danh_sach_lo(db, con_hang=True):
+        x = hang.setdefault(o["goods_name"], {"name": o["goods_name"], "ton_t": 0.0, "nhap_thang": None, "xuat_thang": None,
+                                              "lo": [], "gan_day": []})
+        x["ton_t"] += o["con_t"]
+        x["lo"].append({"lo_trip_id": o["lo_trip_id"], "doc_no": o["doc_no"], "ngay": o["ngay"], "customer_name": o["customer_name"],
+                        "origin": o["origin"], "truck_no": o["truck_no"], "nhap_t": o["nhap_t"], "con_t": o["con_t"]})
+    for x in hang.values():
+        x["ton_t"] = round(x["ton_t"], 3)
+    return sorted(hang.values(), key=lambda x: -x["ton_t"])
 
 
 @router.get("/api/kho-xem")
