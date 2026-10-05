@@ -163,6 +163,12 @@
       <button class="btn" id="px-hoa-don"><span data-i18n="nav_de_nghi_thu"></span></button>
     </div>
   </div>
+  <!-- Phiếu kho HÀNG khách gửi (05/10): máy tự lập theo DO — DO gom tới bãi là phiếu nhập (PNK_HH), DO giao lấy hàng ở bãi là
+       phiếu xuất (PXK_HH). Chưa có tờ (404 CHUA_CO_TO) thì cả khối ẩn. Bấm là mở tờ in A4 ở cửa sổ riêng. -->
+  <div class="px-ben-khoi" id="px-kho-hang" hidden><h5 data-i18n="khh_px_khoi"></h5>
+    <div class="px-ben-nut"><button class="btn" id="px-in-kho-hang"><span id="px-in-kho-hang-chu" data-i18n="khh_in_pnk"></span></button></div>
+    <div class="small muted px-kho-hang-so" id="px-kho-hang-so"></div>
+  </div>
   <div class="px-hanh-dong" id="px-hanh-dong"></div>
   <details class="px-ben-khoi px-ben-luong px-ben-btc" id="px-btc" hidden open><summary data-i18n="btc_title"></summary>
     <div class="px-btc" id="px-btc-ds"></div>

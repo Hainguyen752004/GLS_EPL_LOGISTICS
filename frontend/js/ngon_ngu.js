@@ -14396,5 +14396,445 @@ window.EPL_TU_DIEN = {
   "vi": "Bên kế toán đã tạo SO cước {so} và SO nhiên liệu {nl}",
   "lo": "ຝ່າຍບັນຊີສ້າງ SO ຄ່າຂົນສົ່ງ {so} ແລະ SO ນໍ້າມັນ {nl} ແລ້ວ",
   "en": "Accounting created freight SO {so} and fuel SO {nl}"
+ },
+ "khh_tim": {
+  "vi": "Tìm số DO, số phiếu nhập, khách, xe…",
+  "lo": "ຄົ້ນຫາ ເລກ DO, ເລກໃບຮັບເຂົ້າສາງ, ລູກຄ້າ, ລົດ…",
+  "en": "Search DO no., receipt no., customer, truck…"
+ },
+ "khh_tat_ca_khach": {
+  "vi": "Tất cả khách hàng",
+  "lo": "ລູກຄ້າທັງໝົດ",
+  "en": "All customers"
+ },
+ "khh_chi_con": {
+  "vi": "Chỉ lô còn hàng",
+  "lo": "ສະເພາະລ໊ອດທີ່ຍັງມີສິນຄ້າ",
+  "en": "Only lots with stock"
+ },
+ "khh_tong": {
+  "vi": "<b>{n}</b> lô · tồn <b>{t}</b> tấn",
+  "lo": "<b>{n}</b> ລ໊ອດ · ຄົງເຫຼືອ <b>{t}</b> ໂຕນ",
+  "en": "<b>{n}</b> lots · <b>{t}</b> t in stock"
+ },
+ "khh_c_do": {
+  "vi": "DO gom · phiếu nhập",
+  "lo": "DO ເກັບ · ໃບຮັບເຂົ້າສາງ",
+  "en": "Collection DO · receipt"
+ },
+ "khh_c_khach": {
+  "vi": "Khách hàng · loại hàng",
+  "lo": "ລູກຄ້າ · ປະເພດສິນຄ້າ",
+  "en": "Customer · goods"
+ },
+ "khh_c_ngay": {
+  "vi": "Ngày nhập · số ngày tồn",
+  "lo": "ວັນທີຮັບເຂົ້າ · ຈຳນວນມື້ໃນສາງ",
+  "en": "Date in · days in stock"
+ },
+ "khh_c_xuat": {
+  "vi": "Xuất (tấn)",
+  "lo": "ເບີກອອກ (ໂຕນ)",
+  "en": "Out (t)"
+ },
+ "khh_c_dc": {
+  "vi": "Điều chỉnh (tấn)",
+  "lo": "ປັບປຸງ (ໂຕນ)",
+  "en": "Adjusted (t)"
+ },
+ "khh_n_ngay": {
+  "vi": "{n} ngày",
+  "lo": "{n} ມື້",
+  "en": "{n} days"
+ },
+ "khh_cong_lo": {
+  "vi": "Cộng {n} lô",
+  "lo": "ລວມ {n} ລ໊ອດ",
+  "en": "Total of {n} lots"
+ },
+ "khh_chu_giai": {
+  "vi": "Số ngày tồn tô vàng khi quá {v} ngày, tô đỏ khi quá {d} ngày. Bấm một lô để xem phiếu nhập, các phiếu xuất và phiếu điều chỉnh của lô đó.",
+  "lo": "ຈຳນວນມື້ໃນສາງ ເປັນສີເຫຼືອງເມື່ອເກີນ {v} ມື້, ເປັນສີແດງເມື່ອເກີນ {d} ມື້. ກົດລ໊ອດໜຶ່ງເພື່ອເບິ່ງໃບຮັບເຂົ້າ, ໃບເບີກອອກ ແລະ ໃບປັບປຸງຂອງລ໊ອດນັ້ນ.",
+  "en": "Days in stock turn amber after {v} days and red after {d} days. Click a lot to see its receipt, issue notes and adjustments."
+ },
+ "khh_trong": {
+  "vi": "Không có lô hàng nào khớp bộ lọc — bỏ bớt điều kiện để xem thêm.",
+  "lo": "ບໍ່ມີລ໊ອດສິນຄ້າທີ່ກົງກັບຕົວກັ່ນຕອງ — ລຶບເງື່ອນໄຂອອກແດ່ ເພື່ອເບິ່ງຕື່ມ.",
+  "en": "No lot matches the filters — remove some filters to see more."
+ },
+ "khh_trong_con": {
+  "vi": "Bãi không còn lô hàng nào. Tắt «Chỉ lô còn hàng» để xem cả các lô đã xuất hết.",
+  "lo": "ສະໜາມບໍ່ມີລ໊ອດສິນຄ້າເຫຼືອ. ປິດ «ສະເພາະລ໊ອດທີ່ຍັງມີສິນຄ້າ» ເພື່ອເບິ່ງລ໊ອດທີ່ເບີກໝົດແລ້ວນຳ.",
+  "en": "No lots are left at the yard. Turn off «Only lots with stock» to include lots that were fully issued."
+ },
+ "khh_trong_het": {
+  "vi": "Bãi chưa nhận lô hàng nào.",
+  "lo": "ສະໜາມຍັງບໍ່ທັນໄດ້ຮັບລ໊ອດສິນຄ້າໃດ.",
+  "en": "The yard has not received any lot yet."
+ },
+ "khh_loi_tai": {
+  "vi": "Chưa lấy được tồn kho hàng: {loi}",
+  "lo": "ຍັງບໍ່ໄດ້ຮັບຍອດຄົງເຫຼືອສິນຄ້າໃນສາງ: {loi}",
+  "en": "Could not load the goods stock: {loi}"
+ },
+ "khh_thu_lai": {
+  "vi": "Thử lại",
+  "lo": "ລອງໃໝ່",
+  "en": "Try again"
+ },
+ "khh_het": {
+  "vi": "Đã xuất hết",
+  "lo": "ເບີກໝົດແລ້ວ",
+  "en": "Fully issued"
+ },
+ "khh_chon_lo": {
+  "vi": "Chọn một lô ở bảng bên trái để xem phiếu nhập, các phiếu xuất và các phiếu điều chỉnh của lô đó.",
+  "lo": "ເລືອກລ໊ອດໜຶ່ງໃນຕາຕະລາງເບື້ອງຊ້າຍ ເພື່ອເບິ່ງໃບຮັບເຂົ້າສາງ, ໃບເບີກອອກສາງ ແລະ ໃບປັບປຸງຂອງລ໊ອດນັ້ນ.",
+  "en": "Pick a lot in the table on the left to see its receipt, issue notes and adjustments."
+ },
+ "khh_xem_cho": {
+  "vi": "Xem {n} phiếu điều chỉnh chờ duyệt",
+  "lo": "ເບິ່ງໃບປັບປຸງ {n} ໃບທີ່ລໍຖ້າອະນຸມັດ",
+  "en": "View {n} adjustment(s) awaiting approval"
+ },
+ "khh_loi_lo": {
+  "vi": "Chưa mở được lô này: {loi}",
+  "lo": "ຍັງເປີດລ໊ອດນີ້ບໍ່ໄດ້: {loi}",
+  "en": "Could not open this lot: {loi}"
+ },
+ "khh_ct_nhap_ngay": {
+  "vi": "nhập ngày {d}",
+  "lo": "ຮັບເຂົ້າວັນທີ {d}",
+  "en": "in on {d}"
+ },
+ "khh_s_dc": {
+  "vi": "Điều chỉnh",
+  "lo": "ປັບປຸງ",
+  "en": "Adjusted"
+ },
+ "khh_h_nhap": {
+  "vi": "Phiếu nhập kho hàng",
+  "lo": "ໃບຮັບສິນຄ້າເຂົ້າສາງ",
+  "en": "Goods receipt note"
+ },
+ "khh_h_xuat": {
+  "vi": "Phiếu xuất kho hàng",
+  "lo": "ໃບເບີກສິນຄ້າອອກສາງ",
+  "en": "Goods issue notes"
+ },
+ "khh_h_dc": {
+  "vi": "Phiếu điều chỉnh",
+  "lo": "ໃບປັບປຸງ",
+  "en": "Adjustments"
+ },
+ "khh_do": {
+  "vi": "Số DO",
+  "lo": "ເລກ DO",
+  "en": "DO no."
+ },
+ "khh_chua_nhap": {
+  "vi": "Lô này chưa có phiếu nhập kho hàng.",
+  "lo": "ລ໊ອດນີ້ຍັງບໍ່ມີໃບຮັບສິນຄ້າເຂົ້າສາງ.",
+  "en": "This lot has no goods receipt note yet."
+ },
+ "khh_chua_xuat": {
+  "vi": "Chưa có DO giao nào lấy hàng của lô này.",
+  "lo": "ຍັງບໍ່ມີ DO ສົ່ງໃດເອົາສິນຄ້າຈາກລ໊ອດນີ້.",
+  "en": "No delivery DO has drawn from this lot yet."
+ },
+ "khh_chua_dc": {
+  "vi": "Chưa có phiếu điều chỉnh nào.",
+  "lo": "ຍັງບໍ່ມີໃບປັບປຸງ.",
+  "en": "No adjustments yet."
+ },
+ "khh_khach_nhan": {
+  "vi": "Khách nhận",
+  "lo": "ລູກຄ້າຜູ້ຮັບ",
+  "en": "Receiving customer"
+ },
+ "khh_lap_dc": {
+  "vi": "Lập phiếu điều chỉnh",
+  "lo": "ສ້າງໃບປັບປຸງ",
+  "en": "New adjustment"
+ },
+ "khh_dc_h": {
+  "vi": "Phiếu điều chỉnh mới · lô {lo}",
+  "lo": "ໃບປັບປຸງໃໝ່ · ລ໊ອດ {lo}",
+  "en": "New adjustment · lot {lo}"
+ },
+ "khh_dc_tan": {
+  "vi": "Số tấn điều chỉnh (dương là tăng, âm là giảm)",
+  "lo": "ຈຳນວນໂຕນທີ່ປັບ (ບວກແມ່ນເພີ່ມ, ລົບແມ່ນຫຼຸດ)",
+  "en": "Tonnes to adjust (positive adds, negative removes)"
+ },
+ "khh_dc_ly_do": {
+  "vi": "Lý do (bắt buộc)",
+  "lo": "ເຫດຜົນ (ຕ້ອງໃສ່)",
+  "en": "Reason (required)"
+ },
+ "khh_dc_goi_y": {
+  "vi": "Tồn lô hiện tại {t} tấn. Phiếu điều chỉnh chỉ vào tồn sau khi được duyệt.",
+  "lo": "ຄົງເຫຼືອຂອງລ໊ອດປັດຈຸບັນ {t} ໂຕນ. ໃບປັບປຸງຈະເຂົ້າຍອດຄົງເຫຼືອ ຫຼັງຈາກໄດ້ຮັບການອະນຸມັດແລ້ວເທົ່ານັ້ນ.",
+  "en": "The lot currently holds {t} t. An adjustment only changes the stock once it is approved."
+ },
+ "khh_dc_gui": {
+  "vi": "Gửi duyệt",
+  "lo": "ສົ່ງໃຫ້ອະນຸມັດ",
+  "en": "Send for approval"
+ },
+ "khh_loi_tan": {
+  "vi": "Gõ số tấn khác 0 — số âm là giảm tồn.",
+  "lo": "ໃສ່ຈຳນວນໂຕນທີ່ບໍ່ແມ່ນ 0 — ຕົວເລກລົບແມ່ນຫຼຸດຄົງເຫຼືອ.",
+  "en": "Enter a tonnage other than 0 — a negative number reduces the stock."
+ },
+ "khh_loi_ly_do": {
+  "vi": "Phải ghi lý do điều chỉnh.",
+  "lo": "ຕ້ອງໃສ່ເຫດຜົນຂອງການປັບປຸງ.",
+  "en": "Please give a reason for the adjustment."
+ },
+ "khh_dc_da_gui": {
+  "vi": "Đã gửi phiếu điều chỉnh — chờ duyệt",
+  "lo": "ສົ່ງໃບປັບປຸງແລ້ວ — ລໍຖ້າອະນຸມັດ",
+  "en": "Adjustment sent — awaiting approval"
+ },
+ "khh_nguoi_lap": {
+  "vi": "người lập: {ten}",
+  "lo": "ຜູ້ສ້າງ: {ten}",
+  "en": "raised by {ten}"
+ },
+ "khh_nguoi_duyet": {
+  "vi": "người duyệt: {ten}",
+  "lo": "ຜູ້ພິຈາລະນາ: {ten}",
+  "en": "reviewed by {ten}"
+ },
+ "khh_cho_h": {
+  "vi": "Phiếu điều chỉnh chờ duyệt",
+  "lo": "ໃບປັບປຸງທີ່ລໍຖ້າອະນຸມັດ",
+  "en": "Adjustments awaiting approval"
+ },
+ "khh_cho_trong": {
+  "vi": "Không có phiếu điều chỉnh nào chờ duyệt.",
+  "lo": "ບໍ່ມີໃບປັບປຸງທີ່ລໍຖ້າອະນຸມັດ.",
+  "en": "No adjustments are awaiting approval."
+ },
+ "khh_cho_loi": {
+  "vi": "Chưa lấy được danh sách chờ duyệt: {loi}",
+  "lo": "ຍັງບໍ່ໄດ້ຮັບລາຍການທີ່ລໍຖ້າອະນຸມັດ: {loi}",
+  "en": "Could not load the approval queue: {loi}"
+ },
+ "khh_lo_x": {
+  "vi": "Lô {lo}",
+  "lo": "ລ໊ອດ {lo}",
+  "en": "Lot {lo}"
+ },
+ "khh_gc_duyet": {
+  "vi": "Ghi chú (không bắt buộc)",
+  "lo": "ໝາຍເຫດ (ບໍ່ບັງຄັບ)",
+  "en": "Note (optional)"
+ },
+ "khh_gc_tu_choi": {
+  "vi": "Lý do từ chối (bắt buộc) — Bãi sẽ đọc câu này",
+  "lo": "ເຫດຜົນທີ່ປະຕິເສດ (ຕ້ອງໃສ່) — ສະໜາມຈະອ່ານຂໍ້ຄວາມນີ້",
+  "en": "Reason for rejecting (required) — the yard will read it"
+ },
+ "khh_loi_gc": {
+  "vi": "Từ chối thì phải ghi lý do.",
+  "lo": "ປະຕິເສດຕ້ອງໃສ່ເຫດຜົນ.",
+  "en": "A reason is required to reject."
+ },
+ "khh_xn_duyet": {
+  "vi": "Xác nhận duyệt",
+  "lo": "ຢືນຢັນການອະນຸມັດ",
+  "en": "Confirm approval"
+ },
+ "khh_xn_tu_choi": {
+  "vi": "Xác nhận từ chối",
+  "lo": "ຢືນຢັນການປະຕິເສດ",
+  "en": "Confirm rejection"
+ },
+ "khh_da_duyet": {
+  "vi": "Đã duyệt — phiếu điều chỉnh {so}",
+  "lo": "ອະນຸມັດແລ້ວ — ໃບປັບປຸງ {so}",
+  "en": "Approved — adjustment {so}"
+ },
+ "khh_da_tu_choi": {
+  "vi": "Đã từ chối phiếu điều chỉnh",
+  "lo": "ປະຕິເສດໃບປັບປຸງແລ້ວ",
+  "en": "Adjustment rejected"
+ },
+ "khh_soat_h": {
+  "vi": "Đối soát hôm nay",
+  "lo": "ກວດທຽບມື້ນີ້",
+  "en": "Today's check"
+ },
+ "khh_soat_nhap": {
+  "vi": "DO gom đã tới {a} · phiếu nhập {b}",
+  "lo": "DO ເກັບທີ່ຮອດແລ້ວ {a} · ໃບຮັບເຂົ້າ {b}",
+  "en": "Collection DOs arrived {a} · receipts {b}"
+ },
+ "khh_soat_xuat": {
+  "vi": "DO giao {a} · phiếu xuất {b}",
+  "lo": "DO ສົ່ງ {a} · ໃບເບີກອອກ {b}",
+  "en": "Delivery DOs {a} · issue notes {b}"
+ },
+ "khh_soat_khop": {
+  "vi": "Khớp",
+  "lo": "ກົງກັນ",
+  "en": "Matched"
+ },
+ "khh_soat_lech": {
+  "vi": "Lệch {n} DO",
+  "lo": "ບໍ່ກົງກັນ {n} DO",
+  "en": "{n} DO(s) off"
+ },
+ "khh_soat_thieu_nhap": {
+  "vi": "thiếu phiếu nhập",
+  "lo": "ຂາດໃບຮັບເຂົ້າ",
+  "en": "receipt missing"
+ },
+ "khh_soat_thieu_xuat": {
+  "vi": "thiếu phiếu xuất",
+  "lo": "ຂາດໃບເບີກອອກ",
+  "en": "issue note missing"
+ },
+ "khh_soat_loi": {
+  "vi": "Chưa đối soát được",
+  "lo": "ຍັງກວດທຽບບໍ່ໄດ້",
+  "en": "Check unavailable"
+ },
+ "khh_td_cho": {
+  "vi": "{n} phiếu điều chỉnh hàng gửi bãi chờ duyệt",
+  "lo": "ໃບປັບປຸງສິນຄ້າຝາກສະໜາມ {n} ໃບ ລໍຖ້າອະນຸມັດ",
+  "en": "{n} yard-goods adjustment(s) awaiting approval"
+ },
+ "khh_td_cho_s": {
+  "vi": "Bấm để duyệt hoặc từ chối",
+  "lo": "ກົດເພື່ອອະນຸມັດ ຫຼື ປະຕິເສດ",
+  "en": "Click to approve or reject"
+ },
+ "khh_td_lech": {
+  "vi": "Đối soát hôm nay lệch {n} DO",
+  "lo": "ກວດທຽບມື້ນີ້ ບໍ່ກົງກັນ {n} DO",
+  "en": "Today's check: {n} DO(s) off"
+ },
+ "khh_ngay_ton_c": {
+  "vi": "Số ngày tồn",
+  "lo": "ຈຳນວນມື້ໃນສາງ",
+  "en": "Days in stock"
+ },
+ "khh_so_pnk_c": {
+  "vi": "Số phiếu nhập",
+  "lo": "ເລກທີໃບຮັບເຂົ້າສາງ",
+  "en": "Receipt no."
+ },
+ "khh_do_gom_c": {
+  "vi": "DO gom",
+  "lo": "DO ເກັບ",
+  "en": "Collection DO"
+ },
+ "khh_sub": {
+  "vi": "Hàng khách gửi ở bãi, tồn theo từng lô — mỗi lô là một DO gom.",
+  "lo": "ສິນຄ້າລູກຄ້າຝາກສະໜາມ, ຄົງເຫຼືອຕາມແຕ່ລະລ໊ອດ — ແຕ່ລະລ໊ອດແມ່ນ DO ເກັບໜຶ່ງໃບ.",
+  "en": "Customer goods held at the yard, stock by lot — each lot is one collection DO."
+ },
+ "khh_note": {
+  "vi": "Phiếu nhập / xuất kho hàng do máy tự lập theo DO: DO gom về tới bãi là phiếu nhập, DO giao lấy hàng ở bãi là phiếu xuất. Chênh lệch thực tế ghi bằng phiếu điều chỉnh — Admin Thà Bốc lập, KT Thu/Chi Viêng Chăn hoặc Sếp duyệt.",
+  "lo": "ໃບຮັບ ແລະ ໃບເບີກສິນຄ້າໃນສາງ ລະບົບສ້າງເອງຕາມ DO: DO ເກັບກັບຮອດສະໜາມແມ່ນໃບຮັບເຂົ້າ, DO ສົ່ງທີ່ເອົາສິນຄ້າຈາກສະໜາມແມ່ນໃບເບີກອອກ. ສ່ວນຕ່າງຕົວຈິງບັນທຶກດ້ວຍໃບປັບປຸງ — ແອັດມິນ ທ່າບົກ ສ້າງ, ບັນຊີລາຍຈ່າຍ/ຮັບ ວຽງຈັນ ຫຼື ຫົວໜ້າ ອະນຸມັດ.",
+  "en": "Goods receipt and issue notes are generated from the DO: a collection DO arriving at the yard makes a receipt, a delivery DO drawing from the yard makes an issue note. Real-world differences go on an adjustment — raised by the Thabok admin, approved by the Vientiane receipts & payments accountant or the boss."
+ },
+ "khh_mo_do": {
+  "vi": "Mở phiếu xuất xe {do}",
+  "lo": "ເປີດໃບເບີກລົດ {do}",
+  "en": "Open dispatch slip {do}"
+ },
+ "khh_px_khoi": {
+  "vi": "Phiếu kho hàng",
+  "lo": "ໃບສາງສິນຄ້າ",
+  "en": "Goods stock note"
+ },
+ "khh_in_pnk": {
+  "vi": "In phiếu nhập kho hàng",
+  "lo": "ພິມໃບຮັບສິນຄ້າເຂົ້າສາງ",
+  "en": "Print goods receipt note"
+ },
+ "khh_in_pxk": {
+  "vi": "In phiếu xuất kho hàng",
+  "lo": "ພິມໃບເບີກສິນຄ້າອອກສາງ",
+  "en": "Print goods issue note"
+ },
+ "khh_to_pnk": {
+  "vi": "PHIẾU NHẬP KHO HÀNG",
+  "lo": "ໃບຮັບສິນຄ້າເຂົ້າສາງ",
+  "en": "GOODS RECEIPT NOTE"
+ },
+ "khh_to_pxk": {
+  "vi": "PHIẾU XUẤT KHO HÀNG",
+  "lo": "ໃບເບີກສິນຄ້າອອກສາງ",
+  "en": "GOODS ISSUE NOTE"
+ },
+ "khh_to_pnk_ht": {
+  "vi": "Hàng khách gửi nhập bãi theo DO gom",
+  "lo": "ສິນຄ້າລູກຄ້າຮັບເຂົ້າສະໜາມ ຕາມ DO ເກັບ",
+  "en": "Customer goods received into the yard on the collection DO"
+ },
+ "khh_to_pxk_ht": {
+  "vi": "Hàng khách gửi xuất khỏi bãi theo DO giao",
+  "lo": "ສິນຄ້າລູກຄ້າເບີກອອກຈາກສະໜາມ ຕາມ DO ສົ່ງ",
+  "en": "Customer goods issued from the yard on the delivery DO"
+ },
+ "khh_to_lo": {
+  "vi": "Lô (DO gom)",
+  "lo": "ລ໊ອດ (DO ເກັບ)",
+  "en": "Lot (collection DO)"
+ },
+ "khh_to_dong": {
+  "vi": "Hàng theo lô",
+  "lo": "ສິນຄ້າຕາມລ໊ອດ",
+  "en": "Goods by lot"
+ },
+ "khh_to_can": {
+  "vi": "Cân",
+  "lo": "ການຊັ່ງນ້ຳໜັກ",
+  "en": "Weighing"
+ },
+ "khh_xac_nhan": {
+  "vi": "Người xác nhận",
+  "lo": "ຜູ້ຢືນຢັນ",
+  "en": "Confirmed by"
+ },
+ "khh_ky_tx_giao": {
+  "vi": "Tài xế giao hàng",
+  "lo": "ໂຊເຟີຜູ້ສົ່ງສິນຄ້າ",
+  "en": "Driver (handing over)"
+ },
+ "khh_ky_kho_nhan": {
+  "vi": "Thủ kho bãi nhận hàng",
+  "lo": "ຜູ້ຮັກສາສາງຮັບສິນຄ້າ",
+  "en": "Yard keeper (receiving)"
+ },
+ "khh_ky_kho_xuat": {
+  "vi": "Thủ kho bãi xuất hàng",
+  "lo": "ຜູ້ຮັກສາສາງເບີກສິນຄ້າ",
+  "en": "Yard keeper (issuing)"
+ },
+ "khh_ky_tx_nhan": {
+  "vi": "Tài xế nhận hàng",
+  "lo": "ໂຊເຟີຜູ້ຮັບສິນຄ້າ",
+  "en": "Driver (taking over)"
+ },
+ "khh_to_chan": {
+  "vi": "Tờ do hệ thống tự lập theo DO {do}.",
+  "lo": "ໃບນີ້ລະບົບສ້າງອັດຕະໂນມັດຕາມ DO {do}.",
+  "en": "Generated automatically from DO {do}."
+ },
+ "khh_mo_cua_so": {
+  "vi": "Trình duyệt chặn cửa sổ in — cho phép cửa sổ bật lên rồi bấm lại",
+  "lo": "ໂປຣແກຣມທ່ອງເວັບບລັອກໜ້າຕ່າງພິມ — ອະນຸຍາດປັອບອັບ ແລ້ວກົດອີກຄັ້ງ",
+  "en": "The browser blocked the print window — allow pop-ups and try again"
+ },
+ "khh_in_loi": {
+  "vi": "Chưa lấy được tờ để in: {loi}",
+  "lo": "ຍັງບໍ່ໄດ້ຮັບໃບເພື່ອພິມ: {loi}",
+  "en": "Could not load the note to print: {loi}"
  }
 };

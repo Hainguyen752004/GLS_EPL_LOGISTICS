@@ -546,6 +546,119 @@
     g('px-ben-so').innerHTML = moi ? `<span class="muted">${NN.h('new_slip')}</span> <span class="mono">${esc(P.doc_no || '')}</span>`
       : `<span class="mono">${esc(P.doc_no)}</span><small>${esc(P.truck_no || '')} · <span lang="lo">${esc(P.driver_name || '')}</span></small>`;
     g('px-ben-tt').innerHTML = g('px-trang-thai').innerHTML;
+    veToKhoHang();
+  }
+
+  /* ---------------------------------------------------------------- phiếu kho HÀNG khách gửi (05/10)
+   * Máy tự lập theo DO: DO gom Bãi bấm "Xe đã tới" (có cân bãi) → phiếu nhập kho hàng PNK_HH; DO giao lưu có lấy hàng từ lô →
+   * phiếu xuất PXK_HH. GET /api/trips/{id}/to-kho-hang trả tờ để in; chưa có → 404 CHUA_CO_TO → ẩn khối "Phiếu kho hàng".
+   * Hỏi lại khi mở phiếu, sau khi lưu, đổi trạng thái chuyến, đổi xe (các lúc tờ có thể vừa sinh / đổi). */
+  let TO_KH = null;                      // { trip, to } — to = null: phiếu này chưa có tờ
+  async function napToKhoHang() {
+    const id = P && !moi ? P.id : null;
+    TO_KH = { trip: id, to: null };
+    veToKhoHang();
+    if (!id) return;
+    let to = null;
+    try { to = await API.get('/api/trips/' + encodeURIComponent(id) + '/to-kho-hang'); }
+    catch (e) { to = null; }            // 404 CHUA_CO_TO (hay máy chủ cũ chưa có đường này): chưa có tờ — không báo lỗi, chỉ ẩn nút
+    if (!P || P.id !== id) return;
+    TO_KH = { trip: id, to };
+    if (root && root.isConnected) veToKhoHang();
+  }
+  const toNay = () => (TO_KH && P && !moi && TO_KH.trip === P.id) ? TO_KH.to : null;
+  const laPhieuXuatKH = (to) => to.loai ? to.loai === 'PXK_HH' : P.kind !== 'gom';
+  function veToKhoHang() {
+    const k = g('px-kho-hang'); if (!k) return;
+    const to = toNay();
+    k.hidden = !to;
+    if (!to) return;
+    const chu = g('px-in-kho-hang-chu');
+    chu.dataset.i18n = laPhieuXuatKH(to) ? 'khh_in_pxk' : 'khh_in_pnk'; chu.innerHTML = NN.h(chu.dataset.i18n);
+    g('px-kho-hang-so').innerHTML = `<span class="mono">${esc(to.so || '')}</span>${to.ngay ? ' · ' + EPL.ngay(to.ngay) : ''}${to.tong_tan != null ? ' · ' + so(to.tong_tan, 2) + ' ' + NN.h('ton') : ''}`;
+  }
+  /** Mở tờ in ở cửa sổ riêng (như biên bản giao nhận). Cửa sổ mở NGAY lúc bấm — đợi máy chủ xong mới mở là trình duyệt chặn
+   *  cửa sổ bật lên; rồi mới hỏi lại tờ mới nhất (cân có thể vừa sửa) và ghi vào. */
+  async function inToKhoHang() {
+    const id = P && P.id; if (!id) return;
+    const w = window.open('', '_blank');
+    if (!w) return EPL.toast(NN.t('khh_mo_cua_so'), 'loi');
+    w.document.write(`<!doctype html><meta charset="utf-8"><title>…</title><p style="font-family:system-ui,sans-serif;color:#7A858F;padding:24px">${esc(NN.t('loading'))}</p>`);
+    let to;
+    try { to = await API.get('/api/trips/' + encodeURIComponent(id) + '/to-kho-hang'); }
+    catch (e) { w.close(); if (e && e.ma === 'CHUA_CO_TO') { TO_KH = { trip: id, to: null }; veToKhoHang(); } return EPL.toast(NN.t('khh_in_loi', { loi: e.message || String(e) }), 'loi'); }
+    if (P && P.id === id) { TO_KH = { trip: id, to }; veToKhoHang(); }
+    w.document.open(); w.document.write(htmlToKhoHang(to)); w.document.close();
+  }
+  /** Tờ PNK_HH / PXK_HH khổ A4 — cùng kiểu tờ đề nghị xuất kho nhiên liệu (css/chung.css .ct-*): đầu tờ logo + địa chỉ, số tờ
+   *  bên phải, tiêu đề giữa + dòng Lào · Anh, dòng bản chất, ô thông tin hai cột, bảng dòng lô × tấn, khối cân, bốn chỗ ký. */
+  function htmlToKhoHang(to) {
+    const xuat = laPhieuXuatKH(to);
+    const T = (k, p) => esc(NN.t(k, p));
+    const so2 = (v) => v == null || v === '' ? '—' : so(v, 2);
+    const o = (k, v, lo) => `<div><span>${T(k)}</span><b${lo ? ' lang="lo"' : ''}>${v == null || v === '' ? '—' : esc(v)}</b></div>`;
+    const dong = to.dong || [];
+    const tong = to.tong_tan != null ? to.tong_tan : dong.reduce((a, d) => a + EPL.doc(d.tan), 0);
+    // cân: phiếu nhập — tại mỏ, tại bãi khi về; phiếu xuất — lấy khỏi kho (bãi), tại nơi giao; hao hụt = hiệu hai số
+    const goc = xuat ? to.can_bai : to.can_mo;
+    const can = (xuat ? [['w_origin_giao', to.can_bai], ['w_dest_giao', to.can_noi_giao]] : [['w_origin_gom', to.can_mo], ['w_dest_gom', to.can_bai]])
+      .map(([k, v]) => `<div><span>${T(k)}</span><b>${so2(v)}</b></div>`).join('')
+      + `<div><span>${T('w_loss')}</span><b>${to.hao_hut == null ? '—' : so2(to.hao_hut) + ' ' + T('ton') + (EPL.doc(goc) > 0 ? ` (${so(EPL.doc(to.hao_hut) / EPL.doc(goc) * 100, 1)}%)` : '')}</b></div>`;
+    const ky = (xuat ? [['khh_ky_kho_xuat', to.nguoi_xac_nhan], ['khh_ky_tx_nhan', to.tai_xe]] : [['khh_ky_tx_giao', to.tai_xe], ['khh_ky_kho_nhan', to.nguoi_xac_nhan]])
+      .concat([['sg_chief_acct', ''], ['sg_director', '']])
+      .map(([k, ten]) => `<div><div class="line"></div>${T(k)}<div class="muted" lang="lo">${esc(ten || '')}</div></div>`).join('');
+    const logo = new URL('img/logo-epl.jpg', location.href).href;
+    return `<!doctype html><html lang="${esc(document.documentElement.lang || 'vi')}"><head><meta charset="utf-8">
+<title>${esc(to.so || '')} · ${esc(to.do_no || '')}</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&family=Noto+Sans+Lao:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  @page{size:A4 portrait;margin:14mm}
+  *{box-sizing:border-box}
+  body{font-family:'Be Vietnam Pro','Noto Sans Lao',system-ui,sans-serif;color:#1C2229;font-size:13px;line-height:1.5;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  [lang="lo"]{font-family:'Noto Sans Lao','Be Vietnam Pro',sans-serif}
+  .muted{color:#7A858F;font-size:12px}
+  .dau{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1C2229;padding-bottom:12px;margin-bottom:14px}
+  .dau>div:first-child{display:flex;gap:12px;align-items:center}
+  .logo{width:52px;height:52px;border-radius:8px;object-fit:cover}
+  .so{text-align:right;font-size:13px} .so b{font-family:ui-monospace,Consolas,monospace;font-size:15px;display:block}
+  .tieu-de{text-align:center;font-size:19px;font-weight:700;margin:4px 0;letter-spacing:.02em}
+  .phu{text-align:center;color:#7A858F;font-size:12.5px;margin-bottom:14px}
+  .ht{text-align:center;font-weight:600;font-size:13px;margin:-8px 0 14px}
+  .meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 28px;margin-bottom:14px}
+  .meta>div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dotted #BFC8C0;padding:3px 0}
+  .meta span{color:#4A5560;white-space:nowrap} .meta b{font-weight:600;text-align:right}
+  h2{font-size:12.5px;margin:16px 0 6px;color:#145C4A;text-transform:uppercase;letter-spacing:.04em}
+  table{width:100%;border-collapse:collapse} th,td{border:1px solid #BFC8C0;padding:6px 8px;text-align:left} th{background:#EDF0EC;font-weight:600}
+  .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap} .mono{font-family:ui-monospace,Consolas,monospace}
+  tfoot td{font-weight:700}
+  .ky{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:34px;text-align:center;font-size:12.5px}
+  .ky .line{height:54px;border-bottom:1px solid #7A858F;margin-bottom:6px}
+  .chan{margin-top:18px;color:#7A858F;font-size:11px}
+  @media screen{body{max-width:820px;margin:24px auto;padding:0 20px}}
+</style></head><body>
+<div class="dau">
+  <div><img src="${esc(logo)}" alt="EPL" class="logo"><div><b>EPL TRANSPORT</b><div class="muted">SAMKET VILLAGE, SIKHOTTABONG DISTRICT, VIENTIANE LAO<br>ໂທລະສັບ/Tel: 020 5889 9983</div></div></div>
+  <div class="so">${T('voucher_no')}<b>${esc(to.so || '—')}</b>${esc(EPL.ngay(to.ngay))}</div>
+</div>
+<div class="tieu-de">${T(xuat ? 'khh_to_pxk' : 'khh_to_pnk')}</div>
+<div class="phu">${xuat ? 'ໃບເບີກສິນຄ້າອອກສາງ · Goods issue note' : 'ໃບຮັບສິນຄ້າເຂົ້າສາງ · Goods receipt note'}</div>
+<div class="ht">${T(xuat ? 'khh_to_pxk_ht' : 'khh_to_pnk_ht')}</div>
+<div class="meta">
+  ${o('khh_do', to.do_no)}${o('k2_bai', to.kho, true)}
+  ${o('customer', to.khach, true)}${o('goods_type', to.loai_hang, true)}
+  ${o('truck_no', to.xe)}${o('driver', to.tai_xe, true)}
+  ${o('c_date', EPL.ngay(to.ngay))}${o('khh_xac_nhan', to.nguoi_xac_nhan, true)}
+</div>
+<h2>${T('khh_to_dong')}</h2>
+<table><thead><tr><th style="width:42px">#</th><th>${T('khh_to_lo')}</th><th>${T('goods_type')}</th><th class="num">${T('qty_t')}</th></tr></thead><tbody>
+  ${dong.length ? dong.map((d, i) => `<tr><td>${i + 1}</td><td class="mono">${esc(d.lo_doc_no || '—')}</td><td lang="lo">${esc(d.loai_hang || to.loai_hang || '')}</td><td class="num">${so2(d.tan)}</td></tr>`).join('') : '<tr><td colspan="4">—</td></tr>'}
+</tbody><tfoot><tr><td colspan="3">${T('k2_tong')}</td><td class="num">${so2(tong)}</td></tr></tfoot></table>
+<h2>${T('khh_to_can')}</h2>
+<div class="meta">${can}</div>
+<div class="ky">${ky}</div>
+<div class="chan">${T('khh_to_chan', { do: to.do_no || '' })}</div>
+<script>window.onload=function(){setTimeout(function(){window.print()},400)}<\/script>
+</body></html>`;
   }
   /** Cột bên dính NGAY DƯỚI thanh đầu trang (01/10). Thanh menu trên (.tbar) và thanh tiêu đề (.topbar) đều dính ở đỉnh;
    *  cao bao nhiêu tuỳ kiểu menu, ngôn ngữ, dòng nút xuống hàng — đo thật rồi đặt --px-dinh (px trong khung đã zoom, nên
@@ -642,7 +755,7 @@
       rate_usd: ty_gia.USD || 22000, rate_thb: ty_gia.THB || 700, rate_vnd: ty_gia.VND || 1.2, rate_cny: ty_gia.CNY || 3000, transport_status: 'dispatched', finance_status: 'unpaid', invoiced: false,
       sections: {}, expenses: [], logs: [] };
   }
-  async function moPhieu(id) { moi = false; tabTay = false; HD_DOI = {}; soGoTay = false; P = await API.get('/api/trips/' + id); await napLo(P.id); anPhieu(false); veHet(); }
+  async function moPhieu(id) { moi = false; tabTay = false; HD_DOI = {}; soGoTay = false; P = await API.get('/api/trips/' + id); await napLo(P.id); anPhieu(false); veHet(); napToKhoHang(); }
   /** Chưa chọn tờ nào: giấu thân phiếu và dải bước, hiện câu nhắc; ô chọn có dòng trống đứng đầu. */
   function chuaChon() {
     P = null; moi = false;
@@ -734,7 +847,7 @@
     });
     try {
       P = moi ? await API.post('/api/trips', body) : await API.put('/api/trips/' + P.id, body);
-      moi = false; HD_DOI = {}; NHAP = null; EPL.toast(NN.t('saved'), 'ok'); veHet();
+      moi = false; HD_DOI = {}; NHAP = null; EPL.toast(NN.t('saved'), 'ok'); veHet(); napToKhoHang();   // lưu phiếu giao có lấy hàng → máy lập phiếu xuất kho hàng
       history.replaceState(null, '', '#/phieu-xuat-xe?id=' + P.id);
       // ô chọn phiếu nạp lại NGẦM sau khi đã báo "Đã lưu" — chờ nó thì nút Lưu chậm thêm 0,1–0,5 s (đo 01/10)
       napDs().then(() => { if (P) veChon(); }).catch(() => {});
@@ -812,25 +925,54 @@
     try { P = await API.post(`/api/trips/${P.id}/sections/${m}/${hd}`); veHet(); } catch (e) { EPL.baoLoi(e); }
   }
   async function doiTrangThai(tt) {
-    const body = { status: tt };
-    if (tt === 'arrived') {
-      // Ngày về và km về điền sẵn theo số TÀI XẾ đã báo (nút "Báo đã về" trên điện thoại) — Bãi chỉ thêm cân.
-      // Phiếu gom: hàng vào kho theo cân tại mỏ — hỏi luôn ô đó (29/09); tài xế đã báo từ mỏ thì điền sẵn.
-      const hoiMo = laGom() && gomMotDong();
-      const v = await EPL.hopNhap(NN.t('mark_arrived'), [
-        ...(hoiMo ? [{ id: 'weight_origin', label: 'w_origin_gom', type: 'number', value: P.weight_origin ?? '' }] : []),
-        { id: 'weight_dest', label: laGom() ? 'w_dest_gom' : 'weight_dest_prompt', type: 'number', value: P.weight_dest ?? '' },
-        { id: 'back_date', label: 'd_back', type: 'date', value: P.back_date || EPL.homNay() },
-        { id: 'odo_back', label: 'odo_back_prompt', type: 'number', value: P.odo_back ?? '' },
-        ...(laGom() ? [] : [{ id: 'pod_no', label: 'pod_no', value: P.pod_no || '' },
-          { id: 'pod_receiver', label: 'pod_receiver', value: P.pod_receiver || '' }]),
+    if (tt === 'arrived') return baoXeToi();
+    try { P = await API.post(`/api/trips/${P.id}/transport-status`, { status: tt }); DS = await napDs(); veHet(); napToKhoHang(); } catch (e) { EPL.baoLoi(e); }
+  }
+  /** "Xe đã tới · nhập cân cuối". Ngày về và km về điền sẵn theo số TÀI XẾ đã báo (nút "Báo đã về" trên điện thoại) — Bãi chỉ
+   *  thêm cân. Phiếu gom: hàng vào kho theo cân tại mỏ — hỏi luôn ô đó (29/09); tài xế đã báo từ mỏ thì điền sẵn.
+   *  DO gom thiếu cân tại bãi (05/10): máy chủ trả 422 THIEU_CAN_BAI — phiếu nhập kho hàng lập theo cân này. Mở lại đúng hộp vừa
+   *  điền (giữ số đã gõ), câu lỗi của máy chủ ở đầu hộp, con trỏ ở ô "Cân tại bãi khi về". */
+  async function baoXeToi() {
+    const hoiMo = laGom() && gomMotDong();
+    let cu = { weight_origin: P.weight_origin ?? '', weight_dest: P.weight_dest ?? '', back_date: P.back_date || EPL.homNay(), odo_back: P.odo_back ?? '',
+      pod_no: P.pod_no || '', pod_receiver: P.pod_receiver || '' }, loi = '';
+    for (;;) {
+      const hop = EPL.hopNhap(NN.t('mark_arrived'), [
+        ...(hoiMo ? [{ id: 'weight_origin', label: 'w_origin_gom', type: 'number', value: cu.weight_origin }] : []),
+        { id: 'weight_dest', label: laGom() ? 'w_dest_gom' : 'weight_dest_prompt', type: 'number', value: cu.weight_dest },
+        { id: 'back_date', label: 'd_back', type: 'date', value: cu.back_date },
+        { id: 'odo_back', label: 'odo_back_prompt', type: 'number', value: cu.odo_back },
+        ...(laGom() ? [] : [{ id: 'pod_no', label: 'pod_no', value: cu.pod_no },
+          { id: 'pod_receiver', label: 'pod_receiver', value: cu.pod_receiver }]),
       ], NN.t('ok'));
+      if (loi) baoLoiTrongHop(loi, 'weight_dest');           // hộp đã hiện (EPL.hoi mở hộp ngay khi gọi)
+      const v = await hop;
       if (!v) return;
-      if (hoiMo) { if (!(EPL.doc(v.weight_origin) > 0)) return EPL.toast(NN.t('w_origin_gom') + '?', 'loi'); body.weight_origin = v.weight_origin; }
-      body.weight_dest = v.weight_dest; body.back_date = v.back_date; if (v.odo_back !== '') body.odo_back = v.odo_back;
+      if (hoiMo && !(EPL.doc(v.weight_origin) > 0)) return EPL.toast(NN.t('w_origin_gom') + '?', 'loi');
+      const body = { status: 'arrived', weight_dest: v.weight_dest, back_date: v.back_date };
+      if (hoiMo) body.weight_origin = v.weight_origin;
+      if (v.odo_back !== '') body.odo_back = v.odo_back;
       if (v.pod_no) body.pod_no = v.pod_no; if (v.pod_receiver) body.pod_receiver = v.pod_receiver;
+      let r;
+      try { r = await API.post(`/api/trips/${P.id}/transport-status`, body); }
+      catch (e) {
+        if (e && e.ma === 'THIEU_CAN_BAI') { cu = Object.assign(cu, v); loi = e.message || NN.t('w_dest_gom'); continue; }
+        return EPL.baoLoi(e);
+      }
+      P = r;
+      try { DS = await napDs(); } catch (e) { EPL.baoLoi(e); }
+      veHet(); napToKhoHang();             // DO gom tới bãi → máy vừa lập phiếu nhập kho hàng: hiện nút In
+      return;
     }
-    try { P = await API.post(`/api/trips/${P.id}/transport-status`, body); DS = await napDs(); veHet(); } catch (e) { EPL.baoLoi(e); }
+  }
+  /** Câu lỗi ở đầu hộp nhập đang mở (EPL.hopNhap — ô mang id "hn-<id>"): tô đỏ ô `id` và đặt con trỏ vào đó. */
+  function baoLoiTrongHop(loi, id) {
+    const nd = document.getElementById('ht-noi-dung'), o = document.getElementById('hn-' + id);
+    if (nd) { const p = document.createElement('p'); p.className = 'px-hop-loi'; p.setAttribute('role', 'alert'); p.textContent = loi; nd.prepend(p); }
+    if (o) {
+      o.classList.add('px-thieu'); o.setAttribute('aria-invalid', 'true'); o.focus(); if (o.select) o.select();
+      o.addEventListener('input', () => { o.classList.remove('px-thieu'); o.removeAttribute('aria-invalid'); }, { once: true });
+    }
   }
   // việc mức phiếu còn lại đi qua đây: mở khoá phiếu (hoá đơn, thu tiền ở hệ kế toán từ 01/10 — trước đây tiêu đề hộp hỏi
   // là "Xác nhận đã thu tiền khách" cả khi bấm Mở khoá)
@@ -862,7 +1004,7 @@
       P = await API.post(`/api/trips/${P.id}/doi-xe`, {
         vehicle_id: v.vehicle_id, driver_id: v.driver_id || null, ly_do: v.ly_do, xe_cu_hong: v.xe_cu_hong === '1' });
       DS = await napDs(); DM.vehicles = await API.get('/api/vehicles');
-      EPL.toast(NN.t('saved'), 'ok'); veHet();
+      EPL.toast(NN.t('saved'), 'ok'); veHet(); napToKhoHang();
     } catch (e) { EPL.baoLoi(e); }
   }
 
@@ -1042,6 +1184,7 @@
         EPL.di('de-nghi-chi', { id: P.id, loai: 'advance' });
       });
       g('px-phieu-linh').addEventListener('click', lapPhieuLinh);
+      g('px-in-kho-hang').addEventListener('click', inToKhoHang);
       // địa chỉ ghi theo tờ đang mở: tải lại trang hay bấm Quay lại từ màn khác là về đúng tờ này, không ra tờ trắng (rà 01/10)
       g('px-chon').addEventListener('change', e => { if (e.target.value) moPhieu(e.target.value).then(() => { if (P && P.id) history.replaceState(null, '', '#/phieu-xuat-xe?id=' + P.id); }).catch(EPL.baoLoi); });
       let hen = null;

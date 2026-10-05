@@ -247,3 +247,138 @@
   .k2 { height: auto; overflow: visible; display: block; }
   .k2 .work { height: auto; overflow: visible; }
 }
+
+/* ---------- 05/10 · tab Hàng gửi bãi: tồn theo LÔ (bảng trái) + khung chi tiết lô / hàng chờ duyệt (phải) ----------
+   Tab này mở thì ẩn cột danh sách kho nhiên liệu — bảng 7 cột + khung chi tiết cần cả bề ngang (không xếp dọc, không bắt
+   thu nhỏ trình duyệt). Tab Nhiên liệu là quay lại. */
+.k2.k2--hang .rail { display: none; }
+.k2.k2--hang .layout { grid-template-columns: minmax(0, 1fr); }
+.k2 .k2-btn:disabled { opacity: .55; cursor: default; }
+.k2 .k2-btn--sm { height: 32px; padding: 0 11px; font-size: 13px; gap: 6px; }
+.k2 .k2-btn--sm svg { width: 15px; height: 15px; }
+.k2 .kh { display: flex; flex-direction: column; gap: 12px; }
+.k2 .kh-thanh { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.k2 .kh-tim { position: relative; display: flex; align-items: center; flex: 0 1 300px; min-width: 210px; }
+.k2 .kh-tim svg { position: absolute; left: 11px; width: 17px; height: 17px; fill: none; stroke: var(--muted); stroke-width: 1.8; }
+.k2 .kh-tim input { width: 100%; height: 36px; padding: 0 10px 0 34px; border: 1px solid var(--line-2); border-radius: var(--r-md); background: var(--surface-2); }
+.k2 .kh-khach { height: 36px; max-width: 240px; padding: 0 10px; border: 1px solid var(--line-2); border-radius: var(--r-md); background: var(--surface); }
+.k2 .kh-tim input:focus, .k2 .kh-khach:focus { background: var(--surface); border-color: var(--primary-2); outline: none; box-shadow: 0 0 0 3px var(--primary-soft); }
+/* công tắc "Chỉ lô còn hàng" — ô tích thật nằm dưới (bàn phím, đọc màn hình), vẽ thành nút gạt */
+.k2 .kh-cong-tac { position: relative; display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 2px; cursor: pointer; font-size: 13px; color: var(--ink-2); user-select: none; }
+.k2 .kh-cong-tac input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+.k2 .kh-cong-tac i { position: relative; flex: none; width: 34px; height: 20px; border-radius: 999px; background: var(--line-2); transition: background .15s; }
+.k2 .kh-cong-tac i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .25); transition: transform .15s; }
+.k2 .kh-cong-tac input:checked + i { background: var(--primary); }
+.k2 .kh-cong-tac input:checked + i::after { transform: translateX(14px); }
+.k2 .kh-cong-tac input:focus-visible + i { outline: 2px solid var(--primary-2); outline-offset: 2px; }
+.k2 .kh-tong { display: inline-flex; align-items: center; gap: 10px; margin-left: auto; font-size: 13px; color: var(--ink-2); white-space: nowrap; }
+.k2 .kh-tong:empty { display: none; }
+.k2 .kh-tong b { color: var(--ink); }
+.k2 .kh-nut-cho.is-on { background: var(--warn-tint); border-color: var(--warn); color: var(--warn); }
+.k2 .count.is-co { background: var(--warn); color: #fff; }
+/* đối soát hôm nay: ô nhỏ cuối thanh lọc — khớp xanh, lệch đỏ kèm các DO thiếu tờ */
+.k2 .kh-soat-o:empty { display: none; }
+.k2 .kh-soat { display: flex; flex-direction: column; gap: 2px; padding: 6px 10px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); font-size: 12.5px; color: var(--ink-2); max-width: 520px; }
+.k2 .kh-soat-1 { display: flex; align-items: center; gap: 8px; }
+.k2 .kh-soat-1 b { font-size: 12.5px; color: var(--ink); }
+.k2 .kh-soat.is-lech { border-color: var(--danger); background: var(--danger-tint); }
+.k2 .kh-soat.is-loi { flex-direction: row; gap: 8px; color: var(--muted); }
+.k2 .kh-soat-ds { display: flex; flex-wrap: wrap; gap: 2px 12px; color: var(--danger); font-weight: 600; }
+.k2 .kh-soat-ds .link { color: var(--danger); }
+.k2 .kh-luoi { display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, 410px); gap: 14px; align-items: start; }
+.k2 .kh-trai { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.k2 .kh-trai .k2-tbl-wrap { border: 1px solid var(--line); border-radius: var(--r-md); }
+.k2 .kh-bang th, .k2 .kh-bang td { padding: 8px 10px; }
+.k2 .kh-bang th { white-space: normal; line-height: 1.3; vertical-align: bottom; }
+.k2 .kh-bang tbody tr.is-chon td { background: var(--primary-tint); }
+.k2 .kh-bang tbody tr.is-chon td:first-child { box-shadow: inset 3px 0 0 var(--primary); }
+.k2 .kh-bang tbody tr.is-het td { color: var(--muted); }
+.k2 .kh-bang tbody tr:focus-visible { outline: 2px solid var(--primary-2); outline-offset: -2px; }
+.k2 .kh-so-do { font-weight: 600; color: var(--ink); }
+.k2 .kh-c-ngay { white-space: nowrap; }
+.k2 .kh-ngay { display: block; width: max-content; margin-top: 3px; padding: 0 7px; border-radius: 999px; font-size: 11.5px; font-weight: 600; background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
+.k2 .kh-ngay.vang { background: var(--warn-tint); color: var(--warn); border-color: transparent; }
+.k2 .kh-ngay.do { background: var(--danger-tint); color: var(--danger); border-color: transparent; }
+.k2 .kh-ngay.het { color: var(--muted); }
+.k2 .kh-am { color: var(--danger); }
+.k2 .kh-duong { color: var(--primary); }
+.k2 .kh-chu-giai { margin: 0; font-size: 12px; }
+/* khung bên phải */
+.k2 .kh-ben { min-width: 0; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
+.k2 .kh-ct { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px 16px; }
+.k2 .kh-ct--trong { align-items: center; text-align: center; color: var(--muted); padding: 30px 20px; gap: 12px; }
+.k2 .kh-ct--trong > svg { width: 36px; height: 36px; fill: none; stroke: var(--line-2); stroke-width: 1.6; stroke-linejoin: round; }
+.k2 .kh-ct--trong p { margin: 0; font-size: 13px; max-width: 36ch; }
+.k2 .kh-ct-dau { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.k2 .kh-ct-dau h3 { display: flex; align-items: center; gap: 8px; margin: 2px 0 0; font-size: 16px; line-height: 1.3; font-weight: 700; }
+.k2 .kh-ct-dau p { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); }
+.k2 .kh-ct-dau .code, .k2 .kh-ct-dau .link { font-size: 13px; }
+.k2 .kh-dong-x { flex: none; display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--muted); cursor: pointer; }
+.k2 .kh-dong-x svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.k2 .kh-dong-x:hover { color: var(--ink); border-color: var(--line-2); }
+.k2 .kh-so4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+.k2 .kh-so4 > div { padding: 7px 10px; border-right: 1px solid var(--line); min-width: 0; }
+.k2 .kh-so4 > div:last-child { border-right: 0; }
+.k2 .kh-so4 span { display: block; font-size: 11.5px; color: var(--muted); }
+.k2 .kh-so4 b { display: block; font-size: 16px; line-height: 1.3; white-space: nowrap; }
+.k2 .kh-so4 .chinh { background: var(--primary-soft); }
+.k2 .kh-so4 .chinh b { color: var(--primary); }
+.k2 .kh-khoi h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font-size: 13.5px; font-weight: 600; }
+.k2 .kh-khoi h4 .kh-nut-lap { margin-left: auto; }
+.k2 .kh-khoi .k2-empty { padding: 9px 12px; font-size: 12.5px; }
+.k2 .kh-luoi2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; font-size: 12.5px; }
+.k2 .kh-luoi2 > div { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 3px 0; border-bottom: 1px dotted var(--line-2); min-width: 0; }
+.k2 .kh-luoi2 span:first-child { color: var(--muted); min-width: 0; }
+.k2 .kh-luoi2 b { flex: none; font-weight: 600; text-align: right; white-space: nowrap; }
+.k2 .kh-luoi2 small { font-weight: 500; color: var(--muted); }
+.k2 table.kh-bang-nho { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.k2 .kh-bang-nho th { padding: 5px 6px; text-align: left; font-size: 11.5px; font-weight: 600; color: var(--muted); background: var(--surface-2); border-bottom: 1px solid var(--line); }
+.k2 .kh-bang-nho th.num { text-align: right; }
+.k2 .kh-bang-nho td { padding: 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.k2 .kh-bang-nho tfoot td { font-weight: 700; border-bottom: 0; }
+.k2 .kh-bang-nho .k2-sub { font-size: 11.5px; }
+.k2 .kh-dc-ds { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.k2 .kh-dc { padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); }
+.k2 .kh-dc-1 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.k2 .kh-dc-tan { margin-left: auto; font-size: 14px; white-space: nowrap; }
+.k2 .kh-dc-lo { margin-top: 3px; font-size: 12.5px; color: var(--ink-2); }
+.k2 .kh-dc-ly-do { margin-top: 4px; font-size: 13px; color: var(--ink); overflow-wrap: anywhere; }
+.k2 .kh-dc-ai { margin-top: 2px; font-size: 11.5px; color: var(--muted); }
+.k2 .kh-dc-nut { display: flex; justify-content: flex-end; gap: 6px; margin-top: 8px; }
+.k2 .kh-ok { border-color: var(--primary); color: var(--primary); }
+.k2 .kh-tc { border-color: var(--danger); color: var(--danger); }
+.k2 .kh-tc:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-tint); }
+.k2 .kh-ok.is-dam, .k2 .kh-ok.is-dam:hover { background: var(--primary); border-color: var(--primary); color: #fff; }
+.k2 .kh-tc.is-dam, .k2 .kh-tc.is-dam:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
+.k2 .kh-dc-xn { margin-top: 8px; }
+.k2 .kh-dc-xn label, .k2 .kh-o label { display: block; margin-bottom: 3px; font-size: 12px; color: var(--ink-2); }
+.k2 .kh-dc-xn textarea, .k2 .kh-o input, .k2 .kh-o textarea { display: block; width: 100%; padding: 7px 9px; border: 1px solid var(--line-2); border-radius: var(--r-sm); background: var(--surface); font: inherit; resize: vertical; }
+.k2 .kh-o input { height: 36px; }
+.k2 .kh-dc-xn textarea:focus, .k2 .kh-o input:focus, .k2 .kh-o textarea:focus { border-color: var(--primary-2); outline: none; box-shadow: 0 0 0 3px var(--primary-soft); }
+.k2 .kh-ct .is-loi { border-color: var(--danger) !important; box-shadow: 0 0 0 3px var(--danger-tint) !important; }
+.k2 .kh-form { display: flex; flex-direction: column; gap: 8px; margin: 0 0 8px; padding: 10px 12px; border: 1px solid var(--primary-2); border-radius: var(--r-md); background: var(--primary-soft); }
+.k2 .kh-form h5 { margin: 0; font-size: 13.5px; font-weight: 700; }
+.k2 .kh-form .kh-dc-nut { margin-top: 2px; }
+.k2 .kh-goi-y { margin: 0; font-size: 12px; color: var(--ink-2); }
+.k2 .kh-loi { margin-top: 6px; padding: 8px 10px; border-radius: var(--r-sm); background: var(--danger-tint); color: var(--danger); font-size: 13px; font-weight: 600; }
+.k2 .kh-form .kh-loi { margin-top: 0; }
+@media (min-width: 1181px) and (min-height: 640px) {
+  /* "một màn" cho tab Hàng gửi bãi: cột phải không cuộn cả khối nữa — bảng lô và khung chi tiết mỗi bên tự cuộn trong phần còn
+     lại của khung nhìn (trước đó khung chi tiết dài hơn màn, phải cuộn hai lớp mới thấy phiếu điều chỉnh); đầu bảng đứng yên */
+  .k2.k2--hang .work { overflow: hidden; }
+  .k2.k2--hang .work > .ov-main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  .k2.k2--hang .ov-main > [role="tabpanel"], .k2.k2--hang .ov-main .k2-panel-body, .k2.k2--hang .kh { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  .k2.k2--hang .ov-main > .tabs, .k2.k2--hang .kh-thanh { flex: none; }
+  .k2.k2--hang .kh-luoi { flex: 1 1 auto; min-height: 0; grid-template-rows: minmax(0, 1fr); align-items: stretch; }
+  .k2.k2--hang .kh-trai { min-height: 0; overflow-y: auto; }
+  .k2.k2--hang .kh-trai .k2-tbl-wrap { overflow: visible; }
+  .k2.k2--hang .kh-bang thead th { position: sticky; top: 0; z-index: 1; }
+  .k2.k2--hang .kh-ben { min-height: 0; overflow-y: auto; }
+}
+@media (max-width: 1180px) {
+  .k2 .kh-luoi { grid-template-columns: minmax(0, 1fr); }
+}
+@media print {
+  .k2 .kh-thanh, .k2 .kh-ben { display: none !important; }
+  .k2 .kh-luoi { grid-template-columns: 1fr; }
+}
