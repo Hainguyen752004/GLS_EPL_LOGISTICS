@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import FuelPlace, Part, Trip, TripExpense, Voucher
 from services import goi_ke_toan as KT
+from services import kho_qlsx as KQ
 from services.bao_mat import nguoi_hien_tai
 from services.gia_von import kho_goc
 from services.phan_quyen import thay_gia_kho
@@ -101,11 +102,27 @@ def _cho_xuat_phu_tung(db):
     return ra
 
 
+def _kho_qlsx(db):
+    """Tồn kho dầu + phụ tùng từ kho QLSX anh Tune (05/10) — cùng khoá kho tạm từng trả. Nhập / xuất trong tháng và lịch sử gần
+    đây xem ở màn Quản lý kho bên Web anh Tune (API tồn không trả theo tháng): để trống."""
+    from services import kho_ke_toan as KK
+    ton = KK.kho_dau(db)
+    dau = [{"place_id": k.id, "code": k.code, "name": k.name, "country": k.country, "active": k.active,
+            "ton_lit": (ton.get(k.id) or {}).get("ton_lit", 0.0), "gia_bq": (ton.get(k.id) or {}).get("gia_bq"),
+            "nhap_thang": None, "xuat_thang": None, "gan_day": []}
+           for k in db.query(FuelPlace).filter(FuelPlace.owner_type == "epl").order_by(FuelPlace.code)]
+    pt = [{"id": p["id"], "name": p["name"], "unit": p["unit"], "active": p["active"], "ton": p["qty"], "min_qty": p["min_qty"],
+           "gia_bq": p["unit_price"], "unit_price": p["unit_price"], "nhap_thang": None, "xuat_thang": None, "gan_day": []}
+          for p in KK.ds_phu_tung(db)]
+    return {"nhien_lieu": dau, "phu_tung": pt, "nguon": "qlsx"}
+
+
 @router.get("/api/kho-xem")
 def kho_xem(thang: str = "", db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     if user.role == "driver":
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Tài xế không xem kho."})
-    kho = KT.goi(db, "GET", "/api/lien-thong/kho/mat-hang" + ("?thang=" + thang if thang else ""), nguoi=user) or {}
+    kho = _kho_qlsx(db) if KQ.bat() else (KT.goi(db, "GET", "/api/lien-thong/kho/mat-hang" + ("?thang=" + thang if thang else ""),
+                                                 nguoi=user) or {})
     gia = thay_gia_kho(user.role)          # thủ kho, thủ kho phụ tùng, tổ sửa chữa, Bãi: không giá vốn (30/09)
 
     cho = _cho_xuat_dau(db)

@@ -36,6 +36,14 @@ $env:SalesDebtCollectionOffset__AllowedUserIds__0 = "846"
 $env:SalesDebtCollectionOffset__CountryId = "11"
 $env:SalesDebtCollectionOffset__PayableAccountRole = "PARTNER_PAYABLE"
 $env:SalesDebtCollectionOffset__ReceivableAccountRole = "CUSTOMER_GOODS"
+# Kho EPL trên source anh Tune (05/10): tích hợp stock-balance / stock-issues + chặn vượt tồn màn xuất Web cho chi nhánh EPL — bật SAU khi anh áp 20261005_logistics_stock_issue.sql
+$env:LogisticsStock__Enabled = "true"
+$env:LogisticsStock__AllowedUserIds__0 = "846"
+$env:LogisticsStock__BranchId = "1368"
+$env:LogisticsStock__CurrencyId = "26"
+$env:LogisticsStock__AmountDecimals = "0"
+# người được bấm "Cấp dầu theo phiếu đề nghị" trên Web anh Tune (tune = 846; thêm tài khoản thủ kho khi có)
+$env:LogisticsStock__FuelIssueUserIds__0 = "846"
 Start-Process -FilePath "dotnet" -ArgumentList (Join-Path $out "Backend.API.dll"), "--urls", $url -WorkingDirectory $api `
   -RedirectStandardOutput (Join-Path $sp "gls_api.log") -RedirectStandardError (Join-Path $sp "gls_api.err") -WindowStyle Hidden
 $ok = $false

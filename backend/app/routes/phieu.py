@@ -1341,8 +1341,11 @@ def ghi_su_kien(tid: str, data: dict = Body(...), db: Session = Depends(get_db),
                                      gia=dong.unit_price, tien_te=dong.currency, ty_gia=ty_gia(p, dong.currency),
                                      truck_no=p.truck_no, trip_doc_no=p.doc_no, expense_id=dong.id, company=p.company,
                                      section="repair", mo_ta="Xuất %s %s sửa xe %s" % (qty, part.name, p.truck_no),
-                                     note="Sửa xe trên đường — %s" % (e.note or ""))
+                                     note="Sửa xe trên đường — %s" % (e.note or ""),
+                                     owner_id=p.owner_id)   # xe thuê: đối tác của phiếu xuất bán bên kho anh Toàn (05/10)
                 dong.stock_move_id = r["move_id"]
+                if r.get("unit_price"):                         # kho QLSX (05/10): giá vốn bình quân bên đó lúc xuất
+                    dong.unit_price = r["unit_price"]
             e.expense_id = dong.id
             # Khoản sửa xe khai từ màn theo dõi là dữ liệu ĐÃ NHẬP: mục V vào thẳng hàng chờ kế toán kiểm.
             # Mục đã qua bước kiểm/ghi sổ/chi thì kéo về "đã nhập" và ghi rõ là mở lại vì có chi mới.
@@ -2073,8 +2076,11 @@ def duyet_bao_hong(tid: str, eid: str, data: dict = Body(...), db: Session = Dep
                                  gia=dong.unit_price, tien_te=dong.currency, ty_gia=ty_gia(p, dong.currency),
                                  truck_no=p.truck_no, trip_doc_no=p.doc_no, expense_id=dong.id, company=p.company,
                                  section="repair", mo_ta="Xuất %s %s sửa xe %s" % (qty, part.name, p.truck_no),
-                                 note="Sửa xe trên đường (tài xế báo) — %s" % (e.note or ""))
+                                 note="Sửa xe trên đường (tài xế báo) — %s" % (e.note or ""),
+                                 owner_id=p.owner_id)   # xe thuê: đối tác của phiếu xuất bán bên kho anh Toàn (05/10)
             dong.stock_move_id = r["move_id"]
+            if r.get("unit_price"):                             # kho QLSX (05/10): giá vốn bình quân bên đó lúc xuất
+                dong.unit_price = r["unit_price"]
         e.status = "approved"; e.kind = "repair"; e.expense_id = dong.id
         BTC.chan_sua_sau_khoa(db, p, truoc_khoa)   # phiếu đã khoá: lệch bút toán khoá → 409, phụ tùng vừa xuất được trả lại kho
         s = _muc_cua(db, p)["repair"]
@@ -2167,6 +2173,14 @@ def xoa_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_t
     if da_cap and user.role != "admin":
         raise HTTPException(409, {"ma": "DA_CAP_PHAT", "loi": "Phiếu đã có %s được cấp (%s), không xoá được."
                                   % ("phiếu đề nghị xuất kho nhiên liệu / đề nghị tạm ứng", ", ".join(v.doc_no or v.id for v in da_cap))})
+    # 05/10: dầu cấp ở kho QLSX anh Tune (stock_move_id "qlsx:<số phiếu kho>", services/ban_giao_dau) — bên này không trả kho bên đó
+    # được; chặn cả Sếp để không còn phiếu xuất kho bên đó cho một phiếu đã xoá.
+    from services import ban_giao_dau as BGD
+    qlsx = sorted({e.stock_move_id[len(BGD.TIEN_TO_MV):] for e in _dong_chi(db, p)
+                   if (e.stock_move_id or "").startswith(BGD.TIEN_TO_MV)})
+    if qlsx:
+        raise HTTPException(409, {"ma": "DA_CAP_KHO_QLSX", "loi": "Phiếu %s đã cấp dầu ở kho QLSX (phiếu kho %s) — huỷ phiếu xuất kho bên "
+                                                                  "đó trước." % (p.doc_no, ", ".join(qlsx))})
     # phiếu chi tạm ứng / chi mục V–VI bên hệ kế toán (01/10): chưa ghi sổ thì rút bên đó; đã chi thì chặn kể cả Sếp — tiền
     # đã ra khỏi quỹ
     CHI.rut(db, trip_id=p.id)
@@ -2184,7 +2198,7 @@ def xoa_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_t
     # giữ tờ xuất kho cho một phiếu không còn.
     for e in _dong_chi(db, p):
         if e.section == "repair" and e.source == "kho" and e.stock_move_id:
-            KK.huy_xuat(db, user, move_id=e.stock_move_id)
+            KK.huy_xuat(db, user, move_id=e.stock_move_id, khoa="trip_expense:" + e.id)   # kho QLSX: huỷ theo SourceRef
     # Dầu mục III đã xuất (ghi sổ, hoặc thủ kho cấp theo phiếu lĩnh): trả về kho bên trang kế toán, rút PXK_NL. Nhiều
     # dòng cùng một kho dùng chung một lần cấp → trả MỘT lần cho mỗi lần xuất.
     for mv in sorted({e.stock_move_id for e in _dong_chi(db, p) if e.section == "fuel" and e.source == "kho" and e.stock_move_id}):

@@ -61,6 +61,7 @@ for r in (dang_nhap, danh_muc, tuyen, phieu, phieu_linh, tat_toan, theo_doi, vi_
     app.include_router(r.router)
 app.include_router(__import__("routes.ho_so_do", fromlist=["router"]).router)   # Hồ sơ DO hai bên (02/10) — chỉ đọc
 app.include_router(__import__("routes.tat_toan_doi_tac", fromlist=["router"]).router)   # Tất toán đối tác (02/10)
+app.include_router(__import__("routes.ban_giao_dau", fromlist=["router"]).router)   # Phiếu đề nghị xuất dầu → kho QLSX (05/10)
 
 # Giao diện: / → index.html ; mọi tệp khác lấy thẳng từ thư mục frontend
 app.mount("/css", StaticFiles(directory=os.path.join(FRONTEND, "css")), name="css")

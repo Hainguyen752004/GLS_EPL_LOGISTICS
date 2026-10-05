@@ -29,6 +29,15 @@ def kiem(u=Depends(may_ke_toan_goi)):
 
 @router.get("/api/lien-thong/thu")
 def thu(db: Session = Depends(get_db), user=Depends(can_vai("admin"))):
+    from services import kho_qlsx as KQ
+    if KQ.bat():                         # 05/10: kho ở hệ anh Tune — thử bằng một lần đọc tồn
+        t0 = time.time()
+        try:
+            n = len(KQ.ton(db, hang=(KQ.MA_DAU,)))
+            return {"ok": True, "kho": "qlsx", "ms": int((time.time() - t0) * 1000), "so_dong_ton": n}
+        except HTTPException as e:
+            d = e.detail if isinstance(e.detail, dict) else {"loi": str(e.detail)}
+            return {"ok": False, "kho": "qlsx", "ma": d.get("ma"), "loi": d.get("loi")}
     goc, token = KT.cau_hinh(db)
     t0 = time.time()
     ra = {"api": goc, "co_token_nhan": bool(token_nhan_ke_toan(db))}

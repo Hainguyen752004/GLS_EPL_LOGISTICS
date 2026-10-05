@@ -363,8 +363,11 @@ def xuat_xe(db, v, chi_tiet=False, vai=None):
         # phiếu nào, nhưng vẫn là tiền sửa của chính chiếc xe này — tab Sửa chữa phải thấy cả hai nguồn.
         # Lệnh ở trang kế toán từ 28/09 (đợt 6): hỏi bên đó; bên đó tắt thì màn Xe vẫn mở, báo rõ phần thiếu.
         r["sua_chua_lenh_loi"] = None
+        from services import kho_qlsx as KQ
         try:
-            for e in KT.goi(db, "GET", "/api/lien-thong/sua-chua/xe/" + v.id) or []:
+            if KQ.bat():                 # 05/10: lệnh sửa chữa ngoài chuyến ở kho tạm đã tắt — lập ở Web anh Tune
+                r["sua_chua_lenh_loi"] = "Lệnh sửa chữa ngoài chuyến đã chuyển sang hệ kế toán (Web anh Tune) — ở đây chỉ còn sửa chữa theo phiếu."
+            for e in ([] if KQ.bat() else KT.goi(db, "GET", "/api/lien-thong/sua-chua/xe/" + v.id) or []):
                 e["tien_lak"] = round((e.get("qty") or 0) * (e.get("unit_price") or 0) * _ty_gia_sc(db, e.get("currency")))
                 sua.append(e)
         except HTTPException as loi:

@@ -40,6 +40,7 @@ from services import chung_tu as CT
 from services import tai_khoan as TK
 from services import gia_von as GV
 from services import kho_ke_toan as KK
+from services import kho_qlsx as KQ
 
 router = APIRouter()
 TIEN_TO = {"fuel": "PLNL", "advance": "PTU"}
@@ -148,7 +149,7 @@ def xuat_phieu_linh(db, v, goc="", vai=None, nap=None):
             "qty_l": v.qty_l, "amount_lak": v.amount_lak, "status": v.status, "token": v.token,
             # màn Cấp phát ở trang kế toán (28/09): đường tra cứu / mã QR mở thẳng bên đó
             "qr": None if v.kind == "advance" else "/api/vouchers/%s/qr.png" % v.id,
-            "tra_cuu": None if v.kind == "advance" else (KK.web_ke_toan(db) or goc or "") + "/#/cap-phat?ma=" + v.token,
+            "tra_cuu": None if v.kind == "advance" or KQ.bat() else (KK.web_ke_toan(db) or goc or "") + "/#/cap-phat?ma=" + v.token,
             "issued_by": v.issued_by, "issued_at": v.issued_at.isoformat() if v.issued_at else None,
             "granted_by": v.granted_by, "granted_at": v.granted_at.isoformat() if v.granted_at else None,
             "granted_qty": v.granted_qty, "granted_note": v.granted_note, "note": v.note,
@@ -414,7 +415,8 @@ def cap_phat(vid: str, d: dict = Body(default={}), db: Session = Depends(get_db)
             r = gd.xuat_dau(khoa="voucher:" + v.id, place_id=v.place_id, qty_l=lit, ngay=dt.date.today(), doc_no=v.doc_no,
                             truck_no=p.truck_no, expense_id=dong[0].id, voucher_id=v.id, voucher_doc_no=v.doc_no, trip_no=p.doc_no,
                             company=p.company, gia_du_phong=(dong[0].unit_price or 0) * ty_gia(p, dong[0].currency or "LAK"),
-                            mo_ta="Cấp %s lít dầu theo %s" % (lit, v.doc_no), note="Cấp theo phiếu đề nghị %s" % v.doc_no)
+                            mo_ta="Cấp %s lít dầu theo %s" % (lit, v.doc_no), note="Cấp theo phiếu đề nghị %s" % v.doc_no,
+                            owner_id=p.owner_id)        # xe thuê: kho tạm đặt đối tác EPLCX-<owner_id> lên phiếu xuất bán (05/10)
             for e in dong:
                 e.unit_price, e.currency = r["unit_price"], "LAK"
                 e.stock_move_id = r["move_id"]
@@ -469,7 +471,8 @@ def anh_qr(vid: str, request: Request, db: Session = Depends(get_db)):
     if v.kind == "advance":
         raise HTTPException(404, {"ma": "TAM_UNG_KHONG_QR", "loi": "Tờ tạm ứng không có mã QR — tài xế lĩnh tiền ở quỹ kế toán, "
                                                                  "đưa số DO cho thủ quỹ."})
-    noi_dung = (KK.web_ke_toan(db) or str(request.base_url).rstrip("/")) + "/#/cap-phat?ma=" + v.token
+    # kho QLSX (05/10): thủ kho tìm theo SỐ PHIẾU ở màn Quản lý kho bên Web anh Tune — QR chứa số phiếu, không trỏ kho tạm
+    noi_dung = v.doc_no if KQ.bat() else (KK.web_ke_toan(db) or str(request.base_url).rstrip("/")) + "/#/cap-phat?ma=" + v.token
     try:
         import qrcode
     except ImportError:

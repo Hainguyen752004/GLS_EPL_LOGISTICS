@@ -171,8 +171,14 @@ def main():
     eng = create_engine(URL, connect_args={"options": "-c timezone=UTC"})
     conn = eng.connect()
     ngoai = conn.begin()
+    from sqlalchemy import text
+    conn.execute(text("SET LOCAL lock_timeout = '10s'"))     # 8011 chạy song song: chờ khoá quá 10 giây thì hỏng, không treo
     for t in ("gui_so_nhien_lieu_tune", "can_tru_tune"):
         M.Base.metadata.tables[t].create(bind=conn, checkfirst=True)
+    sys.path.insert(0, os.path.join(GOC, "kiem"))
+    import _mau_kbaz as MAU
+    MAU.chan_kho_qlsx()
+    MAU.dung_mau(conn)                                       # d7 đã dọn bộ mẫu cũ (03/10): dựng lại trong giao dịch, rollback xoá
     db = sessionmaker(bind=conn, autoflush=False)()
     try:
         print("A. hai phiếu mẫu THU-KBAZ")

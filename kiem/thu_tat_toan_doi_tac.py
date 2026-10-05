@@ -28,6 +28,7 @@ if "_d7" not in URL.rsplit("/", 1)[-1]:
     sys.exit("Chuỗi nối không trỏ bản sao _d7 — bài chỉ chạy trên bản sao.")
 os.environ["DATABASE_URL"] = URL
 sys.path.insert(0, os.path.join(GOC, "backend", "app"))
+sys.path.insert(0, os.path.join(GOC, "kiem"))
 try:
     sys.stdout.reconfigure(encoding="utf-8")
 except AttributeError:
@@ -38,6 +39,7 @@ from sqlalchemy import create_engine                    # noqa: E402
 from sqlalchemy.orm import Session                      # noqa: E402
 
 import models as M                                      # noqa: E402
+import _mau_kbaz as MAU                                 # noqa: E402
 from routes import de_nghi as RDN                       # noqa: E402
 from routes import phieu as RP                          # noqa: E402
 from routes import tat_toan as RTT                      # noqa: E402
@@ -190,6 +192,7 @@ NL._goi = gia_nl_goi
 CHI._goi = gia_chi_goi
 KT.goi = gia_kho
 GT.cau_hinh = lambda dang_nhap=True: ("http://ke-toan-gia.local", "token-gia")
+MAU.chan_kho_qlsx()                                       # bài này dùng bộ giả kho tạm; không gọi kho QLSX thật
 
 
 def nguoi(vai, ten="Thử"):
@@ -227,43 +230,7 @@ class Phien:
         return False
 
 
-def _gia_tri(cot, v):
-    """Chữ trong bản dump (định dạng COPY) → giá trị theo kiểu cột."""
-    import datetime as dt
-    from sqlalchemy import Boolean, Date, DateTime, Float, Integer, Numeric
-    if v is None:
-        return None
-    k = cot.type
-    if isinstance(k, Boolean):
-        return v in ("t", "true", "1")
-    if isinstance(k, Integer):
-        return int(v)
-    if isinstance(k, (Float, Numeric)):
-        return float(v)
-    if isinstance(k, DateTime):
-        v = v.replace(" ", "T").split("+")[0]
-        if "." in v:                                            # Python 3.10: phần lẻ giây phải đủ 6 chữ số
-            v = v.split(".")[0] + "." + v.split(".")[1].ljust(6, "0")[:6]
-        return dt.datetime.fromisoformat(v)
-    if isinstance(k, Date):
-        return dt.date.fromisoformat(v)
-    return v
-
-
-def _dung_mau(conn):
-    """Hai phiếu mẫu THU-KBAZ-T1/EPL (xe thuê giao, 200 L dầu kho xuất bán 33.000, tạm ứng 3 dòng tiền mặt, chipping ghi nợ NCC
-    GL021020269) và THU-KBAZ-G1/EPL (xe nhà gom, tạm ứng 250.000 đã chi, dầu mua dọc đường 30 L tự chi) — dựng TRONG giao dịch của
-    ca từ kiem/mau_thu_kbaz.json (tách từ bản sao d7 trước lần dọn 02/10 22:12). d7 đã dọn bộ mẫu cũ (03/10) nên bài không còn
-    dựa vào dữ liệu có sẵn; rollback cuối ca xoá luôn."""
-    from sqlalchemy import text
-    if conn.execute(text("select 1 from trips where doc_no = 'THU-KBAZ-T1/EPL'")).first():
-        return
-    mau = json.load(open(os.path.join(GOC, "kiem", "mau_thu_kbaz.json"), encoding="utf-8"))
-    for ten in ("trips", "trip_sections", "trip_expenses", "trip_goods", "vouchers", "chi_tune", "gui_so_tune", "but_toan_cho"):
-        bang = M.Base.metadata.tables[ten]
-        dong = [{c: _gia_tri(bang.c[c], v) for c, v in r.items() if c in bang.c} for r in mau.get(ten) or []]
-        if dong:
-            conn.execute(bang.insert(), dong)
+_dung_mau = MAU.dung_mau
 
 
 def phieu(db, so):

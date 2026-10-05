@@ -161,12 +161,20 @@ def danh_dau_tra(db, user, owner_payment_id, cac_dong):
 
 # ================================================================ trừ hàng chủ xe mua ở quầy (kho tạm giữ phiếu bán)
 def _kho(db, method, duong, body=None, user=None):
+    from services import kho_qlsx as KQ
+    if KQ.bat():                                    # 05/10: bỏ kho tạm — bán hàng quầy chuyển sang Web anh Tune
+        raise HTTPException(409, {"ma": "QUAY_DA_TAT", "loi": "Bán hàng quầy cho chủ xe đã chuyển sang hệ kế toán (Web anh Tune) — "
+                                                              "trang điều xe không giữ / trừ phiếu bán nữa."})
     from services import goi_ke_toan as KT          # kho tạm tắt → 503 CHUA_NOI_KE_TOAN: chặn, không trả dư cho chủ xe
     return KT.goi(db, method, duong, body, nguoi=user)
 
 
 def hang_cho_tru(db, owner_id, user):
-    """Phiếu bán chủ xe mua ở quầy CHƯA trừ (chưa thu, chưa nằm đề nghị nào) — cũ trước. Kho tạm không nối được thì ném 503."""
+    """Phiếu bán chủ xe mua ở quầy CHƯA trừ (chưa thu, chưa nằm đề nghị nào) — cũ trước. Kho tạm không nối được thì ném 503.
+    Kho QLSX (05/10): quầy không còn ở đây → không có phiếu bán chờ trừ."""
+    from services import kho_qlsx as KQ
+    if KQ.bat():
+        return []
     return _kho(db, "GET", "/api/lien-thong/ban-hang/cho-tru?owner_id=%s" % quote(owner_id), user=user) or []
 
 

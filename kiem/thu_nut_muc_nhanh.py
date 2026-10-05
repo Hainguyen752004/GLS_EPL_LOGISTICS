@@ -80,6 +80,9 @@ def gia_tune(method, duong, body=None):
 
 
 KT.goi = gia_kho
+sys.path.insert(0, os.path.join(GOC, "kiem"))
+import _mau_kbaz as MAU  # noqa: E402
+MAU.chan_kho_qlsx()                # bài này dùng bộ giả kho tạm; không gọi kho QLSX thật
 CHI._goi = gia_tune
 ENG = create_engine(URL, connect_args={"options": "-c timezone=UTC"})
 
@@ -120,6 +123,8 @@ class Ca:
     def __enter__(self):
         self.c = ENG.connect()
         self.ng = self.c.begin()
+        from sqlalchemy import text
+        self.c.execute(text("SET LOCAL lock_timeout = '10s'"))     # 8011 chạy song song: chờ khoá quá 10 giây thì hỏng, không treo
         for t in ("gui_so_nhien_lieu_tune", "can_tru_tune"):
             M.Base.metadata.tables[t].create(bind=self.c, checkfirst=True)
         self.db = Session(bind=self.c, join_transaction_mode="create_savepoint", autoflush=False)
