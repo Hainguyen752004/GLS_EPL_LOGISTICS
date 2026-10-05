@@ -10,6 +10,9 @@ GIAO ƯỚC (routes/ban_giao_dau.py gọi — giữ cố định):
     goi(db, v, p=None) -> dict      gói một phiếu (xem _goi): DO, xe, xe nhà / xe thuê, đối tác, tài xế, kho, lít, dòng, cấp được không
     danh_sach(db, status, q, kho, page, page_size) -> (tong, [dict])
     ghi_da_cap(db, v, d) -> dict    báo đã cấp; gọi lại cùng số phiếu kho → trả lại, không ghi lần hai (replayed = True)
+    tim(db, ref) -> Voucher | None  tờ PLNL theo mã tờ HOẶC SourceRef (bên kho chỉ giữ SourceRef)
+    ghi_da_huy(db, ref, d) -> dict  phiếu xuất kho QLSX của tờ bị huỷ / xoá → tờ về "chờ cấp", gỡ stock_move_id + đơn giá dòng dầu;
+                                    DO đã khoá → 409 DA_KHOA; gọi lại khi tờ đã về chờ → replayed (05/10)
 
 Dòng chi được cấp mang `stock_move_id = "qlsx:<số phiếu kho>"` (TIEN_TO_MV) và `unit_price` = giá vốn bình quân kho QLSX trả về —
 bút toán khoá phiếu (but_toan_cho.dong_xuat_kho: 625/1371 xe nhà, 607/1371 xe thuê) đọc đúng hai trường đó như với kho tạm.
@@ -19,7 +22,9 @@ import re
 
 from fastapi import HTTPException
 
-from models import DoiTuongTune, FuelPlace, Trip, TripExpense, Voucher
+from sqlalchemy import func
+
+from models import DoiTuongTune, FuelPlace, Trip, TripExpense, TripLog, Voucher
 from services import ban_giao as BG
 from services import gia_von as GV
 from services.chi_tune import LOAI_DOI_TUONG
@@ -37,6 +42,24 @@ def _loi(ma, loi, code=422):
 
 def source_ref(v):
     return re.sub(r"[^A-Za-z0-9_.:-]", ".", v.doc_no or ("PLNL-" + v.id))[:100]
+
+
+def tim(db, ref):
+    """Tờ PLNL theo mã tờ, không có thì theo SourceRef (số PLNL đã đổi ký tự lạ thành ".") — phía kho chỉ giữ SourceRef."""
+    ref = str(ref or "").strip()
+    if not ref:
+        return None
+    v = db.get(Voucher, ref)
+    if v is not None:
+        return v
+    if not ref.startswith("PLNL-"):
+        return None
+    return (db.query(Voucher).filter(Voucher.kind == "fuel",
+                                     func.regexp_replace(Voucher.doc_no, "[^A-Za-z0-9_.:-]", ".", "g") == ref).first())
+
+
+def _nhat_ky(db, p, nguoi, viec):
+    db.add(TripLog(trip_id=p.id, user_name=(nguoi or "QLSX")[:80], role="qlsx", action=viec[:500]))
 
 
 def _iso(x):
@@ -213,5 +236,47 @@ def ghi_da_cap(db, v_id, d):
     v.granted_qty, v.granted_note = lit, ly_do or None
     v.status, v.granted_by, v.granted_at = "da_cap", "%s (kho QLSX %s)" % (nguoi, so), dt.datetime.utcnow()
     BTC.chan_sua_sau_khoa(db, p, truoc_khoa)    # phiếu đã khoá mà lệch bút toán → 409 DA_KHOA, không ghi
+    _nhat_ky(db, p, nguoi, "Cấp %s lít dầu theo %s ở kho QLSX — phiếu xuất kho %s" % (lit, v.doc_no, so))
     db.commit()
     return dict(goi(db, v, p), replayed=False)
+
+
+def ghi_da_huy(db, ref, d):
+    """Kho QLSX đã huỷ / xoá phiếu xuất của tờ `ref` (mã tờ hoặc SourceRef) → tờ về "chờ cấp" để cấp lại.
+
+    d = {source_ref?, stock_doc_no?, reason?, cancelled_by?}. Gỡ `stock_move_id = qlsx:<số phiếu>` và đơn giá (giá vốn) của các dòng
+    dầu đã cấp theo tờ; cấp thiếu một dòng thì trả số lít dòng về số đề nghị. DO đã khoá → 409 (bút toán khoá phiếu đã theo lần cấp)."""
+    v0 = tim(db, ref)
+    if v0 is None or v0.kind != "fuel":
+        _loi("KHONG_THAY", "Không có phiếu đề nghị xuất kho nhiên liệu %s." % ref, 404)
+    v = db.query(Voucher).filter(Voucher.id == v0.id).with_for_update().first()
+    sr = str(d.get("source_ref") or "").strip()
+    if sr and sr != source_ref(v):
+        _loi("SAI_SOURCE_REF", "SourceRef không khớp phiếu %s (mong %s)." % (v.doc_no, source_ref(v)), 409)
+    so = str(d.get("stock_doc_no") or "").strip()
+    p = db.get(Trip, v.trip_id)
+    if p is None:
+        _loi("KHONG_THAY", "Phiếu đề nghị %s không còn phiếu DO." % v.doc_no, 404)
+    dong = _dong_da_cap(db, p, v)
+    if v.status == "cho" and not dong:
+        return dict(goi(db, v, p), replayed=True)          # đã mở lại từ lần báo trước
+    if v.status == "huy" and not dong:
+        return dict(goi(db, v, p), replayed=True)          # tờ đã huỷ ở đây — không còn gì để mở lại
+    if not dong:
+        _loi("KHONG_PHAI_KHO_QLSX", "Phiếu %s không cấp ở kho QLSX (không có dòng qlsx:…) — không mở lại từ kho QLSX." % v.doc_no, 409)
+    if so and any(x.stock_move_id != TIEN_TO_MV + so for x in dong):
+        _loi("KHAC_PHIEU_KHO", "Phiếu %s cấp theo phiếu kho %s, không phải %s." % (
+            v.doc_no, ", ".join(sorted({x.stock_move_id[len(TIEN_TO_MV):] for x in dong})), so), 409)
+    if p.locked:
+        _loi("DA_KHOA", "DO %s đã khoá ở trang điều xe — mở khoá DO trước rồi mới huỷ phiếu kho cấp dầu." % p.doc_no, 409)
+    cu = sorted({x.stock_move_id[len(TIEN_TO_MV):] for x in dong})
+    for e in dong:
+        e.stock_move_id, e.unit_price = None, 0
+    if len(dong) == 1 and v.qty_l:
+        dong[0].qty = v.qty_l                    # cấp thiếu đã ghi số thật lên dòng → trả về số đề nghị
+    v.status, v.granted_by, v.granted_at, v.granted_qty, v.granted_note = "cho", None, None, None, None
+    ly_do = str(d.get("reason") or "").strip()[:200]
+    _nhat_ky(db, p, str(d.get("cancelled_by") or "").strip(), "Kho QLSX huỷ phiếu xuất %s của %s — mở lại phiếu đề nghị%s" % (
+        ", ".join(cu), v.doc_no, (" (lý do: %s)" % ly_do) if ly_do else ""))
+    db.commit()
+    return dict(goi(db, v, p), replayed=False, cancelled_stock_doc_no=", ".join(cu))

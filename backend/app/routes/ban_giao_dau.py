@@ -5,6 +5,8 @@
     GET  /api/handover/fuel-vouchers                     danh sách tờ PLNL — mặc định đang chờ cấp (status=cho); q, warehouse_code
     GET  /api/handover/fuel-vouchers/{voucher_id}         một tờ (DO, xe, xe nhà / xe thuê, đối tác, tài xế, kho, lít, dòng, cấp được không)
     POST /api/handover/fuel-vouchers/{voucher_id}/issued  kho QLSX báo đã cấp (số phiếu kho, lít thật, giá vốn) — gọi lại an toàn
+    POST /api/handover/fuel-vouchers/{voucher_ref}/cancelled  kho QLSX báo đã huỷ phiếu xuất → tờ về chờ cấp (05/10) — gọi lại an toàn
+GET chi tiết và /cancelled nhận mã tờ HOẶC SourceRef (bên kho chỉ giữ SourceRef).
 
 Gói và luật ở services/ban_giao_dau.py; route chỉ đọc tham số, gọi service, bọc {message, data}.
 """
@@ -14,7 +16,6 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Voucher
 from services import ban_giao_dau as BGD
 from services.bao_mat import may_qlsx_goi
 
@@ -37,7 +38,7 @@ def danh_sach(status: Optional[str] = Query("cho", description="cho · da_cap ·
 
 @router.get("/api/handover/fuel-vouchers/{voucher_id}")
 def chi_tiet(voucher_id: str, db: Session = Depends(get_db), may=Depends(may_qlsx_goi)):
-    v = db.get(Voucher, voucher_id)
+    v = BGD.tim(db, voucher_id)
     return {"message": "Phiếu đề nghị xuất kho nhiên liệu %s." % (v.doc_no if v else voucher_id), "data": BGD.goi(db, v)}
 
 
@@ -47,3 +48,10 @@ def da_cap(voucher_id: str, d: dict = Body(...), db: Session = Depends(get_db), 
     return {"message": ("Đã ghi nhận trước đó — phiếu %s cấp theo phiếu kho %s." if x.get("replayed")
                         else "Đã ghi nhận cấp dầu phiếu %s theo phiếu kho %s.") % (x["voucher_no"], x.get("stock_doc_no")),
             "data": x}
+
+
+@router.post("/api/handover/fuel-vouchers/{voucher_ref}/cancelled")
+def da_huy(voucher_ref: str, d: dict = Body(default={}), db: Session = Depends(get_db), may=Depends(may_qlsx_goi)):
+    x = BGD.ghi_da_huy(db, voucher_ref, d or {})
+    return {"message": ("Phiếu %s đã ở trạng thái chờ cấp — không đổi gì." if x.get("replayed")
+                        else "Đã mở lại phiếu %s (kho QLSX huỷ phiếu xuất).") % x["voucher_no"], "data": x}

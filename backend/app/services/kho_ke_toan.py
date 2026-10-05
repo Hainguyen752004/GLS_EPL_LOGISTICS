@@ -256,9 +256,10 @@ class GiaoDichKho:
         self.db.info.pop("_hh_ke_toan", None)
         return r
 
-    def huy_xuat(self, move_id):
-        """Trả lại một lần xuất cũ (bỏ phiếu bán…) — làm ngay; bên này hỏng sau đó thì không xuất lại được, báo rõ."""
-        return huy_xuat(self.db, self.nguoi, move_id=move_id)
+    def huy_xuat(self, move_id, khoa=None):
+        """Trả lại một lần xuất cũ (bỏ phiếu bán…) — làm ngay; bên này hỏng sau đó thì không xuất lại được, báo rõ.
+        Kho QLSX cần `khoa` ("trip_expense:<mã dòng>") để dựng SourceRef phiếu xuất cần huỷ."""
+        return huy_xuat(self.db, self.nguoi, move_id=move_id, khoa=khoa)
 
     def _huy_het(self):
         for loai, mv in reversed(self.da_xuat):

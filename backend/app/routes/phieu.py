@@ -2177,7 +2177,7 @@ def xoa_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_t
     # được; chặn cả Sếp để không còn phiếu xuất kho bên đó cho một phiếu đã xoá.
     from services import ban_giao_dau as BGD
     qlsx = sorted({e.stock_move_id[len(BGD.TIEN_TO_MV):] for e in _dong_chi(db, p)
-                   if (e.stock_move_id or "").startswith(BGD.TIEN_TO_MV)})
+                   if e.section == "fuel" and (e.stock_move_id or "").startswith(BGD.TIEN_TO_MV)})   # phụ tùng mục V: KK.huy_xuat lo
     if qlsx:
         raise HTTPException(409, {"ma": "DA_CAP_KHO_QLSX", "loi": "Phiếu %s đã cấp dầu ở kho QLSX (phiếu kho %s) — huỷ phiếu xuất kho bên "
                                                                   "đó trước." % (p.doc_no, ", ".join(qlsx))})

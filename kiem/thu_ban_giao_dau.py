@@ -199,6 +199,55 @@ def main():
         except Exception as e:                                   # noqa: BLE001
             ma = (getattr(e, "detail", None) or {}).get("ma") if isinstance(getattr(e, "detail", None), dict) else str(e)
             dung(ma == "DA_CAP_KHO_QLSX", "xoá phiếu (Sếp) → 409 DA_CAP_KHO_QLSX", ma)
+
+        print("== 9. kho QLSX huỷ phiếu xuất → mở lại phiếu đề nghị (/cancelled)")
+        sr4 = "PLNL-G4-0004-10.EPL-1"
+        r = c.get("/api/handover/fuel-vouchers/" + sr4, headers=H)
+        dung(r.status_code == 200 and r.json()["data"]["voucher_id"] == v4.id, "chi tiết theo SourceRef", r.status_code)
+        url9 = "/api/handover/fuel-vouchers/%s/cancelled" % sr4
+        r = c.post(url9, json={"source_ref": sr4, "stock_doc_no": "1368-XTH-261005-0099"}, headers=H)
+        dung(r.status_code == 409 and r.json()["detail"]["ma"] == "KHAC_PHIEU_KHO", "khác số phiếu kho → 409 KHAC_PHIEU_KHO", r.status_code)
+        r = c.post(url9, json={"source_ref": "PLNL-khac"}, headers=H)
+        dung(r.status_code == 409 and r.json()["detail"]["ma"] == "SAI_SOURCE_REF", "SourceRef không khớp → 409", r.status_code)
+        db.get(M.Trip, p4.id).locked = True
+        db.commit()
+        r = c.post(url9, json={"source_ref": sr4, "stock_doc_no": "1368-XTH-261005-0001"}, headers=H)
+        db.expire_all()
+        dung(r.status_code == 409 and r.json()["detail"]["ma"] == "DA_KHOA" and "mở khoá DO" in r.json()["detail"]["loi"]
+             and db.get(M.Voucher, v4.id).status == "da_cap", "DO đã khoá → 409 DA_KHOA, không mở lại", r.json().get("detail"))
+        db.get(M.Trip, p4.id).locked = False
+        db.commit()
+        r = c.post(url9, json={"source_ref": sr4, "stock_doc_no": "1368-XTH-261005-0001", "reason": "Xoá phiếu trên màn kho Web",
+                               "cancelled_by": "tune"}, headers=H)
+        x9 = r.json().get("data") or {}
+        db.expire_all()
+        dong9 = [d for d in db.query(M.TripExpense).filter(M.TripExpense.trip_id == p4.id, M.TripExpense.section == "fuel").all()
+                 if d.place_id == v4.place_id or d.place_id is None]
+        dung(r.status_code == 200 and x9.get("status") == "cho" and x9.get("replayed") is False and x9.get("can_issue")
+             and db.get(M.Voucher, v4.id).granted_qty is None
+             and all(d.stock_move_id is None and (d.unit_price or 0) == 0 for d in dong9 if d.source == "kho"),
+             "mở lại: tờ chờ cấp, gỡ stock_move_id + đơn giá dòng dầu", (r.status_code, [(d.stock_move_id, d.unit_price) for d in dong9]))
+        nk = db.query(M.TripLog).filter(M.TripLog.trip_id == p4.id, M.TripLog.action.like("Kho QLSX huỷ phiếu xuất%")).all()
+        dung(len(nk) == 1 and "1368-XTH-261005-0001" in nk[0].action and nk[0].user_name == "tune", "ghi nhật ký phiếu",
+             [z.action for z in nk])
+        dung(not any(k[1].startswith("dau:qlsx:") for k in BTC.dong_xuat_kho(db, db.get(M.Trip, p4.id))),
+             "bút toán xuất kho của lần cấp đã bỏ")
+        ds = c.get("/api/handover/fuel-vouchers", headers=H).json()["data"]["items"]
+        dung(v4.doc_no in {z["voucher_no"] for z in ds}, "tờ về lại danh sách chờ cấp")
+        r = c.post(url9, json={"source_ref": sr4, "stock_doc_no": "1368-XTH-261005-0001"}, headers=H)
+        dung(r.status_code == 200 and r.json()["data"]["replayed"] is True, "báo lại → replayed, không đổi gì", r.json().get("message"))
+        r = c.post("/api/handover/fuel-vouchers/%s/cancelled" % v2.id, json={"stock_doc_no": "1368-XTH-261005-0002"}, headers=H)
+        db.expire_all()
+        d2 = [d for d in db.query(M.TripExpense).filter(M.TripExpense.trip_id == p2.id, M.TripExpense.section == "fuel").all()
+              if d.source == "kho" and (d.place_id or "") == v2.place_id]
+        dung(r.status_code == 200 and d2 and abs(d2[0].qty - 150) < 1e-9, "xe thuê cấp thiếu 120 → mở lại, dòng về 150 L đề nghị",
+             (r.status_code, [(d.qty, d.stock_move_id) for d in d2]))
+        v1 = db.query(M.Voucher).filter(M.Voucher.doc_no == "PLNL-G4-0001-10/EPL-1").one()
+        r = c.post("/api/handover/fuel-vouchers/%s/cancelled" % v1.id, json={}, headers=H)
+        dung(r.status_code == 409 and r.json()["detail"]["ma"] == "KHONG_PHAI_KHO_QLSX", "tờ cấp ở kho tạm → 409 KHONG_PHAI_KHO_QLSX",
+             r.status_code)
+        r = c.post("/api/handover/fuel-vouchers/PLNL-khong-co/cancelled", json={}, headers=H)
+        dung(r.status_code == 404, "SourceRef không có → 404", r.status_code)
     finally:
         app.dependency_overrides.clear()
         db.close()
