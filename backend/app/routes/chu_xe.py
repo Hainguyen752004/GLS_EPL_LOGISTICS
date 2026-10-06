@@ -77,7 +77,7 @@ def xuat_chu_xe(db, o, user=None, xe=None):
 def _cho_tra_lo(db, cac_chu):
     """Phần chờ trả (phiếu đã khoá chưa trả) của CẢ danh sách chủ xe — bốn câu thay cho (2 + số phiếu) câu MỖI chủ xe. Cùng
     công thức (tinh_phieu), cùng thứ tự cộng (ngày, số phiếu). Đường máy của trang kế toán tạm dùng hàm này đã bỏ (01/10);
-    kiem/thu_danh_muc_cu_moi.py còn so nó với cách tính từng phiếu. Không trừ phiếu đang nằm đề nghị trả bên kế toán —
+    (bài so cũ kiem/thu_danh_muc_cu_moi.py đã dời vào kiem/loi_thoi/ ngày 06/10.) Không trừ phiếu đang nằm đề nghị trả bên kế toán —
     phần đó xem chi_tune.cho_tra_chu_xe."""
     from routes.bao_cao import COT_TINH           # nạp lúc gọi: bao_cao cũng nạp các route khác, tránh vòng import
     ids = [o.id for o in cac_chu]

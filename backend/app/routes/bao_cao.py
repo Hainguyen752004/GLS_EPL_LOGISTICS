@@ -124,7 +124,7 @@ def tong_quan(thang: str = None, db: Session = Depends(get_db), user=Depends(ngu
 # Dữ liệu cả năm (24/09): tháng này bị ghi liên tục (nghìn chuyến / ngày). Đệm cả tháng thì mỗi lần ghi là cả tháng
 # phải cộng lại; đệm từng NGÀY thì ghi vào phiếu hôm nay chỉ hôm nay phải cộng lại — 29 ngày kia vẫn nguyên. Mỗi ngày
 # chỉ giữ những con số CỘNG DỒN được (tổng, số đếm, danh sách đã cắt ngắn); phần nào phụ thuộc "hôm nay" (đi lâu, trễ)
-# thì giữ dạng thô (ngày xuất xe) và tính lúc ghép. Công thức vẫn là tinh_phieu — kiem/thu_bao_cao_cu_moi.py so từng số.
+# thì giữ dạng thô (ngày xuất xe) và tính lúc ghép. Công thức vẫn là tinh_phieu — kiem/thu_dem_bao_cao.py (phần B) so từng số.
 def _cac_ngay(dau, cuoi):
     return [dau + dt.timedelta(days=i) for i in range((cuoi - dau).days + 1)]
 
@@ -570,7 +570,7 @@ def _tdt_lo(db, cac_ngay, q, transport_status, finance_status, company, quy):
 
 
 def _theo_doi_tong_tinh(db, dau, cuoi, q, transport_status, finance_status, company, quy):
-    """Cách tính cả tháng một lượt (trước 24/09) — GIỮ làm thước đo: kiem/thu_bao_cao_cu_moi.py so với bản theo ngày."""
+    """Cách tính cả tháng một lượt (trước 24/09) — GIỮ làm thước đo: kiem/thu_dem_bao_cao.py (phần B) so với bản theo ngày."""
     loc = _loc_td(db.query(Trip.id).filter(*_trong(dau, cuoi)), q, transport_status, finance_status, company)
     con = loc.subquery()
     ds = db.query(*COT_TINH).filter(Trip.id.in_(db.query(con.c.id))).all()

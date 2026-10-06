@@ -42,29 +42,14 @@ frontend/
   js/ngon_ngu.js     từ điển Việt · Lào · Anh (1.282 khoá) — SINH TỰ ĐỘNG, đừng sửa tay
   modules/<tên>/     <tên>.html · <tên>.css · <tên>.js — sai đâu mở đúng thư mục đó
 kiem/
-  thu_giao_dien.js   thử toàn giao diện trên jsdom, nối máy chủ thật
-  ra_vai.js          RÀ TỪNG VAI: đăng nhập 13 tài khoản, mở mọi module vai đó thấy, báo lỗi JS · màn trống · khoá chưa dịch · Bãi lộ tiền
-  ra_tong_quan.js    RÀ RIÊNG MÀN TỔNG QUAN: từng vai thấy ô số nào, bấm thử từng chip, tháng rỗng, bốn ngôn ngữ
-  ra_xe.js           RÀ RIÊNG MÀN XE: từng vai, bấm thử bảy tab hồ sơ, đổi sang rơ-moóc, bốn ngôn ngữ
-  ra_tai_xe.js       RÀ RIÊNG MÀN TÀI XẾ: cột Kết luận, ngăn trượt, năm tab hồ sơ, bốn ngôn ngữ
-  thu_ngoai_tuyen.js màn Cấp phát khi MẤT MẠNG: lưu đệm · hàng đợi · tự gửi khi có mạng lại
-  thu_phieu_linh.py  luồng phiếu lĩnh: QR · thủ kho cấp dầu · khai đổ dọc đường · tất toán
-  thu_vi_tri.py      GPS thật: ai được gửi · lọc điểm dày · GPS cũ thì lùi về mốc
-  thu_hai_do.py      LUỒNG HAI DO: gom → nhập kho → giao lấy lô → xuất kho → hao hụt
-  thu_luong_api.py   đi trọn luồng: lập phiếu → kiểm → ghi sổ → chi → hoá đơn → thu tiền
-  thu_tien_te.py     nhiều tiền tệ: cước Nhân dân tệ, khách trả Kíp, thu nhiều lần
-  thu_ty_gia.py      màn Tỷ giá: ai sửa, lịch sử, phiếu cũ không đổi theo
-  thu_chu_xe.py      chủ xe liên kết: phí riêng, đề nghị trả gộp nhiều phiếu → một phiếu chi bên hệ kế toán anh Tune
-  thu_tru_hang_quay.py trừ hàng chủ xe mua ở quầy (kho tạm) vào đề nghị trả chủ xe — số trả thực
-  thu_tat_toan_tune.py tất toán tài xế · trả nhà cung cấp → phiếu chi / thu bên hệ anh Tune, QT_TU thành bút toán chờ
-  thu_vai_va_doi_xe.py hai vai Thà Bốc (kho phụ tùng · tổ sửa chữa) và đổi xe giữa đường
-  thu_sua_chua.py    lệnh sửa chữa riêng: chuỗi duyệt mục V, lấy kho trừ tồn ngay, chi phần mua ngoài
-  thu_the_cao_toc.py thẻ cao tốc: số dư, trừ khi ghi sổ mục IV, cấn trừ cước cuối tháng
-  thu_no_tram_dau.py nợ trạm dầu Việt Nam: ghi nợ tách khỏi tiền mặt, cấn trừ cước tháng
-  thu_no_ky_thuat.py máy chủ không trả giá bán cho vai không được xem · ảnh xe · việc của KT Doanh thu
-  thu_chot_22_09.py  bảng cấn trừ tháng · chặn đổi chéo loại xe · ảnh tài xế · hai mã kế toán là ô cấu hình
-  thu_day_ke_toan.py không còn đẩy chứng từ (01/10) · cấu hình kho tạm riêng
-  test_tinh_toan.py  bộ kiểm đơn vị phép tính và phân quyền
+  thu_*.py · test_*.py   bộ kiểm (đạt / hỏng) — nhóm và cách chạy ở mục «Kiểm» bên dưới
+  thu_giao_dien.js       thử toàn giao diện trên jsdom, nối máy chủ thật (8011)
+  ra_*.js                BÁO CÁO rà từng vai / màn Tổng quan / Xe / Tài xế (không phải đạt/hỏng)
+  _khung_tien_trinh.py · _tien_trinh_tune.py · _d7_trong_gd.py   khung chạy TRONG TIẾN TRÌNH: TestClient + một giao dịch d7,
+                         cuối ROLLBACK, chặn mọi lời gọi mạng (API anh Tune / kho QLSX / bút toán là bản giả)
+  _bo_cu_0610.py + bo_cu_d7_0610.json   nạp lại bộ DO cũ (trước lần dọn 06/10) vào giao dịch thử cho 5 bộ cần nó
+  do_*.py                đo tải trên DB epl_lao_tai (máy 8012) — đọc đầu tệp trước khi chạy
+  loi_thoi/              bộ kiểm thứ đã bỏ (kho tạm 8031, máy 8010…) — giữ tra lịch sử, KHÔNG chạy; lý do ở loi_thoi/README.md
 ```
 
 27 module: **Tổng quan** (bốn ô số kèm xu hướng 6 tháng, thanh xem nhanh, dòng thời gian từng chuyến, doanh thu và chi phí theo ngày, cơ cấu chi, hao hụt cân, hiệu suất xe) · Theo dõi phiếu vận chuyển · **Theo dõi tuyến** (trung tâm điều hành: dải ô số, danh sách chuyến, **bản đồ tuyến**, tiến độ từng chặng, sổ sự cố, duyệt báo hỏng) · Phiếu xuất xe · Hoá đơn vận chuyển · **Hoá đơn gộp tháng** (khách hợp đồng: một tờ cho cả tháng, thu tiền ở tờ và tự phân bổ về từng phiếu) · **Chứng từ** (phiếu tạm ứng · **phiếu lĩnh nhiên liệu có mã QR** · phiếu thu) · **Phiếu của tôi** (màn tài xế: tiền tạm ứng, xuất phát, báo hỏng, khai đổ dầu dọc đường, **chia sẻ vị trí GPS**) · **Cấp phát** (thủ kho cấp dầu, quỹ chi tạm ứng, quét mã QR) · **Xe liên kết** (kèm danh mục **chủ xe**: phí, ngưỡng tấn, cách trả riêng từng chủ; quỹ **trả gộp** nhiều phiếu một đợt) · Tiền chuyến & tiền nước tài xế · **Tất toán tài xế** (theo tháng) · Theo dõi nhà cung cấp · **Kho hàng** (tồn quặng ở bãi theo từng lô, sổ nhập xuất, kế toán **điều chỉnh tồn** có lý do) · Kho nhiên liệu · **Điểm đổ nhiên liệu** · Kho phụ tùng · **Thẻ cao tốc** (số dư thẻ, nạp tiền, cấn trừ cước) · **Lệnh sửa chữa** (xe nằm bãi sửa hoặc bảo dưỡng định kỳ, không gắn phiếu) · Khách hàng (kèm **bảng giá khách × tuyến**, phiếu tự điền đơn giá) · **Xe** (hai tab đầu kéo / rơ-moóc, chip lọc, thẻ hồ sơ, hộp hồ sơ bảy tab: chung · pháp lý · kỹ thuật · rơ-moóc lắp/tháo có lịch sử · **lịch xe theo tuần** · chi phí sửa chữa từ mục V · phiếu gần đây) · **Tài xế & bằng lái** (hồ sơ, bằng lái và lịch sử gia hạn, xe thường lái, lịch tuần, và cột **Kết luận** tự nói ai đủ điều kiện điều xe) · **Tỷ giá** (đặt tỷ giá quy về Kíp cho phiếu mới, có lịch sử và máy tính quy đổi) · **Tuyến đường** (chặng, km, BOT) · Quy trình & trách nhiệm · Tài khoản.
@@ -85,28 +70,37 @@ Ngôn ngữ: **Tiếng Việt · ພາສາລາວ · English · VI + ລາ
 
 ## Kiểm
 
+Python: `C:\Users\zinnn\miniconda3\envs\Auto\python.exe -X utf8 kiem\<tệp>`. Máy thử: 8011 (d7) · API anh Tune 5090 · Web 5014.
+
+**1. Trong tiến trình — không cần máy nào bật, không ghi DB demo, d7 ROLLBACK** (chạy lúc nào cũng được):
 ```
-python kiem\test_tinh_toan.py                    # đơn vị, không cần máy chủ
-python kiem\thu_hai_do.py                        # luồng hai DO: gom → nhập kho → giao → xuất kho
-python kiem\thu_luong_api.py                     # cần máy chủ :8010 đang chạy
-python kiem\thu_tien_te.py                       # tiền tệ và sổ thu tiền: USD · LAK · CNY · THB
-python kiem\thu_ty_gia.py                        # màn Tỷ giá: phân quyền, lịch sử, phiếu cũ giữ tỷ giá
-python kiem\thu_chu_xe.py                        # chủ xe liên kết: phí riêng từng chủ, đề nghị trả gộp qua hệ anh Tune
-python kiem\thu_tru_hang_quay.py                 # trừ hàng chủ xe mua ở quầy vào đề nghị trả (cần kho tạm thử)
-python kiem\thu_tat_toan_tune.py                 # tất toán tài xế · trả nhà cung cấp nối hệ anh Tune (máy thử + API :5090)
-python kiem\thu_vai_va_doi_xe.py                 # hai vai mới ở Thà Bốc · đổi xe giữa đường
-python kiem\thu_sua_chua.py                      # lệnh sửa chữa riêng, không gắn phiếu
-python kiem\thu_the_cao_toc.py                   # thẻ cao tốc: số dư, trừ khi ghi sổ, cấn trừ
-python kiem\thu_no_tram_dau.py                   # nợ trạm dầu VN và cấn trừ cước tháng
-python kiem\thu_no_ky_thuat.py                   # giá bán không ra khỏi máy chủ · ảnh xe · việc của tôi
-python kiem\thu_chot_22_09.py                    # bảng cấn trừ · chặn đổi chéo xe · ảnh tài xế · mã cấu hình
-python kiem\thu_day_ke_toan.py                   # không còn đẩy chứng từ · cấu hình kho tạm riêng
-node kiem\thu_giao_dien.js                       # cần máy chủ :8010 + jsdom của EPL_System
-node kiem\ra_vai.js                              # BÁO CÁO rà từng vai (không phải đạt/hỏng), cùng điều kiện
-node kiem\ra_tong_quan.js                        # BÁO CÁO rà riêng màn Tổng quan
-node kiem\ra_xe.js                               # BÁO CÁO rà riêng màn Xe
-node kiem\ra_tai_xe.js                           # BÁO CÁO rà riêng màn Tài xế
+test_tinh_toan · thu_khoa_dich · thu_ban_giao_trong_gd · thu_but_toan_cho · thu_can_tru_lam_lai · thu_chung_tu_dong_do
+thu_doanh_thu_quay · thu_nut_muc_nhanh · thu_phi_qua_tai_thue_xe · thu_tai_xe_tat_toan · thu_tat_toan_doi_tac · thu_dem_bao_cao
+thu_de_nghi · thu_no_ky_thuat · thu_no_tram_dau · thu_the_cao_toc · thu_vai_va_doi_xe · thu_vi_tri · thu_chu_xe
+thu_chi_muc_tune · thu_tat_toan_tune · thu_gui_but_toan · thu_but_toan_xuat_kho
 ```
+Cùng kiểu nhưng **đụng dòng đang có trên d7 trong giao dịch** — chạy khi KHÔNG ai đang bấm 8011 (không thì màn người bấm phải chờ):
+```
+thu_chi_luong_tune · thu_ty_gia · thu_dong_bo_nen · thu_kho_hang · thu_kho_qlsx · thu_ban_giao_dau · thu_ban_giao_trang_thai_chi
+```
+
+**2. Gọi 8011 đang chạy — chỉ ghi d7 và tự dọn** (8011 phải bật):
+```
+thu_kho_xem · thu_ban_giao · thu_nen_tep · thu_ky_nhan_dien_thoai · thu_quyen_de_nghi_kho · thu_bao_su_co_tai_xe · thu_can_mo
+thu_chieu_ve · thu_goi_y_chi_phi · thu_giao_nhan · thu_hop_dong_pod · thu_khach_hang_moi · thu_luat_so_ben_tune (chỉ đọc)
+python kiem\thu_xuat_bao_cao.py http://127.0.0.1:8011      # Playwright: nút Excel / PDF mọi màn
+node kiem\thu_giao_dien.js http://127.0.0.1:8011           # toàn giao diện trên jsdom
+node kiem\ra_vai.js · ra_tong_quan.js · ra_xe.js · ra_tai_xe.js   # BÁO CÁO rà, không phải đạt/hỏng
+```
+
+**3. GHI THẬT sang DB demo anh Tune** (phiếu Chi trước, SO, bút toán, chốt tất toán) — chỉ chạy khi chấp nhận thêm phiếu thử vào DB demo;
+xong thì dọn + gieo lại (`tools\may_thu\don_sach_hai_ben.ps1` chủ dự án chạy → `tools\may_thu\gieo_bo_sach.py`):
+```
+thu_cach_tra · thu_dinh_khoan · thu_lo_hong_23_09 · thu_loai_xe · thu_kho_xe_23_09 · thu_tao_so · thu_tien_te · thu_luong_api
+thu_phieu_linh (chốt tất toán THẬT một tài xế — không bỏ chốt được) · thu_chi_tam_ung_ke_toan · thu_tao_so_that · thu_xe_thue_ke_toan
+```
+
+Bộ lỗi thời ở `kiem/loi_thoi/` (đọc `loi_thoi/README.md`); công cụ đo tải `do_*.py` chỉ chạy trên DB `epl_lao_tai`.
 
 ## Thêm một module mới
 
