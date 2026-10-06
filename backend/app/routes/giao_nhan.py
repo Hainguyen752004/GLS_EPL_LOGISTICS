@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from database import get_db
-from models import Trip, TripAttachment, ma_moi
+from models import Trip, TripAttachment, bay_gio, ma_moi
 from routes.phieu import _chan_khoa, _cua_tai_xe, _ghi_log, xuat_phieu
 from services.bao_mat import nguoi_hien_tai
 from services.tep import loi_co_tep, TEP_DIR, TEP_KIEU, TEP_TOI_DA
@@ -91,13 +91,14 @@ async def giao_nhan(tid: str, nguoi_nhan: str = Form(""), sdt: str = Form(""), t
         _loi("TINH_TRANG_SAI", "Tình trạng hàng phải là đủ, thiếu hoặc hư hỏng.")
     if tinh_trang != "du" and not (ghi_chu or "").strip():
         _loi("THIEU_GHI_CHU", "Hàng thiếu hoặc hư hỏng thì phải ghi rõ thiếu / hỏng gì.")
+    # 06/10: lưu giờ UTC không múi như mọi cột giờ (models.bay_gio) — trước lưu giờ máy chủ (Lào), Diễn biến lệch 7 tiếng / đảo thứ tự
     try:
-        luc_ky = dt.datetime.fromisoformat(luc.strip().replace("Z", "+00:00")) if (luc or "").strip() else dt.datetime.now()
+        luc_ky = dt.datetime.fromisoformat(luc.strip().replace("Z", "+00:00")) if (luc or "").strip() else bay_gio()
         if luc_ky.tzinfo is not None:
-            luc_ky = luc_ky.astimezone().replace(tzinfo=None)      # giờ máy chủ (Lào, cùng múi với máy tài xế)
+            luc_ky = luc_ky.astimezone(dt.timezone.utc).replace(tzinfo=None)
     except ValueError:
         _loi("GIO_SAI", "Giờ ký không đúng dạng.")
-    if luc_ky > dt.datetime.now() + dt.timedelta(minutes=10):
+    if luc_ky > bay_gio() + dt.timedelta(minutes=10):
         _loi("GIO_SAI", "Giờ ký ở tương lai — kiểm lại giờ trên điện thoại.")
     try:
         vi_do = float(lat) if (lat or "").strip() else None
@@ -120,7 +121,7 @@ async def giao_nhan(tid: str, nguoi_nhan: str = Form(""), sdt: str = Form(""), t
     p.pod_receiver = nguoi_nhan or p.pod_receiver
     p.pod_phone = (sdt or "").strip() or p.pod_phone
     p.pod_condition, p.pod_note = tinh_trang, (ghi_chu or "").strip() or None
-    p.pod_at, p.pod_date = luc_ky, luc_ky.date()
+    p.pod_at, p.pod_date = luc_ky, luc_ky.replace(tzinfo=dt.timezone.utc).astimezone().date()    # ngày ký theo giờ Lào
     p.pod_lat, p.pod_lng = vi_do, kinh_do
     p.pod_by, p.pod_ref = user.full_name, ma_gui or None
     p.pod_no = (pod_no or "").strip() or p.pod_no or ("POD-" + p.doc_no.split("/")[0])

@@ -150,8 +150,12 @@
   function tamUng(p) {
     // Khoản tiền mặt tài xế cầm đi: EPL ứng, không phải từ kho. Trạng thái = mục IV. Máy chủ nói thẳng dòng nào là tiền mặt
     // tài xế cầm đi (tien_mat_tx, kể cả cách trả — Excel anh Khampla 29/09); bản lưu cũ trong máy chưa có cờ đó thì dùng luật cũ.
-    const dong = (p.expenses || []).filter(d => d.tien_mat_tx !== undefined ? d.tien_mat_tx
-      : (d.paid_by_epl && d.source !== 'kho' && !d.ghi_no && !d.toll_card_id && ['fuel', 'travel', 'other'].includes(d.section)));
+    // 06/10 (chạy thử kịch bản): dòng sinh từ BÁO CÁO DỌC ĐƯỜNG của tài xế (khai đổ dầu «tài xế trả tiền túi», báo hỏng «Tôi đã tự
+    // trả») là tiền tài xế ứng ra sau khi xe đi — không phải tiền quỹ đưa lúc xe đi; chúng đã hiện riêng ở danh sách bên dưới
+    // (sự cố / lần đổ dầu) và vào Tất toán ở cột Đã chi thật. Trước đây bị cộng vào «Đã nhận tiền» (CA-1: 880.000 thay vì 450.000).
+    const tuBao = new Set((p.events || []).filter(e => e.expense_id && ['refuel', 'incident', 'repair'].includes(e.kind)).map(e => e.expense_id));
+    const dong = (p.expenses || []).filter(d => !tuBao.has(d.id) && (d.tien_mat_tx !== undefined ? d.tien_mat_tx
+      : (d.paid_by_epl && d.source !== 'kho' && !d.ghi_no && !d.toll_card_id && ['fuel', 'travel', 'other'].includes(d.section))));
     const r = { USD: p.rate_usd, THB: p.rate_thb, VND: p.rate_vnd, CNY: p.rate_cny || 3000, LAK: 1 };
     const tong = dong.reduce((a, d) => a + d.qty * d.unit_price * (r[d.currency] || 1), 0);
     return { co: dong.length > 0, tong, tt: (p.sections || {}).travel || 'wait' };

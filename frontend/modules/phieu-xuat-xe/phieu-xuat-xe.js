@@ -376,7 +376,12 @@
   }
   // dòng chi của mục này có được GỬI lên khi Lưu không: mục còn sửa được, hoặc người kiểm còn nhập giá một dòng (mục khoá gửi
   // lên là máy chủ từ chối cả phiếu). Ô đổi mã kế toán theo đúng luật này — đổi mà không gửi được là sửa xong mất (rà 01/10).
-  const guiMuc = (m) => suaDuoc(m) || (!moi && P.expenses.some(e => e.section === m && giaDuoc(m, e)));
+  // ô GIÁ BÁN cho chủ xe trên dòng KHO của xe thuê (mục III dầu · mục V phụ tùng) — người kiểm gõ lúc kiểm (29/09 · 30/09).
+  // Máy chủ nhận ô này từ người kiểm (_ap_gia); trước 06/10 màn không gửi dòng kho (giaDuoc loại dòng kho) → gõ giá bán rồi
+  // Lưu / Kiểm là mất, 409 THIEU_GIA_BAN mãi (chạy thử kịch bản CA-3 / CA-6).
+  const giaBanDuoc = (m, d) => thayChi() && xuatBan(d) && !!d.paid_by_epl && suaTienDuoc(m);
+  const coGiaDeGui = (m) => P.expenses.some(e => e.section === m && (giaDuoc(m, e) || giaBanDuoc(m, e)));
+  const guiMuc = (m) => suaDuoc(m) || (!moi && coGiaDeGui(m));
   const suaPodDuoc = () => !moi && AUTH.la('yard', 'acct', 'rev') && !biKhoa();
   function veVaiVaTrangThai() {
     COT_POD.forEach(c => { const el = g('f-' + c); if (el) el.disabled = !suaPodDuoc(); });
@@ -988,7 +993,7 @@
     if (moi) return EPL.toast(NN.t('save') + '?', 'loi');
     if (hd === 'send' && suaDuoc(m)) { await luu(); if (moi) return; }
     // kế toán gõ đơn giá rồi bấm Kiểm: lưu giá trước, không thì máy chủ thấy dòng giá 0 và chặn
-    if (hd === 'verify' && MUC_CHI.includes(m) && P.expenses.some(e => e.section === m && giaDuoc(m, e))) { await luu(); }
+    if (hd === 'verify' && MUC_CHI.includes(m) && coGiaDeGui(m)) { if (!await luu()) return; }
     // Mục I, II cũng vậy (rà 01/10): KT Thu/Chi gõ số phiếu quặng, giá cước rồi bấm Kiểm luôn — máy chủ trả phiếu chưa có
     // các ô đó, vẽ lại là mất chữ vừa gõ. Còn ô nào của mục này đang mở với vai này thì lưu trước rồi mới kiểm.
     else if (hd === 'verify' && (m === 'info' ? COT_INFO : m === 'trans' ? COT_TRANS : []).some(c => { const el = g('f-' + c); return el && !el.disabled; })) {
@@ -1085,6 +1090,8 @@
   async function khoaPhieu() {
     try {
       const k = await API.get(`/api/trips/${P.id}/kiem-lai`);
+      // còn chỗ CHẶN khoá (dầu kho chưa cấp, phụ tùng chưa xuất, xe thuê thiếu giá bán) → báo ngay, không mở hộp Khoá (06/10)
+      if ((k.chan || []).length) { EPL.toast(k.chan.map(chuMay).join(' · '), 'loi'); return; }
       const cb = k.canh_bao || [];
       const ok = await EPL.hoi(NN.t('a_lock'), cb.length
         ? `<p class="small muted">${NN.h('lock_warn')}</p><ul class="px-cb">${cb.map(x => `<li>${esc(chuMay(x))}</li>`).join('')}</ul>`
@@ -1164,7 +1171,7 @@
   }
   async function xoaPhieu() {
     if (!await EPL.hoi(NN.t('delete') + ' ' + P.doc_no, NN.t('confirm_delete'), NN.t('delete'))) return;
-    try { await API.del('/api/trips/' + P.id); DS = await napDs(); EPL.toast(NN.t('saved'), 'ok');
+    try { await API.del('/api/trips/' + P.id); DS = await napDs(); EPL.toast(NN.t('px_da_xoa'), 'ok');
       // Xoá xong KHÔNG tự mở phiếu mới nhất — đó là phiếu của người khác, gõ tiếp là gõ đè (cùng lỗi anh bắt 22/09).
       // Người lập phiếu (Bãi, Sếp) thì ra phiếu mới trắng; vai khác để ô chọn trống.
       if (AUTH.la('yard')) await phieuMoi(); else chuaChon(); } catch (e) { EPL.baoLoi(e); }
@@ -1208,6 +1215,10 @@
         const d = { section: m, item_key: x.item_key || null, item_name: x.item_name || null, qty: x.qty, unit_price: x.unit_price || 0,
           currency: x.currency || 'LAK', place_id: x.place_id || null, paid_by_epl: true, pay_channel: x.pay_channel || null, _goiY: true };
         if (m === 'fuel') { d.source = nguonCuaDiem(d); if (P.company === 'joint') d.paid_by_epl = d.source === 'kho'; }
+        // 06/10 (chạy thử kịch bản CA-3): xe THUÊ — khoản đi đường gợi ý theo tuyến (tiền nước, tiền chuyến, điện thoại…) mặc định
+        // «Chủ xe tự trả»: EPL không trả lương tài xế của chủ xe, EPL ứng là tạm ứng ghi công nợ chủ xe — chỉ khi Bãi chọn «EPL ứng».
+        // Trước đây gợi ý «EPL ứng · Chi ngay khi xe đi» → thành tạm ứng 4022/1011 cho đối tác nếu Bãi quên đổi.
+        else if (P.company === 'joint') d.paid_by_epl = false;
         d.acct_code = null;
         P.expenses.push(d); dien++;
       });

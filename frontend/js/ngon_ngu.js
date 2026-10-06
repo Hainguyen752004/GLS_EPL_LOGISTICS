@@ -15062,6 +15062,11 @@ window.EPL_TU_DIEN = {
   "lo": "ຜ່ານຂັ້ນຈ່າຍອັດຕະໂນມັດ (ເບີກຈາກສາງເທົ່ານັ້ນ, ບໍ່ມີເງິນໃຫ້ຄັງຈ່າຍ)",
   "en": "Passed the payment step automatically (stock only, no cash for the cashier)"
  },
+ "px_da_xoa": {
+  "vi": "Đã xoá phiếu",
+  "lo": "ລຶບໃບແລ້ວ",
+  "en": "Slip deleted"
+ },
  "a_pay_luong": {
   "vi": "Chi ở kế toán (cùng lương) — không có tạm ứng tiền mặt",
   "lo": "ຈ່າຍຢູ່ບັນຊີ (ພ້ອມເງິນເດືອນ) — ບໍ່ມີເງິນສົດລ່ວງໜ້າ",

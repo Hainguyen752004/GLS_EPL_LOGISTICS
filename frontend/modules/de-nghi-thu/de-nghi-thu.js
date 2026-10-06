@@ -176,7 +176,7 @@
         ${d.da_tao_so ? `<span>${NN.h('dt_so_da', { so: (d.so_ke_toan || {}).order_code || '' })}</span>` : ''}
         <span>${NN.h('collected')}: <b>${so(d.da_thu_lak)} LAK</b></span>
         <span>${NN.h('ncc_con_thu')}: <b>${so(d.con_lai_lak)} LAK</b></span>
-        ${d.locked_by ? `<span>${NN.h('s_locked')}: <span lang="lo">${esc(d.locked_by)}</span> · ${esc((d.locked_at || '').replace('T', ' '))}</span>` : ''}
+        ${d.locked_by ? `<span>${NN.h('s_locked')}: <span lang="lo">${esc(d.locked_by)}</span> · ${esc(d.locked_at ? EPL.ngayGio(d.locked_at) : '')}</span>` : ''}
       </div>
       <div class="ct-ky"><div><div class="line"></div>${NN.h('sg_issuer')}</div><div><div class="line"></div>${NN.h('sg_chief_acct')}</div>
         <div><div class="line"></div>${NN.h('dt_ben_cong_no')}</div><div><div class="line"></div>${NN.h('sg_director')}</div></div>`;

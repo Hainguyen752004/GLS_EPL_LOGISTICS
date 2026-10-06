@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from database import get_db
-from models import Trip, TripEvent, TripGoods
+from models import Trip, TripEvent, TripGoods, bay_gio
 from routes.giao_nhan import ANH_TOI_DA_SO, _loi, _luu_tep
 from routes.phieu import _chan_khoa, _cua_tai_xe, _dong_hang_gom, _ghi_log, _gon, _muc_cua, _so, xuat_phieu
 from services.bao_mat import nguoi_hien_tai
@@ -59,13 +59,14 @@ async def bao_can_mo(tid: str, tan: str = Form(""), ghi_chu: str = Form(""), luc
         _loi("QUA_NHIEU_ANH", "Tối đa %d ảnh mỗi lần." % ANH_TOI_DA_SO)
     if sum((a.size or 0) for a in ds_anh) > TEP_TOI_DA:
         _loi("TEP_QUA_LON", "Một lần gửi quá 10 MB — bớt ảnh.")
+    # 06/10: lưu giờ UTC không múi như mọi cột giờ (models.bay_gio) — trước lưu giờ máy chủ (Lào), Diễn biến lệch 7 tiếng / đảo thứ tự
     try:
-        luc_can = dt.datetime.fromisoformat(luc.strip().replace("Z", "+00:00")) if (luc or "").strip() else dt.datetime.now()
+        luc_can = dt.datetime.fromisoformat(luc.strip().replace("Z", "+00:00")) if (luc or "").strip() else bay_gio()
         if luc_can.tzinfo is not None:
-            luc_can = luc_can.astimezone().replace(tzinfo=None)    # giờ máy chủ (Lào, cùng múi với máy tài xế)
+            luc_can = luc_can.astimezone(dt.timezone.utc).replace(tzinfo=None)
     except ValueError:
         _loi("GIO_SAI", "Giờ cân không đúng dạng.")
-    if luc_can > dt.datetime.now() + dt.timedelta(minutes=10):
+    if luc_can > bay_gio() + dt.timedelta(minutes=10):
         _loi("GIO_SAI", "Giờ cân ở tương lai — kiểm lại giờ trên điện thoại.")
 
     for a in ds_anh:

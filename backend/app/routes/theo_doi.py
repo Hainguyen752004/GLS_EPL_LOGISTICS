@@ -173,7 +173,7 @@ def bang_theo_doi(tat_ca: int = 0, o: str = None, q: str = None, co: int = CO_MA
             "sections": muc_cua.get(p.id, {}),
         })
 
-    return {"luc": dt.datetime.now().isoformat(timespec="seconds"), "kpi": kpi,
+    return {"luc": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"), "kpi": kpi,
             "so_khop": so_khop, "so_khop_tran": khop_tran, "co": co, "chuyen": ra}
 
 

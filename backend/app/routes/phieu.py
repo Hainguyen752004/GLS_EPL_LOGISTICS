@@ -1131,9 +1131,17 @@ def _chan_chua_cap_theo_de_nghi(db, p, dong=None):
     thieu = [(i, e) for i, e in enumerate([e for e in (dong if dong is not None else _dong_chi(db, p)) if e.section == "fuel"], 1)
              if e.source == "kho" and e.paid_by_epl and (e.qty or 0) > 0 and not e.stock_move_id]
     if thieu:
-        raise HTTPException(409, {"ma": "CHUA_CAP_THEO_DE_NGHI", "loi": (
-            "Mục III: %s lấy từ kho chưa được cấp theo phiếu đề nghị xuất kho nhiên liệu. Bãi in phiếu đề nghị, thủ kho cấp dầu ở "
-            "Cấp phát, rồi mới ghi sổ mục III." % ", ".join("dòng %d (%s lít)" % (i, _gon(e.qty)) for i, e in thieu))})
+        # 06/10: kho ở hệ anh Tune — thủ kho cấp trên Web kế toán (màn Cấp phát / kho tạm 8031 đã bỏ 05/10)
+        raise BTC.loi3(409, "CHUA_CAP_THEO_DE_NGHI",
+                       "Mục III: %s lấy từ kho chưa được cấp theo phiếu đề nghị xuất kho nhiên liệu. Bãi in phiếu đề nghị, thủ kho cấp "
+                       "dầu trên Web kế toán (Quản lý kho → Cấp dầu theo phiếu đề nghị), rồi mới ghi sổ mục III."
+                       % ", ".join("dòng %d (%s lít)" % (i, _gon(e.qty)) for i, e in thieu),
+                       "ໜ້າ III: %s ເອົາຈາກສາງ ຍັງບໍ່ໄດ້ເບີກຕາມໃບສະເໜີເບີກນໍ້າມັນ. ສະໜາມພິມໃບສະເໜີ, ຜູ້ຮັກສາສາງເບີກນໍ້າມັນຢູ່ເວັບບັນຊີ "
+                       "(ຈັດການສາງ → ເບີກນໍ້າມັນຕາມໃບສະເໜີ), ແລ້ວຈຶ່ງບັນທຶກບັນຊີໜ້າ III."
+                       % ", ".join("ແຖວ %d (%s ລິດ)" % (i, _gon(e.qty)) for i, e in thieu),
+                       "Section III: %s taken from the depot has not been issued against the fuel stock-out request. The yard prints "
+                       "the request, the storekeeper issues the fuel on the accounting Web (Warehouse → Issue fuel by request), then "
+                       "book section III." % ", ".join("line %d (%s L)" % (i, _gon(e.qty)) for i, e in thieu))
 
 
 def muc_iii_co_tien(dong):
@@ -1262,6 +1270,13 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
             if muc_iv_khong_tien_mat(p, _dong_chi(db, p)):
                 s.status = "paid"
                 tu_qua_chi = True
+        if muc in CMT.MUC and hanh_dong == "book" and CHI.chi_o_ke_toan():
+            # 06/10 (chạy thử kịch bản CA-6, A4 / A7): mục V / VI không có khoản QUỸ trả ngay (chỉ lấy kho, nợ NCC, chủ xe tự trả)
+            # → không có phiếu chi cho thủ quỹ: tự qua bước Chi lúc ghi sổ như mục III lấy kho / mục IV cùng lương. Trước đây treo
+            # «Đã ghi sổ · chờ chi» mãi. Còn khoản quỹ trả ngay / phiếu chi đang chờ thì giữ như cũ (đồng bộ nền đổi «đã chi»).
+            if not CMT.con_phai_chi(db, p, muc) and not any(r.status in ("da_gui", "loi") for r in CMT.cac_lan(db, p.id, muc)):
+                s.status = "paid"
+                tu_qua_chi = True
         if hanh_dong == "pay" and muc == "travel":
             # Mục IV có HAI đường thành "đã chi": quỹ quét QR phiếu tạm ứng (sinh PC_TU ở phieu_linh.py), hoặc quỹ bấm
             # thẳng "Chi tiền" ở đây. Đường thứ hai trước đây không sinh tờ nào — bấm tay 23/09 chi 2.183.500 LAK mà sổ
@@ -1309,7 +1324,7 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
         _ghi_log(db, p, user, "sec_%s:%s" % (muc, hanh_dong))
         if tu_qua_chi:
             # nhật ký nói rõ vì sao tự qua bước Chi: mục III chỉ lấy kho (G11) · mục IV không có tạm ứng tiền mặt (cùng lương)
-            _ghi_log(db, p, user, "sec_fuel:pay_auto" if muc == "fuel" else "sec_travel:pay_luong")
+            _ghi_log(db, p, user, "sec_travel:pay_luong" if muc == "travel" else "sec_%s:pay_auto" % muc)
     if muc == "travel" and hanh_dong == "book":
         # ghi sổ mục IV xong → phiếu chi "Chi trước" bên hệ kế toán (chưa ghi sổ). Hỏng thì lỗi nằm trên tờ tạm ứng, gửi lại
         # ở màn Phiếu đề nghị chi; ghi sổ mục IV vẫn giữ — tài xế chỉ chưa xuất phát được cho tới khi thủ quỹ chi.
@@ -1675,8 +1690,10 @@ def _canh_bao_khoa(db, p):
     # Phiếu quặng của khách: đính kèm ẢNH hoặc NHẬP TAY đều được (anh chủ dự án 23/09: "phiếu khách hàng thì mình
     # nhập tay được" — mặt hàng, số lượng, chi tiết nằm ở dòng hàng; số và ngày phiếu kế toán gõ). Chỉ cảnh báo khi
     # không có cả hai.
+    # 06/10 (chạy thử kịch bản CA-2): phiếu quặng là giấy cân của khách Ở MỎ — gắn với chặng GOM. DO giao lấy hàng từ lô đã có
+    # phiếu quặng trên DO gom; căn cứ đòi tiền chặng giao là POD (cảnh báo riêng bên dưới) → không nhắc phiếu quặng cho DO giao.
     co_anh = db.query(TripAttachment).filter(TripAttachment.trip_id == p.id, TripAttachment.kind == "ore_bill").count()
-    if not co_anh and not (p.ore_bill_no or "").strip():
+    if p.kind != "giao" and not co_anh and not (p.ore_bill_no or "").strip():
         cb.append({"ma": "THIEU_PHIEU_QUANG", "loi": "Chưa có phiếu quặng của khách — đính kèm ảnh, hoặc nhập tay số phiếu quặng."})
     # POD — biên bản giao nhận hàng: căn cứ đòi tiền khách. Nhập tay số POD hoặc đính kèm ảnh đều được (như phiếu quặng).
     co_pod = db.query(TripAttachment).filter(TripAttachment.trip_id == p.id, TripAttachment.kind.in_(("pod", "pod_sign"))).count()
@@ -1743,7 +1760,17 @@ def kiem_lai(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_ta
     p = db.get(Trip, tid)
     if not p:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
-    return {"canh_bao": _canh_bao_khoa(db, p), "locked": bool(p.locked)}
+    chan = []
+    if not p.locked:
+        # 06/10 (chạy thử kịch bản CA-3): báo trước chỗ CHẶN khoá — hộp Khoá từng báo «không có điểm lệch» rồi mới ra 409
+        dong = _dong_chi(db, p)
+        for kiem in (lambda: BTC.chan_khoa_chua_xuat(p, dong), lambda: BTC.chan_xuat_ban(p, dong, luc="khoa")):
+            try:
+                kiem()
+            except HTTPException as e:
+                if isinstance(e.detail, dict):
+                    chan.append({k: e.detail.get(k) for k in ("ma", "loi", "loi_lo", "loi_en")})
+    return {"canh_bao": _canh_bao_khoa(db, p), "chan": chan, "locked": bool(p.locked)}
 
 
 @router.post("/api/trips/{tid}/khoa")

@@ -233,7 +233,10 @@
     return ds.length ? ds.map(([m, v]) => EPL.tien(v, m)).join(phanCach) : '—';
   };
   EPL.ngay = (s) => { if (!s) return '—'; const d = new Date(String(s).slice(0, 10) + 'T00:00:00'); return isNaN(d) ? s : d.toLocaleDateString('en-GB'); };
-  EPL.ngayGio = (s) => { if (!s) return '—'; const d = new Date(s); return isNaN(d) ? s : d.toLocaleDateString('en-GB') + ' ' + d.toTimeString().slice(0, 5); };
+  // Máy chủ lưu giờ UTC (models.bay_gio) và trả chuỗi ISO KHÔNG kèm múi → đọc như UTC rồi hiện theo giờ máy (Lào UTC+7).
+  // Trước 06/10 đọc như giờ máy → Diễn biến, «Đã khoá lúc…» lệch 7 tiếng (chạy thử kịch bản).
+  EPL.docGio = (s) => { const t = String(s); return new Date(/T\d\d:\d\d/.test(t) && !/(Z|[+-]\d\d:?\d\d)$/.test(t) ? t + 'Z' : t); };
+  EPL.ngayGio = (s) => { if (!s) return '—'; const d = EPL.docGio(s); return isNaN(d) ? s : d.toLocaleDateString('en-GB') + ' ' + d.toTimeString().slice(0, 5); };
   // Ngày / tháng theo GIỜ MÁY. toISOString là giờ UTC: Lào UTC+7 nên từ 0 tới 7 giờ sáng phiếu ra ngày hôm qua, mùng 1 thì
   // bộ lọc ra tháng trước (rà 01/10)
   const ngayMay = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');

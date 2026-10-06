@@ -97,8 +97,11 @@ def phan_1_2(ca, d, ncc):
          "Quỹ bấm Chi mục V → 409, câu báo nói số phiếu chi bên kế toán", cau(g)[:100])
     g = duyet(ca, p1, "other", "send", "verify", "book")
     dung(not g["chi_muc_ke_toan"]["other"]["lan"], "ghi sổ mục VI (không có khoản quỹ trả) → không lập phiếu chi bên kế toán")
+    # 06/10 (chạy thử kịch bản CA-6): không có tiền quỹ chi → mục tự qua bước Chi lúc ghi sổ (như III lấy kho / IV cùng lương),
+    # không còn treo «Đã ghi sổ · chờ chi» chờ quỹ bấm tay
+    dung(g["sections"]["other"] == "paid", "mục VI không có tiền quỹ chi → tự qua bước Chi lúc ghi sổ", g["sections"]["other"])
     s, g = ca.goi("/api/trips/%s/sections/other/pay" % p1, {}, "quytb")
-    dung(s == 200 and g["sections"]["other"] == "paid", "Quỹ chi mục VI trên trang này như cũ (không có tiền quỹ chi)", s)
+    dung(s == 409, "Quỹ bấm Chi mục VI lần nữa → 409 (đã qua bước Chi)", s)
 
     print("2. Thủ quỹ ghi sổ bên kế toán → mục V đã chi")
     GIA.ghi_so(rid)
