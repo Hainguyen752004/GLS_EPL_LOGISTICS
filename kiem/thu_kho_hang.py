@@ -92,6 +92,8 @@ def main():
     ngoai = conn.begin()
     conn.execute(text("SET LOCAL lock_timeout = '10s'"))   # máy thử chạy song song: chờ khoá quá 10 giây thì hỏng, không treo
     M.DieuChinhHang.__table__.create(bind=conn, checkfirst=True)
+    import _bo_cu_0610 as BO_CU                         # 06/10: d7 dọn + gieo lại → dựng bộ dữ liệu bài viết theo TRONG giao dịch
+    BO_CU.dat_bo_cu(conn)
     db = Session(bind=conn, join_transaction_mode="create_savepoint", autoflush=False)
 
     def _db():

@@ -141,6 +141,8 @@ class Phien:
         self.conn = Phien.eng.connect()
         self.ngoai = self.conn.begin()
         self.conn.execute(text("SET LOCAL lock_timeout = '10s'"))
+        import _bo_cu_0610 as BO_CU                     # 06/10: d7 dọn + gieo lại → dựng bộ dữ liệu bài viết theo TRONG giao dịch
+        BO_CU.dat_bo_cu(self.conn)
         self.db = Session(bind=self.conn, join_transaction_mode="create_savepoint", autoflush=False)
         return self.db
 
