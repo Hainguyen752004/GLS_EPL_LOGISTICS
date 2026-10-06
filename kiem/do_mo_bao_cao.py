@@ -2,6 +2,10 @@
 """MỞ BÁO CÁO NHƯ NGƯỜI DÙNG — gọi HTTP vào máy chủ đang chạy (không tự bật máy chủ, không xoá bộ đệm), đo thời gian.
 
     python kiem/do_mo_bao_cao.py [http://127.0.0.1:8012]
+
+DB / cách chạy (ghi 06/10): công cụ ĐO, không phải bộ kiểm đạt / không đạt. Gọi HTTP vào máy chủ ĐANG CHẠY — mặc định 8012 = máy đo
+tải trỏ DB epl_lao_tai (kiem/do_tai.py tự bật rồi tắt máy đó; công cụ này KHÔNG tự bật). Chỉ GET, nhưng báo cáo tính xong thì máy
+chủ ghi bản lưu vào bảng bao_cao_dem của DB đó. Không trỏ vào 8011 (epl_lao_d7 — đang bấm tay) hay máy thật 8020.
 """
 import json
 import sys

@@ -5,6 +5,11 @@
                                                   rồi trả về như cũ — không chạy trên epl_lao thật.
 
 In ra thời gian mở từng báo cáo: (1) lúc bộ đệm đã có · (2) ngay sau một lần ghi vào phiếu hôm nay · (3) mở lại lần nữa.
+
+DB / cách chạy (ghi 06/10): công cụ ĐO, chạy trong tiến trình. DB = tên truyền vào, mặc định epl_lao_tai (DB thử tải, dữ liệu một năm
+gieo bằng tools/gieo_tai_thu.py) trên cùng máy PostgreSQL với DATABASE_URL trong .env (chỉ thay tên DB). GHI THẬT: +1 lít một dòng
+dầu phiếu ngày mới nhất, COMMIT, đo, rồi trả về — chỉ chạy trên DB thử tải khi không ai dùng; không chạy trên epl_lao, epl_lao_d7
+(8011 bấm tay) hay DB dùng chung. Kiểm đúng / sai của bộ đệm: kiem/thu_dem_bao_cao.py (d7, ROLLBACK).
 """
 import datetime as dt
 import os

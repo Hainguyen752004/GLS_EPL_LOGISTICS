@@ -7,6 +7,10 @@ Bộ đo TỰ BẬT máy chủ thử cổng 8012 trỏ vào epl_lao_tai (không 
 làm nóng), in lần thứ hai. Quá 60 s thì ghi QUÁ GIỜ, TẮT máy chủ thử rồi bật lại — một yêu cầu treo không được giữ kết
 nối DB làm sai số đo các API sau. `tu-den` chỉ đo một đoạn danh sách (mỗi lượt chạy dưới 10 phút). `nhan` (ví dụ
 `truoc`, `sau`) ghi kết quả vào kiem/do_tai_<nhan>.json để so. Mục tiêu chủ dự án chốt: mọi màn dưới 1–2 giây.
+
+DB / cách chạy (ghi 06/10): công cụ ĐO. Tự BẬT máy chủ 8012 (python miniconda gốc + uvicorn) trỏ DB epl_lao_tai trên cùng máy
+PostgreSQL với DATABASE_URL trong .env, XOÁ bảng bao_cao_dem của epl_lao_tai trước khi đo, TẮT máy khi xong. Không đụng 8011 /
+epl_lao_d7 hay máy thật. Chỉ chạy khi được phép bật máy 8012 và DB tải đang rảnh (không ai đo / gieo cùng lúc).
 """
 import json
 import os
