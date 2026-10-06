@@ -116,6 +116,14 @@ def main():
         kh = db.query(M.Customer).order_by(M.Customer.id).first()
         assert len(xe) >= 3 and len(tx) >= 3 and kh is not None, "d7 thiếu xe / tài xế / khách"
         QUANG = "ແຮ່ເຫຼັກ (quặng sắt)"
+        # Không phụ thuộc trạng thái d7 (06/10: d7 đã được sinh bù tờ thật): TRONG giao dịch rút mọi tờ PNK_HH / PXK_HH của các DO cũ
+        # dùng ở mục 1 và 6 — kể cả tờ đã đối chiếu — để dựng lại đúng điều kiện "đã có sổ mà chưa có tờ". ROLLBACK cuối bài trả lại hết.
+        DO_CU = ("G4-0001-10/EPL", "T4-0001-10/EPL", "G4-0006-10/EPL", "G4-0007-10/EPL")
+        id_cu = [r.id for r in db.query(M.Trip.id).filter(M.Trip.doc_no.in_(DO_CU)).all()]
+        assert len(id_cu) == len(DO_CU), "d7 thiếu DO cũ %s" % (DO_CU,)
+        db.query(M.ChungTu).filter(M.ChungTu.loai.in_(("PNK_HH", "PXK_HH")), M.ChungTu.nguon_bang == "trips",
+                                   M.ChungTu.nguon_id.in_(id_cu)).delete(synchronize_session=False)
+        db.commit()
 
         def lap(kind, i, **them):
             d = {"kind": kind, "vehicle_id": xe[i].id, "driver_id": tx[i].id, "customer_id": kh.id, "doc_date": hom_nay.isoformat(),
@@ -399,6 +407,8 @@ def main():
         g1 = db.query(M.Trip).filter(M.Trip.doc_no == "G4-0001-10/EPL").one()
         t1 = db.query(M.Trip).filter(M.Trip.doc_no == "T4-0001-10/EPL").one()
         ton_g1 = KHD.ton_lo(db, g1.id)
+        tan_g1 = round(sum(m.qty_t for m in db.query(M.GoodsMove).filter(M.GoodsMove.trip_id == g1.id, M.GoodsMove.kind == "in")), 3)
+        tan_t1 = round(sum(m.qty_t for m in db.query(M.GoodsMove).filter(M.GoodsMove.trip_id == t1.id, M.GoodsMove.kind == "out")), 3)
         n_in = db.query(M.GoodsMove).filter(M.GoodsMove.trip_id == g1.id, M.GoodsMove.kind == "in").count()
         dung(so_to("PNK_HH", g1.id) == 0 and so_to("PXK_HH", t1.id) == 0 and n_in == 1, "d7: G4-0001 đã nhập, T4-0001 đã xuất, chưa có tờ")
         url1 = "/api/trips/%s/transport-status" % g1.id
@@ -406,9 +416,9 @@ def main():
         db.expire_all()
         pl1 = json.loads(db.query(M.ChungTu).filter(M.ChungTu.loai == "PNK_HH", M.ChungTu.nguon_id == g1.id).one().payload) \
             if so_to("PNK_HH", g1.id) == 1 else {}
-        dung(r.status_code == 200 and so_to("PNK_HH", g1.id) == 1 and pl1.get("sinh_bu") is True and pl1.get("tan") == 39.6
+        dung(r.status_code == 200 and so_to("PNK_HH", g1.id) == 1 and pl1.get("sinh_bu") is True and pl1.get("tan") == tan_g1
              and db.query(M.GoodsMove).filter(M.GoodsMove.trip_id == g1.id, M.GoodsMove.kind == "in").count() == 1
-             and KHD.ton_lo(db, g1.id) == ton_g1, "báo tới lại DO gom đã nhập → sinh PNK_HH từ sổ (39,6 t), KHÔNG nhập trùng, tồn nguyên",
+             and KHD.ton_lo(db, g1.id) == ton_g1, "báo tới lại DO gom đã nhập → sinh PNK_HH từ sổ (%s t), KHÔNG nhập trùng, tồn nguyên" % tan_g1,
              (r.status_code, r.json().get("detail"), pl1))
         r = c.post(url1, json={"status": "arrived", "weight_dest": g1.weight_dest}, headers=SEP)
         db.expire_all()
@@ -417,7 +427,7 @@ def main():
         db.expire_all()
         to1 = db.query(M.ChungTu).filter(M.ChungTu.loai == "PXK_HH", M.ChungTu.nguon_id == t1.id).all()
         pl = json.loads(to1[0].payload) if to1 else {}
-        dung(r.status_code == 200 and len(to1) == 1 and pl.get("tan") == 39.6 and pl.get("sinh_bu") is True
+        dung(r.status_code == 200 and len(to1) == 1 and pl.get("tan") == tan_t1 and tan_t1 > 0 and pl.get("sinh_bu") is True
              and db.query(M.GoodsMove).filter(M.GoodsMove.trip_id == t1.id, M.GoodsMove.kind == "out").count() == 1,
              "lưu lại DO giao đã xuất → sinh PXK_HH từ sổ, phần xuất nguyên", (r.status_code, r.json().get("detail"), pl.get("dong")))
         r = c.put("/api/trips/" + t1.id, json={}, headers=SEP)
@@ -436,27 +446,39 @@ def main():
         db.expire_all()
         sinh = {x["do_no"]: x for x in kq["da_sinh"]}
         ok = True
-        for so, tan, boc in (("G4-0006-10/EPL", 39.5, 40.0), ("G4-0007-10/EPL", 37.6, 38.0)):
+        for so in ("G4-0006-10/EPL", "G4-0007-10/EPL"):
             p = db.query(M.Trip).filter(M.Trip.doc_no == so).one()
             ds = db.query(M.ChungTu).filter(M.ChungTu.loai == "PNK_HH", M.ChungTu.nguon_id == p.id).all()
             x = json.loads(ds[0].payload) if len(ds) == 1 else {}
-            mv = db.query(M.GoodsMove).filter(M.GoodsMove.trip_id == p.id, M.GoodsMove.kind == "in").all()
+            mv = db.query(M.GoodsMove).filter(M.GoodsMove.trip_id == p.id, M.GoodsMove.kind == "in").order_by(M.GoodsMove.move_date).all()
+            tan = round(sum(m.qty_t for m in mv), 3)          # tính từ sổ / dòng hàng trong giao dịch, không viết cứng số của d7
+            boc = round(sum(g.qty_t for g in db.query(M.TripGoods).filter(M.TripGoods.trip_id == p.id, M.TripGoods.loai == "hang")), 3)
             ok = ok and so in sinh and len(ds) == 1 and ds[0].so == sinh[so]["so"] and x.get("tan") == tan and x.get("boc_len") == boc \
                 and abs((x.get("hao_hut") or 0) - round(boc - tan, 3)) < 1e-9 and x.get("sinh_bu") is True and ds[0].tien == 0 \
-                and ds[0].ngay == mv[0].move_date and ds[0].by_user and len(mv) == 1
+                and ds[0].ngay == mv[0].move_date and ds[0].by_user and tan > 0
         dung(ok and kq["so_thieu"] == len(lk) and len(kq["da_sinh"]) == len(lk) and not kq["bo_qua"],
-             "sinh bù: G4-0006 (39,5 · mỏ 40) / G4-0007 (37,6 · mỏ 38) đủ tờ, ngày = ngày sổ, tiền 0", sinh)
+             "sinh bù: G4-0006 / G4-0007 đủ tờ (tấn = sổ, cân mỏ = dòng hàng, hao = hiệu), ngày = ngày sổ, tiền 0", sinh)
         dem = db.query(M.ChungTu).count()
         lk2 = SB.liet_ke(db)
         kq2 = SB.sinh_bu(db)
         db.expire_all()
         dung(lk2 == [] and kq2["so_thieu"] == 0 and not kq2["da_sinh"] and db.query(M.ChungTu).count() == dem,
              "chạy lại: không còn DO thiếu, không sinh trùng", (len(lk2), kq2["so_thieu"]))
-        for ngay in (hom_nay.isoformat(), "2026-10-03"):
-            r = c.get("/api/kho-hang/doi-soat", params={"ngay": ngay}, headers=KT_VC)
+        # đối soát đúng các ngày của DO vừa sinh tờ (không dùng "hôm nay": d7 có thể thêm DO mới bất kỳ lúc nào): DO đã sinh tờ
+        # không còn lệch; lệch còn lại (nếu có) chỉ là DO chưa có dòng sổ — đúng là thiếu thật.
+        ngay_do = {}
+        for p in [g1, t1] + [db.get(M.Trip, x["trip_id"]) for x in lk]:
+            d0 = (p.back_date or p.doc_date) if p.kind == "gom" else (p.out_date or p.doc_date)
+            ngay_do.setdefault(d0, set()).add(p.doc_no)
+        for ngay, dos in sorted(ngay_do.items()):
+            r = c.get("/api/kho-hang/doi-soat", params={"ngay": ngay.isoformat()}, headers=KT_VC)
             d = r.json()
-            dung(r.status_code == 200 and d["lech"] == [] and d["phieu_nhap"] >= 1 and d["do_gom_da_toi"] >= 1,
-                 "đối soát %s: hết lệch" % ngay, d)
+            lech = d.get("lech") or []
+            that = all(not db.query(M.GoodsMove.id).filter(M.GoodsMove.trip_id == z["trip_id"],
+                                                          M.GoodsMove.kind == ("in" if z["thieu"] == "PNK_HH" else "out")).first()
+                       for z in lech)
+            dung(r.status_code == 200 and not ({z["do_no"] for z in lech} & dos) and that and d["phieu_nhap"] + d["phieu_xuat"] >= 1,
+                 "đối soát %s: %d DO vừa sinh tờ hết lệch, lệch còn lại chỉ là DO chưa có sổ" % (ngay.isoformat(), len(dos)), d)
     finally:
         app.dependency_overrides.clear()
         db.close()
