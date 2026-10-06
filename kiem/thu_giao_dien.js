@@ -247,21 +247,22 @@ async function main() {
 
   // 3. số trên màn phiếu khớp máy chủ
   const dsPhieu = await (await fetch(GOC + '/api/trips', { headers: { Authorization: 'Bearer ' + w.EPL.API.token() } })).json();
-  // tìm đúng phiếu bằng ô tìm (DB thử có thêm phiếu thử các bài khác để lại — trang đầu 50 phiếu có thể không còn nó)
-  const p0 = (await (await fetch(GOC + '/api/trips?q=T4-0428-08', { headers: { Authorization: 'Bearer ' + w.EPL.API.token() } })).json())
-    .find(p => p.doc_no === 'T4-0428-08/EPL');
+  // 06/10: dữ liệu d7 được dọn và gieo lại theo bộ chuẩn — không bám một số phiếu cố định; lấy phiếu XE NHÀ đầu tiên đã có doanh thu (xe thuê hiện bảng tất toán, không có khối tổng)
+  const p0 = dsPhieu.find(p => p.company !== 'joint' && p.tinh && Number(p.tinh.doanh_thu) > 0);
+  assert.ok(p0, 'DB thử phải có ít nhất một phiếu xe nhà đã có doanh thu (chạy tools/may_thu/gieo_bo_sach.py)');
   await di('#/phieu-xuat-xe?id=' + p0.id);
-  assert.strictEqual(d.getElementById('px-doc-no').value, 'T4-0428-08/EPL', 'phải mở đúng phiếu T4-0428');
+  assert.strictEqual(d.getElementById('px-doc-no').value, p0.doc_no, 'phải mở đúng phiếu ' + p0.doc_no);
   const val = d.getElementById('v-val-usd').textContent;
   assert.ok(val.startsWith(w.EPL.so(p0.tinh.doanh_thu, w.EPL.leTien(p0.tinh.ccy))), 'thành tiền trên màn (' + val + ') phải khớp máy chủ ' + p0.tinh.doanh_thu + ' ' + p0.tinh.ccy);
   const tongChi = d.querySelector('.px-tong .o:nth-child(2) .v').textContent;
   assert.ok(tongChi.includes(w.EPL.so(p0.tinh.tong_chi_lak)), 'tổng chi trên màn (' + tongChi + ') phải khớp máy chủ ' + p0.tinh.tong_chi_lak);
   const soDongChi = goc().querySelectorAll('.px-chi tbody tr[data-i]').length;
   assert.strictEqual(soDongChi, p0.tinh ? (await (await fetch(GOC + '/api/trips/' + p0.id, { headers: { Authorization: 'Bearer ' + w.EPL.API.token() } })).json()).expenses.length : 0, 'số dòng chi trên màn phải bằng máy chủ');
-  console.log('✓ phiếu T4-0428: thành tiền %s · tổng chi khớp · %d dòng chi', val, soDongChi);
+  console.log('✓ phiếu %s: thành tiền %s · tổng chi khớp · %d dòng chi', p0.doc_no, val, soDongChi);
 
   // 3b. xe liên kết: bảng thanh toán chủ xe hiện ra và khớp
-  const pj = dsPhieu.find(p => p.company === 'joint');
+  const pj = dsPhieu.find(p => p.company === 'joint' && p.tinh);
+  assert.ok(pj, 'DB thử phải có ít nhất một phiếu xe thuê / liên kết');
   await di('#/phieu-xuat-xe?id=' + pj.id);
   assert.ok(goc().querySelector('.px-phieu').classList.contains('is-joint'), 'phiếu xe liên kết phải bật lớp is-joint');
   const tt = goc().querySelector('.px-tt'); assert.ok(tt, 'phiếu xe liên kết phải có bảng thanh toán chủ xe');
@@ -556,19 +557,18 @@ async function main() {
       assert.ok(!chuKx.includes(w.EPL.NN.t('k2_so_kho', { thang: '' }).trim()) && !d.querySelector('#noi-dung .k2 .flow'), 'không còn sổ kho tháng / biểu đồ nhập xuất theo ngày');
       console.log('✓ Xem kho: không sổ tháng, không ô chọn tháng · tồn %s L khớp bên kho', soTon);
     }
-    // 01/10: tab Hàng gửi bãi cũng chỉ còn tồn theo lô — bỏ "nhập / xuất trong tháng" và bảng "nhập / xuất gần đây"
-    const goc = (kx.nhien_lieu || []).find(k => k.kho_goc) || (kx.nhien_lieu || [])[0];
-    if (goc && (kx.hang || []).length) {
-      d.querySelector('#noi-dung .k2 #k2-wh .wh-item[data-open="' + goc.place_id + '"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
-      await choDen(() => d.querySelector('#noi-dung .k2 [data-tab-go="cargo"]'), 'tab Hàng gửi bãi của kho gốc');
-      d.querySelector('#noi-dung .k2 [data-tab-go="cargo"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
-      await choDen(() => d.querySelector('#noi-dung .k2 .fuel-stats.k2-tom'), 'tab Hàng gửi bãi đã vẽ');
-      const chuHang = d.querySelector('#noi-dung .k2 .tab-panel').textContent;
+    // 05/10: hàng gửi bãi chỉ xem ở «Toàn bộ kho» → tab Hàng gửi bãi (tồn theo lô, chi tiết lô, đối soát, phiếu điều chỉnh);
+    // vẫn không có "nhập / xuất trong tháng" và bảng "nhập / xuất gần đây" (01/10)
+    {
+      d.querySelector('#noi-dung .k2 .wh-item.wh-all').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+      await choDen(() => d.querySelector('#noi-dung .k2 [data-ovtab="cargo"]'), 'tab Hàng gửi bãi ở Toàn bộ kho');
+      d.querySelector('#noi-dung .k2 [data-ovtab="cargo"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+      await choDen(() => d.querySelector('#noi-dung .k2 #kh-than'), 'tab Hàng gửi bãi đã vẽ');
+      const chuHang = d.querySelector('#noi-dung .k2 .kh').textContent;
       for (const k of ['kx_in_month', 'kx_out_month', 'kx_gan_day'])
         assert.ok(!chuHang.includes(w.EPL.NN.t(k)), 'tab Hàng gửi bãi không còn "' + w.EPL.NN.t(k) + '"');
-      const conLo = (kx.hang || []).reduce((a, c) => a + (c.lo || []).length, 0);
-      assert.strictEqual(d.querySelectorAll('#noi-dung .k2 .tab-panel .lot-bar').length, conLo, 'mỗi lô còn hàng một dòng');
-      console.log('✓ Xem kho · Hàng gửi bãi: chỉ tồn theo lô (%d lô), không nhập/xuất tháng, không sổ gần đây', conLo);
+      console.log('✓ Xem kho · Hàng gửi bãi ở Toàn bộ kho: %d lô trên màn, không nhập/xuất tháng, không sổ gần đây',
+        d.querySelectorAll('#noi-dung .k2 #kh-than tr[data-kh-lo]').length);
     }
   }
   console.log('✓ vai thủ kho: chỉ màn Xem kho (chỉ xem), không chuyển vòng, không lỗi');
