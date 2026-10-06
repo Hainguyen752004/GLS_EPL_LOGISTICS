@@ -35,7 +35,7 @@
   function locDs() {
     const t = tim.toLowerCase();
     return BANG.dong.filter(d => (!loc || trangThai(d).k === loc)
-      && (!t || ((d.driver_name || '') + ' ' + (d.driver_code || '')).toLowerCase().includes(t)));
+      && (!t || ((d.driver_name || '') + ' ' + (d.driver_latin || '') + ' ' + (d.driver_code || '')).toLowerCase().includes(t)));
   }
 
   /* ---------------------------------------------------------------- thanh lọc + dải tổng */
@@ -71,7 +71,7 @@
       return `<button type="button" class="tt2-o st-${s.k} ${CHON === d.driver_id ? 'chon' : ''}" data-tx="${esc(d.driver_id)}">
         <span class="ten" lang="lo">${esc(d.driver_name)}</span>
         <span class="tien ${lop(ch)}">${so(Math.abs(ch))}</span>
-        <span class="phu">${esc(d.driver_code || '')} · ${d.so_phieu} ${esc(NN.t('tt_slips').toLowerCase())}</span>
+        <span class="phu">${esc((d.driver_latin ? d.driver_latin + ' · ' : '') + (d.driver_code ? d.driver_code + ' · ' : ''))}${d.so_phieu} ${esc(NN.t('tt_slips').toLowerCase())}</span>
         <span class="tt">${EPL.tag(s.mau, s.nhan)}${lech ? ' ' + EPL.tag('partial', 'tt_lech') : ''}</span>
         <span class="phu">${NN.h(chieu(ch))}</span></button>`;
     }).join('') : `<div class="tt2-trong">${NN.h('no_data')}</div>`;
@@ -137,7 +137,7 @@
     // bỏ chốt không được (phiếu chênh đã ghi sổ / QT_TU đã gửi) — nói vì sao, ngay trên khối bản chốt
     if (c && c.bo_chot_chan) canh.push(`<div class="tt2-canh tt2-cc">${esc(chuMay(c.bo_chot_chan))}</div>`);
     o.innerHTML = `<div class="tt2-dau">
-        <div><h3 lang="lo">${esc(x.driver_name)}</h3><div class="small muted">${esc(x.driver_code || '')} · ${NN.h('tt_period')} ${nhanThang(x.period)}</div></div>
+        <div><h3 lang="lo">${esc(x.driver_name)}</h3><div class="small muted">${esc((x.driver_latin ? x.driver_latin + ' · ' : '') + (x.driver_code ? x.driver_code + ' · ' : ''))}${NN.h('tt_period')} ${nhanThang(x.period)}</div></div>
         <div class="grow"></div>${EPL.tag(s.mau, s.nhan)}<div class="tt2-nut no-print">${nutCua(x)}</div></div>
       ${canh.join('')}
       <div class="tt2-so">

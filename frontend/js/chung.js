@@ -209,6 +209,16 @@
 
   /* ================================================================ Định dạng */
   const esc = EPL.esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  /** Tên tài xế để CHỌN / đọc: tên Lào + tên đọc Latin + xe thường lái — «ທ້າວ ບຸນມີ (Bounmi) · Xe 342».
+   *  06/10 chủ dự án: "Bounmi là anh nào sao không đánh dấu". Hiện ở MỌI ngôn ngữ (người Việt / Anh đọc tên Latin; người Lào không vướng).
+   *  d: bản ghi /api/drivers (name, name_latin, default_vehicle) hoặc bản có driver_name / driver_latin. coXe = false: không kèm xe. */
+  EPL.tenTaiXe = (d, coXe = true) => {
+    if (!d) return '';
+    const ten = d.name || d.driver_name || d.driver || '', la = d.name_latin || d.driver_latin || '';
+    const doc = la && !ten.includes(la) ? ' (' + la + ')' : '';
+    const xe = coXe && d.default_vehicle ? ' · ' + EPL.NN.t('tq_vehicle') + ' ' + d.default_vehicle : '';
+    return ten + doc + xe;
+  };
   // Số kiểu 1,724.46 — đúng như Excel và bản mẫu họ đã duyệt (họ dùng dấu phẩy ngăn nghìn).
   EPL.so = (n, d = 0) => (n === null || n === undefined || n === '' || isNaN(Number(n))) ? '—'
     : Number(n).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });

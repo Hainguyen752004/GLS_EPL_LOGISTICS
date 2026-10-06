@@ -426,6 +426,8 @@ async function main() {
   // 4a2. màn TÀI XẾ: cột Kết luận là điểm chính — phần mềm tự nói ai được điều xe và vì sao.
   // Dữ liệu mẫu cố ý có một bằng ĐÃ hết hạn và một bằng SẮP hết hạn, nên ba mức phải hiện đủ.
   await di('#/tai-xe');
+  // danh sách tài xế tải bất đồng bộ — chờ có dòng rồi mới đếm (máy bận thì lần vẽ đầu còn rỗng)
+  await choDen(() => goc().querySelectorAll('#tx-tbl tbody tr').length >= 3, 'danh sách tài xế tải xong');
   const dongTX = [...goc().querySelectorAll('#tx-tbl tbody tr')];
   assert.ok(dongTX.length >= 3, 'phải có ít nhất 3 tài xế mẫu: ' + dongTX.length);
   const ketLuan = dongTX.map(tr => w.EPL.esc ? tr.children[5].textContent.replace(/\s+/g, ' ').trim() : '');

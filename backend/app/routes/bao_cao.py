@@ -17,7 +17,7 @@ from sqlalchemy import func, literal, or_
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import (ChungTu, GuiSoTune, Part, Route, RouteStop, Supplier, TollCard,
+from models import (ChungTu, Driver, GuiSoTune, Part, Route, RouteStop, Supplier, TollCard,
                     TollCardMove, Trip, TripEvent, TripExpense, TripSection, Voucher)
 from routes.phieu import CO_TOI_DA, da_thu_theo_phieu, loc_phieu, nap_lo, xuat_phieu
 from routes.theo_doi import NGAY_COI_LA_LAU
@@ -782,12 +782,13 @@ def tien_tai_xe(thang: str = None, db: Session = Depends(get_db), user=Depends(n
                 ph["tien_lak"] += v["tien_lak"]
                 ph["ngay"] = ph["ngay"] or v["ngay"]
     ra, t = [], {"tong_lak": 0, "da_tra_lak": 0, "cho_tra_lak": 0, "so_dong_da_tra": 0, "so_dong_cho": 0}
+    latin = dict(db.query(Driver.name, Driver.name_latin).filter(Driver.name.in_(list(tong))).all()) if tong else {}
     for r in tong.values():
         tong_lak, da = round(r["tong_lak"]), round(r["da_tra_lak"])
         cho = tong_lak - da
         k_da = {k: round(v) for k, v in r["khoan_da_tra"].items() if round(v)}
         k_cho = {k: round(v) - k_da.get(k, 0) for k, v in r["khoan"].items() if round(v) - k_da.get(k, 0)}
-        ra.append({"driver": r["driver"], "so_phieu": r["so_phieu"], "khoan": {k: round(v) for k, v in r["khoan"].items()},
+        ra.append({"driver": r["driver"], "driver_latin": latin.get(r["driver"]), "so_phieu": r["so_phieu"], "khoan": {k: round(v) for k, v in r["khoan"].items()},
                    "tong_lak": tong_lak,
                    "da_tra": {"tong_lak": da, "so_dong": r["so_dong_da_tra"], "khoan": k_da,
                               "phieu": sorted(({"so": v["so"], "ngay": v["ngay"], "tien_lak": round(v["tien_lak"])}

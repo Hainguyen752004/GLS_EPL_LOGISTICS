@@ -257,8 +257,8 @@
 
   /** Tên đối tượng cho cột Đối tượng — bốn danh mục, mỗi cái một lượt; hỏng thì hiện mã. */
   async function napTen() {
-    const lay = async (duong, loai, ten) => { try { (await API.get(duong)).forEach(x => { (TEN[loai] = TEN[loai] || {})[x.id] = x[ten]; }); } catch (e) { /* hiện mã */ } };
-    await Promise.all([lay('/api/owners', 'chu_xe', 'name'), lay('/api/suppliers', 'ncc', 'name'), lay('/api/drivers', 'tai_xe', 'name'),
+    const lay = async (duong, loai, ten) => { try { (await API.get(duong)).forEach(x => { (TEN[loai] = TEN[loai] || {})[x.id] = typeof ten === 'function' ? ten(x) : x[ten]; }); } catch (e) { /* hiện mã */ } };
+    await Promise.all([lay('/api/owners', 'chu_xe', 'name'), lay('/api/suppliers', 'ncc', 'name'), lay('/api/drivers', 'tai_xe', x => EPL.tenTaiXe(x, false)),
       lay('/api/customers', 'khach', 'name')]);
   }
 

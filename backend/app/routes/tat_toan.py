@@ -113,7 +113,8 @@ def tinh_ky(db, tai_xe, ky):
                          "out_date": (p.out_date or p.doc_date).isoformat() if (p.out_date or p.doc_date) else None,
                          "origin": p.origin, "destination": p.destination, "chi_lak": round(tien_p, 2)})
     # đã tất toán hay chưa: trang kế toán giữ bản chốt từ đợt 7c, tự ghép vào
-    return {"driver_id": tai_xe.id, "driver_code": tai_xe.driver_code, "driver_name": tai_xe.name, "period": ky,
+    return {"driver_id": tai_xe.id, "driver_code": tai_xe.driver_code, "driver_name": tai_xe.name,
+            "driver_latin": tai_xe.name_latin, "period": ky,
             "so_phieu": len(ds), "tong_ung_lak": round(ung, 2), "tong_chi_lak": round(chi, 2),
             "chenh_lech_lak": round(chi - ung, 2), "phieu": chi_tiet}
 
@@ -141,8 +142,8 @@ def tinh_ky_lo(db, cac_tai_xe, ky):
     for t in cac_tai_xe:
         ds, u = phieu.get(t.id, []), ung.get(t.id, 0.0)
         c = sum(chi.get(p.id, 0.0) for p in ds)
-        ra.append({"driver_id": t.id, "driver_code": t.driver_code, "driver_name": t.name, "period": ky,
-                   "so_phieu": len(ds), "tong_ung_lak": round(u, 2), "tong_chi_lak": round(c, 2),
+        ra.append({"driver_id": t.id, "driver_code": t.driver_code, "driver_name": t.name, "driver_latin": t.name_latin,
+                   "period": ky, "so_phieu": len(ds), "tong_ung_lak": round(u, 2), "tong_chi_lak": round(c, 2),
                    "chenh_lech_lak": round(c - u, 2),
                    "phieu": [{"trip_id": p.id, "doc_no": p.doc_no, "truck_no": p.truck_no,
                               "out_date": (p.out_date or p.doc_date).isoformat() if (p.out_date or p.doc_date) else None,
@@ -190,8 +191,8 @@ def _bang_ky_ngay(db, cac_tai_xe, ky):
     ra = []
     for t in cac_tai_xe:
         n, c, u = tong.get(t.id, [0, 0.0, 0.0])
-        ra.append({"driver_id": t.id, "driver_code": t.driver_code, "driver_name": t.name, "period": ky,
-                   "so_phieu": n, "tong_ung_lak": round(u, 2), "tong_chi_lak": round(c, 2), "chenh_lech_lak": round(c - u, 2)})
+        ra.append({"driver_id": t.id, "driver_code": t.driver_code, "driver_name": t.name, "driver_latin": t.name_latin,
+                   "period": ky, "so_phieu": n, "tong_ung_lak": round(u, 2), "tong_chi_lak": round(c, 2), "chenh_lech_lak": round(c - u, 2)})
     return ra
 
 

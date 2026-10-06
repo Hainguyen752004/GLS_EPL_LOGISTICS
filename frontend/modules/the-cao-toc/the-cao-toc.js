@@ -86,7 +86,7 @@
       { id: 'customer_id', label: 'customer', type: 'select', value: t ? (t.customer_id || '') : '',
         options: [['', '—']].concat(KH.map(k => [k.id, k.name])) },
       { id: 'driver_id', label: 'tct_giu', type: 'select', value: t ? (t.driver_id || '') : '',
-        options: [['', '—']].concat(TX.map(d => [d.id, d.name])) },
+        options: [['', '—']].concat(TX.map(d => [d.id, EPL.tenTaiXe(d)])) },
       { id: 'vehicle_id', label: 'truck_no', type: 'select', value: t ? (t.vehicle_id || '') : '',
         options: [['', '—']].concat(XE.map(x => [x.id, x.truck_no])) },
       { id: 'currency', label: 'ccy', type: 'select', value: t ? t.currency : 'LAK', options: EPL.TIEN_TE.map(m => [m, m]) },

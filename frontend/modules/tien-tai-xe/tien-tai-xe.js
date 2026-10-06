@@ -36,7 +36,7 @@
     q('#ttx-than').innerHTML = rows.length ? rows.map(r => {
       const k = r.khoan || {};
       KHOAN.forEach(x => { t[x] += k[x] || 0; }); t.phieu += r.so_phieu;
-      return `<tr><td lang="lo"><b>${esc(r.driver)}</b></td><td class="num">${r.so_phieu}</td>`
+      return `<tr><td><b lang="lo">${esc(r.driver)}</b>${r.driver_latin ? ' <span class="muted">(' + esc(r.driver_latin) + ')</span>' : ''}</td><td class="num">${r.so_phieu}</td>`
         + KHOAN.map(x => `<td class="num">${so(k[x] || 0)}</td>`).join('')
         + `<td class="num"><b>${so(r.tong_lak)}</b></td><td class="num ttx-so-da">${so(r.da_tra.tong_lak)}</td>`
         + `<td class="num ttx-so-cho">${so(r.cho_tra.tong_lak)}</td><td class="ttx-tt">${oTrangThai(r)}</td></tr>`;
