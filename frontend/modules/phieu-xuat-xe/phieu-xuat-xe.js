@@ -37,7 +37,8 @@
   let soGoTay = false;
   /** Định khoản mặc định của một dòng chi — SOI GƯƠNG services/tai_khoan.dinh_khoan_dong (rà 30/09). Mã lấy từ máy chủ
    *  (KM.acct_rule), ở đây chỉ chọn vế: Nợ theo loại xe và mục; Có theo CÁCH TRẢ — lấy kho → kho · ghi nợ trạm / NCC / thẻ /
-   *  sửa ngoài → phải trả NCC · tiền mặt tài xế cầm đi → xe nhà 1601 tạm ứng nhân viên, xe thuê tiền mặt (ghi công nợ chủ
+   *  sửa ngoài theo đợt (khoản mục NCC theo dõi nợ, KM.ncc_items) → phải trả NCC · sửa ngoài quỹ trả ngay → 1011 tiền mặt
+   *  (06/10) · tiền mặt tài xế cầm đi → xe nhà 1601 tạm ứng nhân viên, xe thuê tiền mặt (ghi công nợ chủ
    *  xe) · trả cùng lương → phải trả nhân viên. Chủ xe tự chi thì không định khoản (''). */
   function tkMacDinh(m, d) {
     const R = KM.acct_rule, thue = P && P.company === 'joint';
@@ -49,7 +50,8 @@
     const no = thue ? R.chu_xe : (m === 'repair' ? R.cp_sua : R.cp_di_lai);
     let co;
     if (src === 'kho') co = thue && m === 'fuel' ? R.ban_hang : R.kho;
-    else if (d.ghi_no || d.toll_card_id || m === 'repair') co = R.ncc;
+    else if (d.ghi_no || d.toll_card_id || (m === 'repair' && !d.supplier_id && (KM.ncc_items || []).includes(d.item_key))) co = R.ncc;
+    else if (m === 'repair') co = R.tien_mat;   // quỹ trả ngay mục V: phiếu chi «Chi khác» Nợ 614 (xe thuê 4022) / Có 1011
     else {
       let c = m === 'fuel' ? 'tien_mat' : (d.pay_channel || (KM.pay_default || {})[d.item_key] || 'tien_mat');
       if (thue && c === 'luong') c = 'tien_mat';

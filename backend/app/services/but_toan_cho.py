@@ -10,7 +10,7 @@ tiền — ghi nhận chi phí thuê xe, ghi nợ nhà cung cấp, quyết toán
 GIAO ƯỚC (module khác gọi — giữ cố định):
 
     ghi(db, nguon, ma_nguon, ngay, dong, dien_giai) -> ButToanCho | None
-        nguon      ≤ 16 ký tự: loại nguồn — thue_xe · no_ncc · xuat_noi_bo · xuat_ban (khoá phiếu, ở đây) · nguồn khác do
+        nguon      ≤ 16 ký tự: loại nguồn — thue_xe · no_ncc · cung_luong · xuat_noi_bo · xuat_ban (khoá phiếu, ở đây) · nguồn khác do
                    module gọi tự đặt (tat_toan, ban_chu_xe)
         ma_nguon   ≤ 80 ký tự: mã bản ghi nguồn (thue_xe / no_ncc: Trip.id · xuat_noi_bo / xuat_ban: "dau:<mã lần xuất kho>"
                    hoặc "pt:<mã lần xuất kho>" — TripExpense.stock_move_id, mã dòng sổ kho bên kho tạm)
@@ -73,7 +73,11 @@ VAI_XEM = ("acct", "expacct", "admin")
 # hai nguồn bút toán lúc KHOÁ PHIẾU (chủ dự án 01/10) — mở khoá thì huỷ cả hai
 THUE_XE = "thue_xe"        # xe thuê: Nợ 621 / Có 4022 bằng tiền thuê + (06/10) phí Nợ 4022 / Có 715 · quá tải Nợ 4022 / Có 758
 NO_NCC = "no_ncc"          # dòng chi ghi nợ nhà cung cấp: Nợ 625 · 614 (xe thuê 4022) / Có 4021
-NGUON_KHOA_PHIEU = (THUE_XE, NO_NCC)
+# 06/10 (chủ dự án duyệt, theo Excel 625/4201): dòng xe nhà mục IV / VI trả CÙNG LƯƠNG — lúc khoá ghi chi phí Nợ 625 / Có 4201
+# phải trả nhân viên, đối tượng tài xế (EPLTX-…); lúc trả lương phiếu chi DO bên Web ghi Nợ 4201 / Có tiền (gói DO `pay_acc_code`).
+# KHÔNG nằm trong chung_tu_dong_do.NGUON_DONG: dòng vẫn `open · payroll` để Web lập phiếu chi lương.
+CUNG_LUONG = "cung_luong"
+NGUON_KHOA_PHIEU = (THUE_XE, NO_NCC, CUNG_LUONG)
 # XUẤT KHO cho chuyến (chủ dự án 01/10: "xuất dầu là xuất nội bộ và còn là xuất bán") — cũng ghi lúc khoá phiếu, nhưng MỘT
 # LẦN XUẤT KHO một bút toán (ma_nguon "dau:<mã lần xuất>" · "pt:<mã lần xuất>" của kho tạm), để ngày chứng từ là ngày xuất thật
 XUAT_NOI_BO = "xuat_noi_bo"  # xe nhà: dầu kho Nợ 625 / Có 1371 · phụ tùng kho Nợ 614 / Có 1371, theo giá vốn bình quân kho
@@ -345,7 +349,10 @@ def dong_khoa_phieu(db, p, cac_dong=None):
         lốp nợ theo đợt, garage cho nợ…) — Nợ 625 · 614 (xe thuê 4022) / Có 4021, theo NGUYÊN TỆ của dòng (06/10: dầu trạm VN ghi
         VND) kèm tỷ giá khoá trên phiếu và số quy Kíp (`tien_lak`); dòng Kíp như cũ. BỎ các
         dòng mục V quỹ TRẢ NGAY (chi_muc_tune.dong_quy_chi): những dòng đó vào chi phí qua phiếu chi "Chi khác" bên kế toán
-        (Nợ 614 / Có tiền), ghi thêm Có 4021 là chi phí hai lần."""
+        (Nợ 614 / Có tiền), ghi thêm Có 4021 là chi phí hai lần.
+      · cung_luong (06/10) — mỗi dòng xe nhà mục IV / VI cách trả `luong` (định khoản …/4201, tai_khoan.tk_dong), EPL chịu, tiền > 0:
+        Nợ 625 / Có 4201, đối tượng tài xế của DO, theo nguyên tệ của dòng (như no_ncc). Tiền tới tay tài xế bằng phiếu chi DO
+        trên Web (Nợ 4201 / Có tiền — gói DO mang `pay_acc_code`, services/ban_giao.py); ghi chi phí MỘT lần, lúc khoá."""
     from models import TripExpense
     from services import chi_muc_tune as CMT
     from services.ban_giao import _ten as ten_dong
@@ -387,14 +394,23 @@ def dong_khoa_phieu(db, p, cac_dong=None):
         ra[THUE_XE] = (dong_thue, "Ghi nhận chi phí thuê xe liên kết phiếu %s (%s)%s" % (
             p.doc_no, p.owner_name or "—", (" — trừ " + ", ".join(kem)) if kem else ""))
     quy = {d.id for m in ("repair", "other") for d in CMT.dong_quy_chi(db, p, m, cac_dong)}
-    dong = []
+    dong, luong = [], []
     for d in cac_dong:
         if d.id in quy or d.paid_by_epl is False:          # chủ xe tự chi: không phải tiền của EPL
             continue
-        ma = TK.tk_dong(p.company, d)
+        ma = TK.tk_dong(p.company, d, db)
         if not ma or "/" not in ma:
             continue
         no, co = ma.split("/", 1)
+        if co == TK.LUONG and p.company != "joint" and d.section in ("travel", "other"):
+            x = _dong_tien(p, d, no, co, ten_dong(db, d)[0])
+            if x is not None:
+                x["doi_tuong"] = {"loai": "tai_xe", "ref_id": p.driver_id} if p.driver_id else None
+                x["dien_giai"] = "%s %s · %s · trả cùng lương%s" % (
+                    {"travel": "IV", "other": "VI"}[d.section], ten_dong(db, d)[0], p.doc_no,
+                    (" · " + p.driver_name) if p.driver_name else "")
+                luong.append(x)
+            continue
         if co != TK.NCC:
             continue
         lak = round(tien_dong(p, d))
@@ -417,7 +433,39 @@ def dong_khoa_phieu(db, p, cac_dong=None):
         dong.append(x)
     if dong:
         ra[NO_NCC] = (dong, "Ghi nhận chi phí ghi nợ nhà cung cấp phiếu %s" % p.doc_no)
+    if luong:
+        ra[CUNG_LUONG] = (luong, "Ghi nhận chi phí trả cùng lương (tiền chuyến, tiền nước) phiếu %s · tài xế %s" % (
+            p.doc_no, p.driver_name or "—"))
     return ra
+
+
+def cung_luong_da_ghi(db, trip_id):
+    """{TripExpense.id: ButToanCho} — các dòng trả cùng lương của DO đã nằm trong bút toán `cung_luong` CÒN HIỆU LỰC (chờ gửi hoặc
+    đã gửi, không chờ đảo): chi phí 625 đã ghi lúc khoá, nên phiếu chi lương sau đó phải ghi Nợ 4201 (gói DO `pay_acc_code`).
+    DO khoá trước bản 06/10 (không có bút toán này) → rỗng: phiếu chi lương giữ Nợ 625 như cũ — không ghi chi phí hai lần."""
+    r = _tim(db, CUNG_LUONG, trip_id) if trip_id else None
+    if r is None or r.status not in ("cho_gui", "da_gui") or r.can_dao:
+        return {}
+    try:
+        dong = json.loads(r.dong or "[]")
+    except ValueError:
+        dong = []
+    return {x["ref"]: r for x in dong if isinstance(x, dict) and x.get("ref") and x.get("co") == TK.LUONG}
+
+
+def _dong_tien(p, d, no, co, ten):
+    """Một dòng bút toán theo NGUYÊN TỆ của dòng chi (khuôn no_ncc 06/10): Kíp → tiền Kíp; tiền khác → nguyên tệ + tỷ giá khoá
+    trên phiếu + số quy Kíp `tien_lak`. Tiền ≤ 0 → None."""
+    from services.tinh_toan import tien_dong, ty_gia
+    lak = round(tien_dong(p, d))
+    if lak <= 0:
+        return None
+    x = {"no": no, "co": co, "tien": lak, "ccy": "LAK", "ref": d.id, "section": d.section, "dien_giai": ten}
+    ccy = (d.currency or "LAK").upper()
+    if ccy != "LAK":
+        x.update({"tien": lam_tron((d.qty or 0) * (d.unit_price or 0), ccy), "ccy": ccy, "ty_gia": round(ty_gia(p, ccy), 10),
+                  "tien_lak": lak})
+    return x
 
 
 # ================================================================ XUẤT KHO cho chuyến (chủ dự án 01/10)
@@ -785,10 +833,14 @@ def dau_khoa(db, p):
                    ("tiền thuê xe (giá thuê, phí, quá tải, cân)", "ຄ່າເຊົ່າລົດ (ລາຄາເຊົ່າ, ຄ່າທຳນຽມ, ນໍ້າໜັກເກີນ, ນໍ້າໜັກຊັ່ງ)",
                     "the truck hire (hire price, fee, overload, weight)")))
     theo_id = {d.id: d for d in dong}
-    for x in dong_khoa_phieu(db, p, dong).get(NO_NCC, ([], None))[0]:
+    bo = dong_khoa_phieu(db, p, dong)
+    for x in bo.get(NO_NCC, ([], None))[0]:
         d = theo_id.get(x.get("ref"))
         ra.append((("ncc", x.get("section"), x["no"], x["co"], x["tien"], (x.get("doi_tuong") or {}).get("ref_id")),
                    _vi_tri(d, dong) if d is not None else None))
+    for x in bo.get(CUNG_LUONG, ([], None))[0]:            # 06/10: trả cùng lương đã ghi Nợ 625 / Có 4201 lúc khoá
+        d = theo_id.get(x.get("ref"))
+        ra.append((("luong", x.get("section"), x["no"], x["co"], x["tien"], x["ccy"]), _vi_tri(d, dong) if d is not None else None))
     for (n, m), (_, ds, _) in dong_xuat_kho(db, p, dong).items():
         for x in ds:
             ra.append(((n, m, x["no"], x["co"], x["tien"]), None))
@@ -813,13 +865,13 @@ def chan_sua_sau_khoa(db, p, truoc):
             ten.append(t)
     ds = ten or [("các dòng xuất kho", "ແຖວເບີກສາງ", "the store-issue lines")]
     raise loi3(409, "DA_KHOA",
-               "Phiếu %s đã khoá — %s đã vào bút toán khoá phiếu (thuê xe / xuất kho / ghi nợ nhà cung cấp): không sửa giá thuê, "
+               "Phiếu %s đã khoá — %s đã vào bút toán khoá phiếu (thuê xe / xuất kho / ghi nợ nhà cung cấp / trả cùng lương): không sửa giá thuê, "
                "phí, quá tải, cân của xe thuê; không sửa giá bán, đơn giá, số lượng, ai trả của dòng kho / dòng ghi nợ; không thêm / "
                "bỏ dòng, không cấp / xuất thêm được. KT Thu/Chi mở khoá phiếu rồi mới sửa." % (p.doc_no, _noi(ds, 0)),
-               "ໃບ %s ລັອກແລ້ວ — %s ລົງບັນຊີຕອນລັອກໃບແລ້ວ (ເຊົ່າລົດ / ເບີກສາງ / ໜີ້ຜູ້ສະໜອງ): ແກ້ລາຄາເຊົ່າ, ຄ່າທຳນຽມ, ນໍ້າໜັກເກີນ, "
+               "ໃບ %s ລັອກແລ້ວ — %s ລົງບັນຊີຕອນລັອກໃບແລ້ວ (ເຊົ່າລົດ / ເບີກສາງ / ໜີ້ຜູ້ສະໜອງ / ຈ່າຍພ້ອມເງິນເດືອນ): ແກ້ລາຄາເຊົ່າ, ຄ່າທຳນຽມ, ນໍ້າໜັກເກີນ, "
                "ນໍ້າໜັກຊັ່ງ ຂອງລົດເຊົ່າ; ແກ້ລາຄາຂາຍ, ລາຄາ, ຈຳນວນ, ຜູ້ຈ່າຍ ຂອງແຖວສາງ / ແຖວໜີ້; ເພີ່ມ / ລຶບແຖວ, ເບີກເພີ່ມ ບໍ່ໄດ້. "
                "ບັນຊີລາຍຈ່າຍ/ຮັບ ປົດລັອກໃບກ່ອນ ຈຶ່ງແກ້ໄດ້." % (p.doc_no, _noi(ds, 1)),
-               "Slip %s is locked — %s went into the lock-time journal entries (truck hire / store issue / supplier payable): the "
+               "Slip %s is locked — %s went into the lock-time journal entries (truck hire / store issue / supplier payable / paid with salary): the "
                "hire price, fee, overload and weight of a hired truck, and the sale price, unit price, quantity and payer of store / "
                "payable lines cannot change; lines cannot be added or removed; nothing more can be issued. The receipts & payments "
                "accountant must unlock the slip first." % (p.doc_no, _noi(ds, 2)),

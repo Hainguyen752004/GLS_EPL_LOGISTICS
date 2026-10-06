@@ -50,7 +50,7 @@ KHONG_XEM = ("driver", "depot", "parts", "repair")           # đúng KHONG_XEM_
 LOAI_PDT = "PDT"                                             # de_nghi_thu.LOAI
 VAI_XEM_BT = ("acct", "expacct", "admin")                    # but_toan_cho.VAI_XEM — vai xem số tiền bút toán
 NGUON_XK = ("xuat_noi_bo", "xuat_ban")
-NGUON_GL = ("thue_xe", "no_ncc")
+NGUON_GL = ("thue_xe", "no_ncc", "cung_luong")       # 06/10: cung_luong Nợ 625 / Có 4201 lúc khoá (xe nhà)
 # 06/10: bút toán doanh thu ghi lúc «Tạo SO bên kế toán» (services/but_toan_cho.ghi_doanh_thu) — hiện cạnh SO của nó
 NGUON_DT_CUOC, NGUON_DT_BAN = "doanh_thu", "doanh_thu_ban"
 THU_TU_MUC = {"loi": 0, "chua": 1, "cho_gui": 2, "cho_kt": 3, "xong": 4}
@@ -246,8 +246,10 @@ def _nhom(p, N, chi, ban, xem_bt):
     bt = [gl(r) for r in btc if r.nguon in NGUON_GL]
     co_ncc = any(d.ghi_no or (d.section in ("travel", "other") and cach_tra(d, p.company) == "ncc") for d in dong
                  if not (lk and d.paid_by_epl is False))
-    g = {"ap_dung": bool(lk or co_ncc or bt), "em": [{"loai": "khoa", "tt": "da_khoa" if p.locked else "chua_khoa",
-                                                      "thue": lk, "ncc": co_ncc}], "kt": bt, "ghi_chu": None}
+    co_luong = not lk and any(d.section in ("travel", "other") and d.paid_by_epl is not False and cach_tra(d, p.company) == "luong"
+                              and (d.qty or 0) * (d.unit_price or 0) > 0 for d in dong)
+    g = {"ap_dung": bool(lk or co_ncc or co_luong or bt), "em": [{"loai": "khoa", "tt": "da_khoa" if p.locked else "chua_khoa",
+                                                                  "thue": lk, "ncc": co_ncc, "luong": co_luong}], "kt": bt, "ghi_chu": None}
     if not g["ap_dung"]:
         g["muc"], g["em"] = "khong", []
     elif not p.locked:

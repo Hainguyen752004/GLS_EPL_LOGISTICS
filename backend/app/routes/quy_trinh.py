@@ -61,7 +61,9 @@ def _dinh_khoan(db, loai):
 DONG_CHI = (("fuel", "kho", None, False, "dk_dau_kho"), ("fuel", "mua", None, True, "dk_dau_ghi_no"),
             ("fuel", "mua", None, False, "dk_dau_tien_mat"), ("travel", None, "tien_mat", False, "dk_tien_mat"),
             ("travel", None, "luong", False, "dk_luong"), ("travel", None, "ncc", False, "dk_ncc"),
-            ("repair", "kho", None, False, "dk_pt_kho"), ("repair", "mua", None, False, "dk_sua_ngoai"))
+            ("repair", "kho", None, False, "dk_pt_kho"), ("repair", "mua", None, False, "dk_sua_ngoai"),
+            # 06/10: mục V mua ngoài quỹ trả ngay → …/1011 (phiếu chi «Chi khác»); ghi nợ / theo đợt → …/4021
+            ("repair", "mua", None, True, "dk_sua_no_ncc"))
 
 
 def _dong_chi():

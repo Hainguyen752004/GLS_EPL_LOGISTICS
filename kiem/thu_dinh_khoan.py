@@ -8,7 +8,7 @@ services/danh_muc_tai_khoan_lao.json), trừ ba mã con của khách 1371 · 402
 không còn xuất hiện; bảng dòng chi đúng từng cách trả, xe nhà / xe liên kết.
 Phần 2 — qua máy chủ thử:
   · phiếu xe nhà đúng mục IV tờ Excel mẫu: tiền mặt → 625/1601 · cùng lương → 625/4201 · chipping → 625/4021;
-    mục VI tiền mặt → 625/1601; sửa ngoài → 614/4021; dầu kho → 625/1371;
+    mục VI tiền mặt → 625/1601; sửa ngoài quỹ trả ngay (garage) → 614/1011, lốp theo đợt → 614/4021; dầu kho → 625/1371;
   · dòng mang mã luật cũ (625/4021 cho khoản tiền mặt) gửi lên → máy đặt lại theo luật; mã người dùng tự chọn → giữ;
   · phiếu xe liên kết: tiền mặt → 4022/1011 · chipping → 4022/4021 · dầu kho (xuất bán) → 4022/707;
   · tờ tạm ứng quét QR: các dòng mang 625/1601; quỹ chi thẳng mục IV → PC_TU Nợ 1601 / Có 1011 đúng số tờ tạm ứng;
@@ -88,7 +88,10 @@ def phan_1():
         ("EPL", "travel", None, (("cach", "ncc"),)): "625/4021", ("joint", "travel", None, (("cach", "ncc"),)): "4022/4021",
         ("EPL", "travel", None, (("the", True),)): "625/4021", ("EPL", "other", None, ()): "625/1601",
         ("EPL", "repair", "kho", ()): "614/1371", ("joint", "repair", "kho", ()): "4022/707",
-        ("EPL", "repair", "mua", ()): "614/4021", ("joint", "repair", "mua", ()): "4022/4021",
+        # 06/10 (duyệt rà Nợ/Có): sửa ngoài QUỸ TRẢ NGAY → …/1011 (phiếu chi «Chi khác»); ghi nợ / khoản mục NCC theo đợt → …/4021
+        ("EPL", "repair", "mua", ()): "614/1011", ("joint", "repair", "mua", ()): "4022/1011",
+        ("EPL", "repair", "mua", (("ghi_no", True),)): "614/4021", ("joint", "repair", "mua", (("ghi_no", True),)): "4022/4021",
+        ("EPL", "repair", "mua", (("ncc_theo_dot", True),)): "614/4021", ("joint", "repair", "mua", (("ncc_theo_dot", True),)): "4022/4021",
     }
     sai = {k: (TK.dinh_khoan_dong(k[0], k[1], k[2], **dict(k[3])), v) for k, v in MONG.items()
            if TK.dinh_khoan_dong(k[0], k[1], k[2], **dict(k[3])) != v}
@@ -132,9 +135,12 @@ def phan_2():
         mong = {"x_water": "625/4201", "x_trip": "625/4201", "x_vn": "625/1601", "x_phone": "625/1601", "x_chip_lao": "625/4021"}
         thuc = {k: tk_cua(p, k, "travel") for k in mong}
         dung(thuc == mong, "Mục IV: cùng lương 625/4201 · tiền mặt 625/1601 · chipping 625/4021 — %s" % thuc)
+        s, ncc_ds = goi("/api/suppliers", vai="admin")
+        ncc = {x.get("item_key") for x in (ncc_ds or []) if x.get("item_key")}
+        mong_v = {k: ("614/4021" if k in ncc else "614/1011") for k in ("x_tire", "x_air")}
         dung(tk_cua(p, "x_misc", "other") == "625/1601" and tk_cua(p, "diesel", "fuel") == "625/1371"
-             and tk_cua(p, "x_tire", "repair") == "614/4021" and tk_cua(p, "x_air", "repair") == "614/4021",
-             "VI tiền mặt 625/1601 · dầu kho 625/1371 · sửa ngoài 614/4021")
+             and {k: tk_cua(p, k, "repair") for k in mong_v} == mong_v,
+             "VI tiền mặt 625/1601 · dầu kho 625/1371 · sửa ngoài: theo đợt 614/4021, quỹ trả ngay 614/1011 — %s" % mong_v)
 
         # dòng mang mã LUẬT CŨ → máy đặt lại; mã người dùng tự chọn → giữ
         gui = [{"id": e["id"], "section": e["section"], "item_key": e["item_key"], "qty": e["qty"], "pay_channel": e.get("pay_channel"),

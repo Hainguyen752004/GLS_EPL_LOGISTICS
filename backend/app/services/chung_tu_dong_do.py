@@ -33,7 +33,9 @@ PHÂN DÒNG CHI — đọc BẢN GHI THẬT trước, rồi mới theo luật c�
      "Chi trước" bên kế toán (chi_tune). Dòng KHÔNG nằm trong số tiền đã ứng (dầu đổ dọc đường thêm sau lúc ứng — xem
      _trong_tam_ung): xe nhà → driver_settlement (tất toán tháng chi bù); xe thuê → open (EPL chưa đưa tiền mà đã trừ vào tiền
      trả chủ xe)
-  9. trả theo chuyến cùng lương (tinh_toan.cach_tra "luong", chỉ xe nhà) → open · payroll — bên điều xe không lập chứng từ
+  9. trả theo chuyến cùng lương (tinh_toan.cach_tra "luong", chỉ xe nhà) → open · payroll — bên điều xe không lập chứng từ CHI
+     TIỀN; từ 06/10 DO khoá có bút toán cung_luong Nợ 625 / Có 4201 (ghi chi phí) — vẫn open, label + ref_no / doc_no nói bút toán
+     đó, gói mang pay_acc_code 4201/1011 (services/ban_giao.py)
  10. trừ thẻ cao tốc mà không có bút toán (mã người dùng tự chọn khác 4021) → not_payable · toll_card
  11. còn lại → open
 CHI TẠI QUỸ TRANG ĐIỀU XE (trước 01/10, hoặc Sếp chi tay — routes/phieu.py, phieu_linh.cap_phat): tiền đã ra mà chỉ có tờ ở sổ
@@ -449,6 +451,13 @@ def gan(db, p, goi, dong, so):
                         "Phiếu có tờ chi tại quỹ trang điều xe (%s) theo luật cũ — dòng này có thể đã chi trong tờ đó; %s" % (c.so, DOI_SOAT),
                         ref_no=c.so, doc_status="chi_tai_quy")
         if d.section in ("travel", "other") and cach_tra(d, p.company) == "luong":
+            # 06/10: DO khoá từ bản sửa đã ghi chi phí Nợ 625 / Có 4201 (bút toán cung_luong — KHÔNG phải chứng từ chi tiền, dòng
+            # vẫn open để Web lập phiếu chi lương); gói mang pay_acc_code 4201/1011 → phiếu chi Nợ 4201 / Có tiền
+            r = mot_lan("cung_luong", lambda: BTC.cung_luong_da_ghi(db, p.id)).get(d.id)
+            if r is not None:
+                return _ket("open", "payroll", "Trả theo chuyến cùng lương — chi phí đã ghi lúc khoá DO (Nợ 625 / Có 4201, bút toán %s); "
+                            "kế toán lập phiếu chi lương Nợ 4201 / Có tiền khi trả." % (r.so_ben_ke_toan or r.source_ref),
+                            ref_no=r.source_ref, doc_no=r.so_ben_ke_toan, doc_status=r.status)
             return _ket("open", "payroll", "Trả theo chuyến cùng lương — trang điều xe không lập chứng từ cho khoản này; kế toán lập "
                         "phiếu chi khi trả.")
         return _ket("open", None, "Chưa vào chứng từ nào bên kế toán.")

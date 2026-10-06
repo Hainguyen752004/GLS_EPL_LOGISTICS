@@ -105,6 +105,11 @@ def kiem_g1(g, p):
     for k in ("x_water", "x_trip"):
         s = mot(g, k)
         dung(s["state"] == "open" and s["kind"] == "payroll", "G1 %s → open payroll (%s %s)" % (k, s["state"], s["kind"]))
+        x = theo_ten(g, k)[0]
+        # 06/10: G1 khoá 01/10 — trước bản bút toán cung_luong → không pay_acc_code (phiếu chi lương vẫn Nợ 625, không ghi chi phí hai lần)
+        dung("pay_acc_code" not in x and x["acc_code"] == "625/4201", "G1 %s khoá trước bản sửa → không pay_acc_code, acc_code 625/4201" % k)
+    x = theo_ten(g, "garage")[0]
+    dung(x["acc_code"] == "614/1011", "G1 garage mục V quỹ trả ngay → nhãn 614/1011 (đúng phiếu Chi khác Nợ 614 / Có 1011) — %s" % x["acc_code"])
 
 
 def kiem_t1(g, p):

@@ -12,7 +12,8 @@ Phải thấy:
   · màn Phiếu đề nghị chi tìm được tờ theo số DO; Bãi xem DO nhưng không nhận tiền; tài xế bị chặn;
   · dầu kho CHƯA CẤP thì Khoá phiếu bị 409 DAU_KHO_CHUA_CAP, không lập đề nghị thu (luật hiện hành);
   · kho QLSX báo đã cấp (cổng bàn giao, giả lập) → dòng dầu mang phiếu kho + giá vốn → khoá được: máy lập PHIẾU ĐỀ NGHỊ THU (PDT)
-    đúng cước, đúng tiền tệ (USD), và bút toán xuất nội bộ 625/1371 GỬI ĐI (bộ giả nhận, không ra mạng);
+    đúng cước, đúng tiền tệ (USD), và bút toán xuất nội bộ 625/1371 GỬI ĐI (bộ giả nhận, không ra mạng); (06/10 tối) tiền nước trả
+    cùng lương → bút toán cung_luong 625/4201 cũng gửi lúc khoá;
   · mở khoá → rút tờ chưa gửi, bút toán đã gửi được ĐẢO (bộ giả); khoá lại → tờ mới; cờ da_day đánh tay không chặn mở khoá,
     không đổi trạng thái — chỉ SO đã tạo bên hệ anh Tune chặn (DA_TAO_SO);
   · xoá DO có dầu đã cấp ở kho QLSX → 409 DA_CAP_KHO_QLSX; kho huỷ phiếu xuất → xoá được, không còn tờ nào của DO.
@@ -118,17 +119,24 @@ def main():
         dung(any(c["loai"] == "PDT" and c["loai_ten"] == "Phiếu đề nghị thu" for c in r["ds"]), "Tờ PDT nằm trong hồ sơ gửi kế toán")
         bt = but_toan(pid)
         dong = [d for b in bt for d in b["dong"]]
+        # 06/10 tối: DO xe nhà có tiền nước trả cùng lương → thêm bút toán cung_luong (Nợ 625 / Có 4201) cùng lúc khoá — đếm theo SourceRef
         gui = [z for z in K.GIA.but_toan[n_bt:] if z[0] == "POST" and not z[1].endswith("/reverse")]
+        gui_xk = [z for z in gui if str((z[2] or {}).get("SourceRef", "")).startswith("EPLLAO-xuat_noi_bo-")]
+        gui_cl = [z for z in gui if (z[2] or {}).get("SourceRef") == "EPLLAO-cung_luong-" + pid]
         dung(len(bt) == 1 and bt[0]["status"] == "da_gui" and [(d["no"], d["co"], d["tien"]) for d in dong] == [("625", "1371", 2650000)]
-             and len(gui) == 1, "Bút toán xuất nội bộ 625/1371 = 100 × 26.500 đã GỬI (bộ giả nhận một gói, không ra mạng)",
+             and len(gui_xk) == 1, "Bút toán xuất nội bộ 625/1371 = 100 × 26.500 đã GỬI (bộ giả nhận một gói, không ra mạng)",
              [(b["status"], b.get("so_ben_ke_toan")) for b in bt])
+        en = (gui_cl[0][2] or {}).get("Entries") or [] if gui_cl else []
+        dung(len(gui_cl) == 1 and len(gui) == 2 and [(e.get("DebitAccount"), e.get("CreditAccount"), e.get("Amount")) for e in en] == [("625", "4201", 60000)],
+             "Bút toán trả cùng lương Nợ 625 / Có 4201 = 60.000 (tiền nước) cũng GỬI lúc khoá — đúng hai gói", [z[2].get("SourceRef") for z in gui])
         id1 = x["pdt"]["id"]
 
         print("== 4. mở khoá → rút tờ chưa gửi, đảo bút toán; khoá lại → tờ mới")
         n_bt = len(K.GIA.but_toan)
         s, g = goi("/api/trips/%s/mo-khoa" % pid, {}, "ketoan"); phai(s, 200, "Kế toán mở khoá (tờ chưa gửi)", g)
         x = dong_thu(so); dung(x["pdt"] is None and x["trang_thai"] == "cho_khoa", "Mở khoá → tờ đề nghị thu chưa gửi được rút")
-        dao = [z for z in K.GIA.but_toan[n_bt:] if z[1].endswith("/reverse")]
+        dao = [z for z in K.GIA.but_toan[n_bt:] if z[1].endswith("/reverse")
+               and str((z[2] or {}).get("SourceRef", "")).startswith("EPLLAO-xuat_noi_bo-")]
         dung(len(dao) == 1 and not [b for b in but_toan(pid) if b["status"] == "da_gui"],
              "Mở khoá → bút toán đã gửi được gửi ĐẢO (bộ giả), không còn bản 'đã gửi'", [b["status"] for b in but_toan(pid)])
         s, g = goi("/api/trips/%s/khoa" % pid, {"xac_nhan": True}, "ketoan"); phai(s, 200, "Khoá lại", g)

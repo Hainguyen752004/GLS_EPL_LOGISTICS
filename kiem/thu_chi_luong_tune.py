@@ -23,6 +23,9 @@ dịch, vào một THÁNG d7 chưa có DO nào (tìm lùi từ 09/2026), như ki
     E  (≈ T4-0001) phiếu giao xe nhà: nước + chuyến
     T  (≈ G4-0002/0003/0007) xe THUÊ: nước + chuyến chọn luong — không vào (EPL không trả lương tài xế của chủ xe)
 → 12 dòng chờ hỏi, tổng 9.660.000 LAK (như bộ cũ).
+Bước 8 (06/10, duyệt rà Nợ/Có): khoá DO A → bút toán `cung_luong` Nợ 625 / Có 4201 (đối tượng tài xế), báo cáo và dòng chờ hỏi
+KHÔNG đổi, gói DO mang `pay_acc_code` 4201/1011 ở dòng cùng lương (vẫn open · payroll); DO không có bút toán đó thì không; mở khoá
+→ huỷ.
 """
 import os
 import sys
@@ -324,6 +327,55 @@ def main():
         LOI["kieu"] = None
         db.expire_all()
         dung(sum(1 for x in cua_bai() if x.status == "da_tra") == 3, "lỗi không đổi bản ghi nào (vẫn 3 dòng đã trả)")
+
+        print("== 8. (06/10, duyệt rà Nợ/Có) khoá DO A → bút toán cung_luong Nợ 625 / Có 4201; báo cáo, dòng chờ hỏi không đổi")
+        from services import ban_giao as BG
+        from services import but_toan_cho as BTC
+        os.environ.pop("QLSX_GUI_BUT_TOAN", None)           # cờ gửi tắt: bút toán nằm chờ gửi, không gọi mạng
+        pa, pc = phieu("A"), phieu("C")
+        s, ra0 = bao_cao()
+        hang0 = {x["driver"]: x for x in ra0.get("rows", [])} if s == 200 else {}
+        cho0 = {x[0] for x in CL.dong_cho(db, 500)}
+        pa.locked = True
+        db.flush()
+        BTC.ghi_khoa_phieu(db, pa, by_user="thu")
+        db.commit()                                          # phiên savepoint: chốt savepoint (lời gọi TestClient sau đó rollback phần chưa chốt)
+        r = BTC._tim(db, BTC.CUNG_LUONG, pa.id)
+        dn, dc = dong("A", "x_water"), dong("A", "x_trip")
+        import json as _j
+        ds = _j.loads(r.dong) if r is not None else []
+        dung(r is not None and r.status == "cho_gui" and r.source_ref == "EPLLAO-cung_luong-" + pa.id and r.tong == 1860000
+             and {x["ref"]: (x["no"], x["co"], x["tien"], x["ccy"]) for x in ds} == {dn.id: ("625", "4201", 60000, "LAK"),
+                                                                                     dc.id: ("625", "4201", 1800000, "LAK")}
+             and all(x["doi_tuong"] == {"loai": "tai_xe", "ref_id": pa.driver_id} for x in ds),
+             "cung_luong: đúng 2 dòng nước + chuyến, Nợ 625 / Có 4201, đối tượng tài xế, tổng 1.860.000 (tiền mặt, cầu đường không vào)",
+             [(x["ref"], x["no"], x["co"], x["tien"]) for x in ds])
+        dung(BTC._tim(db, BTC.NO_NCC, pa.id) is None, "không sinh bút toán ghi nợ NCC (không dòng …/4021)")
+        s, ra1 = bao_cao()
+        hang1 = {x["driver"]: x for x in ra1.get("rows", [])} if s == 200 else {}
+        dung(s == 200 and hang1.get(pa.driver_name) == hang0.get(pa.driver_name) and ra1.get("tong") == ra0.get("tong"),
+             "báo cáo Tiền chuyến & nước KHÔNG đổi (bút toán ghi chi phí không phải tiền đã trả)", hang1.get(pa.driver_name, {}).get("cho_tra"))
+        dung({x[0] for x in CL.dong_cho(db, 500)} == cho0, "dòng chờ hỏi phiếu chi lương không đổi")
+        g = BG.dong_goi(db, pa)
+        theo = {x.get("ref_id"): x for x in g["details"]}
+        dung(all(theo[i].get("pay_acc_code") == "4201/1011" and theo[i]["acc_code"] == "625/4201"
+                 and theo[i]["settlement"]["state"] == "open" and theo[i]["settlement"]["kind"] == "payroll"
+                 and theo[i]["settlement"]["ref_no"] == r.source_ref for i in (dn.id, dc.id))
+             and not any(x.get("pay_acc_code") for x in g["details"] if x.get("ref_id") not in (dn.id, dc.id)),
+             "gói DO A: nước + chuyến mang pay_acc_code 4201/1011, vẫn open · payroll (Web lập phiếu chi lương); dòng khác không có",
+             [(x.get("item_key"), x.get("pay_acc_code"), x["settlement"]["state"]) for x in g["details"][1:]])
+        tt = BG.trang_thai_chi(db, [pa])[pa.id]
+        dung(all(CL.khoa_dong(pa.id, i) in tt["open_line_keys"] for i in (dn.id, dc.id)),
+             "viên trạng thái chi: hai dòng vẫn trong open_line_keys (bút toán cung_luong không tính là chứng từ)", tt["code"])
+        gc = BG.dong_goi(db, pc)
+        dung(not any(x.get("pay_acc_code") for x in gc["details"]),
+             "DO C không có bút toán cung_luong (khoá trước bản sửa / chưa khoá) → không pay_acc_code: phiếu chi lương giữ Nợ 625")
+        BTC.huy_khoa_phieu(db, pa, by_user="thu")
+        pa.locked = False
+        db.commit()
+        g = BG.dong_goi(db, pa)
+        dung(BTC._tim(db, BTC.CUNG_LUONG, pa.id).status == "huy" and not any(x.get("pay_acc_code") for x in g["details"]),
+             "mở khoá → cung_luong huỷ, gói hết pay_acc_code")
     finally:
         CHI._goi, NL._goi, B._theo_ngay = goc_goi, goc_nl, goc_tn
         if cu_bat is None:

@@ -20,10 +20,17 @@ Luật rút ra:
     Đổi mã thì đổi ở MA_CON_KHACH / các hằng số dưới đây, KHÔNG sửa rải rác.
   · Vế CÓ của một dòng chi đi theo CÁCH TRẢ, vì mỗi cách trả là một đối tượng nợ khác nhau:
         lấy kho ..................................... kho 1371
-        ghi nợ trạm dầu · nhà cung cấp · thẻ cao tốc · sửa ngoài ... phải trả nhà cung cấp 4021
+        ghi nợ trạm dầu · nhà cung cấp · thẻ cao tốc · sửa ngoài ghi nợ / theo đợt ... phải trả nhà cung cấp 4021
+        sửa ngoài QUỸ TRẢ NGAY (mục V: garage, tài xế tự trả) ... 1011 tiền mặt — phiếu chi «Chi khác» lúc ghi sổ mục V
         tiền mặt tài xế cầm đi (tạm ứng) · xe nhà .... 1601 tạm ứng nhân viên (quyết toán lúc tất toán tài xế)
         tiền mặt tài xế cầm đi · xe thuê ............. 1011 tiền mặt — EPL chi hộ, ghi công nợ chủ xe (Nợ 4022)
         trả cùng lương (xe nhà) ...................... 4201 phải trả nhân viên — tiền lương, tiền công
+    06/10 (chủ dự án duyệt, rà Nợ/Có): mục V mua ngoài trước đây LUÔN Có 4021, trong khi dòng quỹ trả ngay đi phiếu chi «Chi khác»
+    Nợ 614 / Có 1011 và không có bút toán 4021 nào — nhãn sai (sổ không sai). Nay chỉ Có 4021 khi ghi nợ / trừ thẻ / khoản mục nhà
+    cung cấp theo dõi nợ (điều kiện ngược chi_muc_tune.dong_quy_chi); còn lại Có 1011. Dòng cũ lưu 614/4021 là mã máy đặt (trong
+    MA_HE_THONG) nên tk_dong tự tính lại khi đọc — không sửa DB; lưu lại phiếu thì mã mới được ghi.
+    Cùng lương: lúc khoá DO ghi bút toán chờ `cung_luong` Nợ 625 / Có 4201 (but_toan_cho); lúc trả lương phiếu chi DO Nợ 4201 / Có
+    tiền (gói DO mang `pay_acc_code`).
     Trước 30/09 mọi dòng không lấy kho đều ghi Có 4021 — tức tạm ứng tài xế bị ghi thành nợ nhà cung cấp: sai đối tượng
     (tài xế là nhân viên, không phải nhà cung cấp) và sai tài khoản (tạm ứng là tiền EPL còn đòi lại, luật kế toán Lào
     đặt ở 160 — ພະນັກງານ ຕິດໜີ້). Chủ dự án 30/09: "xe nhà ứng tiền trước thì tính vào tài xế để sau này tất toán".
@@ -129,10 +136,13 @@ def chi_phi(company="EPL", section=None):
     return CP_SUA if section == "repair" else CP_DI_LAI
 
 
-def dinh_khoan_dong(company, section, source=None, *, place=None, paid_by_epl=True, ghi_no=False, the=False, cach=None):
+def dinh_khoan_dong(company, section, source=None, *, place=None, paid_by_epl=True, ghi_no=False, the=False, cach=None,
+                    ncc_theo_dot=False):
     """Cặp "NỢ/CÓ" mặc định của MỘT dòng chi phiếu xuất xe; None khi dòng không phải tiền của EPL (chủ xe tự chi).
 
-    `cach`: cách trả mục IV / VI (services/tinh_toan.cach_tra — đã tính mặc định theo khoản mục và luật xe thuê)."""
+    `cach`: cách trả mục IV / VI (services/tinh_toan.cach_tra — đã tính mặc định theo khoản mục và luật xe thuê).
+    `ncc_theo_dot` (mục V): khoản mục có nhà cung cấp theo dõi nợ mà dòng không ghi rõ nhà cung cấp (lốp nợ theo đợt…) —
+    phải trả nhà cung cấp 4021. Mục V mua ngoài không ghi nợ / không thẻ / không theo đợt là QUỸ TRẢ NGAY → Có 1011."""
     if not paid_by_epl:
         return None
     thue = company == "joint"
@@ -141,8 +151,10 @@ def dinh_khoan_dong(company, section, source=None, *, place=None, paid_by_epl=Tr
     no = chi_phi(company, section)
     if source == "kho":
         co = DT_BAN_HANG if (thue and section in ("fuel", "repair")) else KHO   # xe thuê: dầu, phụ tùng kho là xuất bán
-    elif ghi_no or the or section == "repair":
+    elif ghi_no or the or (section == "repair" and ncc_theo_dot):
         co = NCC
+    elif section == "repair":
+        co = TIEN[("cash", True)]   # quỹ trả ngay mục V: phiếu chi «Chi khác» (chung_tu PC_SC) Nợ 614 · xe thuê 4022 / Có 1011
     else:
         c = "tien_mat" if section == "fuel" else (cach or "tien_mat")
         if thue and c == "luong":
@@ -162,9 +174,28 @@ def la_ma_he_thong(ma):
     return (ma or "") in MA_HE_THONG
 
 
-def tk_dong(company, d):
+def _ncc_theo_dot(d, db=None):
+    """Dòng mục V không ghi rõ nhà cung cấp mà khoản mục có nhà cung cấp theo dõi nợ (routes/nha_cung_cap.khoan_muc_ncc) — nợ
+    theo đợt, không phải quỹ trả ngay (đúng điều kiện chi_muc_tune.dong_quy_chi). Danh mục đọc qua phiên của dòng (hoặc `db`),
+    nhớ trong phiên (chi_muc_tune._khoan_muc_ncc); dòng chưa gắn phiên thì coi như không theo đợt."""
+    if d.section != "repair" or getattr(d, "supplier_id", None) or not getattr(d, "item_key", None):
+        return False
+    if db is None:
+        from sqlalchemy.orm import object_session
+        try:
+            db = object_session(d)
+        except Exception:                                   # noqa: BLE001 — đối tượng không phải bản ghi ORM
+            db = None
+    if db is None:
+        return False
+    from services.chi_muc_tune import _khoan_muc_ncc
+    return d.item_key in _khoan_muc_ncc(db)
+
+
+def tk_dong(company, d, db=None):
     """Định khoản ĐANG CÓ HIỆU LỰC của một dòng chi (TripExpense): mã người dùng tự chọn thì giữ, còn lại tính theo luật
-    hiện hành — nên dòng cũ mang mã theo luật cũ (625/4021 cho tiền tạm ứng…) tự hiện đúng mà không phải sửa dữ liệu."""
+    hiện hành — nên dòng cũ mang mã theo luật cũ (625/4021 cho tiền tạm ứng, 614/4021 cho sửa ngoài quỹ trả ngay…) tự hiện
+    đúng mà không phải sửa dữ liệu."""
     ma = getattr(d, "acct_code", None)
     if ma and not la_ma_he_thong(ma):
         return ma
@@ -172,7 +203,7 @@ def tk_dong(company, d):
     cach = cach_tra(d, company) if d.section in ("travel", "other") else None
     return dinh_khoan_dong(company, d.section, d.source, place=getattr(d, "place", None),
                            paid_by_epl=d.paid_by_epl is not False, ghi_no=bool(getattr(d, "ghi_no", False)),
-                           the=bool(getattr(d, "toll_card_id", None)), cach=cach)
+                           the=bool(getattr(d, "toll_card_id", None)), cach=cach, ncc_theo_dot=_ncc_theo_dot(d, db))
 
 
 def luat_cho_giao_dien():

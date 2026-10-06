@@ -10,6 +10,8 @@ Chạy mặc định (06/10): FastAPI TestClient trên bản sao _d7, MỌI TH�
 
 Lúc KHOÁ PHIẾU:
   · xe thuê: Nợ 621 chi phí vận chuyển / Có 4022 phải trả chủ xe, bằng TIỀN THUÊ (theo tiền thuê), đối tượng chủ xe;
+  · (06/10) xe nhà, dòng trả cùng lương (…/4201): bút toán `cung_luong` Nợ 625 / Có 4201, đối tượng tài xế; mục V garage quỹ trả
+    ngay mang nhãn 614/1011 (xe thuê 4022/1011), lốp theo đợt vẫn …/4021;
   · mỗi dòng chi ghi nợ nhà cung cấp (định khoản …/4021): Nợ 625 · 614 (xe thuê 4022) / Có 4021 — dầu trạm VN ghi nợ, chipping
     (trả theo đợt), lốp nợ cửa hàng. Tiền theo NGUYÊN TỆ của dòng (06/10, G12: dầu trạm VN ghi VND) kèm tỷ giá khoá trên phiếu
     (`ty_gia`) và số quy Kíp (`tien_lak`); dòng Kíp như cũ. KHÔNG gồm: khoản QUỸ TRẢ NGAY mục V (vào chi phí qua
@@ -199,6 +201,24 @@ def kiem_khoa(tid, cong_ty):
              "khoá chống trùng EPLLAO-thue_xe-<id>, tổng = Σ dòng")
     else:
         dung("thue_xe" not in cho, "xe nhà: không có bút toán tiền thuê")
+    # 06/10 (duyệt rà Nợ/Có): trả cùng lương xe nhà → bút toán cung_luong Nợ 625 / Có 4201, đối tượng tài xế; xe thuê không có
+    luong = cho.get("cung_luong")
+    nuoc = next((e for e in p["expenses"] if e.get("item_key") == "x_water"), None)
+    if cong_ty == "joint":
+        dung(luong is None, "xe thuê: không có bút toán trả cùng lương")
+    else:
+        d = (luong or {}).get("dong") or []
+        dung(luong and luong["source_ref"] == "EPLLAO-cung_luong-" + tid and len(d) == 1 and d[0].get("ref") == (nuoc or {}).get("id")
+             and (d[0]["no"], d[0]["co"], d[0]["tien"], d[0]["ccy"]) == ("625", "4201", 60000, "LAK")
+             and d[0]["doi_tuong"] == {"loai": "tai_xe", "ref_id": p["driver_id"]},
+             "xe nhà: tiền nước cùng lương → cung_luong Nợ 625 / Có 4201 = 60.000, đối tượng tài xế", d)
+    gara = next((e for e in p["expenses"] if e.get("item_name") == "thử BTC: garage"), None)
+    dung(gara and gara["acct_code"] == ("4022/1011" if cong_ty == "joint" else "614/1011"),
+         "mục V garage quỹ trả ngay: nhãn %s (không còn …/4021)" % ("4022/1011" if cong_ty == "joint" else "614/1011"),
+         gara and gara["acct_code"])
+    lop = next((e for e in p["expenses"] if e.get("item_key") == "x_tire"), None)
+    dung(lop is None or lop["acct_code"].endswith("/4021"), "mục V lốp theo đợt (khoản mục NCC theo dõi nợ): vẫn …/4021",
+         lop and lop["acct_code"])
     n = cho.get("no_ncc")
     mong = mong_ncc(p)
     co = {x.get("ref"): (x["no"], x["tien"], x["ccy"], x["tien"] if x["ccy"] == "LAK" else x.get("tien_lak"))
@@ -350,6 +370,8 @@ def chay():
         s, g = goi("/api/trips/" + B, u="admin", method="DELETE"); phai(s, 200, "Sếp xoá phiếu thử B", g)
         s, g = goi("/api/but-toan-cho?nguon=no_ncc&status=huy&gioi_han=1000", u="admin")
         dung(any(b["ma_nguon"] == B for b in g["ds"]), "bút toán của phiếu đã xoá còn dấu vết, trạng thái huỷ")
+        s, g = goi("/api/but-toan-cho?nguon=cung_luong&status=huy&gioi_han=1000", u="admin")
+        dung(s == 200 and any(b["ma_nguon"] == B for b in g["ds"]), "bút toán trả cùng lương của phiếu đã xoá cũng huỷ")
     finally:
         if GOC:                            # máy thử đang chạy: xoá phiếu thử; trong tiến trình thì ROLLBACK lo
             don()

@@ -59,8 +59,9 @@ KHOAN_MUC = {
     "other":  ["x_misc"],
 }
 # Các cặp định khoản hay dùng cho dòng chi — luật và tên ở services/tai_khoan.py (rà 30/09).
-MA_TK = sorted({TK.dinh_khoan_dong(c, m, s, cach=k) for c in ("EPL", "joint") for m in MUC_CHI for s in ("kho", "mua", None)
-                for k in (None, "ncc", "luong")} - {None})
+# 06/10: thêm biến thể ghi nợ — mục V mua ngoài quỹ trả ngay nay là …/1011, …/4021 chỉ còn khi ghi nợ / theo đợt
+MA_TK = sorted({TK.dinh_khoan_dong(c, m, s, cach=k, ghi_no=g) for c in ("EPL", "joint") for m in MUC_CHI for s in ("kho", "mua", None)
+                for k in (None, "ncc", "luong") for g in (False, True)} - {None})
 COT_PHIEU = ("doc_no", "kind", "doc_date", "out_date", "back_date", "company", "owner_name", "vehicle_id",
              "truck_no", "brand_model", "plate_head", "plate_trailer", "driver_id", "driver_name",
              "odo_out", "odo_back", "customer_id", "customer_name", "route_id", "goods_type", "ore_bill_no",
@@ -452,9 +453,11 @@ def _bo_gia_kho(ra):
 
 # ---------------------------------------------------------------- danh sách & xem
 @router.get("/api/khoan-muc")
-def khoan_muc():
+def khoan_muc(db: Session = Depends(get_db)):
+    from routes.nha_cung_cap import khoan_muc_ncc
+    # ncc_items (06/10): khoản mục có nhà cung cấp theo dõi nợ — gương JS tkMacDinh tính mục V "theo đợt" (…/4021) như tai_khoan
     return {"items": KHOAN_MUC, "acct_codes": MA_TK, "pay_channels": list(CACH_TRA), "pay_default": CACH_TRA_MAC_DINH, "chain": {k: list(v) for k, v in CHUOI.items()},
-            "acct_rule": TK.luat_cho_giao_dien(),
+            "acct_rule": TK.luat_cho_giao_dien(), "ncc_items": sorted(khoan_muc_ncc(db)),
             "event_kinds": list(SU_KIEN), "incident_types": list(LOAI_SU_CO)}
 
 

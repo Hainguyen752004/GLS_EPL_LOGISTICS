@@ -18,6 +18,10 @@ Tiền thuê xe liên kết để ở `header.hire`, KHÔNG thành dòng định
 Từ 02/10 (màn "Tổng hợp thu chi" bên Web anh Tune): mỗi dòng mang `line_key` (khoá ổn định) và `settlement` (dòng đã vào chứng
 từ nào, khoá hay còn lập phiếu được) — services/chung_tu_dong_do.py. Khoá cũ của gói giữ nguyên.
 
+Từ 06/10 (chủ dự án duyệt rà Nợ/Có): dòng trả cùng lương mà DO đã ghi bút toán `cung_luong` Nợ 625 / Có 4201 lúc khoá mang thêm
+`pay_acc_code` "4201/1011" — TK khi trả: phiếu chi DO bên Web ghi Nợ 4201 (API anh Tune ưu tiên trường này hơn vế Nợ của acc_code).
+DO khoá trước bản đó không có trường này → phiếu chi lương vẫn Nợ 625 (chi phí chưa ghi lúc khoá) — không ghi chi phí hai lần.
+
 Từ 06/10 (chủ dự án: hộp "Tạo phiếu chi theo DO" bên Web không thấy DO đang chạy, phiếu chi tạm ứng không có Vụ việc): bàn giao
 cả DO ĐANG CHẠY — `status` nói thật DO đang ở đâu (`trang_thai_do`: delivered · arrived · in_transit), danh sách lọc theo
 `scope` (routes/ban_giao.py, mặc định vẫn chỉ DO đã xong). Mỗi DO thêm `payment_status` (`trang_thai_chi`) — viên trạng thái
@@ -27,6 +31,7 @@ import json
 import os
 
 from models import Customer, Part, Route, Trip, TripAttachment, TripExpense
+from services import but_toan_cho as BTC
 from services import tai_khoan as TK
 from services.tinh_toan import gia_dong, la_xuat_ban, lam_tron, tien_dong, tinh_phieu, ty_gia
 
@@ -244,9 +249,12 @@ def dong_goi(db, p, chung_tu=True):
         "acc_code": "%s/%s" % (TK.PHAI_THU, TK.DT_VAN_CHUYEN), "missing_acc_code": False,
         "paid_by": None, "source": "cuoc", "ref_id": p.id,
     }]
+    # 06/10: dòng trả cùng lương đã ghi Nợ 625 / Có 4201 lúc khoá (but_toan_cho `cung_luong`) → TK khi trả `pay_acc_code` 4201/1011:
+    # phiếu chi DO bên Web lấy vế Nợ của trường này (không lấy 625 của acc_code — chi phí đã ghi). DO khoá trước bản sửa: không có.
+    luong_gl = {} if lk else BTC.cung_luong_da_ghi(db, p.id)
     for i, d in enumerate(dong, start=2):
         epl = not (lk and d.paid_by_epl is False)
-        ma = TK.tk_dong(p.company, d) if epl else None
+        ma = TK.tk_dong(p.company, d, db) if epl else None
         gia = gia_dong(p, d)
         vi, lo = _ten(db, d)
         details.append({
@@ -260,6 +268,8 @@ def dong_goi(db, p, chung_tu=True):
             "sale_to_owner": bool(la_xuat_ban(p, d)), "ghi_no": bool(d.ghi_no),
             "place_id": d.place_id, "supplier_id": d.supplier_id, "part_id": d.part_id, "note": d.note, "ref_id": d.id,
         })
+        if d.id in luong_gl:
+            details[-1]["pay_acc_code"] = "%s/%s" % (TK.LUONG, TK.TIEN[("cash", True)])
     goi = {"header": header, "details": details}
     if chung_tu:
         from services import chung_tu_dong_do as CTD

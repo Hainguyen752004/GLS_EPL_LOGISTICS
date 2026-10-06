@@ -18,8 +18,9 @@
   const q = (s) => root.querySelector(s);
   // xuat_noi_bo / xuat_ban (01/10): xuất kho cho chuyến — một lần xuất một bút toán, nguồn gốc là phiếu xuất xe
   // doanh_thu / doanh_thu_ban (06/10): doanh thu theo SO bên kế toán — một DO một bút toán, nguồn gốc là phiếu xuất xe
-  const NGUON = ['thue_xe', 'no_ncc', 'xuat_noi_bo', 'xuat_ban', 'doanh_thu', 'doanh_thu_ban', 'tat_toan', 'ban_chu_xe'];
-  const TU_PHIEU = ['thue_xe', 'no_ncc', 'xuat_noi_bo', 'xuat_ban', 'doanh_thu', 'doanh_thu_ban'];
+  // 06/10: cung_luong — trả cùng lương xe nhà, lúc khoá Nợ 625 / Có 4201 (but_toan_cho.CUNG_LUONG)
+  const NGUON = ['thue_xe', 'no_ncc', 'cung_luong', 'xuat_noi_bo', 'xuat_ban', 'doanh_thu', 'doanh_thu_ban', 'tat_toan', 'ban_chu_xe'];
+  const TU_PHIEU = ['thue_xe', 'no_ncc', 'cung_luong', 'xuat_noi_bo', 'xuat_ban', 'doanh_thu', 'doanh_thu_ban'];
   const LOC = ['', 'cho_gui', 'da_gui', 'huy', 'can_dao'];
   const NHAN_LOC = { '': 'all', cho_gui: 'dt_st_cho_gui', da_gui: 'dt_st_da_gui', huy: 'v_huy', can_dao: 'btc_can_dao' };
   const nhanNguon = (n) => (NGUON.includes(n) ? 'btc_nguon_' + n : n);
@@ -95,7 +96,7 @@
 
   /* 02/10 — mỗi nguồn: định khoản ngắn + một câu nói khoản đó là gì, ghi lúc nào (khung chi tiết). */
   // 06/10: thue_xe thêm phí quản lý Nợ 4022 / Có 715 và cắt quá tải Nợ 4022 / Có 758 (cùng chứng từ) — câu giải thích khoá mới
-  const DK = { thue_xe: '621 / 4022 · 4022 / 715 · 758', no_ncc: '625 · 614 / 4021', xuat_noi_bo: '625 · 614 / 1371', xuat_ban: '607 / 1371',
+  const DK = { thue_xe: '621 / 4022 · 4022 / 715 · 758', no_ncc: '625 · 614 / 4021', cung_luong: '625 / 4201', xuat_noi_bo: '625 · 614 / 1371', xuat_ban: '607 / 1371',
     tat_toan: '625 / 1601', ban_chu_xe: '4022 / 707', doanh_thu: '1211 / 708', doanh_thu_ban: '1211 / 707' };
   const GIAI = { thue_xe: 'btc_g_thue_xe_phi' };
   const duocVao = (id) => EPL.manCuaVai(EPL.AUTH.role).some(m => m.id === id);

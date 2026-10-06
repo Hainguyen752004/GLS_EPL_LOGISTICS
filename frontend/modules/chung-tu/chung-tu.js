@@ -121,7 +121,7 @@
         it.kho ? `<span class="small muted" lang="lo">${esc(it.kho)}</span>` : '');
       case 'pt_kho': return dongT(NN.h('hs_pt_kho', { da: it.da_xuat, n: it.n }));
       case 'khoa': return dongT(tag(it.tt === 'da_khoa' ? 'paid' : 'plain', it.tt === 'da_khoa' ? 's_locked' : 'hs_chua_khoa'),
-        `<span class="small muted">${[it.thue ? NN.h('hs_kt_thue') : '', it.ncc ? NN.h('hs_kt_ncc') : ''].filter(Boolean).join(' · ')}</span>`);
+        `<span class="small muted">${[it.thue ? NN.h('hs_kt_thue') : '', it.ncc ? NN.h('hs_kt_ncc') : '', it.luong ? NN.h('hs_kt_luong') : ''].filter(Boolean).join(' · ')}</span>`);
       case 'gl': return dongT(it.so ? mono(it.so) : `<span class="rong">${NN.h('hs_chua_co_so')}</span>`, tagGL(it),
         `<span class="small muted">${NN.h('btc_nguon_' + it.nguon)}</span>`, tienCcy(it.tien, it.ccy),
         it.id && duocVao('but-toan-cho') ? `<a data-bt="${esc(it.id)}">${NN.h('hs_xem_but_toan')}</a>` : '');

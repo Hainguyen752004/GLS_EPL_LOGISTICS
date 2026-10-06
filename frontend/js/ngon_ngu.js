@@ -10642,6 +10642,11 @@ window.EPL_TU_DIEN = {
   "lo": "ບັນທຶກໜີ້ຜູ້ສະໜອງ",
   "en": "Supplier payable"
  },
+ "btc_nguon_cung_luong": {
+  "vi": "Trả cùng lương (tài xế)",
+  "lo": "ຈ່າຍພ້ອມເງິນເດືອນ (ໂຊເຟີ)",
+  "en": "Paid with salary (driver)"
+ },
  "btc_nguon_tat_toan": {
   "vi": "Quyết toán tạm ứng tài xế",
   "lo": "ສະສາງເງິນລ່ວງໜ້າໂຊເຟີ",
@@ -12778,9 +12783,14 @@ window.EPL_TU_DIEN = {
   "en": "V · parts from STOCK"
  },
  "dk_sua_ngoai": {
-  "vi": "V · sửa ngoài, garage",
-  "lo": "V · ສ້ອມນອກ, ອູ່",
-  "en": "V · outside repair, garage"
+  "vi": "V · sửa ngoài, garage — quỹ trả ngay",
+  "lo": "V · ສ້ອມນອກ, ອູ່ — ຄັງເງິນຈ່າຍທັນທີ",
+  "en": "V · outside repair, garage — paid at once by the cash desk"
+ },
+ "dk_sua_no_ncc": {
+  "vi": "V · sửa ngoài ghi nợ NHÀ CUNG CẤP (garage cho nợ, lốp theo đợt)",
+  "lo": "V · ສ້ອມນອກ ຂຽນໜີ້ຜູ້ສະໜອງ (ອູ່ໃຫ້ຕິດ, ຢາງເປັນງວດ)",
+  "en": "V · outside repair on SUPPLIER credit (garage on credit, tyres in instalments)"
  },
  "qt_khi_xe_nha": {
   "vi": "xe nhà",
@@ -13547,6 +13557,11 @@ window.EPL_TU_DIEN = {
   "lo": "ໜີ້ຜູ້ສະໜອງ",
   "en": "supplier payable"
  },
+ "hs_kt_luong": {
+  "vi": "trả cùng lương",
+  "lo": "ຈ່າຍພ້ອມເງິນເດືອນ",
+  "en": "paid with salary"
+ },
  "hs_xem_but_toan": {
   "vi": "Xem bút toán",
   "lo": "ເບິ່ງບັນທຶກບັນຊີ",
@@ -13871,6 +13886,11 @@ window.EPL_TU_DIEN = {
   "vi": "Dòng chi ghi nợ nhà cung cấp (chipping, dầu trạm ghi nợ, garage cho nợ…) — Nợ 625 · 614 (xe thuê 4022) / Có 4021, trả nhà cung cấp theo đợt.",
   "lo": "ແຖວຈ່າຍທີ່ຕິດໜີ້ຜູ້ສະໜອງ (chipping, ນ້ຳມັນປໍ້າຂຽນໜີ້, ອູ່ໃຫ້ຕິດ…) — ໜີ້ 625 · 614 (ລົດເຊົ່າ 4022) / ມີ 4021, ຈ່າຍຜູ້ສະໜອງເປັນງວດ.",
   "en": "Lines on supplier credit (chipping, station fuel on account, garage on credit…) — Dr 625 · 614 (hired truck 4022) / Cr 4021, paid to the supplier in batches."
+ },
+ "btc_g_cung_luong": {
+  "vi": "Xe nhà, khoản trả theo chuyến cùng lương (tiền chuyến, tiền nước…) — lúc khoá phiếu ghi chi phí Nợ 625 / Có 4201 phải trả nhân viên, đối tượng tài xế. Tiền tới tay tài xế bằng phiếu chi theo DO bên kế toán: Nợ 4201 / Có tiền.",
+  "lo": "ລົດບໍລິສັດ, ລາຍການຈ່າຍຕາມຖ້ຽວພ້ອມເງິນເດືອນ (ຄ່າຖ້ຽວ, ຄ່ານ້ຳ…) — ຕອນລັອກໃບ ບັນທຶກຕົ້ນທຶນ ໜີ້ 625 / ມີ 4201 ຕ້ອງຈ່າຍພະນັກງານ, ຄູ່ບັນຊີແມ່ນໂຊເຟີ. ເງິນເຖິງມືໂຊເຟີດ້ວຍໃບຈ່າຍຕາມ DO ຢູ່ລະບົບບັນຊີ: ໜີ້ 4201 / ມີ ເງິນ.",
+  "en": "Company truck, items paid per trip with salary (trip money, water…) — at lock the cost is booked Dr 625 / Cr 4201 payable to employees, against the driver. The money reaches the driver by a DO payment voucher in accounting: Dr 4201 / Cr cash."
  },
  "btc_g_xuat_noi_bo": {
   "vi": "Xe nhà lấy dầu / phụ tùng kho — chi phí chuyến: Nợ 625 (dầu) · 614 (phụ tùng) / Có 1371 theo giá vốn bình quân; một lần xuất một bút toán, ngày = ngày xuất.",
