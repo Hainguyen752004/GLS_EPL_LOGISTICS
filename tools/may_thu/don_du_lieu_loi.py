@@ -290,7 +290,11 @@ def khao_sat(c, gom_trang_thai):
                 if not loi:
                     g4b.them(ma, "tiền 0, chủ xe tự trả")
                     continue
-            elif not (r["source"] == "kho" and not r["stock_move_id"]):      # dòng kho chưa cấp: giá vốn chưa có — không phải lỗi
+            elif r["source"] == "kho" and not r["stock_move_id"]:            # dòng kho chưa cấp: giá vốn chưa có — không phải lỗi
+                pass
+            elif r["muc_tt"] in ("wait", "entered") and not r["locked"]:     # mục chưa kiểm: đơn giá do KT Chi phí gõ lúc kiểm
+                pass                                                         # (Bãi không thấy / không gõ tiền) — chưa định giá, không phải lỗi
+            else:
                 loi.append("EPL trả mà tiền 0")
         if not loi:
             continue
