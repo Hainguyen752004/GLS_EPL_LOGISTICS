@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 """Thử GỬI BÚT TOÁN CHỜ sang hệ kế toán anh Tune — bằng MÁY GIẢ trong bài (không gọi 5090).
 
-    python kiem/thu_gui_but_toan.py [http://127.0.0.1:8014] [cổng máy giả 8096]
+    python kiem/thu_gui_but_toan.py
 
-Máy chủ trang điều xe đang thử phải chạy với:
-    QLSX_GUI_BUT_TOAN=1 · QLSX_BASE_URL=http://127.0.0.1:<cổng máy giả> · QLSX_ACCESS_TOKEN=<chuỗi bất kỳ>
-(scratchpad gb_khoi_dong_8014_gia.ps1). Máy giả trả đúng giao ước GLS-QLSX-APIs `b9227aa` (LogisticsJournalEntryController):
+06/10 (anh Hải duyệt): chạy TRONG TIẾN TRÌNH (kiem/_tien_trinh_tune.py) — trước đây cần máy thử 8014 bật cờ gửi trỏ máy giả
+cổng 8096. Nay: TestClient trên bản sao _d7, MỘT giao dịch ngoài cuối ROLLBACK (không ghi gì vào d7); cờ QLSX_GUI_BUT_TOAN=1 đặt
+trong tiến trình bài; máy giả HTTP chạy trong bài ở 127.0.0.1, cổng do hệ điều hành cấp — chỉ máy giả đó được gọi, mọi lời gọi
+mạng khác bị chặn. Xe thuê / chủ xe / tài xế / khách thử TẠO MỚI trong giao dịch. "Gửi hết" trong bài chỉ thấy bút toán của
+phiếu thử (lọc phiên theo trip_id — không đụng bút toán của DO đang bấm tay).
+
+Máy giả trả đúng giao ước GLS-QLSX-APIs `b9227aa` (LogisticsJournalEntryController):
     POST /api/v1/integrations/logistics/journal-entries (Idempotency-Key = SourceRef) → 201 {DocumentId, DocumentNo, StatusId 13,
          IsExisting false} · cùng nội dung → 200 IsExisting · khác nội dung → 409 ErrorDetail.ErrorCode LOGISTICS_JOURNAL_52512 ·
          tài khoản sai → 400 ErrorDetail {ErrorCode INVALID_ACCOUNTS, InvalidAccounts}
@@ -21,20 +25,24 @@ gỡ xong mà mất phản hồi → Gửi hết nhận Reversed=false → huỷ
 (403 · HTTP 200 kèm Code 500 · 503 chưa bật → Gửi hết dừng ngay).
 """
 import json
+import os
 import sys
 import threading
 import time
-import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-GOC = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8014").rstrip("/")
-CONG = int(sys.argv[2]) if len(sys.argv) > 2 else 8096
-if GOC.endswith((":8010", ":8020")):
-    sys.exit("Không chạy bài này trên máy thật.")
-TK, LOI = {}, []
-SO = "THU-GBT-A/EPL"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _tien_trinh_tune as TT                           # noqa: E402 — chặn mạng, khung giao dịch ROLLBACK
+
+import models as M                                      # noqa: E402
+from sqlalchemy import event                            # noqa: E402
+from sqlalchemy.orm import with_loader_criteria         # noqa: E402
+from services import gui_tune as GT                     # noqa: E402
+
+LOI = []
 DUONG = "/api/v1/integrations/logistics/journal-entries"
+CA = None                     # TT.Ca đang chạy
 
 
 # ================================================================ máy giả hệ kế toán
@@ -45,6 +53,7 @@ class GIA:
     da_go = []         # DocumentNo đã gỡ
     so = 7000
     may = None
+    cong = None
 
 
 def bao(than, ma=200):
@@ -141,27 +150,20 @@ class Xu(BaseHTTPRequestHandler):
 
 
 def bat_gia():
-    GIA.may = ThreadingHTTPServer(("127.0.0.1", CONG), Xu)
+    GIA.may = ThreadingHTTPServer(("127.0.0.1", GIA.cong or 0), Xu)
+    GIA.cong = GIA.may.server_address[1]
+    TT.cho_phep_may_gia(GIA.cong)
+    GT.cau_hinh = lambda dang_nhap=True: ("http://127.0.0.1:%d" % GIA.cong, "token-gia")
     threading.Thread(target=GIA.may.serve_forever, daemon=True).start()
 
 
 def tat_gia():
-    GIA.may.shutdown(); GIA.may.server_close(); GIA.may = None
+    GIA.may.shutdown(); GIA.may.server_close(); GIA.may = None      # cổng giữ nguyên: lời gọi tới đó thành "mất mạng"
 
 
-# ================================================================ gọi trang điều xe
+# ================================================================ gọi trang điều xe (TestClient, cùng phiên trong giao dịch)
 def goi(duong, body=None, u=None, method=None):
-    r = urllib.request.Request(GOC + duong, data=json.dumps(body).encode() if body is not None else None,
-                               method=method or ("POST" if body is not None else "GET"),
-                               headers={"Content-Type": "application/json", **({"Authorization": "Bearer " + TK[u]} if u else {})})
-    try:
-        with urllib.request.urlopen(r, timeout=120) as t:
-            return t.status, json.loads(t.read() or b"null")
-    except urllib.error.HTTPError as e:
-        try:
-            return e.code, json.loads(e.read() or b"null")
-        except ValueError:
-            return e.code, {}
+    return CA.goi(duong, body, u, method)
 
 
 def dung(dk, buoc, them=""):
@@ -181,35 +183,38 @@ def bt(tid):
     return {b["nguon"]: b for b in g["ds"]}
 
 
-def don():
-    s, ds = goi("/api/trips?q=THU-GBT", u="admin")
-    for p in [x for x in (ds or []) if x["doc_no"] == SO]:
-        goi("/api/trips/%s/mo-khoa" % p["id"], {}, u="admin"); goi("/api/trips/" + p["id"], u="admin", method="DELETE")
-
-
 def main():
-    for u in ("admin", "ketoan", "ketoancp", "thabok", "doanhthu"):
-        TK[u] = goi("/api/dang-nhap", {"username": u, "password": "1234"})[1]["token"]
+    global CA
+    os.environ["QLSX_GUI_BUT_TOAN"] = "1"
+    TT.CHI._goi = TT.CHI_GOI_THAT                      # tiền / kỳ / đối tượng đi qua urllib tới máy giả trong bài
     bat_gia()
-    s, g = goi("/api/but-toan-cho", u="ketoan")
-    if not g.get("co_duong_gui"):
-        sys.exit("DỪNG: máy chủ %s chưa bật QLSX_GUI_BUT_TOAN (trỏ máy giả cổng %d)" % (GOC, CONG))
-    don()
-    # "Gửi hết" gửi MỌI bản chờ gửi / chờ đảo của cả DB — có bản của phiếu khác thì máy giả sẽ cấp số giả cho chúng (02/10: ba bút
-    # toán của THU-KBAZ thành "đã gửi" GIA-BT-… trên bản sao). Dừng, không làm bẩn dữ liệu của người khác.
-    s, g = goi("/api/but-toan-cho?gioi_han=1000&status=cho_gui,da_gui", u="ketoan")
-    la = [b for b in (g or {}).get("ds") or [] if (b["status"] == "cho_gui" or b.get("can_dao")) and b.get("trip_doc_no") != SO]
-    if la:
-        sys.exit("DỪNG: DB còn %d bút toán chờ gửi / chờ đảo của phiếu khác (%s…) — bài máy giả bấm Gửi hết sẽ gửi nhầm chúng sang máy giả. "
-                 "Chạy trên DB không có bản chờ của người khác." % (len(la), ", ".join(b["source_ref"] for b in la[:3])))
-    s, xe = goi("/api/vehicles", u="admin"); s, tx = goi("/api/drivers", u="admin"); s, kh = goi("/api/customers", u="admin")
-    thue = next(v for v in xe if v["owner_type"] == "joint" and v["active"])
-    s, p = goi("/api/trips", {"doc_no": SO, "kind": "giao", "company": "joint", "vehicle_id": thue["id"], "driver_id": tx[0]["id"],
-                              "customer_id": kh[0]["id"], "doc_date": "2026-10-01", "weight_origin": 40, "price": 40, "price_ccy": "USD",
-                              "hire_price": 30, "hire_ccy": "USD", "pod_no": "GBT",
-                              "expenses": [{"section": "travel", "item_key": "x_chip_lao", "qty": 1, "unit_price": 150000, "currency": "LAK"}]}, u="admin")
-    tid = p["id"]
-    goi("/api/trips/%s/transport-status" % tid, {"status": "arrived", "weight_dest": 40, "odo_back": 10, "back_date": "2026-10-01"}, u="admin")
+    with TT.Ca(("admin", "ketoan", "ketoancp", "thabok", "doanhthu")) as CA:
+        d = TT.du_lieu_thu(CA.db, "GBT")
+        SO = d.tag + "/EPL"
+        s, g = goi("/api/but-toan-cho", u="ketoan")
+        if not g.get("co_duong_gui"):
+            sys.exit("DỪNG: cờ QLSX_GUI_BUT_TOAN chưa có tác dụng trong tiến trình bài")
+        s, p = goi("/api/trips", {"doc_no": SO, "kind": "giao", "company": "joint", "vehicle_id": d.thue.id, "driver_id": d.tx1.id,
+                                  "customer_id": d.kh.id, "doc_date": "2026-10-01", "weight_origin": 40, "price": 40, "price_ccy": "USD",
+                                  "hire_price": 30, "hire_ccy": "USD", "pod_no": "GBT",
+                                  "expenses": [{"section": "travel", "item_key": "x_chip_lao", "qty": 1, "unit_price": 150000,
+                                                "currency": "LAK"}]}, u="admin")
+        if s != 200:
+            sys.exit("DỪNG: lập phiếu thử %s → %s %s" % (SO, s, str(p)[:300]))
+        tid = p["id"]
+        # "Gửi hết" quét MỌI bản chờ gửi / chờ đảo của DB: trong bài chỉ cho phiên thấy bút toán của phiếu thử
+        event.listen(CA.db, "do_orm_execute", lambda st: st.is_select and setattr(st, "statement", st.statement.options(
+            with_loader_criteria(M.ButToanCho, M.ButToanCho.trip_id == tid, include_aliases=True))))
+        goi("/api/trips/%s/transport-status" % tid, {"status": "arrived", "weight_dest": 40, "odo_back": 10, "back_date": "2026-10-01"}, u="admin")
+        chay(tid)
+    tat_gia() if GIA.may is not None else None
+    TT.bo_may_gia(GIA.cong)
+    print("\n%s" % ("GỬI BÚT TOÁN: ĐẠT" if not LOI else "GỬI BÚT TOÁN: SAI %d chỗ:\n  - " % len(LOI) + "\n  - ".join(LOI)))
+    print("đã ROLLBACK — bản sao d7 không đổi; %d lời gọi mạng ngoài máy giả bị chặn%s" % (len(TT.MANG), (" " + str(TT.MANG[:3])) if TT.MANG else ""))
+    sys.exit(1 if LOI or TT.MANG else 0)
+
+
+def chay(tid):
     try:
         print("1. Khoá phiếu → tự gửi")
         s, g = goi("/api/trips/%s/khoa" % tid, {"xac_nhan": True}, u="ketoan"); dung(s == 200, "KT Thu/Chi khoá phiếu", s)
@@ -335,13 +340,6 @@ def main():
         GIA.che_do = set()
     finally:
         GIA.che_do = set()
-        if GIA.may is None:
-            bat_gia()
-        don()
-        print("  · dọn phiếu thử")
-        tat_gia()
-    print("\n%s" % ("GỬI BÚT TOÁN: ĐẠT" if not LOI else "GỬI BÚT TOÁN: SAI %d chỗ:\n  - " % len(LOI) + "\n  - ".join(LOI)))
-    sys.exit(1 if LOI else 0)
 
 
 if __name__ == "__main__":
