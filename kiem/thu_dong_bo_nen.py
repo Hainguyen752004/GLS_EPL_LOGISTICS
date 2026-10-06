@@ -19,6 +19,7 @@ URL = open(os.path.join(GOC, ".may_thu", "url_epl_lao_d7.txt"), encoding="utf-8"
 if "_d7" not in URL.rsplit("/", 1)[-1]:
     sys.exit("Chuỗi nối không trỏ bản sao _d7 — bài chỉ chạy trên bản sao.")
 os.environ["DATABASE_URL"] = URL
+os.environ["EPL_DONG_BO_CHI_LUONG"] = "0"   # 06/10: loại chi_luong có bài riêng (kiem/thu_chi_luong_tune.py); bài này giả lập đường cũ
 sys.path.insert(0, os.path.join(GOC, "backend", "app"))
 try:
     sys.stdout.reconfigure(encoding="utf-8")

@@ -71,7 +71,7 @@ DAI_NGUON, DAI_MA_NGUON = 16, 80
 # phí VC (người ghi sổ mục chi), Sếp. Bút toán mang tiền thuê xe liên kết — tiền bán, vai khác không thấy.
 VAI_XEM = ("acct", "expacct", "admin")
 # hai nguồn bút toán lúc KHOÁ PHIẾU (chủ dự án 01/10) — mở khoá thì huỷ cả hai
-THUE_XE = "thue_xe"        # xe thuê: Nợ 621 chi phí vận chuyển / Có 4022 phải trả chủ xe, bằng tiền thuê
+THUE_XE = "thue_xe"        # xe thuê: Nợ 621 / Có 4022 bằng tiền thuê + (06/10) phí Nợ 4022 / Có 715 · quá tải Nợ 4022 / Có 758
 NO_NCC = "no_ncc"          # dòng chi ghi nợ nhà cung cấp: Nợ 625 · 614 (xe thuê 4022) / Có 4021
 NGUON_KHOA_PHIEU = (THUE_XE, NO_NCC)
 # XUẤT KHO cho chuyến (chủ dự án 01/10: "xuất dầu là xuất nội bộ và còn là xuất bán") — cũng ghi lúc khoá phiếu, nhưng MỘT
@@ -332,8 +332,15 @@ def xuat(r, doc_no=None):
 def dong_khoa_phieu(db, p, cac_dong=None):
     """{nguon: (dòng, diễn giải)} cho phiếu `p` lúc khoá — chưa ghi gì.
 
-      · thue_xe — xe thuê: Nợ 621 / Có 4022 bằng TIỀN THUÊ (tinh_phieu `tien_thue`, đúng `hire.amount` của gói bàn giao DO),
-        theo tiền thuê. Phí 2 % và trừ quá tải chưa có bút toán riêng (chờ anh Khampla chọn cách ghi).
+      · thue_xe — xe thuê, MỘT chứng từ tối đa ba dòng, cùng tiền thuê + tỷ giá khoá trên phiếu, đối tượng chủ xe:
+          Nợ 621 / Có 4022 bằng TIỀN THUÊ (tinh_phieu `tien_thue`, đúng `hire.amount` của gói bàn giao DO);
+          Nợ 4022 / Có 715 bằng PHÍ QUẢN LÝ (`phi`, Excel «ຫັກຄ່າທຳນຽມ 2%/ບິນ»);
+          Nợ 4022 / Có 758 bằng CẮT QUÁ TẢI (`tru_vuot`, Excel «ຫັກແກ່ເກີນ 1$/ໂຕນ»).
+        06/10 (chủ dự án giao, mã đã chốt): trước đây phí và quá tải chỉ trừ vào tiền trả đối tác (tra_chu_xe.phan_tra) mà không có
+        bút toán — trả đối tác xong 4022 còn treo đúng phí + quá tải. Số lấy ĐÚNG tinh_phieu mà tất toán đối tác dùng (ô trống = mặc
+        định 2 % · 40 t · 1/t); số 0 thì không có dòng. Sau khoá 4022 còn = tiền thuê − phí − quá tải (= `hire.amount − fee −
+        over_deduction`); tạm ứng (phiếu chi Chi trước), nợ NCC (no_ncc), cấn trừ SO và phiếu chi trả đối tác đưa 4022 về 0.
+        Mở khoá / sửa sau khoá: như mọi nguồn khoá phiếu (huy_khoa_phieu, dau_khoa đã giữ phí · quá tải).
       · no_ncc — mỗi dòng chi EPL chịu mà định khoản có vế Có 4021 (tai_khoan.tk_dong: dầu trạm ghi nợ, chipping, thẻ cao tốc,
         lốp nợ theo đợt, garage cho nợ…) — Nợ 625 · 614 (xe thuê 4022) / Có 4021, theo NGUYÊN TỆ của dòng (06/10: dầu trạm VN ghi
         VND) kèm tỷ giá khoá trên phiếu và số quy Kíp (`tien_lak`); dòng Kíp như cũ. BỎ các
@@ -350,11 +357,35 @@ def dong_khoa_phieu(db, p, cac_dong=None):
     t = tinh_phieu(p, cac_dong)
     if p.company == "joint" and (t.get("tien_thue") or 0) > 0:
         h = t["hire_ccy"]
-        ra[THUE_XE] = ([{"no": TK.CP_THUE_XE, "co": TK.CHU_XE, "tien": t["tien_thue"], "ccy": h,
-                         "tien_lak": t["tien_thue_lak"], "ty_gia": ty_gia(p, h),
-                         "doi_tuong": {"loai": "chu_xe", "ref_id": p.owner_id} if p.owner_id else None,
-                         "dien_giai": "Chi phí thuê xe liên kết %s · %s" % (p.doc_no, p.owner_name or "")}],
-                       "Ghi nhận chi phí thuê xe liên kết phiếu %s (%s)" % (p.doc_no, p.owner_name or "—"))
+        r_h = ty_gia(p, h)
+        chu = {"loai": "chu_xe", "ref_id": p.owner_id} if p.owner_id else None
+        ten_cx = p.owner_name or ""
+        dong_thue = [{"no": TK.CP_THUE_XE, "co": TK.CHU_XE, "tien": t["tien_thue"], "ccy": h, "tien_lak": t["tien_thue_lak"],
+                      "ty_gia": r_h, "doi_tuong": chu, "ve": "thue",
+                      "dien_giai": "Chi phí thuê xe liên kết %s · %s" % (p.doc_no, ten_cx)}]
+        # 06/10: phí quản lý và cắt quá tải EPL giữ lại của tiền thuê → thu nhập của EPL, CÙNG chứng từ, cùng tiền thuê + tỷ giá khoá;
+        # số đúng tinh_phieu (phi, tru_vuot — tất toán đối tác trừ đúng hai số này), số 0 thì không có dòng. Đối tượng chủ xe: vế Nợ
+        # 4022 là công nợ của chính chủ xe đó.
+        kem = []
+        phi = lam_tron(t.get("phi") or 0, h)
+        if phi > 0:
+            pct = p.fee_pct if p.fee_pct is not None else 2
+            dong_thue.append({"no": TK.CHU_XE, "co": TK.DT_PHI_QUAN_LY, "tien": phi, "ccy": h, "tien_lak": round(phi * r_h),
+                              "ty_gia": r_h, "doi_tuong": chu, "ve": "phi_quan_ly", "ty_le": pct,
+                              "dien_giai": "Phí quản lý %s %% tiền thuê %s %s · %s · %s" % (
+                                  _so_doc(pct), _so_doc(t["tien_thue"]), h, p.doc_no, ten_cx)})
+            kem.append("phí quản lý")
+        vuot = lam_tron(t.get("tru_vuot") or 0, h)
+        if vuot > 0:
+            nguong = p.over_limit_t if p.over_limit_t is not None else 40
+            gia = p.over_price if p.over_price is not None else 1
+            dong_thue.append({"no": TK.CHU_XE, "co": TK.TN_CAT_QUA_TAI, "tien": vuot, "ccy": h, "tien_lak": round(vuot * r_h),
+                              "ty_gia": r_h, "doi_tuong": chu, "ve": "cat_qua_tai", "tan_vuot": t.get("vuot_tan"),
+                              "dien_giai": "Cắt quá tải %s t (vượt %s t) × %s %s/t · %s · %s" % (
+                                  _so_doc(t.get("vuot_tan")), _so_doc(nguong), _so_doc(gia), h, p.doc_no, ten_cx)})
+            kem.append("cắt quá tải")
+        ra[THUE_XE] = (dong_thue, "Ghi nhận chi phí thuê xe liên kết phiếu %s (%s)%s" % (
+            p.doc_no, p.owner_name or "—", (" — trừ " + ", ".join(kem)) if kem else ""))
     quy = {d.id for m in ("repair", "other") for d in CMT.dong_quy_chi(db, p, m, cac_dong)}
     dong = []
     for d in cac_dong:

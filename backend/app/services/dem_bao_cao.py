@@ -114,6 +114,19 @@ def _sau_huy(session):
     session.info.pop("_thang_doi", None)
 
 
+def danh_dau_doi(session, cac_ngay):
+    """Báo bộ đệm: dữ liệu báo cáo của các NGÀY này (ngày lập phiếu) đổi trong giao dịch đang mở — tăng phiên bản ngày + tháng
+    lúc commit như mọi lần ghi phiếu; giao dịch huỷ thì thôi. Dùng cho bảng KHÔNG nằm trong THEO_PHIEU vì phần lớn lần ghi của nó
+    không đổi báo cáo: 06/10 chi_luong_tune — luồng nền ghi checked_at mỗi lượt hỏi, chỉ khi một dòng chuyển "đã trả" mới gọi
+    hàm này (đưa vào THEO_PHIEU thì cứ 5 phút cả trăm ngày bị tính lại)."""
+    k = set()
+    for d in cac_ngay:
+        k.update(_ngay_thang(d))
+    k.discard(None)
+    if k:
+        session.info.setdefault("_thang_doi", set()).update(k)
+
+
 _BANG_SQL = "CREATE TABLE IF NOT EXISTS phien_ban_thang (khoa varchar(16) PRIMARY KEY, so integer NOT NULL DEFAULT 0)"
 _DON = ("DELETE FROM bao_cao_dem WHERE luc < now() - INTERVAL '3 days' AND khoa NOT LIKE '%, \"\"]'")   # bản gắn "hôm nay" đã qua
 

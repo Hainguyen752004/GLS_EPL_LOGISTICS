@@ -94,8 +94,10 @@
   }
 
   /* 02/10 — mỗi nguồn: định khoản ngắn + một câu nói khoản đó là gì, ghi lúc nào (khung chi tiết). */
-  const DK = { thue_xe: '621 / 4022', no_ncc: '625 · 614 / 4021', xuat_noi_bo: '625 · 614 / 1371', xuat_ban: '607 / 1371',
+  // 06/10: thue_xe thêm phí quản lý Nợ 4022 / Có 715 và cắt quá tải Nợ 4022 / Có 758 (cùng chứng từ) — câu giải thích khoá mới
+  const DK = { thue_xe: '621 / 4022 · 4022 / 715 · 758', no_ncc: '625 · 614 / 4021', xuat_noi_bo: '625 · 614 / 1371', xuat_ban: '607 / 1371',
     tat_toan: '625 / 1601', ban_chu_xe: '4022 / 707', doanh_thu: '1211 / 708', doanh_thu_ban: '1211 / 707' };
+  const GIAI = { thue_xe: 'btc_g_thue_xe_phi' };
   const duocVao = (id) => EPL.manCuaVai(EPL.AUTH.role).some(m => m.id === id);
   /** Chú thích bốn trạng thái (đầu màn): nhãn + nghĩa. */
   function veChuTT() {
@@ -178,7 +180,7 @@
         ${guiDuoc() && b.status === 'da_gui' && !b.can_dao ? `<button type="button" class="btn sm" data-btc="cap-nhat">${NN.h('ck_cap_nhat')}</button>` : ''}
         ${b.trip_id && b.trip_doc_no && duocVao('chung-tu') ? `<button type="button" class="btn sm" data-mo-do="hs">${NN.h('btc_mo_ho_so')}</button>` : ''}
         ${b.trip_id && b.trip_doc_no && duocVao('phieu-xuat-xe') ? `<button type="button" class="btn sm" data-mo-do="phieu">${NN.h('btc_mo_do')}</button>` : ''}</div>
-      <div class="btc-nguon-gt">${DK[b.nguon] ? `<b>${esc(DK[b.nguon])}</b>` : ''}<span>${NN.h(NGUON.includes(b.nguon) ? 'btc_g_' + b.nguon : 'btc_g_khac')}</span></div>
+      <div class="btc-nguon-gt">${DK[b.nguon] ? `<b>${esc(DK[b.nguon])}</b>` : ''}<span>${NN.h(NGUON.includes(b.nguon) ? GIAI[b.nguon] || 'btc_g_' + b.nguon : 'btc_g_khac')}</span></div>
       <div class="btc-the">
         <div><span>${NN.h('btc_ngay')}</span><b>${EPL.ngay(b.ngay)}</b></div>
         <div><span>${NN.h('btc_goc')}</span><b>${goc(b)}</b></div>

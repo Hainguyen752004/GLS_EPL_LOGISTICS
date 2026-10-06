@@ -13467,6 +13467,16 @@ window.EPL_TU_DIEN = {
   "lo": "ລາຍການທີ່ບໍ່ຜ່ານເງິນ ບັນທຶກຕອນລັອກໃບ → ບັນທຶກບັນຊີລວມ (GL): ຄ່າເຊົ່າລົດ ໜີ້ 621 / ມີ 4022 · ໜີ້ຜູ້ສະໜອງ …/4021.",
   "en": "Non-cash items recorded at lock → general journal entry (GL): truck hire Dr 621 / Cr 4022 · supplier payable …/4021."
  },
+ "hs_d_but_toan_phi": {
+  "vi": "Khoản không qua tiền ghi lúc khoá phiếu → bút toán tổng hợp (GL): thuê xe Nợ 621 / Có 4022, phí quản lý Nợ 4022 / Có 715, cắt quá tải Nợ 4022 / Có 758 · nợ nhà cung cấp …/4021.",
+  "lo": "ລາຍການທີ່ບໍ່ຜ່ານເງິນ ບັນທຶກຕອນລັອກໃບ → ບັນທຶກບັນຊີລວມ (GL): ຄ່າເຊົ່າລົດ ໜີ້ 621 / ມີ 4022, ຫັກຄ່າທຳນຽມ ໜີ້ 4022 / ມີ 715, ຫັກແກ່ເກີນ ໜີ້ 4022 / ມີ 758 · ໜີ້ຜູ້ສະໜອງ …/4021.",
+  "en": "Non-cash items recorded at lock → general journal entry (GL): truck hire Dr 621 / Cr 4022, management fee Dr 4022 / Cr 715, overload cut Dr 4022 / Cr 758 · supplier payable …/4021."
+ },
+ "hs_bt_thue_xe": {
+  "vi": "Thuê xe · phí quản lý · cắt quá tải (621/4022 · 4022/715 · 4022/758)",
+  "lo": "ຄ່າເຊົ່າລົດ · ຄ່າທຳນຽມ · ຫັກແກ່ເກີນ (621/4022 · 4022/715 · 4022/758)",
+  "en": "Truck hire · management fee · overload cut (621/4022 · 4022/715 · 4022/758)"
+ },
  "hs_d_thu": {
   "vi": "DO khoá → tờ PDT → SO dịch vụ vận chuyển (TK-…) ghi công nợ khách; kế toán thu tiền, bên này đọc lại đã thu.",
   "lo": "DO ລັອກ → ໃບ PDT → SO ບໍລິການຂົນສົ່ງ (TK-…) ບັນທຶກໜີ້ລູກຄ້າ; ບັນຊີຮັບເງິນ, ຝ່າຍນີ້ອ່ານຄືນວ່າຮັບແລ້ວ.",
@@ -13851,6 +13861,11 @@ window.EPL_TU_DIEN = {
   "vi": "Xe thuê: lúc khoá phiếu ghi chi phí thuê xe — Nợ 621 / Có 4022 phải trả đối tác, bằng tiền thuê.",
   "lo": "ລົດເຊົ່າ: ຕອນລັອກໃບ ບັນທຶກຄ່າເຊົ່າລົດ — ໜີ້ 621 / ມີ 4022 ຕ້ອງຈ່າຍຄູ່ຮ່ວມ, ເທົ່າຄ່າເຊົ່າ.",
   "en": "Hired truck: at lock the hire cost is recorded — Dr 621 / Cr 4022 payable to the partner, for the hire amount."
+ },
+ "btc_g_thue_xe_phi": {
+  "vi": "Xe thuê: lúc khoá phiếu, một chứng từ tối đa ba dòng — chi phí thuê Nợ 621 / Có 4022 bằng tiền thuê; phí quản lý (2 % tiền thuê) Nợ 4022 / Có 715 doanh thu hoa hồng; cắt quá tải (tấn vượt × đơn giá) Nợ 4022 / Có 758 thu nhập khác. Phí hay quá tải bằng 0 thì không có dòng đó; 4022 còn đúng tiền trả đối tác trước khi trừ tạm ứng, nợ nhà cung cấp, SO nhiên liệu.",
+  "lo": "ລົດເຊົ່າ: ຕອນລັອກໃບ ເອກະສານດຽວ ບໍ່ເກີນສາມແຖວ — ຄ່າເຊົ່າລົດ ໜີ້ 621 / ມີ 4022 ເທົ່າຄ່າເຊົ່າ; ຫັກຄ່າທຳນຽມ (2% ຂອງຄ່າເຊົ່າ) ໜີ້ 4022 / ມີ 715 ຮັບຄ່ານາຍໜ້າ; ຫັກແກ່ເກີນ (ໂຕນເກີນ × ລາຄາ) ໜີ້ 4022 / ມີ 758 ລາຍຮັບອື່ນໆ. ຄ່າທຳນຽມ ຫຼື ແກ່ເກີນ ເປັນ 0 ກໍ່ບໍ່ມີແຖວນັ້ນ; 4022 ເຫຼືອເທົ່າເງິນຈ່າຍຄູ່ຮ່ວມ ກ່ອນຫັກເງິນລ່ວງໜ້າ, ໜີ້ຜູ້ສະໜອງ, SO ນໍ້າມັນ.",
+  "en": "Hired truck: at lock, one voucher with up to three lines — hire cost Dr 621 / Cr 4022 for the hire amount; management fee (2 % of the hire) Dr 4022 / Cr 715 commission income; overload cut (tonnes over × rate) Dr 4022 / Cr 758 other ordinary income. A zero fee or no overload means no such line; 4022 is left at the partner payout before advances, supplier debt and the fuel SO are deducted."
  },
  "btc_g_no_ncc": {
   "vi": "Dòng chi ghi nợ nhà cung cấp (chipping, dầu trạm ghi nợ, garage cho nợ…) — Nợ 625 · 614 (xe thuê 4022) / Có 4021, trả nhà cung cấp theo đợt.",
@@ -15091,5 +15106,35 @@ window.EPL_TU_DIEN = {
   "vi": "Chưa đặt địa chỉ màn Quản lý kho — báo quản trị.",
   "lo": "ຍັງບໍ່ໄດ້ຕັ້ງທີ່ຢູ່ໜ້າຄຸ້ມຄອງສາງ — ແຈ້ງຜູ້ດູແລລະບົບ.",
   "en": "The warehouse management address is not set — ask the administrator."
+ },
+ "ttx_da_tra": {
+  "vi": "Đã trả",
+  "lo": "ຈ່າຍແລ້ວ",
+  "en": "Paid"
+ },
+ "ttx_cho_tra": {
+  "vi": "Chờ trả cùng lương",
+  "lo": "ລໍຖ້າຈ່າຍພ້ອມເງິນເດືອນ",
+  "en": "Awaiting payment with salary"
+ },
+ "ttx_da_tra_phieu": {
+  "vi": "Đã trả (phiếu {so}, ngày {ngay})",
+  "lo": "ຈ່າຍແລ້ວ (ໃບຈ່າຍ {so}, ວັນທີ {ngay})",
+  "en": "Paid (voucher {so}, {ngay})"
+ },
+ "ttx_tong_cung_luong": {
+  "vi": "Tổng tiền trả cùng lương",
+  "lo": "ລວມເງິນຈ່າຍພ້ອມເງິນເດືອນ",
+  "en": "Total paid with salary"
+ },
+ "ttx_da_tra_d": {
+  "vi": "Phiếu chi lương bên kế toán đã ghi sổ",
+  "lo": "ໃບຈ່າຍເງິນເດືອນຢູ່ລະບົບບັນຊີ ບັນທຶກແລ້ວ",
+  "en": "Salary payment voucher posted in accounting"
+ },
+ "ttx_cho_tra_d": {
+  "vi": "Chưa có phiếu chi lương đã ghi sổ",
+  "lo": "ຍັງບໍ່ມີໃບຈ່າຍເງິນເດືອນທີ່ບັນທຶກແລ້ວ",
+  "en": "No posted salary payment voucher yet"
  }
 };

@@ -1,0 +1,9 @@
+/* Tiền chuyến & tiền nước tài xế (dựng lại 06/10) — đã trả theo phiếu chi lương thật / chờ trả cùng lương */
+.ttx-kpis{margin-bottom:12px}
+.ttx-kpis .ttx-da .v{color:var(--green)}
+.ttx-kpis .ttx-cho .v{color:var(--amber)}
+.ttx-bang .ttx-so-da{color:var(--green)}
+.ttx-bang .ttx-so-cho{color:var(--amber)}
+.ttx-bang .ttx-tt{min-width:220px}
+.ttx-bang .ttx-dong + .ttx-dong{margin-top:3px}
+.ttx-tong-dong td{font-weight:600}

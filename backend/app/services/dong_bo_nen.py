@@ -12,6 +12,8 @@ hỏi lại MỘT LƯỢT các bản ghi còn chờ — CHỈ GỌI các hàm đ
     phieu_tien  tất toán tháng tài xế · trả nhà cung cấp (PhieuTienTune da_gui) → chi_tat_toan_tune.dong_bo
     so_cuoc     thu tiền SO cước (GuiSoTune synced, chưa thu đủ)             → de_nghi_thu.doc_thu_tune (thu_*, trips.finance_status)
     so_nl       thu tiền SO nhiên liệu (GuiSoNhienLieuTune synced, chưa thu đủ) → so_nhien_lieu.doc_thu
+    chi_luong   trả cùng lương (06/10): dòng cùng lương của DO đã ghi sổ mục IV mà chưa "đã trả" → chi_luong_tune.dong_bo
+                (phiếu chi lương lập trên Web theo DO, hỏi theo khoá dòng, lô 500) — CHỈ khi EPL_DONG_BO_CHI_LUONG=1
 
 Mỗi lượt mỗi loại tối đa `gioi_han()` bản ghi, bản ghi hỏi lâu nhất trước (checked_at / thu_doc_luc); bản ghi đã xong (đã chi, đã
 thu đủ, lỗi) không hỏi. Lỗi máy chủ / mạng bên kia (HTTP ≥ 500, không gọi được, chưa có token) → ghi log, DỪNG lượt, lượt sau thử
@@ -19,7 +21,9 @@ lại; bên kia từ chối một bản ghi (4xx) → bỏ qua bản ghi đó, l
 (pg_try_advisory_lock) — nhiều worker uvicorn thì chỉ một worker chạy một lượt, và lượt bị bỏ nếu máy khác vừa chạy chưa đủ N phút
 (mốc lượt gần nhất ghi trong bảng cau_hinh, khoá `dong_bo_nen`). Màn quản trị đọc tình trạng ở GET /api/dong-bo-nen (Sếp).
 
-Cấu hình (.env): EPL_DONG_BO_NEN_PHUT (mặc định 5; 0 = tắt) · EPL_DONG_BO_NEN_GIOI_HAN (mặc định 50 bản ghi mỗi loại mỗi lượt).
+Cấu hình (.env): EPL_DONG_BO_NEN_PHUT (mặc định 5; 0 = tắt) · EPL_DONG_BO_NEN_GIOI_HAN (mặc định 50 bản ghi mỗi loại mỗi lượt;
+chi_luong hỏi tối đa max(giới hạn, 500) dòng — một lô 500 khoá là một lần gọi) · EPL_DONG_BO_CHI_LUONG (1 = hỏi trả cùng lương;
+mặc định tắt tới khi API anh Tune đang chạy có đường line-vouchers — bản cũ trả 404).
 Nhật ký: logs/dong_bo_nen.log. Bài kiểm: kiem/thu_dong_bo_nen.py (một lượt trong giao dịch ROLLBACK, lời gọi mạng giả lập).
 """
 import datetime as dt
@@ -132,14 +136,34 @@ def _so(db, Bang, ham, n, ket, ten):
         raise _DungLuot("%s: %s" % (ten, kq["loi"]))
 
 
+def _chi_luong(db, n, ket, ten):
+    """Trả cùng lương (06/10): hỏi phiếu chi lương lập trên Web theo khoá dòng (chi_luong_tune.dong_bo, lô 500 khoá một lần gọi).
+    Lỗi máy chủ / mạng bên kia → dừng lượt; bên kia từ chối cả lô (4xx — ví dụ chưa có đường, tài khoản chưa được gọi) → ghi
+    loi_ban_ghi, lượt chạy tiếp. Lô đã ghi trước lỗi vẫn giữ (dong_bo commit từng lô)."""
+    from services import chi_luong_tune as CL
+    try:
+        kq = CL.dong_bo(db, n)
+    except Exception as e:                                          # noqa: BLE001
+        db.rollback()
+        if _dung_luot(e):
+            raise _DungLuot("%s: %s" % (ten, _cau_loi(e)))
+        ket["loi_ban_ghi"].append("%s: %s" % (ten, _cau_loi(e)))
+        return
+    if kq["da_hoi"]:
+        ket["da_hoi"][ten] = ket["da_hoi"].get(ten, 0) + kq["da_hoi"]
+    if kq["cap_nhat"]:
+        ket["cap_nhat"][ten] = ket["cap_nhat"].get(ten, 0) + kq["cap_nhat"]
+
+
 def _viec():
     from models import ChiChuXeTune, ChiMucTune, ChiTune, GuiSoNhienLieuTune, GuiSoTune, PhieuTienTune
+    from services import chi_luong_tune as CL
     from services import chi_muc_tune as CMT
     from services import chi_tat_toan_tune as CTT
     from services import chi_tune as CHI
     from services import de_nghi_thu as DNT
     from services import so_nhien_lieu as NL
-    return [
+    viec = [
         ("tam_ung", lambda db, n, k: _phieu_chi(db, ChiTune, CHI.dong_bo, n, k, "tam_ung")),
         ("chi_muc", lambda db, n, k: _phieu_chi(db, ChiMucTune, CMT.dong_bo, n, k, "chi_muc")),
         ("tra_chu_xe", lambda db, n, k: _phieu_chi(db, ChiChuXeTune, CHI.dong_bo_chu_xe, n, k, "tra_chu_xe")),
@@ -147,6 +171,9 @@ def _viec():
         ("so_cuoc", lambda db, n, k: _so(db, GuiSoTune, lambda d, ds: DNT.doc_thu_tune(d, ds, ep=True), n, k, "so_cuoc")),
         ("so_nl", lambda db, n, k: _so(db, GuiSoNhienLieuTune, NL.doc_thu, n, k, "so_nl")),
     ]
+    if CL.bat():                                                    # cuối lượt: lỗi của nó không chặn các loại trên
+        viec.append(("chi_luong", lambda db, n, k: _chi_luong(db, n, k, "chi_luong")))
+    return viec
 
 
 def mot_luot(db, n=None):
@@ -270,6 +297,7 @@ def bat_dau():
 
 def tinh_trang(db):
     """Cho GET /api/dong-bo-nen: cấu hình + lượt gần nhất (dùng chung mọi worker, đọc từ cau_hinh)."""
-    return {"bat": phut() > 0, "phut": phut(), "gioi_han": gioi_han(), "co_cau_hinh_ke_toan": _co_cau_hinh(),
+    from services import chi_luong_tune as CL
+    return {"bat": phut() > 0, "phut": phut(), "gioi_han": gioi_han(), "co_cau_hinh_ke_toan": _co_cau_hinh(), "chi_luong": CL.bat(),
             "luong_song": bool(_LUONG["t"] is not None and _LUONG["t"].is_alive()), "dang_chay_luot": _KHOA.locked(),
             "lan_gan_nhat": doc_tinh_trang(db) or None}

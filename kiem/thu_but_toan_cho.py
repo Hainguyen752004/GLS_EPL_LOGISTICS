@@ -187,10 +187,16 @@ def kiem_khoa(tid, cong_ty):
     if cong_ty == "joint":
         t = cho.get("thue_xe")
         d = (t or {}).get("dong") or [{}]
-        dung(t and len(d) == 1 and d[0]["no"] == "621" and d[0]["co"] == "4022" and d[0]["ccy"] == p["tinh"]["hire_ccy"]
+        # 06/10: cùng chứng từ có thêm phí quản lý Nợ 4022 / Có 715 (phiếu thử 40 t — không quá tải nên không có dòng 4022/758;
+        # bài riêng kiem/thu_phi_qua_tai_thue_xe.py kiểm đủ ba dòng)
+        dung(t and len(d) == (2 if p["tinh"]["phi"] else 1) and d[0]["no"] == "621" and d[0]["co"] == "4022" and d[0]["ccy"] == p["tinh"]["hire_ccy"]
              and abs(d[0]["tien"] - p["tinh"]["tien_thue"]) < 0.005 and d[0]["doi_tuong"] == {"loai": "chu_xe", "ref_id": p["owner_id"]},
              "xe thuê: Nợ 621 / Có 4022 = tiền thuê %s %s, đối tượng chủ xe" % (p["tinh"]["tien_thue"], p["tinh"]["hire_ccy"]))
-        dung(t and t["source_ref"] == "EPLLAO-thue_xe-" + tid and t["tong"] == d[0]["tien"], "khoá chống trùng EPLLAO-thue_xe-<id>, tổng = dòng")
+        phi = next((x for x in d if x.get("co") == "715"), None)
+        dung(not p["tinh"]["phi"] or phi and phi["no"] == "4022" and abs(phi["tien"] - p["tinh"]["phi"]) < 0.005 and phi["ccy"] == d[0]["ccy"],
+             "xe thuê: phí quản lý Nợ 4022 / Có 715 = %s %s (06/10)" % (p["tinh"]["phi"], p["tinh"]["hire_ccy"]))
+        dung(t and t["source_ref"] == "EPLLAO-thue_xe-" + tid and abs(t["tong"] - sum(x["tien"] for x in d)) < 0.005,
+             "khoá chống trùng EPLLAO-thue_xe-<id>, tổng = Σ dòng")
     else:
         dung("thue_xe" not in cho, "xe nhà: không có bút toán tiền thuê")
     n = cho.get("no_ncc")

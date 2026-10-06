@@ -302,7 +302,11 @@ def main():
     s, gk = goi("/api/trips/%s" % P, vai="ketoan")
     assert len(thue_xe) == 1 and thue_xe[0]["status"] == "cho_gui", bt["ds"]
     dong = thue_xe[0]["dong"]
-    assert len(dong) == 1 and dong[0]["no"] == "621" and dong[0]["co"] == "4022" and dong[0]["ccy"] == "USD" \
+    # 06/10: cùng chứng từ có thêm phí quản lý Nợ 4022 / Có 715 và cắt quá tải Nợ 4022 / Có 758 (số 0 thì không có dòng)
+    them = {x["co"]: x["tien"] for x in dong[1:] if x["no"] == "4022"}
+    assert len(them) == len(dong) - 1 and abs(them.get("715", 0) - (gk["tinh"]["phi"] or 0)) < 0.005 \
+        and abs(them.get("758", 0) - (gk["tinh"]["tru_vuot"] or 0)) < 0.005, dong
+    assert dong[0]["no"] == "621" and dong[0]["co"] == "4022" and dong[0]["ccy"] == "USD" \
         and abs(dong[0]["tien"] - gk["tinh"]["tien_thue"]) < 0.005 and (dong[0]["doi_tuong"] or {}).get("loai") == "chu_xe", dong
     print("  ✓ %-58s %s USD" % ("Bút toán chờ Nợ 621 / Có 4022 = tiền thuê, đối tượng chủ xe", dong[0]["tien"]))
     # dòng vá lốp garage là 4022/4021 nhưng QUỸ TRẢ NGAY (đã vào phiếu chi) → không ghi thêm Có 4021 (chi phí hai lần)

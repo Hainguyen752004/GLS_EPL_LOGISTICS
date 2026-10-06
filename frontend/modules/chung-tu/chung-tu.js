@@ -145,7 +145,8 @@
 
   /** Thẻ một nhóm: tên + trạng thái cả nhóm, câu giải thích, cặp "bên điều xe → bên kế toán", ghi chú. */
   function theNhom(k, g) {
-    const giai = k === 'tam_ung' || k === 'xuat_kho' ? 'hs_d_' + k + '_' + (g.hinh_thuc || 'noi_bo') : 'hs_d_' + k;
+    // 06/10: nhóm bút toán khoá phiếu có thêm phí quản lý 4022/715 và cắt quá tải 4022/758 (cùng chứng từ thuê xe) — câu khoá mới
+    const giai = k === 'tam_ung' || k === 'xuat_kho' ? 'hs_d_' + k + '_' + (g.hinh_thuc || 'noi_bo') : k === 'but_toan' ? 'hs_d_but_toan_phi' : 'hs_d_' + k;
     const em = g.em.length ? g.em.map(oTo).join('') : rong(k === 'so_nl' ? 'hs_sap_co' : 'hs_em_chua');
     const kt = g.kt.length ? g.kt.map(oTo).join('') : rong(k === 'so_nl' ? 'hs_sap_co' : 'hs_kt_chua');
     const chu = g.ghi_chu && !(k === 'so_nl' && g.kt.length) ? `<div class="hs-chu ${g.muc === 'loi' ? 'loi' : g.muc === 'xong' || k === 'so_nl' ? 'nhe' : ''}">${NN.h('hs_c_' + g.ghi_chu)}</div>` : '';
@@ -239,7 +240,7 @@
     const soNl = fs ? dongTr('hs-dong-thue', '—', NN.h('hs_so_nl_dong'), '', (fs.currency || 'LAK') === 'LAK' ? (fs.total != null ? so(fs.total) : '—') : kip(null, fs.total, fs.currency),
       { state: fs.order_code ? 'has_voucher' : 'pending', kind: 'fuel_so', doc_no: fs.order_code, ref_no: null }) : '';
     const thue = h.thue ? [h.thue.settlement && dongTr('hs-dong-thue', '—', NN.h('hs_tien_thue_dt'), '', kip(h.thue.amount_lak, h.thue.amount, h.thue.currency), h.thue.settlement),
-      h.thue.journal && dongTr('hs-dong-thue', '—', NN.h('btc_nguon_thue_xe'), '', kip(h.thue.amount_lak, h.thue.amount, h.thue.currency), h.thue.journal)].filter(Boolean).join('') : '';
+      h.thue.journal && dongTr('hs-dong-thue', '—', NN.h('hs_bt_thue_xe'), '', kip(h.thue.amount_lak, h.thue.amount, h.thue.currency), h.thue.journal)].filter(Boolean).join('') : '';
     const rows = (h.dong || []).map(d => {
       const s = d.settlement || { state: 'open' };
       const ten = d.kind === 'thu' ? NN.h('hs_cuoc') : esc(NN.lang === 'lo' ? d.name_lo || d.name : d.name || d.name_lo || '');

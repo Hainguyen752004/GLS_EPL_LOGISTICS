@@ -25,6 +25,9 @@ from services.bao_mat import nguoi_hien_tai
 from services.phan_quyen import QUYEN, thay_tien_ban, thay_tien_chi, viec_dang_cho
 from services.tinh_toan import cach_tra, tien_dong, tinh_phieu, ty_gia
 from services import dem_bao_cao as DEM
+# 06/10: khoản tài xế dùng chung với luồng hỏi phiếu chi lương (một chỗ định nghĩa); giờ máy chủ kế toán để ra ngày ghi sổ
+from services.chi_luong_tune import KHOAN_TAI_XE
+from services.chi_tune import GIO_KE_TOAN
 
 router = APIRouter()
 
@@ -750,57 +753,90 @@ def tien_tai_xe(thang: str = None, db: Session = Depends(get_db), user=Depends(n
     Bãi KHÔNG xem (chủ dự án chốt 23/09): phiếu đã giấu tiền mục IV với Bãi, màn này cộng lại đúng số đó.
 
     Khoản nào là "của tài xế": x_trip (tiền chuyến), x_water (tiền nước), x_vn (tiền đi VN),
-    x_phone (điện thoại), x_food (ăn). Trạng thái chi lấy từ mục IV của phiếu.
+    x_phone (điện thoại), x_food (ăn) — chỉ dòng cách trả "trả theo chuyến cùng lương", chỉ xe nhà.
+
+    ĐÃ TRẢ theo PHIẾU THẬT (em chính chốt 06/10: tiền chưa trả cho tài xế thì báo cáo không được ghi "đã chi"): một dòng là "đã trả"
+    CHỈ KHI phiếu chi lương bên kế toán anh Tune chứa dòng đó đã ghi sổ (bảng chi_luong_tune, luồng nền services/chi_luong_tune.py);
+    còn lại là "Chờ trả cùng lương". Trước 06/10 cột trạng thái lấy mục IV "đã chi" — mà mục IV chỉ có khoản cùng lương thì tự qua bước
+    Chi lúc ghi sổ (routes/phieu.py, giữ nguyên), nên báo cáo ghi "đã chi" khi tài xế chưa nhận đồng nào.
+
+    Mỗi dòng (tài xế): so_phieu · khoan · tong_lak (như cũ) · da_tra {tong_lak, so_dong, khoan, phieu [{so, ngay, tien_lak}]} ·
+    cho_tra {tong_lak, so_dong, khoan} · trang_thai paid | partial | unpaid | none. `tong`: tổng tháng tách hai phần.
     """
     if not thay_tien_chi(user.role):
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Bãi không xem tiền chuyến & nước của tài xế."})
     dau, cuoi = _thang(thang)
     # ghép từ phần tính sẵn của từng NGÀY (chỉ ngày có dữ liệu vừa đổi mới tính lại)
     tong = {}
-    for o in _theo_ngay(db, "tx4", _cac_ngay(dau, cuoi), _tx_lo).values():    # theo thứ tự ngày · tx4: chỉ xe nhà 30/09
+    # tx5 (06/10): đã trả / chờ trả theo phiếu chi lương thật — khuôn mỗi ngày đổi nên không dùng lại bản tx4 đã lưu
+    for o in _theo_ngay(db, "tx5", _cac_ngay(dau, cuoi), _tx_lo).values():    # theo thứ tự ngày · chỉ xe nhà (30/09)
         for ten, x in o.items():
-            r = tong.setdefault(ten, {"driver": ten, "so_phieu": 0, "khoan": {}, "tong_lak": 0.0, "da_chi": 0, "cho_chi": 0})
-            for f in ("so_phieu", "tong_lak", "da_chi", "cho_chi"):
+            r = tong.setdefault(ten, {"driver": ten, "so_phieu": 0, "khoan": {}, "tong_lak": 0.0, "khoan_da_tra": {},
+                                      "da_tra_lak": 0.0, "so_dong_da_tra": 0, "so_dong_cho": 0, "phieu": {}})
+            for f in ("so_phieu", "tong_lak", "da_tra_lak", "so_dong_da_tra", "so_dong_cho"):
                 r[f] += x[f]
             _cong(r["khoan"], x["khoan"])
-    ra = []
+            _cong(r["khoan_da_tra"], x["khoan_da_tra"])
+            for so, v in x["phieu"].items():
+                ph = r["phieu"].setdefault(so, {"so": so, "ngay": v["ngay"], "tien_lak": 0.0})
+                ph["tien_lak"] += v["tien_lak"]
+                ph["ngay"] = ph["ngay"] or v["ngay"]
+    ra, t = [], {"tong_lak": 0, "da_tra_lak": 0, "cho_tra_lak": 0, "so_dong_da_tra": 0, "so_dong_cho": 0}
     for r in tong.values():
-        r["khoan"] = {k: round(v) for k, v in r["khoan"].items()}
-        r["tong_lak"] = round(r["tong_lak"])
-        r["trang_thai"] = "paid" if r["cho_chi"] == 0 else ("partial" if r["da_chi"] else "unpaid")
-        ra.append(r)
-    return {"tu": dau.isoformat(), "den": cuoi.isoformat(), "rows": sorted(ra, key=lambda x: x["driver"])}
-
-
-KHOAN_TAI_XE = {"x_trip", "x_water", "x_vn", "x_phone", "x_food"}
+        tong_lak, da = round(r["tong_lak"]), round(r["da_tra_lak"])
+        cho = tong_lak - da
+        k_da = {k: round(v) for k, v in r["khoan_da_tra"].items() if round(v)}
+        k_cho = {k: round(v) - k_da.get(k, 0) for k, v in r["khoan"].items() if round(v) - k_da.get(k, 0)}
+        ra.append({"driver": r["driver"], "so_phieu": r["so_phieu"], "khoan": {k: round(v) for k, v in r["khoan"].items()},
+                   "tong_lak": tong_lak,
+                   "da_tra": {"tong_lak": da, "so_dong": r["so_dong_da_tra"], "khoan": k_da,
+                              "phieu": sorted(({"so": v["so"], "ngay": v["ngay"], "tien_lak": round(v["tien_lak"])}
+                                               for v in r["phieu"].values()), key=lambda v: (v["ngay"] or "", v["so"]))},
+                   "cho_tra": {"tong_lak": cho, "so_dong": r["so_dong_cho"], "khoan": k_cho},
+                   "trang_thai": ("none" if not tong_lak else "paid" if cho <= 0 else "partial" if da else "unpaid")})
+        t["tong_lak"] += tong_lak; t["da_tra_lak"] += da; t["cho_tra_lak"] += cho
+        t["so_dong_da_tra"] += r["so_dong_da_tra"]; t["so_dong_cho"] += r["so_dong_cho"]
+    return {"tu": dau.isoformat(), "den": cuoi.isoformat(), "rows": sorted(ra, key=lambda x: x["driver"]), "tong": t}
 
 
 def _tx_lo(db, cac_ngay):
-    """Phần TIỀN CHUYẾN TÀI XẾ của từng ngày: {tên tài xế: số phiếu · từng khoản · tổng · đã chi / chờ chi mục IV}.
-    Chỉ XE NHÀ (chủ dự án 30/09): EPL không trả lương tài xế của chủ xe — khoản EPL ứng cho xe thuê là công nợ chủ xe."""
+    """Phần TIỀN CHUYẾN TÀI XẾ của từng ngày: {tên tài xế: số phiếu · từng khoản · tổng · phần đã trả theo phiếu chi lương thật}.
+    Chỉ XE NHÀ (chủ dự án 30/09): EPL không trả lương tài xế của chủ xe — khoản EPL ứng cho xe thuê là công nợ chủ xe.
+    "Đã trả" một dòng = chi_luong_tune.status da_tra (phiếu chứa dòng đã ghi sổ bên kế toán); không có bản ghi / còn "cho" là chờ."""
+    from models import ChiLuongTune
     loc = (Trip.doc_date.in_(cac_ngay), or_(Trip.company.is_(None), Trip.company != "joint"))
     ds = (db.query(*COT_TINH).filter(*loc, Trip.driver_name.isnot(None), Trip.driver_name != "")
           .order_by(Trip.doc_date, Trip.doc_no).all())
-    muc_iv = {t: st for t, st in (db.query(TripSection.trip_id, TripSection.status).join(Trip, Trip.id == TripSection.trip_id)
-                                  .filter(*loc, TripSection.section == "travel"))}
     dong = defaultdict(list)
     # chỉ dòng CÁCH TRẢ "trả theo chuyến cùng lương" (Excel anh Khampla, 29/09) — khoản tiền mặt đã đưa lúc xe đi
     # (tạm ứng) không trả lần nữa cùng lương
-    for d in (db.query(TripExpense.trip_id, TripExpense.item_key, TripExpense.qty, TripExpense.unit_price, TripExpense.currency,
-                       TripExpense.pay_channel)
+    for d in (db.query(TripExpense.id, TripExpense.trip_id, TripExpense.item_key, TripExpense.qty, TripExpense.unit_price,
+                       TripExpense.currency, TripExpense.pay_channel, ChiLuongTune.status.label("tra"),
+                       ChiLuongTune.voucher_no, ChiLuongTune.posted_at)
               .join(Trip, Trip.id == TripExpense.trip_id)
+              .outerjoin(ChiLuongTune, ChiLuongTune.line_id == TripExpense.id)
               .filter(*loc, TripExpense.section == "travel", TripExpense.paid_by_epl.is_(True),
                       TripExpense.item_key.in_(KHOAN_TAI_XE))):
         if cach_tra(d) == "luong":
             dong[d.trip_id].append(d)
     ra = {d.isoformat(): {} for d in cac_ngay}
     for p in ds:
-        r = ra[p.doc_date.isoformat()].setdefault(p.driver_name, {"so_phieu": 0, "khoan": {}, "tong_lak": 0.0, "da_chi": 0, "cho_chi": 0})
+        r = ra[p.doc_date.isoformat()].setdefault(p.driver_name, {"so_phieu": 0, "khoan": {}, "tong_lak": 0.0, "khoan_da_tra": {},
+                                                                  "da_tra_lak": 0.0, "so_dong_da_tra": 0, "so_dong_cho": 0,
+                                                                  "phieu": {}})
         r["so_phieu"] += 1
         for d in dong.get(p.id, []):
             v = tien_dong(p, d); r["khoan"][d.item_key] = r["khoan"].get(d.item_key, 0.0) + v; r["tong_lak"] += v
-        if muc_iv.get(p.id) == "paid": r["da_chi"] += 1
-        else: r["cho_chi"] += 1
+            if d.tra == "da_tra":
+                r["da_tra_lak"] += v; r["so_dong_da_tra"] += 1
+                r["khoan_da_tra"][d.item_key] = r["khoan_da_tra"].get(d.item_key, 0.0) + v
+                so = d.voucher_no or "?"
+                ph = r["phieu"].setdefault(so, {"ngay": None, "tien_lak": 0.0})
+                ph["tien_lak"] += v
+                if d.posted_at and not ph["ngay"]:
+                    ph["ngay"] = (d.posted_at + GIO_KE_TOAN).date().isoformat()     # ngày ghi sổ theo giờ Lào (UTC+7)
+            else:
+                r["so_dong_cho"] += 1
     return ra
 
 

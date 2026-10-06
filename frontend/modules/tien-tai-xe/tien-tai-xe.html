@@ -1,0 +1,26 @@
+<!-- Tiền chuyến & tiền nước tài xế — ເງິນຖ້ຽວໂຊເຟີ ແລະ ເງິນເຕີມນ້ຳ. Gom từ mục IV của phiếu theo tháng, khoản trả cùng lương, xe nhà.
+     Dựng lại 06/10 (màn dời sang trang kế toán tạm 28/09, phần tiền ở đó bỏ 01/10): "Đã trả" CHỈ khi phiếu chi lương bên kế toán anh
+     Tune đã ghi sổ (phiếu Web lập theo DO, trang này hỏi lại theo khoá dòng — services/chi_luong_tune.py); trước đó "Chờ trả cùng
+     lương". Tổng tách hai phần. -->
+<div class="toolbar no-print">
+  <div class="field"><label data-i18n="month"></label><input type="month" id="ttx-thang"></div>
+  <div class="grow"></div>
+  <button class="btn" id="ttx-lam-moi" data-i18n="ck_cap_nhat"></button>
+  <button class="btn" onclick="window.print()"><span data-i18n="print"></span></button>
+</div>
+<div class="kpis ttx-kpis" id="ttx-tong"></div>
+<div class="card">
+  <div class="hd"><h3 data-i18n="nav_driver"></h3><div class="grow"></div><span class="small muted" id="ttx-ky"></span></div>
+  <div class="tbl-wrap">
+    <table class="tbl ttx-bang">
+      <thead><tr>
+        <th data-i18n="driver"></th><th class="num" data-i18n="c_trips"></th><th class="num" data-i18n="trip_money"></th>
+        <th class="num" data-i18n="water_money"></th><th class="num" data-i18n="phone_money"></th><th class="num" data-i18n="vn_money"></th>
+        <th class="num" data-i18n="x_food"></th><th class="num" data-i18n="total_lak"></th>
+        <th class="num" data-i18n="ttx_da_tra"></th><th class="num" data-i18n="ttx_cho_tra"></th><th data-i18n="status"></th>
+      </tr></thead>
+      <tbody id="ttx-than"></tbody>
+      <tfoot id="ttx-chan"></tfoot>
+    </table>
+  </div>
+</div>

@@ -34,6 +34,11 @@ Luật rút ra:
   · Tiền thuê xe liên kết (chủ dự án chốt 01/10): lúc khoá phiếu Nợ 621 chi phí vận chuyển / Có 4022 phải trả chủ xe,
     bằng tiền thuê. 621 khớp dòng "ຄ່າຂົນສົ່ງນອກ" trong Excel (Excel ghi vế có 402 — 4022 là mã con của nó). Bên kế
     toán chưa có API bút toán tổng hợp nên bên em chỉ đưa cặp này ra bàn giao (hire.acc_code), chưa gửi được.
+  · 06/10 (chủ dự án giao, chốt mã): cùng chứng từ thuê xe lúc khoá phiếu, hai khoản EPL GIỮ LẠI của tiền thuê thành thu nhập
+    của EPL — trước đây chỉ trừ vào tiền trả đối tác mà không có bút toán, nên 4022 treo đúng phần đó sau khi trả đối tác:
+        phí quản lý (Excel «ຫັກຄ່າທຳນຽມ 2%/ບິນ») ......... Nợ 4022 / Có 715 doanh thu tiền hoa hồng (ຮັບຄ່ານາຍໜ້າ)
+        cắt quá tải (Excel «ຫັກແກ່ເກີນ 1$/ໂຕນ») .......... Nợ 4022 / Có 758 thu nhập từ hoạt động thông thường khác
+    Cả hai là tài khoản LÁ của danh mục Lào (nhóm 71 · 75 là tài khoản tổng hợp, không ghi sổ được).
 """
 import json
 import os
@@ -57,6 +62,9 @@ LUONG = "4201"        # ພະນັກງານ - ຄ່າທົດແທນ�
 PHAI_THU = "1211"     # ລູກຄ້າ-ຄ່າສິນຄ້າ — khách ghi 1211 cho cả cước (Excel, quy trình); 1213 là "khách hàng - dịch vụ"
 DT_VAN_CHUYEN = "708"  # ຂາຍການບໍລິການອື່ນໆ — "70" của khách là mã nhóm
 DT_BAN_HANG = "707"   # ຂາຍສິນຄ້າ
+# 06/10: phí và quá tải EPL giữ lại của tiền thuê xe liên kết — ghi cùng chứng từ thue_xe lúc khoá phiếu (but_toan_cho)
+DT_PHI_QUAN_LY = "715"   # ຮັບຄ່ານາຍໜ້າ (con của 71) — phí quản lý 2 %/bill trên tiền thuê: Nợ 4022 / Có 715
+TN_CAT_QUA_TAI = "758"   # ລາຍຮັບອື່ນໆ ຈາກການຄຸ້ມຄອງ - ບໍລິຫານ ປົກກະຕິ (con của 75) — cắt quá tải 1/tấn vượt: Nợ 4022 / Có 758
 TIEN = {("cash", True): "1011", ("cash", False): "1012", ("bank", True): "1021", ("bank", False): "1022"}
 
 # Mã con của khách chưa có trong danh mục thật: mã → (mã cha, tên Việt, tên Lào). Tên Lào ráp từ cụm đã có.
@@ -72,6 +80,7 @@ TEN_VI = {
     "1601": "Tạm ứng nhân viên", "4201": "Phải trả nhân viên — tiền lương, tiền công",
     "1211": "Phải thu khách hàng — hàng hoá", "1213": "Phải thu khách hàng — dịch vụ",
     "708": "Doanh thu bán dịch vụ khác (vận chuyển)", "707": "Doanh thu bán hàng hoá",
+    "715": "Doanh thu tiền hoa hồng", "758": "Thu nhập từ các hoạt động thông thường khác",
     "1011": "Tiền mặt bằng Kíp", "1012": "Tiền mặt ngoại tệ", "1021": "Tiền gửi ngân hàng bằng Kíp",
     "1022": "Tiền gửi ngân hàng ngoại tệ", "137": "Hàng hoá tồn kho", "401": "Phải trả nhà cung cấp hàng hoá, vật tư",
     "402": "Phải trả nhà cung cấp dịch vụ",

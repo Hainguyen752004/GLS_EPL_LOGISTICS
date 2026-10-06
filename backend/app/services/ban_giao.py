@@ -225,8 +225,14 @@ def dong_goi(db, p, chung_tu=True):
             "owner_self_paid_lak": t["chu_xe_tu_tra_lak"],
             # chủ dự án chốt 01/10: Nợ 621 / Có 4022 bằng `amount` lúc khoá phiếu (services/tai_khoan.py)
             "acc_code": "%s/%s" % (TK.CP_THUE_XE, TK.CHU_XE),
-            "acc_code_note": "Nợ %s %s / Có %s %s bằng tiền thuê (amount), lúc khoá phiếu. Phí và trừ quá tải chưa có bút toán riêng."
-                             % (TK.CP_THUE_XE, TK.ten(TK.CP_THUE_XE), TK.CHU_XE, TK.ten(TK.CHU_XE)),
+            # 06/10: phí quản lý và cắt quá tải có bút toán cùng chứng từ thue_xe (but_toan_cho.dong_khoa_phieu) — câu cũ "chưa có
+            # bút toán riêng" sai từ hôm nay; acc_code giữ cặp chính 621/4022 (khuôn đã công bố)
+            "acc_code_note": ("Nợ %s %s / Có %s %s bằng tiền thuê (amount), lúc khoá phiếu. Cùng chứng từ: phí quản lý (fee) Nợ %s / "
+                              "Có %s %s; cắt quá tải (over_deduction) Nợ %s / Có %s %s — khoản bằng 0 thì không có dòng. Sau khoá "
+                              "%s còn = amount − fee − over_deduction."
+                              % (TK.CP_THUE_XE, TK.ten(TK.CP_THUE_XE), TK.CHU_XE, TK.ten(TK.CHU_XE),
+                                 TK.CHU_XE, TK.DT_PHI_QUAN_LY, TK.ten(TK.DT_PHI_QUAN_LY),
+                                 TK.CHU_XE, TK.TN_CAT_QUA_TAI, TK.ten(TK.TN_CAT_QUA_TAI), TK.CHU_XE)),
         }
     details = [{
         "line_no": 1, "kind": "thu", "charge_type": "freight", "section": None,

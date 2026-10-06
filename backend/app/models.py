@@ -1507,3 +1507,25 @@ class CanTruTune(Base):
     last_attempt_at = Column(DateTime)
     huy_luc = Column(DateTime)
     huy_body = Column(Text)
+
+
+class ChiLuongTune(Base):
+    """TRẢ CÙNG LƯƠNG theo từng dòng chi (06/10/2026 — em chính chốt: tiền chưa trả cho tài xế thì báo cáo không được ghi "đã chi").
+    Khoản "trả theo chuyến cùng lương" (mục IV, xe nhà) do kế toán trả bằng phiếu chi lập TRÊN WEB anh Tune theo DO (hộp "Tạo phiếu
+    chi theo DO" — phiếu Chi khác gộp dòng theo khoá B2 `DO:EPLLAO-<trip>:exp:<id>`); trang điều xe không lập phiếu đó nên phải
+    HỎI LẠI theo khoá dòng (POST /api/v1/integrations/logistics/line-vouchers bên API anh Tune — services/chi_luong_tune.py, luồng nền
+    loại "chi_luong"). Báo cáo Tiền chuyến & nước tài xế đọc bảng này: `da_tra` khi phiếu chứa dòng đã ghi sổ (ST 12 / 13), còn lại
+    (không có dòng ở đây, chưa nằm phiếu nào, phiếu chưa ghi sổ) là "Chờ trả cùng lương". Bảng MỚI, không thêm cột vào bảng cũ.
+    `status`: cho · da_tra."""
+    __tablename__ = "chi_luong_tune"
+    line_id = Column(String, ForeignKey("trip_expenses.id", ondelete="CASCADE"), primary_key=True)   # TripExpense.id
+    trip_id = Column(String, ForeignKey("trips.id", ondelete="CASCADE"), nullable=False, index=True)
+    line_key = Column(String(200), nullable=False)                # khoá dòng đã hỏi (DO:EPLLAO-<trip>:exp:<id>)
+    status = Column(String(16), nullable=False, default="cho")
+    voucher_no = Column(String(64))                               # số phiếu bên kế toán chứa dòng (đã ghi sổ trước, nếu có)
+    document_id = Column(Integer)                                 # DOC_DOCUMENTID của phiếu đó
+    tune_status = Column(Integer)                                 # ST_AUTOID phiếu (1 · 12 · 13)
+    posted_at = Column(DateTime)                                  # lúc ghi sổ (UTC, quy từ giờ máy chủ kế toán)
+    amount_base = Column(Float)                                   # Σ quy đổi của dòng trong phiếu (ET_BASEAMOUNT)
+    checked_at = Column(DateTime)                                 # lần hỏi gần nhất — luồng nền hỏi dòng lâu nhất trước
+    created_at = Column(DateTime, default=bay_gio)

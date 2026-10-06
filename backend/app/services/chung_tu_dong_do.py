@@ -40,7 +40,7 @@ CHI TẠI QUỸ TRANG ĐIỀU XE (trước 01/10, hoặc Sếp chi tay — route
 chứng từ bên em (bảng chung_tu: PC_TU, PC_SC, PXK_NL / PXK_PT), không có phiếu bên kế toán → pending, câu nói "đối soát, không
 lập lại". Tờ đó từng sang trang kế toán tạm — số bên đó là số thử, không coi là chứng từ kế toán.
 Tiền thuê xe liên kết (header.hire): settlement theo đề nghị trả chủ xe (chi_chu_xe_tune / trips.owner_payment_id) ·
-owner_payment, kèm `journal` = bút toán thue_xe (Nợ 621 / Có 4022). Xe thuê có xuất bán: header.fuel_so {order_code, total, paid,
+owner_payment, kèm `journal` = bút toán thue_xe (Nợ 621 / Có 4022 + phí 4022 / 715 + quá tải 4022 / 758 từ 06/10). Xe thuê có xuất bán: header.fuel_so {order_code, total, paid,
 remaining, status, read_at} — bản đọc lại thu tiền SO nhiên liệu (gui_so_nhien_lieu_tune).
 
 Chỉ ĐỌC: không ghi gì, không hỏi sang hệ kế toán — trạng thái là bản chép lần đọc lại gần nhất của từng đường.
@@ -311,7 +311,7 @@ def thue(db, p):
     bt = db.query(ButToanCho).filter(ButToanCho.nguon == BTC.THUE_XE, ButToanCho.ma_nguon == p.id, ButToanCho.status != "huy").first()
     ten = TEN_NGUON[BTC.THUE_XE]
     nk = _but_toan(bt, ten) if bt is not None else _ket(
-        "pending", "journal", "%s — chưa có bút toán Nợ 621 / Có 4022 (ghi lúc khoá phiếu)." % ten, ref_no=_ma_ben_em(BTC.THUE_XE, p.id))
+        "pending", "journal", "%s — chưa có bút toán thuê xe Nợ 621 / Có 4022 (kèm phí quản lý Nợ 4022 / Có 715, cắt quá tải Nợ 4022 / Có 758 — 06/10) — ghi lúc khoá phiếu." % ten, ref_no=_ma_ben_em(BTC.THUE_XE, p.id))
     tot = None
     if p.owner_id:
         for r in db.query(ChiChuXeTune).filter(ChiChuXeTune.owner_id == p.owner_id, ChiChuXeTune.status != "huy"):
