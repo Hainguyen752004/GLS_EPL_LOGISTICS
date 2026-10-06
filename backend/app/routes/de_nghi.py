@@ -262,7 +262,8 @@ def tao_so(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)
     """Gửi DO đã về + đã khoá sang bên công nợ; bên đó tạo SO và ghi công nợ khách. Đã có SO thì trả lại, không gọi nữa.
     Cùng nút (02/10): xe thuê có dầu / phụ tùng kho xuất bán → SO NHIÊN LIỆU cho đối tác (services/so_nhien_lieu.py). Hai phần gửi
     độc lập: SO cước đã có mà SO nhiên liệu chưa thì bấm lại chỉ gửi phần thiếu. Phần nào hỏng → HTTP lỗi của phần đó, `detail` kèm
-    kết quả phần kia (`trang_thai` cước, `nhien_lieu`). → {trang_thai, da_co_truoc, nhien_lieu: {trang_thai, da_co_truoc} | null}."""
+    kết quả phần kia (`trang_thai` cước, `nhien_lieu`). → {trang_thai, da_co_truoc, nhien_lieu: {trang_thai, da_co_truoc} | null,
+    but_toan_doanh_thu: [...]} — 06/10: SO đã tạo → bút toán doanh thu (but_toan_cho.ghi_doanh_thu)."""
     if user.role not in GUI_SO:
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN",
                                   "loi": "Chỉ KT Thu/Chi Viêng Chăn (người khoá phiếu) hoặc Sếp gửi đề nghị thu sang bên công nợ."})
@@ -280,14 +281,32 @@ def tao_so(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)
         loi_nl = e
         nl = {"trang_thai": NL.xuat(NL.so_cua(db, p)), "da_co_truoc": False,
               "loi": e.detail if isinstance(e.detail, dict) else {"loi": str(e.detail)}}
+    # 06/10 (chủ dự án chốt "Ghi lúc Tạo SO"): SO nào đã tạo (kể cả phần kia hỏng, kể cả SO có từ trước) → bút toán doanh thu Nợ 1211 /
+    # Có 708 (cước) · Có 707 (SO nhiên liệu / phụ tùng) — SO bên kế toán không ghi sổ cái, thu nợ / cấn trừ ghi Có 1211 làm 1211 lệch.
+    # Gọi lại không trùng (một DO một bút toán mỗi loại); cờ gửi bật thì tự gửi, hỏng giữ "chờ gửi" ở màn Bút toán chờ gửi.
+    dthu = _ghi_doanh_thu(db, p, user)
     if loi is not None or loi_nl is not None:
         e = loi if loi is not None else loi_nl
         d = dict(e.detail) if isinstance(e.detail, dict) else {"ma": "LOI", "loi": str(e.detail)}
         if loi is None:
             d["loi"] = "SO cước %s. Chưa tạo SO nhiên liệu: %s" % ("đã có" if da_co else "đã tạo", d.get("loi") or d.get("ma"))
-        d.update({"trang_thai": kq if loi is None else GT.xuat(DNT.so_cua(db, p)), "da_co_truoc": da_co, "nhien_lieu": nl})
+        d.update({"trang_thai": kq if loi is None else GT.xuat(DNT.so_cua(db, p)), "da_co_truoc": da_co, "nhien_lieu": nl,
+                  "but_toan_doanh_thu": dthu})
         raise HTTPException(e.status_code, d)
-    return {"trang_thai": kq, "da_co_truoc": da_co, "nhien_lieu": nl}
+    return {"trang_thai": kq, "da_co_truoc": da_co, "nhien_lieu": nl, "but_toan_doanh_thu": dthu}
+
+
+def _ghi_doanh_thu(db, p, user):
+    """Bút toán doanh thu theo các SO đã tạo của DO (but_toan_cho.ghi_doanh_thu) rồi commit. → [{nguon, source_ref, status, tong,
+    tien_te, so_ben_ke_toan, loi_gui}]. Dữ liệu SO hỏng dạng (ValueError) thì bỏ qua, không làm hỏng kết quả tạo SO — SO đã tạo bên kia."""
+    try:
+        ra = BTC.ghi_doanh_thu(db, p, by_user=user.full_name)
+        db.commit()
+    except ValueError:
+        db.rollback()
+        return []
+    return [{"nguon": n, "source_ref": r.source_ref, "status": r.status, "tong": r.tong, "tien_te": r.tien_te,
+             "so_ben_ke_toan": r.so_ben_ke_toan, "loi_gui": r.loi_gui} for n, r in ra.items()]
 
 
 # ---------------------------------------------------------------- tạm ứng: phiếu chi bên hệ kế toán (01/10)
@@ -390,7 +409,8 @@ def gui_chi_muc_ke_toan(tid: str, muc: str, db: Session = Depends(get_db), user=
 def ds_but_toan_cho(nguon: str = "", status: str = "", trip_id: str = "", thang: str = "", tu: str = "", den: str = "",
                     gioi_han: int = 200, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     """BÚT TOÁN CHỜ GỬI — khoản không qua tiền sổ kế toán phải ghi (khoá phiếu: thuê xe Nợ 621 / Có 4022, ghi nợ nhà cung cấp
-    Nợ 625 · 614 / Có 4021; tất toán…), giữ ở đây chờ hệ anh Tune có API bút toán. Chỉ ĐỌC. Vai: KT Thu/Chi VC, KT Chi phí VC,
+    Nợ 625 · 614 / Có 4021; tất toán…; 06/10 doanh thu theo SO: doanh_thu Nợ 1211 / Có 708 · doanh_thu_ban Nợ 1211 / Có 707), giữ ở
+    đây chờ hệ anh Tune có API bút toán. Chỉ ĐỌC. Vai: KT Thu/Chi VC, KT Chi phí VC,
     Sếp (services/but_toan_cho.VAI_XEM) — bút toán mang tiền thuê xe liên kết. `status`, `nguon` nhận nhiều giá trị (dấu phẩy);
     `thang` = YYYY-MM theo ngày hạch toán."""
     if user.role not in BTC.VAI_XEM:

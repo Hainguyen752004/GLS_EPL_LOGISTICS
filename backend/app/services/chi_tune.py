@@ -92,8 +92,12 @@ def _goi(method, duong, body=None):
     if "khoản không hợp lệ" in cau and isinstance(body, dict) and body.get("Entries"):
         tk = sorted({str(x.get(k)) for x in body["Entries"] for k in ("DebitAccount", "CreditAccount") if x.get(k)})
         cau += " — phiếu dùng tài khoản %s; mã nào chưa có trong danh mục tài khoản Lào bên kế toán thì bên đó từ chối "                "(1371, 4021, 4022 đang chờ mở — hợp đồng mục 1.1)" % ", ".join(tk)
-    _loi("BEN_KE_TOAN_TU_CHOI", ("Hệ kế toán từ chối: %s" if ma < 300 else "Hệ kế toán trả HTTP %s: %%s" % ma) % cau,
-         502 if ma >= 500 else 422)
+    # 06/10: kèm mã HTTP thật (`http`) và mã trong phong bì (`code` — lỗi chưa bắt bên đó về HTTP 200 kèm Success false, Code 500)
+    # để người gọi phân biệt "bên kia không có / từ chối" (4xx) với "bên kia đang lỗi máy chủ" (5xx) — doc_phieu
+    code = than.get("Code") if isinstance(than, dict) and isinstance(than.get("Code"), int) else None
+    raise HTTPException(502 if ma >= 500 else 422, {
+        "ma": "BEN_KE_TOAN_TU_CHOI", "loi": ("Hệ kế toán từ chối: %s" if ma < 300 else "Hệ kế toán trả HTTP %s: %%s" % ma) % cau,
+        "http": ma, "code": code})
 
 
 def _nho(khoa, ham):
@@ -137,9 +141,11 @@ LOAI_DOI_TUONG = {"tai_xe": ("staff", "EPLTX-", "tài xế"), "chu_xe": ("suppli
                   "khach": ("customers", "EPLKH-", "khách"), "ncc": ("suppliers", "EPLNCC-", "nhà cung cấp")}
 
 
-def doi_tuong(db, loai, ref_id, ten, sdt=None, dia_chi=None, to_chuc=None, ma=None):
+def doi_tuong(db, loai, ref_id, ten, sdt=None, dia_chi=None, to_chuc=None, ma=None, chi_tim=False):
     """OBJ_AUTOID bên kế toán của một người bên em (tài xế → nhân viên, chủ xe → nhà cung cấp, khách → khách hàng). Chưa nhớ
-    thì tìm theo mã (lần trước tạo rồi mà chưa kịp nhớ), không có nữa mới tạo. `ma` = mã có sẵn (mã khách kế toán đã gán)."""
+    thì tìm theo mã (lần trước tạo rồi mà chưa kịp nhớ), không có nữa mới tạo. `ma` = mã có sẵn (mã khách kế toán đã gán).
+    `chi_tim=True` (06/10): CHỈ TÌM, KHÔNG TẠO — mọi đường ĐỌC (công nợ khách / đối tác: màn xem, đồng bộ nền) dùng chế độ này, vì
+    tạo là một lần GHI vào danh mục bên kế toán; không thấy thì trả None. Chỉ đường lập chứng từ (phiếu chi, SO, bút toán…) tạo."""
     duong, tien_to, goi_la = LOAI_DOI_TUONG[loai]
     if not ref_id:
         _loi("THIEU_DOI_TUONG", "Phiếu chưa có %s — không lập chứng từ bên kế toán được." % goi_la, 409)
@@ -151,6 +157,8 @@ def doi_tuong(db, loai, ref_id, ten, sdt=None, dia_chi=None, to_chuc=None, ma=No
     oid = next((x.get("ObjId") for x in (tim.get("Data") or []) if x.get("ObjectNo") == so), None)
     if not oid and ma:
         _loi("MA_KHONG_CO_BEN_KE_TOAN", "Mã %s %s không có trong danh mục bên kế toán." % (goi_la, ma), 422)
+    if not oid and chi_tim:
+        return None                                     # đường đọc: chưa có bên kế toán thì thôi, không upsert
     if not oid:
         than = {"ObjectNo": so, "ObjectName": (ten or so)[:100], "CountryAutoId": _cfg("QLSX_COUNTRY_ID", 11),
                 "ObjectOfOrganization": _cfg("QLSX_ORG_ID", 1368), "HandPhone": sdt or None, "Address": dia_chi or None,
@@ -290,13 +298,28 @@ def danh_mat(db, rec):
     return rec
 
 
+# 06/10: mã "từ chối" KHÔNG có nghĩa phiếu đã mất — quyền / token / quá tải / hết giờ bên kia
+KHONG_PHAI_MAT = (401, 403, 408, 429)
+
+
+def _that_su_mat(e):
+    """Lỗi đọc phiếu `e` (HTTPException) có phải bên kế toán KHÔNG CÒN / không nhận phiếu này (4xx thật) không. Lỗi máy chủ bên
+    kia (HTTP ≥ 500, hoặc HTTP 200 kèm Success false · Code ≥ 500), mất mạng, token… → không: giữ trạng thái, lượt sau hỏi lại."""
+    d = e.detail if isinstance(e.detail, dict) else {}
+    if d.get("ma") != "BEN_KE_TOAN_TU_CHOI":
+        return False
+    ma = d["code"] if isinstance(d.get("code"), int) else d.get("http") if isinstance(d.get("http"), int) else e.status_code
+    return ma < 500 and e.status_code < 500 and ma not in KHONG_PHAI_MAT
+
+
 def doc_phieu(db, rec):
-    """Master của phiếu chi `rec.real_id` bên kế toán; phiếu không còn → đánh PHIEU_CHI_MAT, trả None. Bên đó từ chối đọc →
-    cũng PHIEU_CHI_MAT rồi ném lại; lỗi mạng → ném, bản ghi giữ nguyên."""
+    """Master của phiếu chi `rec.real_id` bên kế toán; phiếu không còn → đánh PHIEU_CHI_MAT, trả None. Bên đó từ chối đọc (4xx
+    thật — không thấy / không nhận) → cũng PHIEU_CHI_MAT rồi ném lại. 06/10: bên đó lỗi máy chủ (5xx, kể cả HTTP 200 kèm Code 500),
+    mất mạng, token / quyền → ném, bản ghi GIỮ NGUYÊN (lỗi tạm — lượt sau / lần bấm sau hỏi lại); trước đây 5xx cũng bị đánh mất."""
     try:
         kq = _goi("GET", "/api/v1/accounting/cmpayment-receipt/%d?voucherType=CMP" % rec.real_id) or {}
     except HTTPException as e:
-        if (e.detail or {}).get("ma") == "BEN_KE_TOAN_TU_CHOI":
+        if _that_su_mat(e):
             rec.status, rec.error_code = "loi", MAT
             rec.error_message = "Không đọc được phiếu chi %s bên kế toán (đã xoá?): %s" % (rec.document_no or rec.real_id, e.detail.get("loi"))
             db.commit()
@@ -521,10 +544,11 @@ def de_nghi_tra_chu_xe(db, owner_id, trip_ids, phuong_thuc, user):
       1. phiếu chọn: cùng chủ xe, đã khoá, chưa trả, chưa nằm đề nghị khác, cùng tiền thuê;
       2. phiếu có xuất bán phải có SO nhiên liệu; đọc lại còn nợ SO → mỗi phiếu: còn trả = tiền thuê − phí − quá tải − tạm ứng EPL
          đưa − nợ NCC EPL trả thay − phần SO nhiên liệu còn nợ cấn trừ (tra_chu_xe.phan_tra);
-      3. trừ hàng chủ xe mua ở quầy (tra_chu_xe.tru_hang_quay — kho tạm tắt thì 503, không lập) → SỐ TRẢ THỰC;
-      4. bên kế toán: CẤN TRỪ từng SO nhiên liệu (collection-offset → phiếu TKN), rồi phiếu chi "Chi khác" Nợ 4022 / Có tiền cho
-         phần còn lại (mỗi phiếu xe một dòng). Còn lại ≤ 0 (cấn trừ hết) thì không có phiếu chi: đề nghị xong khi cấn trừ xong, các
-         phiếu thành "đã trả" ("TUNE:<số đề nghị>").
+      3. trừ hàng chủ xe mua ở quầy (tra_chu_xe.tru_hang_quay — kho tạm tắt thì 503, không lập; kho QLSX 06/10: SO bán hàng còn nợ
+         của đối tác bên hệ kế toán, đọc không được thì không lập) → SỐ TRẢ THỰC;
+      4. bên kế toán: CẤN TRỪ từng SO nhiên liệu và (06/10) từng SO bán hàng mua ở quầy bị trừ (collection-offset → phiếu TKN), rồi
+         phiếu chi "Chi khác" Nợ 4022 / Có tiền cho phần còn lại (mỗi phiếu xe một dòng). Còn lại ≤ 0 (cấn trừ hết) thì không có phiếu
+         chi: đề nghị xong khi cấn trừ xong, các phiếu thành "đã trả" ("TUNE:<số đề nghị>").
     Phiếu bán quầy bị trừ được GIỮ CHỖ ở kho tạm TRƯỚC khi gọi hệ kế toán. Hỏng giữa chừng → đề nghị "loi", gửi lại làm tiếp đúng
     bước hỏng (cùng khoá); bỏ đề nghị thì bỏ cả cấn trừ đã làm."""
     from models import CanTruTune
@@ -546,8 +570,11 @@ def de_nghi_tra_chu_xe(db, owner_id, trip_ids, phuong_thuc, user):
     ccy = tien.pop()
     chon = chuan_bi_can_tru(db, chon)
     can = [x for x in chon if (x.get("can_tru_lak") or 0) > 0]
-    kq = TC.tru_hang_quay(db, owner_id, TC.sau_can_tru(chon), user)   # hàng chủ xe mua ở quầy chờ trừ — kho tạm tắt thì 503
-    if (kq["tra_thuc"] or 0) <= 0 and not can:
+    # hàng chủ xe mua ở quầy chờ trừ — kho tạm: phiếu bán kho tạm (tắt thì 503); kho QLSX (06/10): SO bán hàng còn nợ của đối tác bên
+    # hệ kế toán (đọc không được thì ném, không lập — không trả dư cho đối tác)
+    kq = TC.tru_hang_quay(db, owner_id, TC.sau_can_tru(chon), user)
+    quay = [h for h in kq["hang"] if h.get("loai") == TC.LOAI_QUAY]
+    if (kq["tra_thuc"] or 0) <= 0 and not can and not quay:
         _loi("KHONG_CON_PHAI_TRA", "Còn phải trả %s %s ≤ 0 (tổng phiếu %s, đã trừ hàng mua ở quầy %s, EPL đã ứng trừ sẵn trên phiếu) — "
                                    "không lập phiếu chi." % (kq["tra_thuc"], ccy, kq["tong"], kq["tru"]), 409)
     now = dt.datetime.utcnow()
@@ -567,8 +594,16 @@ def de_nghi_tra_chu_xe(db, owner_id, trip_ids, phuong_thuc, user):
                           ref_no=so, idempotency_key=NL.khoa_can_tru(so, ma_so), status="loi", created_by=getattr(user, "full_name", None),
                           request_body=json.dumps(NL.goi_can_tru(ma_so, x["can_tru_lak"], so, ly_do), ensure_ascii=False,
                                                   separators=(",", ":"))))
+    # 06/10: SO bán hàng đối tác mua ở quầy (hệ kế toán) bị trừ → CẤN TRỪ cả SO đó (collection-offset, cùng đường SO nhiên liệu): một SO
+    # một dòng can_tru_tune, không theo chuyến (trip_id trống), tiền theo tiền của SO. Cấn trừ là cách "giữ chỗ" bên đó — bỏ đề nghị thì
+    # huy_chu_xe gỡ cùng các lần cấn trừ khác.
+    for h in quay:
+        db.add(CanTruTune(de_nghi_id=rec.id, trip_id=None, do_id=None, order_code=h["so"], currency=h["currency"], amount=h["total"],
+                          ref_no=so, idempotency_key=NL.khoa_can_tru(so, h["so"]), status="loi", created_by=getattr(user, "full_name", None),
+                          request_body=json.dumps(NL.goi_can_tru(h["so"], h["total"], so, NL.ly_do_quay(), tien=h["currency"],
+                                                                 ty_gia=h.get("ty_gia")), ensure_ascii=False, separators=(",", ":"))))
     db.flush()
-    TC.giu_hang_quay(db, rec.ref_no, owner_id, [h["id"] for h in kq["hang"]], user)   # giữ chỗ TRƯỚC khi gọi hệ kế toán; lỗi → ném
+    TC.giu_hang_quay(db, rec.ref_no, owner_id, _hang_kho_tam(kq), user)   # phiếu bán kho tạm: giữ chỗ TRƯỚC khi gọi hệ kế toán; lỗi → ném
     db.commit()
     try:
         _tien_hanh(db, rec, o, TK, user)
@@ -585,6 +620,13 @@ def _tru(rec):
         return json.loads(rec.tru_hang) if rec.tru_hang else None
     except ValueError:
         return None
+
+
+def _hang_kho_tam(t):
+    """Mã các PHIẾU BÁN KHO TẠM bị trừ trong một đề nghị (giữ chỗ / chốt / trả lại ở kho tạm). SO bán hàng ở hệ kế toán (06/10,
+    loai so_quay) không thuộc đây — chúng đi bằng cấn trừ (can_tru_tune)."""
+    from services import tra_chu_xe as TC
+    return [h["id"] for h in (t or {}).get("hang") or [] if h.get("loai") != TC.LOAI_QUAY]
 
 
 def _tra_tung_phieu(db, rec):
@@ -613,7 +655,7 @@ def _tien_hanh(db, rec, o, TK, user=None):
         except HTTPException as e:
             d = e.detail if isinstance(e.detail, dict) else {}
             rec.status, rec.error_code = "loi", d.get("ma")
-            rec.error_message = "Cấn trừ SO nhiên liệu %s: %s" % (ct.order_code, d.get("loi") or str(e.detail))
+            rec.error_message = "Cấn trừ %s %s: %s" % (NL.ten_so(ct), ct.order_code, d.get("loi") or str(e.detail))
             rec.attempts, rec.last_attempt_at = (rec.attempts or 0) + 1, dt.datetime.utcnow()
             db.commit()
             raise
@@ -644,7 +686,9 @@ def _gui_chu_xe(db, rec, o, TK, user=None):
         if kq.get("can_tru"):
             dien_giai += " · đã cấn trừ SO nhiên liệu %s" % ", ".join(str(c.get("order_code")) for c in kq["can_tru"])
         if kq.get("hang"):
-            dien_giai += " · trừ hàng mua ở quầy %s" % ", ".join(str(h.get("doc_no")) for h in kq["hang"])
+            # 06/10: SO bán hàng ở hệ kế toán (so_quay) — đã cấn trừ bằng TKN như SO nhiên liệu; phiếu bán kho tạm (cũ) — trừ thẳng
+            dien_giai += (" · đã cấn trừ mua ở quầy SO %s" if any(h.get("loai") == TC.LOAI_QUAY for h in kq["hang"])
+                          else " · trừ hàng mua ở quầy %s") % ", ".join(str(h.get("doc_no")) for h in kq["hang"])
         can = {c["trip_id"] for c in kq.get("can_tru") or []}
         body = {"TmpId": 0, "RealId": 0, "VoucherType": "CMP", "SessionId": "epllao-cx-%s" % rec.id, "PostMode": "None",
                 "Header": {"CountryId": _cfg("QLSX_COUNTRY_ID", 11), "OrgId": _cfg("QLSX_ORG_ID", 1368), "FiciAutoId": ma_ky(hom_nay),
@@ -710,8 +754,12 @@ def _chot_hang(db, rec, user=None):
     if rec.status != "da_chi" or not t or not t.get("hang") or t.get("chot"):
         return
     try:
-        TC.chot_hang_quay(db, rec.ref_no, rec.document_no or rec.real_id, rec.owner_id, [h["id"] for h in t["hang"]], user,
-                          by_user="%s (hệ kế toán)" % (rec.post_by or "thủ quỹ"))
+        # 06/10: SO bán hàng ở hệ kế toán (so_quay) đã cấn trừ bằng TKN — bên đó ghi bút toán cấn trừ cùng lúc, không chốt / không ghi
+        # Nợ 4022 / Có 707 ở đây (ghi nữa là trừ phải trả đối tác hai lần); chỉ phiếu bán kho tạm (cũ) mới chốt
+        ids = _hang_kho_tam(t)
+        if ids:
+            TC.chot_hang_quay(db, rec.ref_no, rec.document_no or rec.real_id, rec.owner_id, ids, user,
+                              by_user="%s (hệ kế toán)" % (rec.post_by or "thủ quỹ"))
         t["chot"] = True
         rec.tru_hang = json.dumps(t, ensure_ascii=False)
         db.commit()
@@ -775,7 +823,7 @@ def huy_chu_xe(db, rec, user=None):
         db.commit()
         raise
     db.commit()
-    if (_tru(rec) or {}).get("hang"):
+    if _hang_kho_tam(_tru(rec)):                          # 06/10: SO bán hàng ở hệ kế toán đã gỡ cùng các lần cấn trừ ở trên
         from services import tra_chu_xe as TC
         TC.tha_hang_quay(db, rec.ref_no, user)            # phiếu bán giữ chỗ về chờ trừ; lỗi → ném
     rec.status = "huy"
@@ -826,17 +874,23 @@ def cong_no_khach(db, k):
     có SO nào bên đó). Trả gọn: tổng, tuổi nợ, từng chứng từ nợ (SO), các lần thu, đơn hàng."""
     if not (k.code or "").strip():
         return None
-    obj = doi_tuong(db, "khach", k.id, k.name, ma=k.code.strip())
+    # 06/10: đường ĐỌC — chỉ tìm (khách có mã mà bên kế toán không có → báo MA_KHONG_CO_BEN_KE_TOAN như cũ, không tạo)
+    obj = doi_tuong(db, "khach", k.id, k.name, ma=k.code.strip(), chi_tim=True)
     db.commit()
     return cong_no_doi_tuong(obj, k.code)
 
 
 def cong_no_doi_tac(db, o):
     """Công nợ của ĐỐI TÁC (chủ xe liên kết) bên hệ kế toán — SO nhiên liệu đứng tên đối tác (02/10). Đối tác là đối tượng
-    EPLCX-<owner_id> (tạo khi lập phiếu chi / SO nhiên liệu đầu tiên); chưa có thì tạo."""
-    obj = doi_tuong(db, "chu_xe", o.id, o.name, sdt=getattr(o, "phone", None), to_chuc=False)
+    EPLCX-<owner_id> (tạo khi lập phiếu chi / SO nhiên liệu đầu tiên); đường đọc này không tạo (06/10)."""
+    # 06/10: đường ĐỌC (màn Tất toán đối tác, cấn trừ, đồng bộ nền) — chỉ tìm, không upsert danh mục bên kế toán. Đối tác chưa có
+    # bên đó thì chưa có SO / công nợ nào: trả công nợ rỗng, không gọi customer-detail
+    ma = LOAI_DOI_TUONG["chu_xe"][1] + o.id
+    obj = doi_tuong(db, "chu_xe", o.id, o.name, sdt=getattr(o, "phone", None), to_chuc=False, chi_tim=True)
     db.commit()
-    return cong_no_doi_tuong(obj, LOAI_DOI_TUONG["chu_xe"][1] + o.id)
+    if obj is None:
+        return {"customer_code": ma, "obj_id": None, "tong": {}, "tuoi_no": [], "no": [], "thu": [], "don": [], "chua_co_doi_tuong": True}
+    return cong_no_doi_tuong(obj, ma)
 
 
 def cong_no_doi_tuong(obj, ma):
@@ -849,9 +903,12 @@ def cong_no_doi_tuong(obj, ma):
                  "so_chung_tu": s.get("UnsettledCount"), "qua_han_ngay": s.get("MaxOverdueDays"), "rui_ro": s.get("RiskLevel")},
         "tuoi_no": [{"ma": a.get("BucketCode"), "ten": a.get("BucketName"), "tien": a.get("Amount"), "pct": a.get("PercentValue")}
                     for a in (kq.get("Aging") or [])],
+        # `nguon` (06/10) = TicketOrder.OrderSource bên đó gắn vào dòng nợ: LOGISTICS (SO cước) · LOGISTICS_FUEL (SO nhiên liệu) · khác
+        # = SO bán hàng thường (mua ở quầy…) — tra_chu_xe.so_quay tách SO quầy theo trường này; DB bên đó chưa áp script thì None
         "no": [{"so": d.get("OrderCode"), "phieu_ban": d.get("RETK_CODE"), "ngay": d.get("RETK_TIMECLOSETICKET"), "han": d.get("RCTD_EXPIRE"),
                 "tien": d.get("RETK_PAYMENTAMOUNT"), "da_tra": _da_tra(d), "con_no": d.get("RCTD_DEBTMONEY"),
-                "ccy": d.get("CurrencyCode"), "trang_thai": d.get("DebtStatus"), "tuoi": d.get("AgingDays")} for d in (kq.get("Debts") or [])],
+                "ccy": d.get("CurrencyCode"), "trang_thai": d.get("DebtStatus"), "tuoi": d.get("AgingDays"),
+                "nguon": d.get("OrderSource")} for d in (kq.get("Debts") or [])],
         "thu": kq.get("Collections") or [],
         "don": [{"so": o.get("OrderCode"), "ngay": o.get("OrderDate"), "tien": o.get("FinalTotalAmount"), "ccy": o.get("CurrencyCode"),
                  "trang_thai": o.get("StatusName")} for o in (kq.get("Orders") or [])],

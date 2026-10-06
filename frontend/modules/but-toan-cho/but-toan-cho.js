@@ -3,7 +3,9 @@
  * Nguồn: thue_xe (khoá phiếu xe thuê: Nợ 621 / Có 4022 = tiền thuê) · no_ncc (khoá phiếu: dòng chi ghi nợ nhà cung cấp …/4021) ·
  * xuat_noi_bo (khoá phiếu xe nhà: mỗi lần xuất kho dầu 625/1371 · phụ tùng 614/1371 theo giá vốn) · xuat_ban (khoá phiếu xe thuê:
  * mỗi lần xuất kho 4022/707 theo giá bán + 607/1371 theo giá vốn) ·
- * tat_toan (quyết toán tạm ứng QT_TU Nợ 625 / Có 1601) · ban_chu_xe (hàng bán ở quầy cho chủ xe trừ vào tiền trả: Nợ 4022 / Có 707).
+ * tat_toan (quyết toán tạm ứng QT_TU Nợ 625 / Có 1601) · ban_chu_xe (hàng bán ở quầy cho chủ xe trừ vào tiền trả: Nợ 4022 / Có 707) ·
+ * 06/10 doanh thu lúc «Tạo SO bên kế toán»: doanh_thu (SO cước Nợ 1211 / Có 708, đối tượng khách) · doanh_thu_ban (SO nhiên liệu /
+ * phụ tùng xe thuê Nợ 1211 / Có 707, đối tượng đối tác) — một DO một bút toán mỗi loại, nguồn gốc là phiếu xuất xe.
  * Gửi sang hệ anh Tune (services/gui_but_toan_tune.py) khi máy chủ bật cờ QLSX_GUI_BUT_TOAN (`co_duong_gui`): ghi xong tự gửi;
  * màn có nút Gửi (một bản: chờ gửi → gửi, chờ đảo → đảo), Gửi hết, Cập nhật (hỏi lại số chứng từ). Cờ tắt: CHỈ XEM như cũ.
  * Đọc GET /api/but-toan-cho (routes/de_nghi.py) — vai KT Thu/Chi VC, KT Chi phí VC, Sếp, máy chủ chặn vai khác.
@@ -15,8 +17,9 @@
   const guiDuoc = () => GUI && EPL.AUTH.la('acct', 'expacct');      // Sếp luôn qua (AUTH.la) — cùng danh sách máy chủ
   const q = (s) => root.querySelector(s);
   // xuat_noi_bo / xuat_ban (01/10): xuất kho cho chuyến — một lần xuất một bút toán, nguồn gốc là phiếu xuất xe
-  const NGUON = ['thue_xe', 'no_ncc', 'xuat_noi_bo', 'xuat_ban', 'tat_toan', 'ban_chu_xe'];
-  const TU_PHIEU = ['thue_xe', 'no_ncc', 'xuat_noi_bo', 'xuat_ban'];
+  // doanh_thu / doanh_thu_ban (06/10): doanh thu theo SO bên kế toán — một DO một bút toán, nguồn gốc là phiếu xuất xe
+  const NGUON = ['thue_xe', 'no_ncc', 'xuat_noi_bo', 'xuat_ban', 'doanh_thu', 'doanh_thu_ban', 'tat_toan', 'ban_chu_xe'];
+  const TU_PHIEU = ['thue_xe', 'no_ncc', 'xuat_noi_bo', 'xuat_ban', 'doanh_thu', 'doanh_thu_ban'];
   const LOC = ['', 'cho_gui', 'da_gui', 'huy', 'can_dao'];
   const NHAN_LOC = { '': 'all', cho_gui: 'dt_st_cho_gui', da_gui: 'dt_st_da_gui', huy: 'v_huy', can_dao: 'btc_can_dao' };
   const nhanNguon = (n) => (NGUON.includes(n) ? 'btc_nguon_' + n : n);
@@ -92,7 +95,7 @@
 
   /* 02/10 — mỗi nguồn: định khoản ngắn + một câu nói khoản đó là gì, ghi lúc nào (khung chi tiết). */
   const DK = { thue_xe: '621 / 4022', no_ncc: '625 · 614 / 4021', xuat_noi_bo: '625 · 614 / 1371', xuat_ban: '607 / 1371',
-    tat_toan: '625 / 1601', ban_chu_xe: '4022 / 707' };
+    tat_toan: '625 / 1601', ban_chu_xe: '4022 / 707', doanh_thu: '1211 / 708', doanh_thu_ban: '1211 / 707' };
   const duocVao = (id) => EPL.manCuaVai(EPL.AUTH.role).some(m => m.id === id);
   /** Chú thích bốn trạng thái (đầu màn): nhãn + nghĩa. */
   function veChuTT() {

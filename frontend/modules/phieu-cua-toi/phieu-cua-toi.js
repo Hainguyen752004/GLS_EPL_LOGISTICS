@@ -32,12 +32,22 @@
    * khi gửi lại. Mỗi lần gửi mang `loai` ('giao_nhan' · 'can_mo'); lần gửi cũ không có `loai` là giao nhận. */
   const uid = () => (EPL.AUTH.user ? EPL.AUTH.user.id : 'x');
   const K_HANG = () => 'epl_lao_giao_nhan_' + uid(), K_DS = () => 'epl_lao_pct_ds_' + uid(), K_SO = () => 'epl_lao_pct_so_' + uid();
+  const K_DIEM = () => 'epl_lao_pct_diem_' + uid();          // danh sách trạm dầu — khai dầu lúc mất mạng (06/10)
+  let henGui = null;                                          // nhịp 30 giây thử gửi hàng đợi / điểm GPS chờ (06/10)
   const doc = (k, md) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : md; } catch (e) { return md; } };
   const ghi = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
   const hangDoi = () => doc(K_HANG(), []);
   const loaiGui = (x) => x.loai || 'giao_nhan';
   const choGui = (id, loai = 'giao_nhan') => hangDoi().some(x => x.trip_id === id && loaiGui(x) === loai);
   const laMatMang = (e) => !(e instanceof EPL.LoiAPI) || !e.status;
+  /* 06/10 (chủ dự án: "làm hàng đợi mất mạng luôn"): thêm XUẤT PHÁT · BÁO HỎNG · KHAI ĐỔ DẦU vào cùng hàng đợi, cùng cách — lần bấm
+   * lúc mất mạng nằm trong máy kèm `luc` (GIỜ MÁY lúc bấm = thời điểm thật) và `ma_gui` (khoá thao tác); có mạng lại tự gửi theo
+   * đúng thứ tự đã bấm; máy chủ ghi theo giờ máy và gửi lại không ghi trùng (routes/phieu.py · _lan_gui_tai_xe). Ba loại này gửi JSON
+   * (không ảnh). Mất phiên (401) hay máy chủ đang khởi động lại (502–504) cũng giữ trong hàng — đăng nhập / có máy chủ lại thì gửi. */
+  const LOAI_JSON = { xuat_phat: 'transport-status', bao_hong: 'bao-hong', khai_dau: 'bao-nhien-lieu' };
+  const nenThuLai = (e) => laMatMang(e) || [401, 502, 503, 504].includes(e.status);
+  const choCua = (p, loai) => (p ? hangDoi().filter(x => x.trip_id === p.id && loaiGui(x) === loai) : []);
+  const choDi = (p) => !!p && p.transport_status === 'dispatched' && choGui(p.id, 'xuat_phat');   // đã bấm xuất phát, chờ gửi
   const maMoi = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
   const sangBlob = (url) => { const [dau, b64] = url.split(','); const kieu = (dau.match(/:(.*?);/) || [])[1] || 'application/octet-stream';
     const bin = atob(b64); const u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i); return new Blob([u8], { type: kieu }); };
@@ -77,41 +87,63 @@
     input.value = ''; veAnh(khung, ds);
   }
   async function guiMot(x) {
+    if (LOAI_JSON[loaiGui(x)]) return API.post('/api/trips/' + x.trip_id + '/' + LOAI_JSON[loaiGui(x)], x.body);
     const fd = new FormData();
     Object.entries(x.truong).forEach(([k, v]) => { if (v !== null && v !== undefined) fd.append(k, v); });
     if (x.chu_ky) fd.append('chu_ky', sangBlob(x.chu_ky), 'chu-ky-' + x.ma_gui + '.png');
     (x.anh || []).forEach(a => fd.append('anh', sangBlob(a.url), a.name));
     return API.tep('/api/trips/' + x.trip_id + '/' + (loaiGui(x) === 'can_mo' ? 'bao-can-mo' : 'giao-nhan'), fd);
   }
-  /** Gửi ngay; mất mạng thì cất vào hàng đợi của máy. Trả true khi xong (đã gửi hoặc đã cất). */
+  /** Gửi ngay; mất mạng thì cất vào hàng đợi của máy. Trả true khi xong (đã gửi hoặc đã cất). `hop`: hộp nhập đóng khi xong
+   *  (xuất phát không có hộp — null). Còn thao tác CŨ HƠN đang chờ (của cùng phiếu) thì xếp sau luôn, không gửi vượt: máy chủ phải
+   *  nhận "xuất phát" trước "báo hỏng" bấm sau nó. */
   async function guiHoacCat(x, hop, daGui) {
-    try {
-      await guiMot(x);
-      q(hop).close(); EPL.toast(t(daGui), 'ok'); await tai();
-      return true;
-    } catch (e) {
-      if (!laMatMang(e)) { EPL.baoLoi(e); return false; }
+    const cat = () => {
       const hd = hangDoi(); hd.push(x);
       if (!ghi(K_HANG(), hd)) { EPL.toast(t('gh_day_bo_nho'), 'loi'); return false; }
-      q(hop).close(); EPL.toast(t('gh_cho_gui'), 'ok'); ve();
+      if (hop) q(hop).close();
+      EPL.toast(t('gh_cho_gui'), 'ok'); ve();
+      guiHangDoi().catch(() => {});                  // mạng chập chờn: thử gửi luôn cả hàng (đúng thứ tự)
       return true;
+    };
+    if (hangDoi().some(y => y.trip_id === x.trip_id)) return cat();
+    try {
+      await guiMot(x);
+      if (hop) q(hop).close();
+      EPL.toast(t(daGui), 'ok'); await tai();
+      return true;
+    } catch (e) {
+      if (!nenThuLai(e)) { EPL.baoLoi(e); return false; }
+      return cat();
     }
   }
-  /** Có mạng lại (hoặc mở màn) → gửi hết hàng đợi. Lỗi nghiệp vụ (phiếu đã khoá, đã ký…) thì bỏ khỏi hàng và báo. */
+  /** Có mạng lại (hoặc mở màn, hoặc mỗi 30 giây) → gửi hết hàng đợi theo thứ tự đã bấm. Lỗi nghiệp vụ (phiếu đã khoá, đã ký…) thì bỏ
+   *  khỏi hàng và báo; mất mạng thì dừng, lần sau gửi tiếp từ chỗ đó. Một lượt gửi một lúc (`dangGuiHang`) — hai lượt chạy song song
+   *  là gửi một thao tác hai lần. Mỗi thao tác xong là gỡ ngay khỏi hàng trong máy (thao tác mới bấm trong lúc gửi không bị mất). */
+  let dangGuiHang = false;
   async function guiHangDoi() {
-    let hd = hangDoi(); if (!hd.length) return;
-    let xong = 0, xongCm = 0;
-    for (const x of hd.slice()) {
-      try { await guiMot(x); if (loaiGui(x) === 'can_mo') xongCm++; else xong++; hd = hd.filter(y => y.ma_gui !== x.ma_gui); }
-      catch (e) {
-        if (laMatMang(e)) break;
-        hd = hd.filter(y => y.ma_gui !== x.ma_gui); EPL.toast(x.doc_no + ': ' + e.message, 'loi');
+    if (dangGuiHang || !hangDoi().length) return;
+    dangGuiHang = true;
+    const dem = {};
+    const go = (ma) => ghi(K_HANG(), hangDoi().filter(y => y.ma_gui !== ma));
+    try {
+      const da = new Set();                          // đọc lại hàng sau mỗi lần: thao tác vừa bấm trong lúc gửi cũng đi luôn, đúng thứ tự
+      for (;;) {
+        const x = hangDoi().find(y => !da.has(y.ma_gui)); if (!x) break;
+        da.add(x.ma_gui);
+        try { await guiMot(x); dem[loaiGui(x)] = (dem[loaiGui(x)] || 0) + 1; go(x.ma_gui); }
+        catch (e) {
+          if (nenThuLai(e)) break;
+          go(x.ma_gui); EPL.toast(x.doc_no + ': ' + e.message, 'loi');
+        }
       }
-    }
-    ghi(K_HANG(), hd);
-    if (xong) EPL.toast(t('gh_da_gui_hang', { n: xong }), 'ok');
-    if (xongCm) EPL.toast(t('cm_da_gui_hang', { n: xongCm }), 'ok');
-    if (xong || xongCm) await tai().catch(() => {});
+    } finally { dangGuiHang = false; }
+    if (dem.giao_nhan) EPL.toast(t('gh_da_gui_hang', { n: dem.giao_nhan }), 'ok');
+    if (dem.can_mo) EPL.toast(t('cm_da_gui_hang', { n: dem.can_mo }), 'ok');
+    const nJson = (dem.xuat_phat || 0) + (dem.bao_hong || 0) + (dem.khai_dau || 0);
+    if (nJson) EPL.toast(t('tx_da_gui_hang', { n: nJson }), 'ok');
+    if (Object.keys(dem).length) await tai().catch(() => {});
+    else if (root) ve();
   }
 
   /* ================================================================ số của một chuyến */
@@ -131,7 +163,7 @@
   const daKy = (p) => !!(p.pod_signed || p.pod_no);
   const coTheBaoCan = (p) => p.kind === 'gom' && dangChay(p) && !p.locked && !choGui(p.id, 'can_mo')
     && ['wait', 'entered'].includes((p.sections || {}).trans || 'wait');
-  const coTheGiao = (p) => p.kind === 'giao' && ['transit', 'arrived'].includes(p.transport_status) && !p.locked && !p.pod_signed && !choGui(p.id);
+  const coTheGiao = (p) => p.kind === 'giao' && (['transit', 'arrived'].includes(p.transport_status) || choDi(p)) && !p.locked && !p.pod_signed && !choGui(p.id);
   const suKien = (p, loai) => (p.events || []).filter(e => loai.includes(e.kind));
   const phieuDN = (p) => (p._v || []).filter(v => v.status !== 'huy');
   const soLitDN = (v) => (v.status === 'da_cap' && v.granted_qty != null ? v.granted_qty : v.qty_l);
@@ -147,7 +179,7 @@
   }
   /** Các bước của chuyến (mẫu: Nhận tạm ứng → Xuất phát → Báo cân / Giao hàng → Về tới), kèm dòng nhỏ dưới mỗi bước. */
   function cacBuoc(p, tu) {
-    const di = p.transport_status !== 'dispatched';
+    const di = p.transport_status !== 'dispatched' || choDi(p);
     const giua = p.kind === 'gom'
       ? { k: 'pct_b_can', xong: coCan(p) || choGui(p.id, 'can_mo'),
           phu: coCan(p) ? so(p.weight_origin, 2) + ' ' + t('ton') : choGui(p.id, 'can_mo') ? t('gh_cho_gui') : t('tx_s_bao_tan') }
@@ -155,7 +187,7 @@
           phu: daKy(p) ? t('gh_da_ky') : choGui(p.id) ? t('gh_cho_gui') : t('tx_s_ky_nhan') };
     const ds = [
       ...(tu.co ? [{ k: 'pct_b_tam_ung', xong: tu.tt === 'paid', phu: t(tu.tt === 'paid' ? 'tx_s_da_nhan' : 'tx_s_cho_chi') }] : []),
-      { k: 'depart', xong: di, phu: di ? t('tx_s_da_di') : t('tx_s_san_sang') },
+      { k: 'depart', xong: di, phu: choDi(p) ? t('tx_dang_cho_gui_1') : di ? t('tx_s_da_di') : t('tx_s_san_sang') },
       giua,
       { k: 'pct_b_ve', xong: p.transport_status === 'arrived',
         phu: p.transport_status === 'arrived' ? t('tx_s_da_toi') : p.back_date ? t('tx_s_da_bao_ve') : t('tx_s_bao_ve') },
@@ -167,27 +199,33 @@
   function viecTiep(p, tu) {
     if (p.locked || (p.transport_status === 'arrived' && !coTheGiao(p))) return { xong: true };
     const can = coTheBaoCan(p) && !coCan(p);
-    if (p.transport_status === 'dispatched') {
+    if (p.transport_status === 'dispatched' && !choDi(p)) {
       if (tu.co && tu.tt !== 'paid') return { nut: 'depart', tat: true, ly: 'depart_blocked', ico: 'lock' };
       if (can) return { nut: 'cm_nut', act: 'cm', ico: 'scale', loi: 'tx_n_can' };
       return { nut: 'depart', act: 'di', ico: 'truck', loi: 'tx_n_di' };
     }
     if (can) return { nut: 'cm_nut', act: 'cm', ico: 'scale', loi: 'tx_n_can' };
     if (coTheGiao(p)) return { nut: 'gh_nut', act: 'gh', ico: 'sign', loi: 'tx_n_gh' };
+    // xuất phát đang chờ gửi (mất mạng, 06/10): bước tiếp là báo về — nhưng báo về cần mạng, nói rõ đang chờ gửi xuất phát
+    if (choDi(p)) return { nut: 'report_back', tat: true, ly: 'tx_n_cho_di', ico: 'wifi' };
     if (p.transport_status === 'transit') return { nut: 'report_back', act: 've', ico: 'flag', loi: p.back_date ? 'tx_n_ve_lai' : 'tx_n_ve' };
     return { xong: true };
   }
 
   /* ================================================================ lời chào, ô số, tab */
   function veChao() {
-    const u = EPL.AUTH.user || {}, p = DS.find(x => x.id === CUR), hd = hangDoi().length;
+    const u = EPL.AUTH.user || {}, p = DS.find(x => x.id === CUR), hd = hangDoi().length, gpsN = gpsCho().length;
     q('#tx-chao').innerHTML = h('tx_chao', { ten: u.full_name || u.username || '' });
     const chip = (noi, cls) => '<span class="info-chip' + (cls ? ' ' + cls : '') + '">' + noi + '</span>';
+    // 06/10: chip mạng nói rõ "Đang chờ gửi (n)" / "Đã gửi hết"; điểm GPS giữ lúc mất sóng đếm riêng
+    const mang = matMang ? t('tx_mat_mang_ngan') + (hd ? ' · ' + t('tx_dang_cho_gui_n', { n: hd }) : '')
+      : hd ? t('tx_dang_cho_gui_n', { n: hd }) : t('tx_da_gui_het');
     q('#tx-chips').innerHTML =
       (p && p.truck_no ? chip(ic('truck', 'icon-sm') + esc(t('tx_xe_so', { xe: p.truck_no }))) : '') +
       (p && (p.plate_head || p.plate_trailer) ? chip('<span lang="lo">' + esc(p.plate_head || '—') + '</span><span class="sep">/</span><span lang="lo">' + esc(p.plate_trailer || '—') + '</span>') : '') +
-      chip('<span class="x2-dot"></span>' + esc(matMang ? t('gh_mat_mang') : hd ? t('tx_cho_gui_n', { n: hd }) : t('tx_da_dong_bo')), 'net-chip' + (matMang || hd ? ' offline' : '')) +
-      (phieuChiaSe ? chip(ic('pin', 'icon-sm') + esc(t('tx_dang_chia_vt')) + (lanGuiCuoi ? ' · ' + esc(new Date(lanGuiCuoi).toTimeString().slice(0, 5)) : ''), 'net-chip') : '');
+      chip('<span class="x2-dot"></span>' + esc(mang), 'net-chip' + (matMang || hd ? ' offline' : '')) +
+      (phieuChiaSe ? chip(ic('pin', 'icon-sm') + esc(t('tx_dang_chia_vt')) + (lanGuiCuoi ? ' · ' + esc(new Date(lanGuiCuoi).toTimeString().slice(0, 5)) : ''), 'net-chip') : '') +
+      (gpsN ? chip(ic('pin', 'icon-sm') + esc(t('tx_gps_cho_n', { n: gpsN })), 'net-chip offline') : '');
     // đếm trên chi tiết phiếu (dòng chi): chi tiết các phiếu còn đang tải nền thì để "·", đừng hiện số thiếu
     const choChi = matMang || napDu ? DS.filter(dangChay).filter(x => { const tu = tamUng(x); return tu.co && tu.tt !== 'paid'; }).length : null;
     // còn đang tải nền: ba chấm nhấp nháy kèm chữ "Đang tải" khi rê chuột — trước đây một dấu "·" trơ trọi trông như lỗi (rà 01/10)
@@ -198,8 +236,8 @@
   function veTab() {
     const p = DS.find(x => x.id === CUR);
     const tu = p ? tamUng(p) : { co: false };
-    const nDau = p ? suKien(p, ['refuel']).length + phieuDN(p).filter(v => v.kind === 'fuel').length : 0;
-    const nSuCo = p ? suKien(p, ['incident', 'repair']).length : 0;
+    const nDau = p ? suKien(p, ['refuel']).length + phieuDN(p).filter(v => v.kind === 'fuel').length + choCua(p, 'khai_dau').length : 0;
+    const nSuCo = p ? suKien(p, ['incident', 'repair']).length + choCua(p, 'bao_hong').length : 0;
     const nChi = (tu.co && tu.tt !== 'paid' ? 1 : 0) + (p ? suKien(p, ['incident']).filter(e => e.reported_cost && e.status === 'reported').length : 0);
     const ds = [
       ['trip', ic('truck', 'icon-sm') + h('tx_tab_chuyen'), null],
@@ -223,6 +261,22 @@
   const trong = (ico, chu, phu) => '<div class="x2-empty"><span class="x2-empty-ico">' + ic(ico, 'icon-lg') + '</span><strong>' + h(chu) + '</strong>' + (phu ? '<p>' + h(phu) + '</p>' : '') + '</div>';
   /** Chưa có phiếu nào để hiện: lần tải đầu chưa xong thì nói "Đang tải…" — trước đây khung trắng hoặc báo "không có phiếu". */
   const chuaCo = (ico, phu) => '<div class="x2-card">' + (napXong ? trong(ico, 'no_my_slips', phu) : '<div class="x2-empty"><strong>' + h('loading') + '</strong></div>') + '</div>';
+
+  /** Thẻ "Mất mạng vẫn báo được" (06/10): từng thao tác đang chờ gửi — việc gì, DO nào, bấm lúc mấy giờ (giờ máy) — và số điểm GPS
+   *  giữ lúc mất sóng; nút «Gửi ngay» thử lại liền, không phải đợi trình duyệt tự báo có mạng. Hết chờ thì nói rõ cái gì được giữ. */
+  const TEN_VIEC = { xuat_phat: 'depart', bao_hong: 'report_breakdown', khai_dau: 'df_declare', giao_nhan: 'gh_nut', can_mo: 'cm_nut' };
+  function theHangDoi() {
+    const hd = hangDoi(), gpsN = gpsCho().length;
+    const gio = (x) => x.luc || (x.truong && x.truong.luc) || '';
+    const ds = hd.map(x => '<li><b>' + h(TEN_VIEC[loaiGui(x)] || 'gh_nut') + '</b> · <span class="mono">' + esc(x.doc_no || '') + '</span>' +
+      (gio(x) ? ' · ' + esc(EPL.ngayGio(gio(x))) : '') + ' <span class="x2-tag-sm x2-tag-amber">' + h('tx_dang_cho_gui_1') + '</span></li>').join('');
+    return '<section class="x2-card offline-card"><span class="action-ico">' + ic('wifi') + '</span><div><strong>' + h('tx_mat_mang_van_bao') + '</strong>' +
+      (hd.length || gpsN
+        ? '<p>' + esc(t('tx_dang_cho_gui_n', { n: hd.length })) + (gpsN ? ' · ' + esc(t('tx_gps_cho_n', { n: gpsN })) : '') + '</p>' +
+          (ds ? '<ul class="tx-cho-ds">' + ds + '</ul>' : '') +
+          '<button class="btn-outline" type="button" data-act="gui-ngay"' + (dangGuiHang || dangGuiGPS ? ' disabled' : '') + '>' + ic('wifi', 'icon-sm') + h('tx_gui_ngay') + '</button>'
+        : '<p>' + h('tx_hang_doi_trong2') + '</p>') + '</div></section>';
+  }
 
   /* ================================================================ tab: Chuyến đang chạy */
   function veChuyen() {
@@ -255,7 +309,7 @@
     if (!xong) oBam.push(nutO('bao', 'alert', 'report_breakdown', 'tx_o_bao', false, 'x2-danger'));
     // nhãn "Mã QR" chỉ khi còn tờ DẦU chờ cấp — tờ tạm ứng không còn QR (01/10), chỉ còn tạm ứng chờ thì là "Xem phiếu đề nghị"
     if (vs.some(v => v.status === 'cho')) oBam.push(nutO('qr', 'qr', vs.some(v => v.kind === 'fuel' && v.status === 'cho') ? 'pct_qr' : 'tx_xem_de_nghi', 'tx_o_qr', false));
-    if (p.transport_status === 'transit') oBam.push(nutO('gps', 'pin', phieuChiaSe === p.id ? 'gps_stop' : 'gps_share', 'tx_o_gps', phieuChiaSe === p.id));
+    if (p.transport_status === 'transit' || choDi(p)) oBam.push(nutO('gps', 'pin', phieuChiaSe === p.id ? 'gps_stop' : 'gps_share', 'tx_o_gps', phieuChiaSe === p.id));
     const fact = (k, v, cls) => '<div><dt>' + h(k) + '</dt><dd' + (cls ? ' class="' + cls + '"' : '') + '>' + v + '</dd></div>';
     const oCan = p.kind === 'gom'
       ? (coCan(p) ? fact('w_origin_gom', hienCan(p))
@@ -264,6 +318,8 @@
     const log = (k, chu, ok, nut) => '<div class="log"><div><strong>' + h(k) + '</strong><small' + (ok ? ' class="x2-ok"' : '') + '>' + chu + '</small></div>' + (nut || '') + '</div>';
     const link = (act, nhan, cls) => act ? '<button class="link-btn' + (cls ? ' ' + cls : '') + '" type="button" data-act="' + act + '">' + h(nhan) + '</button>' : '';
     const doDau = suKien(p, ['refuel']), baoS = suKien(p, ['incident', 'repair']);
+    const choDau = choCua(p, 'khai_dau'), choBao = choCua(p, 'bao_hong');      // bấm lúc mất mạng, đang chờ gửi (06/10)
+    const themCho = (truoc, n) => (n ? (truoc ? truoc + ' · ' : '') + esc(t('tx_dang_cho_gui_n', { n })) : truoc);
     const buocTu = [['tx_v_gui', !!tuV || tu.tt !== 'wait'], ['tx_v_duyet', ['verified', 'booked', 'paid'].includes(tu.tt)], ['tx_v_nhan', tu.tt === 'paid']];
     const dangTu = buocTu.findIndex(x => !x[1]);
     o.innerHTML = chon + '<div class="layout">' +
@@ -308,11 +364,11 @@
             ? log('w_origin_gom', coCan(p) ? hienCan(p) : h(choGui(p.id, 'can_mo') ? 'gh_cho_gui' : 'tx_chua_bao'), coCan(p), link(coTheBaoCan(p) ? 'cm' : '', 'tx_bao_can'))
             : log('gh_nut', daKy(p) ? h('gh_da_ky') + (p.pod_receiver ? ': <span lang="lo">' + esc(p.pod_receiver) + '</span>' : '') : h(choGui(p.id) ? 'gh_cho_gui' : 'tx_chua_ky'), daKy(p),
               coTheGiao(p) ? link('gh', 'tx_ky_ngay') : link(daKy(p) ? 'bb' : '', 'gh_xem'))) +
-          log('e_fuel', doDau.length ? esc(t('tx_dau_n', { n: doDau.length, l: so(doDau.reduce((a, e) => a + (e.qty_l || 0), 0), 0) })) : h('tx_chua_do'), doDau.length > 0, link(xong ? '' : 'dau', 'tx_khai_dau')) +
-          log('tx_tab_su_co', baoS.length ? esc(t('tx_bao_n', { n: baoS.length, loai: tenSuCo(baoS[baoS.length - 1]) })) : h('tx_khong_co'), false, link(xong ? '' : 'bao', 'report_breakdown', 'x2-danger')) +
-        '</div></section>' +
-        '<section class="x2-card offline-card"><span class="action-ico">' + ic('wifi') + '</span><div><strong>' + h('tx_mat_mang_van_bao') + '</strong><p>' +
-          esc(hangDoi().length ? t('tx_hang_doi_n', { n: hangDoi().length }) : t('tx_hang_doi_trong')) + '</p></div></section>' +
+          log('e_fuel', themCho(doDau.length ? esc(t('tx_dau_n', { n: doDau.length, l: so(doDau.reduce((a, e) => a + (e.qty_l || 0), 0), 0) })) : choDau.length ? '' : h('tx_chua_do'), choDau.length),
+            doDau.length > 0, link(xong ? '' : 'dau', 'tx_khai_dau')) +
+          log('tx_tab_su_co', themCho(baoS.length ? esc(t('tx_bao_n', { n: baoS.length, loai: tenSuCo(baoS[baoS.length - 1]) })) : choBao.length ? '' : h('tx_khong_co'), choBao.length),
+            false, link(xong ? '' : 'bao', 'report_breakdown', 'x2-danger')) +
+        '</div></section>' + theHangDoi() +
       '</aside></div>';
     const oChon = q('#tx-chon');
     if (oChon) oChon.addEventListener('change', (e) => { if (e.target.value) chonPhieu(e.target.value); });
@@ -431,7 +487,11 @@
         h('v_' + v.status) + (v.status !== 'da_cap' ? ' · <button class="link-btn" type="button" data-qr="' + esc(v.id) + '">' + h('pct_mo_qr') + '</button>' : ''),
         esc(so(soLitDN(v), 0)) + ' <small>L</small>'))
       .concat(suKien(p, ['refuel']).map((e, i) => dongDs('fuel', esc(t('tx_dau_lan', { n: i + 1 })) + (e.place_id ? ' · <span lang="lo">' + esc(tenDiem(e.place_id)) + '</span>' : ''),
-        ttSuKien(e) + (e.note ? ' · <span lang="lo">' + esc(e.note) + '</span>' : ''), esc(so(e.qty_l || 0, 0)) + ' <small>L</small>')));
+        ttSuKien(e) + (e.note ? ' · <span lang="lo">' + esc(e.note) + '</span>' : ''), esc(so(e.qty_l || 0, 0)) + ' <small>L</small>')))
+      // khai lúc mất mạng (06/10): nằm trong máy, đang chờ gửi — giờ là giờ máy lúc bấm
+      .concat(choCua(p, 'khai_dau').map(x => dongDs('fuel', h('df_declare') + (x.body.place_id ? ' · <span lang="lo">' + esc(tenDiem(x.body.place_id)) + '</span>' : ''),
+        h('tx_dang_cho_gui_1') + ' · ' + esc(EPL.ngayGio(x.luc)) + (x.body.note ? ' · <span lang="lo">' + esc(x.body.note) + '</span>' : ''),
+        esc(so(x.body.qty_l || 0, 0)) + ' <small>L</small>', 'x2-cho-gui')));
     o.innerHTML = '<div class="x2-card">' + dauPanel('e_fuel', h('tx_dau_mo_ta'), xong ? '' : '<button class="btn-primary" type="button" data-act="dau">' + ic('fuel', 'icon-sm') + h('df_declare') + '</button>') +
       '<div class="list">' + (rows.join('') || trong('fuel', 'tx_dau_trong')) + '</div></div>';
   }
@@ -439,10 +499,13 @@
     const o = q('#tx-p-issues'), p = DS.find(x => x.id === CUR);
     if (!p) { o.innerHTML = chuaCo('alert'); return; }
     const xong = daXong(p), diem = (s) => ((p.route_stops || []).find(x => x.seq === s) || {}).name;
-    const rows = suKien(p, ['incident', 'repair']).map(e => dongDs('alert', esc(tenSuCo(e)) + ' · ' + ttSuKien(e),
+    const rows = choCua(p, 'bao_hong').map(x => dongDs('alert', esc(t('inc_' + (x.body.incident_type || 'other'))) + ' · ' + h('tx_dang_cho_gui_1'),
+      '<span lang="lo">' + esc(x.body.note || '') + '</span>' + (x.body.can_run === false ? ' · <b>' + h('pct_phai_dung') + '</b>' : '') + ' · ' + esc(EPL.ngayGio(x.luc)),
+      x.body.reported_cost != null ? tienHien(x.body.reported_cost, x.body.currency) : '<small>—</small>', 'x2-danger x2-cho-gui'))     // bấm lúc mất mạng (06/10)
+      .concat(suKien(p, ['incident', 'repair']).map(e => dongDs('alert', esc(tenSuCo(e)) + ' · ' + ttSuKien(e),
       '<span lang="lo">' + esc(e.note || '') + '</span>' + (e.stop_seq && diem(e.stop_seq) ? ' · <span lang="lo">' + esc(diem(e.stop_seq)) + '</span>' : '') +
         (e.can_run === false ? ' · <b>' + h('pct_phai_dung') + '</b>' : '') + (e.paid_by_driver ? ' · ' + h('pct_da_tu_tra') : '') + ' · ' + esc(EPL.ngayGio(e.ts)),
-      e.reported_cost != null ? tienHien(e.reported_cost, e.currency) : '<small>—</small>', 'x2-danger'));
+      e.reported_cost != null ? tienHien(e.reported_cost, e.currency) : '<small>—</small>', 'x2-danger')));
     o.innerHTML = '<div class="x2-card">' + dauPanel('tx_tab_su_co', h('tx_su_co_mo_ta'), xong ? '' : '<button class="btn-primary btn-danger" type="button" data-act="bao">' + ic('alert', 'icon-sm') + h('report_breakdown') + '</button>') +
       '<div class="list">' + (rows.join('') || trong('shield', 'tx_su_co_trong')) + '</div></div>';
   }
@@ -581,10 +644,16 @@
   const moTam = (id) => { const d = q(id); qa(id + ' .x2-field.invalid').forEach(f => f.classList.remove('invalid')); NN.apDung(d); d.showModal(); return d; };
   const dongPhieu = (p) => esc(p.doc_no) + ' · <span lang="lo">' + esc(p.origin || '') + '</span> → <span lang="lo">' + esc(p.destination || '') + '</span>';
 
+  /** Một thao tác gửi JSON qua hàng đợi (06/10): `luc` = giờ máy LÚC BẤM (thời điểm thật, máy chủ ghi theo giờ này), `ma_gui` = khoá
+   *  thao tác (gửi lại không ghi trùng). Còn mạng thì gửi ngay như trước; mất mạng thì nằm trong máy, có mạng tự gửi. */
+  const thaoTac = (loai, p, body) => {
+    const ma = maMoi(), luc = new Date().toISOString();
+    return { loai, trip_id: p.id, doc_no: p.doc_no, ma_gui: ma, luc, body: Object.assign({}, body, { ma_gui: ma, luc }) };
+  };
   async function xuatPhat() {
-    const p = PHIEU(); if (!p) return;
+    const p = PHIEU(); if (!p || choDi(p)) return;
     if (!await EPL.hoi(t('depart'), h('tx_hoi_xuat_phat', { so: p.doc_no }))) return;
-    try { await API.post('/api/trips/' + p.id + '/transport-status', { status: 'transit' }); EPL.toast(t('saved'), 'ok'); await tai(); } catch (e) { EPL.baoLoi(e); }
+    await guiHoacCat(thaoTac('xuat_phat', p, { status: 'transit' }), null, 'saved');
   }
 
   // ---- báo cân ở mỏ (phiếu gom, 29/09): số tấn theo phiếu cân + ảnh phiếu (không bắt buộc — phiếu nhập tay được)
@@ -706,8 +775,8 @@
     if (q('#tx-bao-diem').value) body.stop_seq = +q('#tx-bao-diem').value;
     if (coChi) { body.reported_cost = tien; body.currency = chonTrong('#tx-bao-tt', 'tt') || 'LAK'; body.paid_by_driver = chonTrong('#tx-bao-tra', 'tra') === '1'; }
     const nut = q('#tx-d-bao [type="submit"]'); nut.disabled = true;
-    try { await API.post('/api/trips/' + p.id + '/bao-hong', body); q('#tx-d-bao').close(); EPL.toast(t(coChi ? 'tx_da_bao_chi' : 'saved'), 'ok'); await tai(); }
-    catch (e) { EPL.baoLoi(e); } finally { nut.disabled = false; }
+    try { await guiHoacCat(thaoTac('bao_hong', p, body), '#tx-d-bao', coChi ? 'tx_da_bao_chi' : 'saved'); }      // mất mạng → hàng đợi (06/10)
+    finally { nut.disabled = false; }
   }
 
   // ---- khai đổ dầu DỌC ĐƯỜNG: chỉ trạm bán dầu bên ngoài (dầu kho công ty đi theo phiếu đề nghị xuất kho), không có giá
@@ -728,8 +797,8 @@
     // C5.1 (anh Khampla 23/09): tài xế chỉ báo số lít và trạm; giá do KT kho xăng dầu nhập — không gửi giá
     const body = { qty_l: lit, place_id: q('#tx-dau-diem').value, currency: chonTrong('#tx-dau-tt', 'tt') || 'VND', note: q('#tx-dau-ghi').value.trim() };
     const nut = q('#tx-d-dau [type="submit"]'); nut.disabled = true;
-    try { await API.post('/api/trips/' + p.id + '/bao-nhien-lieu', body); q('#tx-d-dau').close(); EPL.toast(t('saved'), 'ok'); await tai(); }
-    catch (e) { EPL.baoLoi(e); } finally { nut.disabled = false; }
+    try { await guiHoacCat(thaoTac('khai_dau', p, body), '#tx-d-dau', 'saved'); }                                  // mất mạng → hàng đợi (06/10)
+    finally { nut.disabled = false; }
   }
 
   // ---- phiếu đề nghị trên máy tài xế: tờ xuất kho nhiên liệu có mã QR cho thủ kho quét; tờ tạm ứng không QR (01/10) — đưa số DO cho quỹ
@@ -764,44 +833,102 @@
    * và gửi về; văn phòng thấy xe chạy thật trên bản đồ màn Theo dõi tuyến. Giữ trang mở thì mới gửi được — trình duyệt
    * dừng nền khi đóng tab, và đó là giới hạn phải nói thật với người dùng chứ không giấu. */
   const NHIP_GIAY = 25;                    // gửi thưa lại cho đỡ tốn pin và sóng
-  function ngungGPS(veLai = true) {
+  /* 06/10 (chủ dự án: "làm hàng đợi mất mạng luôn"): mất sóng thì điểm KHÔNG bỏ nữa — giữ trong máy kèm GIỜ MÁY lúc lấy điểm (K_GPS,
+   * tối đa GPS_TOI_DA điểm ≈ 20 giờ, đầy thì bỏ điểm cũ nhất), có sóng lại gửi bù theo lô GPS_LO điểm (POST /vi-tri/lo — máy chủ
+   * ghi theo giờ máy, gửi lại không trùng; routes/vi_tri.py). Còn điểm chờ thì điểm mới cũng xếp sau cho đúng thứ tự. Đang chia sẻ
+   * thì giữ màn hình sáng (Wake Lock — khoá máy là trình duyệt dừng trang, không lấy được điểm nào); bật chia sẻ được nhớ trong máy:
+   * tải lại trang / quay lại màn là chia sẻ tiếp, không phải bấm lại. Đóng hẳn trình duyệt thì vẫn dừng — giới hạn của trang web. */
+  const GPS_TOI_DA = 3000, GPS_LO = 200;
+  const K_GPS = () => 'epl_lao_gps_cho_' + uid(), K_GPS_BAT = () => 'epl_lao_gps_bat_' + uid();
+  const gpsCho = () => doc(K_GPS(), []);
+  let khoaSang = null, dangGuiGPS = false, daBaoVt = false;
+  function catDiem(tid, d) {
+    const ds = gpsCho(); ds.push(Object.assign({ trip_id: tid }, d));
+    if (ds.length > GPS_TOI_DA) ds.splice(0, ds.length - GPS_TOI_DA);
+    if (!ghi(K_GPS(), ds)) { ds.splice(0, Math.ceil(ds.length / 2)); ghi(K_GPS(), ds); }      // bộ nhớ máy đầy: bỏ nửa cũ
+  }
+  /** Gửi bù điểm đã giữ, từng lô một phiếu (đúng thứ tự giờ). Lô gửi xong (kể cả bị máy chủ bỏ vì trùng / quá dày) thì gỡ khỏi máy;
+   *  lỗi nghiệp vụ (phiếu không còn, không có quyền) thì bỏ lô đó; mất mạng thì dừng, lần sau gửi tiếp. */
+  async function guiBuGPS() {
+    if (dangGuiGPS || !gpsCho().length) return;
+    dangGuiGPS = true;
+    try {
+      for (;;) {
+        const ds = gpsCho(); if (!ds.length) break;
+        const tid = ds[0].trip_id, lo = ds.filter(x => x.trip_id === tid).slice(0, GPS_LO);
+        const khoa = new Set(lo.map(x => x.trip_id + '|' + x.ts));
+        try { await API.post('/api/trips/' + encodeURIComponent(tid) + '/vi-tri/lo', { diem: lo.map(x => { const y = Object.assign({}, x); delete y.trip_id; return y; }) }); }
+        catch (e) { if (nenThuLai(e)) break; }
+        ghi(K_GPS(), gpsCho().filter(x => !khoa.has(x.trip_id + '|' + x.ts)));
+      }
+    } finally { dangGuiGPS = false; }
+    if (root) veChao();
+  }
+  async function giuSang() {
+    try {
+      if (navigator.wakeLock && !khoaSang && document.visibilityState === 'visible') {
+        khoaSang = await navigator.wakeLock.request('screen');
+        khoaSang.addEventListener('release', () => { khoaSang = null; });
+      }
+    } catch (e) { khoaSang = null; }                // trình duyệt không cho (pin yếu, chưa bấm gì) — vẫn chia sẻ bình thường
+  }
+  function boSang() { try { if (khoaSang) khoaSang.release(); } catch (e) { /* bỏ qua */ } khoaSang = null; }
+  /** Quay lại trang (mở khoá máy, chuyển tab về): giữ sáng lại (trình duyệt tự nhả khi ẩn) và gửi những gì đang chờ. */
+  const khiHien = () => {
+    if (document.visibilityState !== 'visible') return;
+    if (phieuChiaSe) giuSang();
+    guiHangDoi().catch(() => {}); guiBuGPS();
+  };
+  /** `quen` = xoá dấu "đang chia sẻ" trong máy (tài xế bấm ngưng, đăng xuất). Rời màn thì giữ dấu — quay lại là chia sẻ tiếp. */
+  function ngungGPS(veLai = true, quen = true) {
     if (theoDoiId != null && navigator.geolocation) navigator.geolocation.clearWatch(theoDoiId);
-    theoDoiId = null; phieuChiaSe = null; lanGuiCuoi = 0;
+    theoDoiId = null; phieuChiaSe = null; lanGuiCuoi = 0; boSang();
+    if (quen) { try { localStorage.removeItem(K_GPS_BAT()); } catch (e) { /* bỏ qua */ } }
     if (root && veLai) ve();
   }
-  function batTatGPS() {
-    const p = PHIEU(); if (!p) return;
-    const id = p.id;
-    if (phieuChiaSe === id) return ngungGPS();
-    if (!navigator.geolocation) return EPL.toast(t('gps_nosupport'), 'loi');
-    ngungGPS(false);
-    phieuChiaSe = id;
-    EPL.toast(t('gps_hint'), 'ok');
+  function batGPS(id, nhac) {
+    if (!navigator.geolocation) { if (nhac) EPL.toast(t('gps_nosupport'), 'loi'); return; }
+    ngungGPS(false, false);
+    phieuChiaSe = id; ghi(K_GPS_BAT(), id); daBaoVt = false;
+    if (nhac) EPL.toast(t('gps_hint2'), 'ok');
+    giuSang();
     theoDoiId = navigator.geolocation.watchPosition(async (vt) => {
       const gio = Date.now();
       if (gio - lanGuiCuoi < NHIP_GIAY * 1000) return;
       lanGuiCuoi = gio;
       const c = vt.coords;
+      const d = { lat: c.latitude, lng: c.longitude, accuracy_m: c.accuracy,
+        speed_kmh: c.speed == null ? null : Math.round(c.speed * 3.6 * 10) / 10, heading: c.heading,
+        ts: new Date(vt.timestamp || gio).toISOString() };          // giờ máy lúc lấy điểm — thời điểm thật, máy chủ ghi theo giờ này
+      if (navigator.onLine === false || gpsCho().length) {           // mất mạng, hoặc còn điểm cũ chờ → xếp sau cho đúng thứ tự
+        catDiem(id, d);
+        if (navigator.onLine !== false) guiBuGPS(); else if (root) veChao();
+        return;
+      }
       try {
-        await API.post('/api/trips/' + id + '/vi-tri', {
-          lat: c.latitude, lng: c.longitude, accuracy_m: c.accuracy,
-          speed_kmh: c.speed == null ? null : Math.round(c.speed * 3.6 * 10) / 10, heading: c.heading,
-        });
+        await API.post('/api/trips/' + id + '/vi-tri', d);
         if (root) veChao();
       } catch (e) {
-        // Mất sóng giữa đường là chuyện thường: im lặng, lần sau gửi tiếp.
-        if (e instanceof EPL.LoiAPI && e.status) { EPL.baoLoi(e); ngungGPS(); }
+        if (nenThuLai(e)) { catDiem(id, d); if (root) veChao(); return; }       // mất sóng giữa đường: giữ điểm, có sóng gửi bù
+        EPL.baoLoi(e); ngungGPS();                                               // phiếu đã tới / không có quyền: ngưng
       }
     }, (loi) => {
-      EPL.toast(t(loi && loi.code === 1 ? 'gps_denied' : 'gps_nosupport'), 'loi');
-      ngungGPS();
+      if (loi && loi.code === 1) { EPL.toast(t('gps_denied'), 'loi'); return ngungGPS(); }
+      // chưa bắt được vệ tinh / hết giờ một lần đo (hầm, núi): đo tiếp, không ngưng — báo một lần cho tài xế biết
+      if (loi && loi.code === 2 && !daBaoVt) { daBaoVt = true; EPL.toast(t('gps_nosupport'), 'loi'); }
     }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 });
-    ve();
+    if (root) ve();
+  }
+  function batTatGPS() {
+    const p = PHIEU(); if (!p) return;
+    if (phieuChiaSe === p.id) return ngungGPS();
+    batGPS(p.id, true);
   }
 
   /* ================================================================ bấm trên màn (uỷ quyền một chỗ) */
   const LAM = { di: xuatPhat, ve: moVe, cm: moCanMo, gh: moGiaoHang, bao: moBao, dau: moDau, gps: batTatGPS, qr: () => moQR(), bb: xemBienBan,
     xuat: () => EPL.xuatExcel(),
+    'gui-ngay': () => { guiHangDoi().catch(() => {}); guiBuGPS(); if (root) ve(); },     // thẻ hàng đợi (06/10)
     'xoa-q': () => { LS.q = ''; LS.trang = 1; taiLichSu(); },
     'xoa-loc': () => { LS = Object.assign({}, LS_GOC, { sap: LS.sap }); taiLichSu(); } };
   function onClick(e) {
@@ -853,13 +980,23 @@
       root.addEventListener('click', onClick);
       root.addEventListener('keydown', onKey);
       ve();                                    // lời chào, tab và chữ "Đang tải…" hiện ngay, không để khung trắng
-      // danh sách trạm dầu chỉ cần khi mở hộp khai dầu — tải song song, không bắt cả màn chờ
-      API.get('/api/fuel-places').then(x => { DIEM = x || []; }).catch(() => {});
-      boNghe = () => guiHangDoi().catch(() => {});
+      // danh sách trạm dầu chỉ cần khi mở hộp khai dầu — tải song song, không bắt cả màn chờ. Lưu trong máy (06/10): mất mạng vẫn
+      // khai dầu được (hàng đợi) thì phải có danh sách trạm để chọn
+      API.get('/api/fuel-places').then(x => { DIEM = x || []; ghi(K_DIEM(), DIEM); }).catch(() => { if (!DIEM.length) DIEM = doc(K_DIEM(), []); });
+      boNghe = () => { guiHangDoi().catch(() => {}); guiBuGPS(); };
       window.addEventListener('online', boNghe);
       window.addEventListener('resize', datDinh);
+      document.addEventListener('visibilitychange', khiHien);
+      // trình duyệt điện thoại không phải lúc nào cũng báo "có mạng lại" — cứ 30 giây thử gửi những gì đang chờ
+      clearInterval(henGui); henGui = setInterval(() => { if (hangDoi().length) guiHangDoi().catch(() => {}); if (gpsCho().length) guiBuGPS(); }, 30000);
       await tai();
+      // đang chia sẻ vị trí lúc rời màn / tải lại trang (06/10) → chia sẻ tiếp: quyền vị trí đã cho thì không hỏi lại
+      const bat = doc(K_GPS_BAT(), null), pb = bat && DS.find(x => x.id === bat);
+      if (bat && phieuChiaSe !== bat) {
+        if (pb && (pb.transport_status === 'transit' || choDi(pb))) batGPS(bat, false); else if (!matMang) ngungGPS(false);
+      }
       await guiHangDoi().catch(() => {});
+      guiBuGPS();
     },
     /** Tải danh sách: đúng bộ lọc đang chọn ở tab Lịch sử phiếu (tối đa 500 dòng). */
     async xuatExcel() {
@@ -870,9 +1007,11 @@
           EPL.oNgay(p.out_date || p.doc_date), t('s_' + p.transport_status), p.locked ? '✓' : '']))];
     },
     destroy() {
-      ngungGPS(false); clearTimeout(henTim); luotTai++;       // lượt tải nền đang chạy về sau thì bỏ
+      // rời màn: dừng đo GPS nhưng giữ dấu "đang chia sẻ" (quay lại là chia sẻ tiếp); đăng xuất (không còn người dùng) thì quên hẳn
+      ngungGPS(false, !EPL.AUTH.user); clearTimeout(henTim); clearInterval(henGui); henGui = null; luotTai++;   // lượt tải nền về sau thì bỏ
       if (boNghe) window.removeEventListener('online', boNghe);
       window.removeEventListener('resize', datDinh);
+      document.removeEventListener('visibilitychange', khiHien);
       boNghe = null; root = null;
     },
     onLang() { if (root) ve(); },

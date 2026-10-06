@@ -138,3 +138,13 @@
 .ttd-bang td.ttd-ls-nut{white-space:normal;width:auto;min-width:120px;max-width:170px}
 .ttd-bang td.ttd-ls-nut .btn{white-space:normal;text-align:center;line-height:1.25}
 .ttd-bang td.ttd-ls-tt{min-width:220px}
+/* 06/10 — khung «Mua ở quầy (SO bán hàng)»: một dòng tóm tắt, mở ra xem từng SO (giữ màn gọn, không đẩy bảng chuyến xuống) */
+.ttd-quay,.ttd-quay-dong{flex:0 0 auto;font-size:12.5px}
+.ttd-quay-dong{padding:6px 10px;border:1px dashed var(--line-2);border-radius:8px;color:var(--ink-2)}
+.ttd-quay-dong.loi{border-color:var(--red);color:var(--red)}
+.ttd-quay summary{cursor:pointer;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);list-style-position:inside}
+.ttd-quay[open] summary{border-radius:8px 8px 0 0;border-bottom:0}
+.ttd-quay[open] .ttd-khoi{border-radius:0 0 8px 8px;max-height:220px;overflow:auto}
+.ttd-quay .ttd-khoi th{padding:4px 8px;font-size:11px;color:var(--ink-3);text-align:left;border-bottom:1px solid var(--line)}
+.ttd-quay .ttd-khoi th.num,.ttd-quay .ttd-khoi td.num{text-align:right;white-space:nowrap!important}
+.ttd-quay .tag{font-size:10.5px;padding:1px 7px}

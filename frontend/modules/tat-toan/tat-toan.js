@@ -79,22 +79,29 @@
   }
 
   /* ---------------------------------------------------------------- một tài xế */
+  /** Câu máy chủ (loi · loi_lo · loi_en) theo tiếng đang xem (06/10). */
+  const chuMay = (x) => (!x ? '' : NN.lang === 'lo' && x.loi_lo ? x.loi_lo : NN.lang === 'en' && x.loi_en ? x.loi_en
+    : NN.lang === 'both' && x.loi_lo ? x.loi + ' / ' + x.loi_lo : x.loi || '');
   function nutCua(d) {
     const s = trangThai(d), t = d.tat_toan || {}, p = t.phieu_ke_toan, qt = t.quyet_toan || {};
     const nut = [];
     if (s.k === 'chua') {
       if (chotDuoc() && d.so_phieu) {
         const cho = d.tam_ung_cho || [];       // có ở bản đầy đủ (CT) — máy chủ chặn chốt 409 TAM_UNG_CHUA_CHI_XONG khi còn
-        nut.push(['chot', 'primary', 'tt_chot', cho.length ? NN.t('tt_chot_khoa', { so: cho.map(u => u.document_no || u.doc_no || '').filter(Boolean).join(', ') }) : '']);
+        const con = d.chan_chot || [];         // G4 06/10: DO chưa khoá / khai báo chưa duyệt / dòng tiền mặt giá 0 — máy chủ chặn 409
+        nut.push(['chot', 'primary', 'tt_chot', con.length ? NN.t('tt_cc_khoa', { n: con.length }) : cho.length
+          ? NN.t('tt_chot_khoa', { so: cho.map(u => u.document_no || u.doc_no || '').filter(Boolean).join(', ') }) : '', con.length ? 'tt_cc_ngan' : 'tt_chot_khoa_ngan']);
       }
     } else {
       if (p && p.status === 'da_gui') nut.push(['cap-nhat', '', 'ck_cap_nhat']);
       if (p && p.status === 'loi' && chotDuoc()) nut.push(['gui-lai', 'warn', 'tt_gui_lai']);
-      // bỏ chốt chỉ khi phiếu bên kế toán chưa ghi sổ và QT_TU chưa gửi — máy chủ vẫn chặn lại lần nữa
-      if (chotDuoc() && !(p && p.status === 'da_chi') && qt.status !== 'da_gui') nut.push(['bo', 'danger', 'tt_bo_chot']);
+      // bỏ chốt chỉ khi phiếu bên kế toán chưa ghi sổ và QT_TU chưa gửi — máy chủ vẫn chặn lại lần nữa. Không bỏ được thì nút xám
+      // kèm lý do (06/10 — câu máy chủ ở khối "Không bỏ chốt được" bên dưới), không giấu nút như trước
+      const khongBo = (p && p.status === 'da_chi') || qt.status === 'da_gui';
+      if (chotDuoc()) nut.push(['bo', 'danger', 'tt_bo_chot', khongBo ? chuMay(d.bo_chot_chan) || NN.t('tt_bo_khong_duoc') : '', 'tt_bo_khong_duoc']);
     }
-    return nut.map(([v, c, k, khoa]) => khoa
-      ? `<span class="tt2-khoa"><button type="button" class="btn ${c}" data-viec="${v}" disabled title="${esc(khoa)}">${NN.h(k)}</button><small>${NN.h('tt_chot_khoa_ngan')}</small></span>`
+    return nut.map(([v, c, k, khoa, ngan]) => khoa
+      ? `<span class="tt2-khoa"><button type="button" class="btn ${c}" data-viec="${v}" disabled title="${esc(khoa)}">${NN.h(k)}</button><small>${NN.h(ngan || 'tt_chot_khoa_ngan')}</small></span>`
       : `<button type="button" class="btn ${c}" data-viec="${v}">${NN.h(k)}</button>`).join('');
   }
 
@@ -121,6 +128,14 @@
       canh.push(`<div class="tt2-canh">${NN.h('tt_tam_ung_cho')}: ${c.tam_ung_cho.map(u =>
         `<a href="#/phieu-xuat-xe?id=${esc(u.trip_id)}" class="mono">${esc(u.doc_no || u.trip_id)}</a>${u.document_no ? ` (${esc(u.document_no)})` : ''}`).join(', ')}</div>`);
     }
+    // G4 (06/10): còn DO dở trong kỳ — máy chủ chặn chốt; liệt kê từng DO (bấm sang phiếu) và việc còn thiếu
+    if (c && c.chan_chot && c.chan_chot.length) {
+      canh.push(`<div class="tt2-canh tt2-cc"><b>${NN.h('tt_cc_tieu_de', { n: c.chan_chot.length })}</b><ul>${c.chan_chot.map(z =>
+        `<li><a href="#/phieu-xuat-xe?id=${esc(z.trip_id)}" class="mono">${esc(z.doc_no)}</a>: ${esc(chuMay(z).replace(z.doc_no + ': ', ''))}</li>`).join('')}</ul>
+        <small>${NN.h('tt_cc_goi_y')}</small></div>`);
+    }
+    // bỏ chốt không được (phiếu chênh đã ghi sổ / QT_TU đã gửi) — nói vì sao, ngay trên khối bản chốt
+    if (c && c.bo_chot_chan) canh.push(`<div class="tt2-canh tt2-cc">${esc(chuMay(c.bo_chot_chan))}</div>`);
     o.innerHTML = `<div class="tt2-dau">
         <div><h3 lang="lo">${esc(x.driver_name)}</h3><div class="small muted">${esc(x.driver_code || '')} · ${NN.h('tt_period')} ${nhanThang(x.period)}</div></div>
         <div class="grow"></div>${EPL.tag(s.mau, s.nhan)}<div class="tt2-nut no-print">${nutCua(x)}</div></div>

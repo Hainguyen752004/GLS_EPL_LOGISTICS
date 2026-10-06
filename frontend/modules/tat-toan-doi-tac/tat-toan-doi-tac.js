@@ -9,10 +9,12 @@
  * API: GET /api/tat-toan-doi-tac?ky=YYYY-MM[&owner_id=] (chưa có → "chưa có dữ liệu", màn không vỡ) · lập: POST
  * /api/owners/{id}/de-nghi-tra {trip_ids, phuong_thuc} · bỏ / hỏi lại: POST /api/chi-chu-xe/{id}/huy | cap-nhat (cùng đường
  * màn Xe liên kết → "Trả qua kế toán"). Lập / bỏ: KT Thu/Chi VC và Sếp (routes/chu_xe.DE_NGHI_TRA).
+ * 06/10: khung «Mua ở quầy (SO bán hàng)» — SO bán hàng đối tác mua ở quầy còn nợ bên hệ kế toán (máy chủ `quay` khi xem một đối
+ * tác); lập đề nghị thì máy cấn trừ cả các SO đó (TKN) — hộp hỏi lấy số trừ thật theo chuyến chọn từ GET /api/owners/{id}/hang-quay.
  */
 (function () {
   const { API, NN, esc, so, AUTH } = EPL;
-  let root, BANG = null, CHUA_CO = false, CHON = null, loc = '', tim = '', hen = null, LUOT = 0, tab = 'bang';
+  let root, BANG = null, CHUA_CO = false, CHON = null, loc = '', tim = '', hen = null, LUOT = 0, tab = 'bang', moQuay = false;
   const CT = {};                  // owner_id → bảng tính của đối tác (có chi_tiet)
   const MO = new Set();           // trip_id đang mở ra
   const TICH = new Set();         // trip_id đã tích để lập đề nghị
@@ -48,7 +50,7 @@
   }
   function veGioiThieu() {
     const b = (k, kq) => `<b class="${kq ? 'kq' : ''}">${NN.h(k)}</b>`;
-    q('#ttd-gt').innerHTML = `<span class="ct">${b('ttd_c_thue')}<i>−</i>${b('ttd_c_phi')}<i>−</i>${b('ttd_c_qua_tai')}<i>−</i>${b('ttd_c_tam_ung')}<i>−</i>${b('ttd_c_no_ncc')}<i>−</i>${b('ttd_c_nhien_lieu')}<i>=</i>${b('ttd_c_con_tra', true)}</span>
+    q('#ttd-gt').innerHTML = `<span class="ct">${b('ttd_c_thue')}<i>−</i>${b('ttd_c_phi')}<i>−</i>${b('ttd_c_qua_tai')}<i>−</i>${b('ttd_c_tam_ung')}<i>−</i>${b('ttd_c_no_ncc')}<i>−</i>${b('ttd_c_nhien_lieu')}<i>−</i>${b('ttd_c_quay')}<i>=</i>${b('ttd_c_con_tra', true)}</span>
       <span class="them">${NN.h('ttd_gioi_thieu')}</span>`;
   }
   function veTong() {
@@ -150,12 +152,37 @@
       <tbody>${rows || `<tr><td colspan="10" class="empty">${NN.h(CT[d.owner_id] ? 'ttd_khong_chuyen' : 'loading')}</td></tr>`}</tbody>${foot}</table></div>`;
   }
 
+  /** 06/10 — khung «Mua ở quầy (SO bán hàng)» (cùng kiểu khung «Dầu bán (SO nhiên liệu)»): SO bán hàng đối tác mua ở quầy còn nợ bên
+   *  hệ kế toán — máy chủ gửi `quay` khi xem một đối tác (kho ở hệ kế toán; kho tạm thì không có khung). Gọn một dòng tóm tắt, mở ra
+   *  xem từng SO. Lập đề nghị thì máy cấn trừ (TKN) — số trừ thật tính lại theo chuyến chọn; ước tính ở đây cho mọi chuyến chưa trả. */
+  function veQuay(d) {
+    const r = CT[d.owner_id], qy = r && r.quay;
+    if (!qy) return '';
+    const dau = `<b>${NN.h('ttd_quay')}</b>`;
+    if (qy.loi) return `<div class="ttd-quay-dong loi">${dau} · ${esc(NN.t('ttd_quay_loi', { loi: qy.loi }))}</div>`;
+    if (!qy.doc) return `<div class="ttd-quay-dong">${dau} · ${NN.h('ttd_quay_chua_doc')}</div>`;
+    const ds = qy.ds || [], u = qy.uoc_tinh;
+    if (!ds.length) return `<div class="ttd-quay-dong">${dau} · ${NN.h('ttd_quay_trong')}</div>`;
+    const nhan = (x) => (x.dang_de_nghi ? `<span class="tag ttd-trong_de_nghi">${NN.h('ttd_quay_dang', { so: x.dang_de_nghi })}</span>`
+      : u && (u.so_tru || []).includes(x.so) ? `<span class="tag ttd-can_tru">${NN.h('ttd_quay_se_tru')}</span>`
+        : u && (u.so_de_lai || []).includes(x.so) ? `<span class="tag ttd-chua_tra">${NN.h('ttd_quay_de_lai')}</span>` : '');
+    const rows = ds.map(x => `<tr><td><span class="mono">${esc(x.so || '')}</span>${x.phieu_ban && x.phieu_ban !== x.so ? `<div class="muted mono">${esc(x.phieu_ban)}</div>` : ''}</td>
+        <td>${EPL.ngay(x.ngay)}</td><td class="num">${t$(x.tong_so, x.tien_te)}</td><td class="num">${t$(x.da_thu, x.tien_te)}</td>
+        <td class="num"><b>${t$(x.con_no, x.tien_te)}</b>${x.tien_te !== 'LAK' && x.con_no_lak != null ? `<div class="muted">≈ ${lak(x.con_no_lak)}</div>` : ''}</td>
+        <td>${nhan(x)}</td></tr>`).join('');
+    return `<details class="ttd-quay"${moQuay ? ' open' : ''}><summary>${dau} · ${so(ds.length)} SO · ${NN.h('hs_nl_con_no')} <b>${lak(qy.con_no_lak)}</b>${u
+        ? ` · ${NN.h('ttd_quay_uoc', { tien: t$(u.tru, u.tien_te), con: t$(u.tra_thuc, u.tien_te) })}` : ''}</summary>
+      <div class="ttd-khoi"><table><thead><tr><th>SO</th><th>${NN.h('c_date')}</th><th class="num">${NN.h('amount')}</th><th class="num">${NN.h('collected')}</th>
+        <th class="num">${NN.h('hs_nl_con_no')}</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+        <div class="rong">${NN.h('ttd_quay_goi_y')}</div></div></details>`;
+  }
+
   function bangLichSu(d) {
     const dn = d.de_nghi || [];
     return `<div class="tbl-wrap ttd-bang"><table class="tbl tbl-compact" style="min-width:0"><thead><tr><th>${NN.h('ttd_so_dn')}</th><th>${NN.h('c_date')}</th>
         <th class="num">${NN.h('amount')}</th><th>${NN.h('ttd_can_tru')}</th><th>${NN.h('ttd_phieu_chi')}</th><th>${NN.h('status')}</th><th class="no-print"></th></tr></thead>
       <tbody>${dn.length ? dn.map((r, i) => `<tr><td class="mono">${esc(r.so || '')}</td><td>${EPL.ngay(r.ngay)}</td><td class="num">${t$(r.tien, r.tien_te || d.tien_te)}</td>
-        <td class="ttd-ls-ct">${(r.can_tru || []).length ? r.can_tru.map(x => `<div><span class="mono">${esc(x.order_code || '')}</span>${x.so_tkn ? ` → <span class="mono">${esc(x.so_tkn)}</span>` : ''} · ${lak(x.tien)}${x.trang_thai && (NL_TT[x.trang_thai] || TT_DN[x.trang_thai]) ? ' · ' + esc(NN.t(NL_TT[x.trang_thai] || TT_DN[x.trang_thai])) : ''}</div>`).join('') : '<span class="muted">—</span>'}</td>
+        <td class="ttd-ls-ct">${(r.can_tru || []).length ? r.can_tru.map(x => `<div>${x.loai === 'so_quay' ? `<span class="tag">${NN.h('ttd_quay_ngan')}</span> ` : ''}<span class="mono">${esc(x.order_code || '')}</span>${x.so_tkn ? ` → <span class="mono">${esc(x.so_tkn)}</span>` : ''} · ${x.tien_te && x.tien_te !== 'LAK' ? t$(x.tien, x.tien_te) : lak(x.tien)}${x.trang_thai && (NL_TT[x.trang_thai] || TT_DN[x.trang_thai]) ? ' · ' + esc(NN.t(NL_TT[x.trang_thai] || TT_DN[x.trang_thai])) : ''}</div>`).join('') : '<span class="muted">—</span>'}</td>
         <td class="mono">${esc(r.phieu_chi || '—')}</td><td class="ttd-ls-tt">${tagDN(r.trang_thai)}${r.loi ? `<div class="small neg ttd-ls-loi" title="${esc(r.loi)}">${esc(r.loi)}</div>` : ''}</td>
         <td class="no-print ttd-ls-nut">${r.trang_thai === 'da_gui' ? `<button type="button" class="btn sm" data-dn="cap-nhat" data-i="${i}">${NN.h('ck_cap_nhat')}</button>` : ''}
           ${lapDuoc() && r.trang_thai === 'loi' ? `<button type="button" class="btn sm warn" data-dn="gui-lai" data-i="${i}">${NN.h('ck_gui_lai')}</button>` : ''}
@@ -184,6 +211,7 @@
         ${EPL.manCuaVai(AUTH.role).some(m => m.id === 'xe-lien-ket') ? `<button type="button" class="btn no-print" id="ttd-xlk">${NN.h('nav_joint')}</button>` : ''}</div>
       <div class="ttd-cong">${cong.map(([k, v], i) => `${i ? '<i>−</i>' : ''}<span>${NN.h(k)} <b>${t$(v || 0, ma)}</b></span>`).join('')}<i>=</i>
         <span class="kq">${NN.h('ttd_c_con_tra')} ${t$(d.con_tra, ma)}</span>${ma !== 'LAK' && d.con_tra_lak != null ? `<span class="muted">≈ ${lak(d.con_tra_lak)}</span>` : ''}</div>
+      ${veQuay(d)}
       <div class="ttd-tab no-print"><button type="button" data-tab="bang" class="${tab === 'bang' ? 'on' : ''}">${NN.h('ttd_tab_bang')}<b>${ds.length}</b></button>
         <button type="button" data-tab="ls" class="${tab === 'ls' ? 'on' : ''}">${NN.h('ttd_tab_ls')}<b>${(d.de_nghi || []).length}</b></button>
         <span class="grow"></span>
@@ -193,6 +221,7 @@
       ${tab === 'bang' ? bangChuyen(d, ds) : bangLichSu(d)}
       ${tab === 'bang' ? `<div class="ttd-chu no-print"><span>${NN.h('ttd_goi_y_mo')}</span></div>` : ''}`;
     o.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => { tab = b.dataset.tab; veXem(); }));
+    const kq = o.querySelector('details.ttd-quay'); if (kq) kq.addEventListener('toggle', () => { moQuay = kq.open; datCao(); });
     o.querySelectorAll('tr.dong-chuyen').forEach(tr => tr.addEventListener('click', (e) => {
       if (e.target.closest('input, a, button')) return;
       const id = tr.dataset.trip; if (MO.has(id)) MO.delete(id); else MO.add(id); veXem();
@@ -214,12 +243,25 @@
     if (!chon.length) return EPL.toast(NN.t('cx_chua_chon'), 'loi');
     const ma = d.tien_te || 'LAK';
     const nlNo = tong(chon, c => (c.nhien_lieu || {}).con_no_lak);
+    // 06/10: mua ở quầy (SO bán hàng ở hệ kế toán) — số trừ THẬT theo đúng các chuyến chọn do máy chủ tính (cùng luật lúc lập)
+    let uq = null, loiQ = '';
+    if (CT[d.owner_id] && CT[d.owner_id].quay) {
+      try {
+        const g = await API.get('/api/owners/' + encodeURIComponent(d.owner_id) + '/hang-quay?trip_ids=' + encodeURIComponent(chon.map(c => c.trip_id).join(',')));
+        uq = g && g.uoc_tinh;
+      } catch (e) { loiQ = (e && e.message) || String(e); }
+    }
+    const quayTru = uq && uq.tru_lak ? uq.tru_lak : 0;
     const html = `<p>${NN.h('ttd_hoi_lap', { n: chon.length, ten: d.ten || '' })}</p>
       <div class="ttd-cong" style="margin:8px 0">${[['ttd_c_thue', tong(chon, c => c.tien_thue)], ['ttd_c_phi', tong(chon, c => c.phi)], ['ttd_c_qua_tai', tong(chon, c => c.qua_tai)],
         ['ttd_c_tam_ung', tong(chon, c => (c.tam_ung || {}).tien)]].map(([k, v], i) => `${i ? '<i>−</i>' : ''}<span>${NN.h(k)} <b>${t$(v, ma)}</b></span>`).join('')}
         <i>−</i><span>${NN.h('ttd_c_no_ncc')} <b>${lak(tong(chon, c => tong(c.no_ncc || [], x => x.tien_lak)))}</b></span>
-        <i>−</i><span>${NN.h('ttd_c_nhien_lieu')} <b>${lak(nlNo)}</b></span><i>=</i><span class="kq">${t$(tong(chon, c => c.con_tra), ma)}</span></div>
+        <i>−</i><span>${NN.h('ttd_c_nhien_lieu')} <b>${lak(nlNo)}</b></span>${quayTru ? `<i>−</i><span>${NN.h('ttd_c_quay')} <b>${lak(quayTru)}</b></span>` : ''}
+        <i>=</i><span class="kq">${t$(uq ? uq.tra_thuc : tong(chon, c => c.con_tra), ma)}</span></div>
       ${nlNo ? `<p class="small">${NN.h('ttd_hoi_can_tru', { tien: lak(nlNo) })}</p>` : ''}
+      ${quayTru ? `<p class="small">${NN.h('ttd_hoi_quay', { tien: lak(quayTru), so: (uq.hang || []).map(h => h.doc_no).join(', ') })}</p>` : ''}
+      ${uq && (uq.hang_de_lai || []).length ? `<p class="small muted">${NN.h('ttd_quay_de_lai_ds', { so: uq.hang_de_lai.map(h => h.doc_no).join(', ') })}</p>` : ''}
+      ${loiQ ? `<p class="small neg">${esc(NN.t('ttd_quay_loi', { loi: loiQ }))}</p>` : ''}
       <div class="field"><label>${NN.h('cx_cach_tra')}</label><select id="ttd-pt"><option value="cash">${NN.h('cx_tien_mat')}</option><option value="bank">${NN.h('cx_chuyen_khoan')}</option></select></div>`;
     if (!await EPL.hoi(NN.t('cx_lap'), html, NN.t('cx_lap'))) return;
     const pt = (document.getElementById('ttd-pt') || {}).value || 'cash';

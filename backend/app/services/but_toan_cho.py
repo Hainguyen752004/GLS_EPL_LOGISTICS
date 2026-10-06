@@ -41,6 +41,13 @@ XUẤT KHO CHO CHUYẾN (chủ dự án 01/10: "xuất dầu là xuất nội b�
     xe thuê chủ xe tự trả: không có. Khác `ban_chu_xe` (services/tra_chu_xe.py): đó là phiếu BÁN Ở QUẦY của kho tạm, trừ
     riêng vào tiền trả (tinh_tru); còn đây là dòng kho trên phiếu xuất xe, trừ qua `ung_truoc` của tinh_phieu.
 
+DOANH THU lúc «Tạo SO bên kế toán» (chủ dự án chốt 06/10: "Ghi lúc Tạo SO") — ghi_doanh_thu, một DO một bút toán mỗi loại SO:
+    doanh_thu      SO cước: Nợ 1211 / Có 708, đối tượng khách của DO, tiền = tiền SO cước (USD… theo tỷ giá khoá trên phiếu)
+    doanh_thu_ban  SO nhiên liệu / phụ tùng xe thuê: Nợ 1211 / Có 707, đối tượng đối tác EPLCX-<chủ xe>, LAK
+    Vì sao: SO bên anh Tune chỉ treo công nợ (RESCUSTOMERSDEBT), không ghi sổ cái; thu nợ (Nợ tiền / Có 1211) và cấn trừ (Nợ 4022 /
+    Có 1211) ghi Có 1211 nên trên GL chi nhánh 1368 tài khoản 1211 lệch. ma_nguon = Trip.id (ổn định theo DO → gọi lại / gửi lại
+    không trùng); khoá lại phiếu mà SO đã có thì ghi lại (ghi_khoa_phieu); mở khoá / xoá phiếu thì gỡ như mọi nguồn khoá phiếu.
+
 Hàm ở đây KHÔNG commit — người gọi commit cùng giao dịch của nghiệp vụ (khoá phiếu ghi bút toán trong cùng lần khoá).
 
 Trạng thái: cho_gui (chờ gửi) · da_gui (bên kế toán đã nhận, có số chứng từ) · huy.
@@ -72,6 +79,11 @@ NGUON_KHOA_PHIEU = (THUE_XE, NO_NCC)
 XUAT_NOI_BO = "xuat_noi_bo"  # xe nhà: dầu kho Nợ 625 / Có 1371 · phụ tùng kho Nợ 614 / Có 1371, theo giá vốn bình quân kho
 XUAT_BAN = "xuat_ban"        # xe thuê, EPL ứng: Nợ 607 / Có 1371 theo giá vốn bình quân kho (phần bán: SO nhiên liệu, 02/10)
 NGUON_XUAT_KHO = (XUAT_NOI_BO, XUAT_BAN)
+# DOANH THU theo SO bên hệ anh Tune (chủ dự án chốt 06/10: ghi lúc «Tạo SO bên kế toán») — ma_nguon = Trip.id; SourceRef
+# EPLLAO-doanh_thu-<trip> · EPLLAO-doanh_thu_ban-<trip> (màn "Bút toán từ Logistics" bên Web đọc loại nguồn từ đoạn giữa)
+DOANH_THU = "doanh_thu"            # SO cước: Nợ 1211 / Có 708, đối tượng khách của DO, tiền SO cước (tỷ giá khoá trên phiếu)
+DOANH_THU_BAN = "doanh_thu_ban"    # SO nhiên liệu / phụ tùng xe thuê: Nợ 1211 / Có 707, đối tượng đối tác EPLCX-<chủ xe>, LAK
+NGUON_DOANH_THU = (DOANH_THU, DOANH_THU_BAN)
 
 
 def _khoa(nguon, ma_nguon):
@@ -323,7 +335,8 @@ def dong_khoa_phieu(db, p, cac_dong=None):
       · thue_xe — xe thuê: Nợ 621 / Có 4022 bằng TIỀN THUÊ (tinh_phieu `tien_thue`, đúng `hire.amount` của gói bàn giao DO),
         theo tiền thuê. Phí 2 % và trừ quá tải chưa có bút toán riêng (chờ anh Khampla chọn cách ghi).
       · no_ncc — mỗi dòng chi EPL chịu mà định khoản có vế Có 4021 (tai_khoan.tk_dong: dầu trạm ghi nợ, chipping, thẻ cao tốc,
-        lốp nợ theo đợt, garage cho nợ…) — Nợ 625 · 614 (xe thuê 4022) / Có 4021, quy Kíp theo tỷ giá khoá trên phiếu. BỎ các
+        lốp nợ theo đợt, garage cho nợ…) — Nợ 625 · 614 (xe thuê 4022) / Có 4021, theo NGUYÊN TỆ của dòng (06/10: dầu trạm VN ghi
+        VND) kèm tỷ giá khoá trên phiếu và số quy Kíp (`tien_lak`); dòng Kíp như cũ. BỎ các
         dòng mục V quỹ TRẢ NGAY (chi_muc_tune.dong_quy_chi): những dòng đó vào chi phí qua phiếu chi "Chi khác" bên kế toán
         (Nợ 614 / Có tiền), ghi thêm Có 4021 là chi phí hai lần."""
     from models import TripExpense
@@ -362,9 +375,12 @@ def dong_khoa_phieu(db, p, cac_dong=None):
              "doi_tuong": {"loai": "ncc", "ref_id": d.supplier_id} if d.supplier_id else None,
              "dien_giai": "%s %s · %s" % ({"fuel": "III", "travel": "IV", "repair": "V", "other": "VI"}.get(d.section, ""),
                                          ten_dong(db, d)[0], p.doc_no)}
-        if (d.currency or "LAK").upper() != "LAK":
-            x.update({"tien_goc": lam_tron((d.qty or 0) * (d.unit_price or 0), d.currency), "ccy_goc": d.currency.upper(),
-                      "ty_gia": ty_gia(p, d.currency)})
+        ccy = (d.currency or "LAK").upper()
+        if ccy != "LAK":
+            # 06/10 (G12): nợ trạm Việt Nam… ghi ĐÚNG NGUYÊN TỆ của dòng (VND) + tỷ giá khoá trên phiếu — trước ghi Kíp, khoản phải trả
+            # nhà cung cấp 4021 bên kế toán thành nợ Kíp trong khi trạm đòi VND. `tien_lak` giữ số quy Kíp để màn / báo cáo cộng
+            x.update({"tien": lam_tron((d.qty or 0) * (d.unit_price or 0), ccy), "ccy": ccy, "ty_gia": round(ty_gia(p, ccy), 10),
+                      "tien_lak": lak})
         if no == TK.CHU_XE and p.owner_id:
             x["doi_tuong_no"] = {"loai": "chu_xe", "ref_id": p.owner_id}
         dong.append(x)
@@ -509,22 +525,117 @@ def ghi_khoa_phieu(db, p, by_user=None, cac_dong=None):
     for r in _ban_xuat_kho(db, p.id):
         if (r.nguon, r.ma_nguon) not in kho and r.status != "huy":
             huy(db, r.nguon, r.ma_nguon, by_user)
+    # 06/10: mở khoá rồi khoá lại mà SO bên kế toán vẫn còn (SO không tạo lại — nút «Tạo SO» chỉ trả SO cũ) → ghi lại doanh thu
+    # theo đúng SO đó; DO chưa có SO thì không có gì
+    ra.update(ghi_doanh_thu(db, p, by_user))
     return ra
 
 
 def huy_khoa_phieu(db, p, by_user=None):
     """Mở khoá / xoá phiếu → huỷ các bút toán CHƯA gửi của phiếu đó (bản đã gửi: gỡ bên kế toán, chưa gỡ được thì chờ đảo) —
-    thue_xe, no_ncc và mọi bút toán xuất kho của phiếu."""
+    thue_xe, no_ncc, mọi bút toán xuất kho và (06/10) bút toán doanh thu theo SO của phiếu."""
     ra = [r for r in (huy(db, n, p.id, by_user) for n in NGUON_KHOA_PHIEU) if r is not None]
     for r in _ban_xuat_kho(db, p.id):
         if r.status != "huy":                       # cho_gui → huy · da_gui → gỡ bên kế toán (chưa được thì chờ đảo)
             ra.append(huy(db, r.nguon, r.ma_nguon, by_user))
+    ra.extend(huy_doanh_thu(db, p, by_user))
     return ra
+
+
+# ================================================================ DOANH THU theo SO bên hệ anh Tune (chủ dự án chốt 06/10)
+def _ngay_so(b):
+    """Ngày hạch toán doanh thu = ngày SO bên kế toán được tạo (synced_at — giờ UTC trong DB → ngày giờ máy chủ, như _lan_xuat).
+    Khoá lại phiếu sau đó vẫn cùng ngày này: SO không đổi ngày."""
+    return _ngay_dia_phuong(b.synced_at or b.last_attempt_at) or dt.date.today()
+
+
+def _goi_da_gui(b):
+    try:
+        g = json.loads(b.request_body or "{}")
+    except ValueError:
+        g = {}
+    return g if isinstance(g, dict) else {}
+
+
+def dong_doanh_thu(db, p):
+    """{nguon: (ngày, dòng, diễn giải)} — bút toán DOANH THU theo các SO ĐÃ TẠO (synced) bên hệ anh Tune của DO `p`. Chưa ghi gì.
+
+      · doanh_thu — SO cước (gui_so_tune): MỘT dòng Nợ 1211 / Có 708 bằng tiền SO bên kế toán trả về (totalAmount; thiếu thì
+        final_selling_price của gói đã gửi), theo tiền của SO (cước USD…) kèm tỷ giá khoá trên phiếu và số quy Kíp; đối tượng =
+        khách của DO (cùng đối tượng SO đứng tên — dam_bao_khach).
+      · doanh_thu_ban — SO nhiên liệu / phụ tùng xe thuê (gui_so_nhien_lieu_tune): Nợ 1211 / Có 707, Kíp, đối tượng = đối tác
+        EPLCX-<chủ xe> (đối tượng SO nhiên liệu đứng tên). Mỗi dòng SO (dầu mục III / phụ tùng mục V, gói đã gửi) một dòng bút toán
+        — Σ đúng bằng tiền SO; gói không đọc được hoặc Σ dòng lệch tiền SO thì một dòng bằng tiền SO.
+    Diễn giải luôn có "phiếu <số DO>" — màn "Bút toán từ Logistics" bên Web tách số DO từ cụm này."""
+    from models import Customer, GuiSoNhienLieuTune, GuiSoTune
+    from services.tinh_toan import ty_gia
+    ra = {}
+    b = db.get(GuiSoTune, "EPLLAO-" + p.id)
+    if b is not None and b.status == "synced":
+        h = _goi_da_gui(b).get("header") or {}
+        ccy = str(b.currency or h.get("currency") or "").strip().upper()
+        tien = b.total_amount if b.total_amount is not None else h.get("final_selling_price")
+        if ccy and tien:
+            ty = 1 if ccy == "LAK" else round(ty_gia(p, ccy), 10)
+            k = db.get(Customer, p.customer_id) if p.customer_id else None
+            ten_k = p.customer_name or (k.name if k else "") or "—"
+            x = {"no": TK.PHAI_THU, "co": TK.DT_VAN_CHUYEN, "tien": float(tien), "ccy": ccy,
+                 "doi_tuong": {"loai": "khach", "ref_id": p.customer_id} if p.customer_id else None,
+                 "ref": b.order_code, "so": b.order_code, "ve": "doanh_thu",
+                 "dien_giai": "Doanh thu cước vận chuyển phiếu %s · SO %s · %s" % (p.doc_no, b.order_code or "—", ten_k)}
+            if ccy != "LAK":
+                x.update({"ty_gia": ty, "tien_lak": round(float(tien) * ty)})
+            ra[DOANH_THU] = (_ngay_so(b), [x], "Doanh thu cước vận chuyển phiếu %s — SO %s, khách %s" % (
+                p.doc_no, b.order_code or "—", ten_k))
+    bn = db.get(GuiSoNhienLieuTune, "EPLLAO-" + p.id)
+    if bn is not None and bn.status == "synced" and (bn.total_amount or 0) > 0:
+        g = _goi_da_gui(bn)
+        ccy = str(bn.currency or (g.get("header") or {}).get("currency") or "LAK").strip().upper()
+        dtg = {"loai": "chu_xe", "ref_id": p.owner_id} if p.owner_id else None
+        ten_dt = p.owner_name or "—"
+        dong = []
+        for d in g.get("details") or []:
+            if not isinstance(d, dict) or not d.get("amount"):
+                continue
+            hang = "dầu" if d.get("section") == "III" else "phụ tùng" if d.get("section") == "V" else "hàng"
+            dong.append({"no": TK.PHAI_THU, "co": TK.DT_BAN_HANG, "tien": float(d["amount"]), "ccy": ccy, "doi_tuong": dtg,
+                         "ref": d.get("ref"), "section": {"III": "fuel", "V": "repair"}.get(d.get("section")), "so": bn.order_code,
+                         "ve": "doanh_thu", "sl": d.get("qty"), "don_gia": d.get("unit_price"),
+                         "dien_giai": "Bán %s cho đối tác — %s %s × %s · SO %s · phiếu %s" % (
+                             hang, d.get("item_name") or "", _so_doc(d.get("qty")), _so_doc(d.get("unit_price")), bn.order_code or "—",
+                             p.doc_no)})
+        if not dong or abs(sum(x["tien"] for x in dong) - float(bn.total_amount)) > 0.005:
+            dong = [{"no": TK.PHAI_THU, "co": TK.DT_BAN_HANG, "tien": float(bn.total_amount), "ccy": ccy, "doi_tuong": dtg,
+                     "ref": bn.order_code, "so": bn.order_code, "ve": "doanh_thu",
+                     "dien_giai": "Bán dầu / phụ tùng kho EPL cho đối tác — SO %s · phiếu %s" % (bn.order_code or "—", p.doc_no)}]
+        ra[DOANH_THU_BAN] = (_ngay_so(bn), dong, "Doanh thu bán dầu / phụ tùng cho đối tác %s phiếu %s — SO nhiên liệu %s" % (
+            ten_dt, p.doc_no, bn.order_code or "—"))
+    return ra
+
+
+def ghi_doanh_thu(db, p, by_user=None):
+    """«Tạo SO bên kế toán» xong (routes/de_nghi.tao_so — cả khi SO đã có từ trước) và khoá lại phiếu đã có SO → ghi bút toán
+    doanh thu theo các SO đã tạo (dong_doanh_thu). SO nào chưa tạo thì không đụng bản của SO đó. Gọi lại vô hại: cùng (nguồn,
+    Trip.id) → bản chưa gửi cập nhật số, bản đã gửi đứng yên (but_toan_cho.ghi). Cờ QLSX_GUI_BUT_TOAN bật thì tự gửi.
+    KHÔNG commit. → {nguon: bản}."""
+    ra = {}
+    for n, (ngay, dong, dg) in dong_doanh_thu(db, p).items():
+        r = ghi(db, n, p.id, ngay, dong, dg, trip_id=p.id, by_user=by_user)
+        if r is not None:
+            ra[n] = r
+    return ra
+
+
+def huy_doanh_thu(db, p, by_user=None):
+    """Mở khoá / xoá phiếu, hay SO bị huỷ → gỡ bút toán doanh thu của DO như mọi nguồn khác (chưa gửi → huy; đã gửi → bút toán
+    đảo bên kế toán, chưa đảo được thì chờ đảo). KHÔNG commit. → [bản]."""
+    return [r for r in (huy(db, n, p.id, by_user) for n in NGUON_DOANH_THU) if r is not None]
 
 
 # ================================================================ LUẬT DÒNG KHO XE THUÊ · KHOÁ PHIẾU (chủ dự án 02/10)
 # 1. Dầu / phụ tùng LẤY TỪ KHO EPL cho xe thuê LUÔN là xuất bán cho chủ xe (chốt 30/09, nhắc lại 02/10): không có "chủ xe tự
-#    trả". Chủ xe trả tiền ngay thì đi quầy bán hàng (phiếu bán ở kho tạm → ban_chu_xe).
+#    trả". Chủ xe trả tiền ngay thì đi quầy bán hàng (06/10: SO bán hàng ở hệ kế toán Web anh Tune — kho tạm đã bỏ; còn nợ thì
+#    cấn trừ vào tiền trả đối tác, services/tra_chu_xe.so_quay).
 # 2. Khoá phiếu bị chặn khi còn dòng xuất bán chưa có giá bán (THIEU_GIA_BAN), hoặc dòng cũ ghi "chủ xe tự trả"
 #    (KHO_XE_THUE_XUAT_BAN — chặn chứ không tự đổi: đổi lặng lẽ là đổi số trừ tiền trả chủ xe mà không ai bấm).
 # 3. Sau khoá, các dòng đã vào bút toán khoá phiếu (dòng kho, dòng ghi nợ nhà cung cấp) đứng yên: sửa → 409 DA_KHOA.
@@ -559,13 +670,14 @@ def chan_kho_xe_thue_tu_tra(p, d, cac_dong=()):
         return
     m, vi, lo, en = _MUC.get(d.section, ("", "hàng", "ສິນຄ້າ", "goods"))
     vt = _vi_tri(d, list(cac_dong) or [d])
+    # 06/10 (G9): bỏ "(kho tạm)" — kho tạm đã bỏ (05/10), bán ở quầy làm trên hệ kế toán (Web anh Tune)
     raise loi3(422, "KHO_XE_THUE_XUAT_BAN",
                "Xe thuê: %s lấy từ kho EPL (%s) luôn là xuất bán cho chủ xe — không chọn «Chủ xe tự trả» được. Chủ xe trả tiền ngay "
-               "thì lập phiếu bán ở quầy (kho tạm)." % (vi, vt[0]),
+               "thì lập phiếu bán ở quầy." % (vi, vt[0]),
                "ລົດເຊົ່າ: %s ທີ່ເບີກຈາກສາງ EPL (%s) ແມ່ນຂາຍໃຫ້ເຈົ້າຂອງລົດສະເໝີ — ເລືອກ «ເຈົ້າຂອງລົດຈ່າຍເອງ» ບໍ່ໄດ້. ຖ້າເຈົ້າຂອງລົດ"
-               "ຈ່າຍເງິນທັນທີ ໃຫ້ອອກໃບຂາຍຢູ່ໜ້າຮ້ານ (ສາງຊົ່ວຄາວ)." % (lo, vt[1]),
+               "ຈ່າຍເງິນທັນທີ ໃຫ້ອອກໃບຂາຍຢູ່ໜ້າຮ້ານ." % (lo, vt[1]),
                "Hired truck: %s taken from the EPL store (%s) is always sold to the truck owner — «Owner pays» is not allowed. If "
-               "the owner pays on the spot, make a counter sale (temporary store)." % (en, vt[2]),
+               "the owner pays on the spot, make a counter sale." % (en, vt[2]),
                trip_id=p.id, expense_id=d.id)
 
 
@@ -697,18 +809,22 @@ def chan_khoa_chua_xuat(p, cac_dong):
     if dau:
         ds = [(x[0] + " (%s lít)" % _so_doc(x[3].qty), x[1] + " (%s ລິດ)" % _so_doc(x[3].qty), x[2] + " (%s L)" % _so_doc(x[3].qty))
               for x in dau]
+        # 06/10 (G9): dầu cấp ở kho QLSX — thủ kho bấm trên Web anh Tune (Quản lý kho → Danh sách chứng từ → Cấp dầu theo phiếu đề
+        # nghị; tên màn theo khoá MENU_WAREHOUSE_ROOT · MENU_WAREHOUSE_DOCUMENT_LIST · WH_FV_OPEN của Web), không còn màn Cấp phát ở đây
         raise loi3(409, "DAU_KHO_CHUA_CAP",
                    "Phiếu %s chưa khoá được: %s lấy dầu kho mà chưa được cấp theo phiếu đề nghị xuất kho nhiên liệu — dầu chưa rời "
-                   "kho thì chưa có chứng từ xuất kho, cũng không được tính vào chi phí / trừ tiền trả chủ xe. Admin Thà Bốc (Bãi) in phiếu đề nghị, KT "
-                   "kho xăng dầu (hoặc thủ kho của kho đó) cấp ở màn Cấp phát, rồi khoá lại. Không lấy dầu kho nữa thì bỏ dòng." % (
-                       p.doc_no, _noi(ds, 0)),
+                   "kho thì chưa có chứng từ xuất kho, cũng không được tính vào chi phí / trừ tiền trả chủ xe. Admin Thà Bốc (Bãi) in phiếu đề nghị, thủ "
+                   "kho cấp ở Web: Quản lý kho → Danh sách chứng từ → Cấp dầu theo phiếu đề nghị, rồi khoá lại. Không lấy dầu kho nữa thì bỏ "
+                   "dòng." % (p.doc_no, _noi(ds, 0)),
                    "ໃບ %s ຍັງລັອກບໍ່ໄດ້: %s ເບີກນໍ້າມັນສາງ ແຕ່ຍັງບໍ່ໄດ້ຈ່າຍຕາມໃບສະເໜີເບີກນໍ້າມັນອອກສາງ — ນໍ້າມັນຍັງບໍ່ອອກຈາກສາງ ກໍ່ຍັງບໍ່"
-                   "ມີໃບເບີກອອກສາງ, ແລະ ຍັງບໍ່ນັບເປັນລາຍຈ່າຍ / ບໍ່ຫັກເງິນຈ່າຍເຈົ້າຂອງລົດ. ແອັດມິນ ທ່າບົກ ພິມໃບສະເໜີ, ບັນຊີສາງນໍ້າມັນ (ຫຼື ຜູ້ຮັກສາ"
-                   "ສາງ) ຈ່າຍຢູ່ໜ້າ ການຈ່າຍອອກ, ແລ້ວລັອກຄືນ. ບໍ່ເອົານໍ້າມັນສາງແລ້ວ ໃຫ້ລຶບແຖວ." % (p.doc_no, _noi(ds, 1)),
+                   "ມີໃບເບີກອອກສາງ, ແລະ ຍັງບໍ່ນັບເປັນລາຍຈ່າຍ / ບໍ່ຫັກເງິນຈ່າຍເຈົ້າຂອງລົດ. ແອັດມິນ ທ່າບົກ ພິມໃບສະເໜີ, ຜູ້ຮັກສາສາງຈ່າຍຢູ່ Web: "
+                   "ການຈັດການສາງ → ລາຍການເອກະສານ → ຈ່າຍນໍ້າມັນຕາມໃບສະເໜີ, ແລ້ວລັອກຄືນ. ບໍ່ເອົານໍ້າມັນສາງແລ້ວ ໃຫ້ລຶບແຖວ." % (
+                       p.doc_no, _noi(ds, 1)),
                    "Slip %s cannot be locked yet: %s takes store fuel that has not been issued against a fuel stock-out request — "
                    "fuel still in the store has no stock-out document and must not count as cost or be deducted from the owner "
-                   "payout. The Thabok admin (yard) prints the request, the fuel store accountant (or that depot's storekeeper) issues it on the "
-                   "Issuing screen, then lock again. If store fuel is no longer taken, delete the line." % (p.doc_no, _noi(ds, 2)),
+                   "payout. The Thabok admin (yard) prints the request, the storekeeper issues it on the Web: Warehouse management → "
+                   "Document list → Issue fuel by request, then lock again. If store fuel is no longer taken, delete the line." % (
+                       p.doc_no, _noi(ds, 2)),
                    trip_id=p.id)
     pt = chua("repair")
     if pt:

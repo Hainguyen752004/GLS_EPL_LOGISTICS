@@ -461,7 +461,13 @@
   const LOG_KHOA = { drv_back: 'report_back', fin_undo: 'pay_del' };
   const coKhoa = (k) => NN.t(k) !== k;
   function nhanLog(a) {
-    if (!a) return ''; const m = a.match(/^sec_(\w+):(\w+)$/); if (m) return `${NN.t('sec' + (MUC.indexOf(m[1]) + 1))} → ${NN.t('a_' + m[2])}`;
+    if (!a) return '';
+    // G6 (06/10): "chi_that {json}" — KT Chi phí sửa chi thật một dòng mục IV (cũ → mới)
+    if (a.startsWith('chi_that ')) {
+      try { const n = JSON.parse(a.slice(9)); return NN.t('ct_log', { n: n.dong, khoan: tenDongCT(n), cu: EPL.tien(n.cu, n.tien_te), moi: EPL.tien(n.moi, n.tien_te) }) + (n.ghi_chu ? ' · ' + n.ghi_chu : ''); }
+      catch (e) { return a; }
+    }
+    const m = a.match(/^sec_(\w+):(\w+)$/); if (m) return `${NN.t('sec' + (MUC.indexOf(m[1]) + 1))} → ${NN.t('a_' + m[2])}`;
     if (LOG_KHOA[a]) return NN.t(LOG_KHOA[a]);
     // ev_<việc>_<trạng thái> (đổ dầu dọc đường: tài xế báo · kế toán duyệt) → "Đổ dầu dọc đường · Chờ duyệt"
     const e = !coKhoa(a) && a.match(/^ev_(\w+)_(reported|approved|rejected)$/);
@@ -473,7 +479,7 @@
     if (moi) return m === 'info';
     const pq = perm();
     return (pq.edit.includes(m) && ['wait', 'entered'].includes(st)) || (pq.verify.includes(m) && st === 'entered')
-      || (pq.book.includes(m) && st === 'verified') || (pq.pay.includes(m) && st === 'booked');
+      || (pq.book.includes(m) && st === 'verified') || (pq.pay.includes(m) && st === 'booked' && !(m === 'travel' && ivKhongTienMat()));
   }
   /** Tab mở sẵn theo vai: mục đầu tiên vai này có việc; không có việc thì mục đầu tiên vai này phụ trách;
    *  vai chỉ xem (doanh thu, Sếp, tài xế) thì Toàn phiếu. */
@@ -505,7 +511,14 @@
     luu.hidden = !coO;
   }
   /** Chữ trạng thái một mục. Mục I, II không có bước ghi sổ / chi — "đã kiểm" là xong, đừng ghi "chờ ghi sổ" (rà 01/10). */
-  const khoaTT = (m, st) => st === 'wait' ? 'stt_wait2' : (st === 'verified' && !MUC_CHI.includes(m)) ? 'stt_verified_12' : 'stt_' + st;
+  // 06/10 (điều phối, G4-0006): mục IV xe nhà KHÔNG có tạm ứng tiền mặt (mọi khoản EPL ứng trả cùng lương / nợ NCC / thẻ — máy chủ
+  // gửi cờ tien_mat_tx từng dòng): không có phiếu chi tạm ứng cho quỹ chi, máy chủ cho mục tự qua bước Chi lúc ghi sổ. Sau ghi sổ
+  // chữ trạng thái nói đúng chuyện: "Chi ở kế toán (cùng lương)" thay cho "Đã chi" / "Chờ chi".
+  const ivKhongTienMat = () => !moi && !!P && P.company !== 'joint' && !(P.expenses || []).some(d => d.tien_mat_tx)
+    && (P.expenses || []).some(d => d.section === 'travel' && d.paid_by_epl);
+  const ivCungLuong = () => (P.expenses || []).some(d => d.section === 'travel' && d.paid_by_epl && d.cach_tra === 'luong');
+  const khoaTT = (m, st) => (m === 'travel' && ['booked', 'paid'].includes(st) && ivKhongTienMat()) ? (ivCungLuong() ? 'stt_iv_luong' : 'stt_iv_khong_tm')
+    : st === 'wait' ? 'stt_wait2' : (st === 'verified' && !MUC_CHI.includes(m)) ? 'stt_verified_12' : 'stt_' + st;
   function veTabs() {
     const s = (P && P.sections) || {};
     q('#px-tabs').innerHTML = MUC.map((m, i) => {
@@ -737,6 +750,66 @@
     cl.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.loai === (P.kind || 'giao')));
     if (!tabTay) tab = tabMacDinh();
     veTabs(); datTab(tab, false); NN.apDung(root); nhanCan();
+    napChiThat();
+  }
+  /* ---- G6 (06/10): CHI THẬT mục IV sau khi đã chi tạm ứng. Tài xế về khai chi thật ít / nhiều hơn số đã ứng: KT Chi phí VC (và Sếp)
+   * sửa SỐ CHI THẬT từng dòng tiền mặt tài xế cầm (xe nhà) tới khi kỳ tất toán tài xế chứa DO này chốt. Không đụng phiếu chi tạm ứng
+   * đã chi — "đã ứng" giữ nguyên, chênh lệch đi vào Tất toán tài xế. Máy chủ quyết quyền và kỳ (GET / POST /api/trips/{id}/chi-that);
+   * ở đây chỉ hiện khối cho đúng vai, đúng lúc. */
+  let CHI_THAT = null;                                   // gói máy chủ của phiếu đang mở
+  const chiThatHien = () => !moi && P && P.id && P.company !== 'joint' && AUTH.la('expacct') && (P.sections || {}).travel === 'paid'
+    && (P.expenses || []).some(d => d.section === 'travel' && d.tien_mat_tx);
+  async function napChiThat() {
+    const o = g('px-chi-that'); if (!o) return;
+    if (!chiThatHien()) { o.hidden = true; o.innerHTML = ''; CHI_THAT = null; return; }
+    const id = P.id;
+    if (CHI_THAT && CHI_THAT.trip_id === id) veChiThat();             // vẽ ngay bản đang có, rồi hỏi lại máy chủ
+    try { const x = await API.get('/api/trips/' + encodeURIComponent(id) + '/chi-that'); if (!P || P.id !== id) return; CHI_THAT = x; }
+    catch (e) { if (e.ma !== 'HUY' && e.status !== 403) EPL.baoLoi(e); return; }
+    veChiThat();
+  }
+  /** Câu máy chủ (loi · loi_lo · loi_en) theo tiếng đang xem. */
+  const chuMay = (x) => (!x ? '' : NN.lang === 'lo' && x.loi_lo ? x.loi_lo : NN.lang === 'en' && x.loi_en ? x.loi_en
+    : NN.lang === 'both' && x.loi_lo ? x.loi + ' / ' + x.loi_lo : x.loi || '');
+  const tenDongCT = (z) => (z.item_key ? NN.t(z.item_key) : z.item_name || '—');
+  function veChiThat() {
+    const o = g('px-chi-that'), x = CHI_THAT;
+    if (!o || !x || !P || x.trip_id !== P.id) return;
+    const ky = x.ky ? x.ky.slice(5, 7) + '/' + x.ky.slice(0, 4) : '';
+    const sua = !!x.duoc_sua, le = (ma) => EPL.leTien(ma);
+    o.hidden = false;
+    o.innerHTML = `<div class="px-ct-dau"><b>${NN.h('ct_tieu_de')}</b>
+        <span class="px-ct-tt ${sua ? 'mo' : 'khoa'}">${NN.h(sua ? 'ct_mo' : 'ct_khoa', { ky })}</span></div>
+      <p class="small muted">${NN.h('ct_giai_thich', { ky })}</p>
+      ${sua ? '' : `<p class="px-ct-ly">${esc(chuMay(x.ly_do))}</p>`}
+      <div class="tbl-wrap"><table class="tbl tbl-compact px-ct-bang"><thead><tr><th>#</th><th>${NN.h('item')}</th><th class="num">${NN.h('qty_lan')}</th>
+        <th class="num">${NN.h('ct_dang_ghi')}</th><th class="num">${NN.h('ct_chi_that')}</th></tr></thead>
+      <tbody>${(x.dong || []).map(z => `<tr><td>${esc(z.line_no)}</td><td lang="lo">${esc(tenDongCT(z))}</td><td class="num">${so(z.qty, Number.isInteger(+z.qty) ? 0 : 2)}</td>
+        <td class="num">${EPL.tien(z.chi_that, z.currency)}</td>
+        <td class="num"><input class="num px-ct-o" data-ct="${esc(z.id)}" inputmode="decimal" value="${esc(so(z.chi_that, le(z.currency)))}" ${sua ? '' : 'disabled'}
+          aria-label="${esc(NN.t('ct_chi_that') + ' · ' + tenDongCT(z))}"> <small class="muted">${esc(z.currency)}</small></td></tr>`).join('')
+        || `<tr><td colspan="5" class="empty small">${NN.h('no_data')}</td></tr>`}</tbody></table></div>
+      ${sua ? `<div class="px-ct-nut"><input id="px-ct-ghi" maxlength="200" placeholder="${esc(NN.t('ct_ghi_chu_ph'))}" aria-label="${esc(NN.t('note'))}">
+        <button type="button" class="btn sm ok" id="px-ct-luu">${NN.h('ct_luu')}</button></div>` : ''}
+      ${(x.nhat_ky || []).length ? `<details class="px-ct-nk"><summary>${NN.h('ct_lich_su', { n: x.nhat_ky.length })}</summary><ul>${x.nhat_ky.map(n =>
+        `<li><span class="ts">${EPL.ngayGio(n.ts)}</span> <b lang="lo">${esc(n.user || '')}</b> · ${esc(NN.t('ct_dong', { n: n.dong, khoan: tenDongCT(n) }))}:
+          ${EPL.tien(n.cu, n.tien_te)} → <b>${EPL.tien(n.moi, n.tien_te)}</b>${n.ghi_chu ? ` · <span lang="lo">${esc(n.ghi_chu)}</span>` : ''}</li>`).join('')}</ul></details>` : ''}`;
+    const nut = g('px-ct-luu');
+    if (nut) nut.addEventListener('click', luuChiThat);
+  }
+  async function luuChiThat() {
+    const o = g('px-chi-that'), x = CHI_THAT; if (!o || !x) return;
+    const dong = [...o.querySelectorAll('[data-ct]')].map(el => ({ id: el.dataset.ct, chi_that: EPL.doc(el.value), _tho: el.value.trim() }));
+    if (dong.some(z => z._tho === '' || z.chi_that < 0)) return EPL.toast(NN.t('ct_so_sai'), 'loi');
+    const doi = dong.filter(z => { const cu = (x.dong || []).find(d => d.id === z.id); return cu && Math.abs(cu.chi_that - z.chi_that) > 1e-6; });
+    if (!doi.length) return EPL.toast(NN.t('ct_khong_doi'), 'ok');
+    const nut = g('px-ct-luu'); if (nut) nut.disabled = true;
+    try {
+      CHI_THAT = await API.post('/api/trips/' + encodeURIComponent(P.id) + '/chi-that',
+        { dong: doi.map(z => ({ id: z.id, chi_that: z.chi_that })), ghi_chu: (g('px-ct-ghi') || {}).value || undefined });
+      P = await API.get('/api/trips/' + P.id); veHet();
+      EPL.toast(NN.t('ct_da_luu'), 'ok');
+    } catch (e) { EPL.baoLoi(e); if (nut) nut.disabled = false; }
   }
   /** Hai ô cân mang nghĩa khác nhau tuỳ loại DO, nên nhãn phải nói đúng chỗ cân; ô đơn giá theo cách tính cước.
    *  Đổi luôn data-i18n chứ không chỉ chữ (01/10): chung.js chạy NN.apDung lần nữa SAU init, trước đây nó ghi đè về
@@ -1014,7 +1087,7 @@
       const k = await API.get(`/api/trips/${P.id}/kiem-lai`);
       const cb = k.canh_bao || [];
       const ok = await EPL.hoi(NN.t('a_lock'), cb.length
-        ? `<p class="small muted">${NN.h('lock_warn')}</p><ul class="px-cb">${cb.map(x => `<li>${esc(x.loi)}</li>`).join('')}</ul>`
+        ? `<p class="small muted">${NN.h('lock_warn')}</p><ul class="px-cb">${cb.map(x => `<li>${esc(chuMay(x))}</li>`).join('')}</ul>`
         : `<p>${NN.h('lock_ok')}</p>`, NN.t('a_lock'));
       if (!ok) return;
       P = await API.post(`/api/trips/${P.id}/khoa`, { xac_nhan: true }); DS = await napDs(); EPL.toast(NN.t('saved'), 'ok'); veHet();

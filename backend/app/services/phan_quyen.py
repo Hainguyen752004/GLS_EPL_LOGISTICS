@@ -16,7 +16,8 @@ Mỗi mục I–VI của phiếu đi qua một chuỗi trạng thái, mỗi bư�
   · Admin làm được mọi việc, kể cả mở khoá mục đã duyệt.
 
 Quy tắc khoá: người nhập chỉ sửa được khi mục còn ở "chờ" hoặc "đã nhập". Kế toán đã kiểm
-là khoá — muốn sửa phải "trả lại" (return) cho Bãi.
+là khoá — muốn sửa phải "trả lại" (return) cho Bãi. Riêng SỐ CHI THẬT mục IV sau khi đã chi: KT Chi phí sửa được tới khi
+kỳ tất toán tài xế chốt (duoc_sua_chi_that, 06/10).
 """
 from fastapi import HTTPException
 
@@ -72,6 +73,18 @@ def duoc_sua_tien(vai, muc, trang_thai):
     if vai == "admin":
         return True
     return muc in QUYEN.get(vai, QUYEN["yard"])["verify"] and trang_thai in ("wait", "entered")
+
+
+# 06/10 (chủ dự án chốt "KT Chi phí chỉnh chi thật mục IV"): tài xế chi thật ít / nhiều hơn số tạm ứng đã nhận. Mục IV đã chi thì
+# đơn giá khoá theo đường thường (duoc_sua_tien chỉ khi chờ / đã nhập; muốn sửa phải Sếp mở khoá mục — mà mở khoá là rút / lập lại
+# phiếu chi tạm ứng đã đưa tiền). Nay KT Chi phí VC sửa SỐ CHI THẬT của dòng tiền mặt tài xế cầm (xe nhà) cho tới khi kỳ tất toán
+# tài xế chứa DO đó đã chốt — không đụng phiếu chi tạm ứng, bút toán: chênh lệch đi vào tất toán tài xế (routes/tat_toan.py).
+SUA_CHI_THAT = ("expacct", "admin")
+
+
+def duoc_sua_chi_that(vai, trang_thai_muc_iv):
+    """Vai này có sửa được số chi thật mục IV không (chưa xét kỳ tất toán — việc của route, phải hỏi DB)."""
+    return vai in SUA_CHI_THAT and trang_thai_muc_iv == "paid"
 
 
 def thay_tien_ban(vai):

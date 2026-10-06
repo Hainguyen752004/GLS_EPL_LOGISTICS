@@ -2,7 +2,8 @@
 """TẤT TOÁN ĐỐI TÁC (chủ xe liên kết) — số liệu cho màn "Tất toán đối tác" (chủ dự án chốt 02/10/2026).
 
 Trả đối tác = tiền thuê − phí quản lý − cắt quá tải − tạm ứng EPL đưa (tiền mặt) − nợ nhà cung cấp EPL trả thay − SO nhiên liệu
-còn nợ (services/tra_chu_xe.phan_tra). Lập đề nghị thì máy cấn trừ SO nhiên liệu rồi phiếu chi phần còn lại
+còn nợ (services/tra_chu_xe.phan_tra) − (06/10) SO bán hàng đối tác mua ở quầy còn nợ (tra_chu_xe.so_quay, theo đối tác — khung
+`quay`). Lập đề nghị thì máy cấn trừ SO nhiên liệu và SO quầy rồi phiếu chi phần còn lại
 (services/chi_tune.de_nghi_tra_chu_xe). Ở đây chỉ ĐỌC: gom theo kỳ (tháng xe đi — cùng luật tất toán tài xế) mọi phiếu xe thuê
 đã khoá, mỗi đối tác một dòng, và (khi chọn một đối tác) chi tiết từng chuyến tới từng khoản ứng / nợ / dầu.
 
@@ -87,8 +88,10 @@ def xuat_de_nghi(r, cts):
             "tien_lak": r.amount_lak, "tien_te": r.currency, "trang_thai": r.status, "phieu_chi": r.document_no,
             "cach_tra": r.phuong_thuc, "loi": r.error_message if r.status == "loi" else None,
             "trip_ids": json.loads(r.trip_ids or "[]"),
+            # 06/10: `loai` so_nhien_lieu (theo chuyến) · so_quay (SO bán hàng đối tác mua ở quầy, không theo chuyến)
             "can_tru": [{"order_code": ct.order_code, "so_tkn": ct.so_tkn, "tien": ct.amount, "tien_te": ct.currency,
-                         "trang_thai": ct.status, "trip_id": ct.trip_id} for ct in cts]}
+                         "trang_thai": ct.status, "trip_id": ct.trip_id, "loai": "so_nhien_lieu" if ct.trip_id else "so_quay"}
+                        for ct in cts]}
 
 
 def _mot_chuyen(p, dong, so, giu, tuyen):
@@ -117,14 +120,17 @@ def bang(db, ky, owner_id=None, cap_nhat=False):
      doi_tac: [{owner_id, ten, ma_ke_toan, tien_te, so_phieu, tien_thue, phi, qua_tai, tam_ung, no_ncc, nhien_lieu,
                 nhien_lieu_con_no, con_tra, con_tra_lak, trang_thai, de_nghi: [{so, ngay, tien, tien_te, trang_thai, phieu_chi,
                 can_tru: [{order_code, so_tkn, tien, trang_thai}]}], …thêm: da_tra, da_tra_lak, so_phieu_chua_tra}],
-     chi_tiet: [...từng chuyến — chỉ khi có owner_id (_chi_tiet)]}
+     chi_tiet: [...từng chuyến — chỉ khi có owner_id (_chi_tiet)],
+     quay: {...mua ở quầy — SO bán hàng còn nợ của đối tác bên hệ kế toán, chỉ khi có owner_id và kho QLSX (_quay, 06/10)}}
 
     trang_thai đối tác: loi (có đề nghị lỗi) › cho_so_nhien_lieu (chuyến chưa trả có xuất bán mà chưa có SO nhiên liệu) › chua_lap
     (còn chuyến chưa trả, chưa nằm đề nghị) › cho_thu_quy (đề nghị chờ thủ quỹ chi) › da_tra. `cap_nhat`: đọc lại còn nợ SO
     nhiên liệu từ hệ kế toán trước (một lời gọi mỗi đối tác)."""
     n = _nap(db, ky, owner_id)
+    # 06/10: một đối tác + kho QLSX → đọc công nợ đối tác bên kế toán MỘT lần, dùng cho cả SO nhiên liệu lẫn SO bán hàng mua ở quầy
+    cn, loi_cn = _doc_cong_no(db, owner_id) if (owner_id and cap_nhat) else (None, None)
     if cap_nhat and n["so"]:
-        NL.doc_thu(db, [b for b in n["so"].values() if b.status == "synced"])
+        NL.doc_thu(db, [b for b in n["so"].values() if b.status == "synced"], san={owner_id: cn} if cn else None)
         db.commit()
     giu = _de_nghi_cua_phieu(n)
     tuyen = {r.id: r for r in db.query(Route).filter(Route.id.in_({p.route_id for p in n["phieu"] if p.route_id} or {""}))}
@@ -187,7 +193,57 @@ def bang(db, ky, owner_id=None, cap_nhat=False):
         "con_tra_lak", "da_tra_lak")}), "doi_tac": doi_tac}
     if owner_id:
         ra["chi_tiet"] = _chi_tiet(db, n, theo_chu.get(owner_id, []))
+        ra["quay"] = _quay(db, owner_id, theo_chu.get(owner_id, []), cn, loi_cn, cap_nhat)
     return ra
+
+
+# ---------------------------------------------------------------- mua ở quầy (SO bán hàng) của một đối tác (06/10)
+def _doc_cong_no(db, owner_id):
+    """(công nợ đối tác bên kế toán | None, câu lỗi | None) — chỉ khi kho QLSX (quầy ở hệ kế toán); kho tạm: (None, None)."""
+    from fastapi import HTTPException
+    from services import chi_tune as CHI
+    from services import kho_qlsx as KQ
+    if not KQ.bat():
+        return None, None
+    o = db.get(Owner, owner_id)
+    if o is None:
+        return None, None
+    try:
+        kq = CHI.cong_no_doi_tac(db, o)
+        db.commit()
+        return kq, None
+    except HTTPException as e:
+        db.rollback()
+        return None, (e.detail or {}).get("loi") if isinstance(e.detail, dict) else str(e.detail)
+
+
+def _quay(db, owner_id, ds, cn, loi, cap_nhat):
+    """Khung «Mua ở quầy (SO bán hàng)» của màn (giống khung «Dầu bán (SO nhiên liệu)»): SO bán hàng còn nợ của đối tác bên hệ kế toán
+    (tra_chu_xe.so_quay) + ước tính phần sẽ trừ nếu lập đề nghị cho MỌI chuyến chưa trả của kỳ (cùng luật tinh_tru: cũ trước, SO nào
+    vừa số còn trả thì trừ, không vừa để đợt sau). Số thật tính lại lúc lập đề nghị theo chuyến chọn.
+    → None (kho tạm — quầy ở màn Xe liên kết như cũ) · {doc, loi, ds: [{so, phieu_ban, ngay, tien_te, tong_so, da_thu, con_no, con_no_lak,
+       dang_de_nghi}], con_no_lak, uoc_tinh: {tien_te, tru, tru_lak, tra_thuc, tra_thuc_lak, so_tru[], so_de_lai[]} | None}"""
+    from services import kho_qlsx as KQ
+    if not KQ.bat():
+        return None
+    if not cap_nhat or (cn is None and not loi):
+        return {"doc": False, "loi": None, "ds": [], "con_no_lak": 0, "uoc_tinh": None}
+    if cn is None:
+        return {"doc": False, "loi": loi, "ds": [], "con_no_lak": 0, "uoc_tinh": None}
+    hang = TC.so_quay(db, owner_id, cn)
+    out = [{"so": h["so"], "phieu_ban": h.get("phieu_ban"), "ngay": h.get("sale_date"), "tien_te": h["currency"], "tong_so": h.get("tong_so"),
+            "da_thu": h.get("da_thu"), "con_no": h["total"], "con_no_lak": h["total_lak"], "dang_de_nghi": h.get("dang_de_nghi")}
+           for h in hang]
+    uoc = None
+    chua = [(p, x) for p, x in ds if x["trang_thai_tra"] == "chua_tra"]
+    if chua:
+        ccy = chua[0][1]["hire_ccy"]
+        chon = [{"id": p.id, "doc_no": p.doc_no, "hire_ccy": ccy, "tra_chu_xe": x["con_tra"], "tra_chu_xe_lak": x["con_tra_lak"]}
+                for p, x in chua if x["hire_ccy"] == ccy]
+        t = TC.tinh_tru(chon, [h for h in hang if not h.get("dang_de_nghi")])
+        uoc = {"tien_te": t["ccy"], "tru": t["tru"], "tru_lak": t["tru_lak"], "tra_thuc": t["tra_thuc"], "tra_thuc_lak": t["tra_thuc_lak"],
+               "so_tru": [h["doc_no"] for h in t["hang"]], "so_de_lai": [h["doc_no"] for h in t["hang_de_lai"]]}
+    return {"doc": True, "loi": None, "ds": out, "con_no_lak": round(sum(h["total_lak"] for h in hang)), "uoc_tinh": uoc}
 
 
 def _khoan(db, d, ten="khoan"):

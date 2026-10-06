@@ -153,7 +153,11 @@ def dong_bo(db, rec):
     try:
         kq = CHI._goi("GET", "/api/v1/accounting/cmpayment-receipt/%d?voucherType=%s" % (rec.real_id, rec.voucher_type)) or {}
     except HTTPException as e:
-        if (e.detail or {}).get("ma") == "BEN_KE_TOAN_TU_CHOI":
+        # 06/10 (điều phối): chỉ đánh "phiếu mất" khi bên đó TỪ CHỐI THẬT (HTTP 4xx / Success false → chi_tune._goi ném 422). Bên đó
+        # trả HTTP ≥ 500 (chi_tune._goi ném 502) hay mất mạng thì GIỮ NGUYÊN "đã gửi · chờ chi" — lượt sau (bấm cập nhật, hoặc tự đồng
+        # bộ nền services/dong_bo_nen.py mỗi 5 phút) hỏi lại. Trước đây lỗi 5xx tạm thời cũng thành PHIEU_CHI_MAT: phiếu còn chờ thủ
+        # quỹ chi mà màn báo "đã xoá — gửi lại", gửi lại là lập phiếu thứ hai.
+        if (e.detail or {}).get("ma") == "BEN_KE_TOAN_TU_CHOI" and e.status_code < 500:
             rec.status, rec.error_code = "loi", "PHIEU_CHI_MAT"
             rec.error_message = "Không đọc được phiếu %s bên kế toán (đã xoá?): %s" % (rec.document_no or rec.real_id, e.detail.get("loi"))
             db.commit()
@@ -310,9 +314,14 @@ def mot(db, driver_id, ky, cap_nhat=True):
             dong_bo(db, rec)
         except HTTPException:
             pass
+    bt = _but_toan_tt(db, x)
     d["da_tat_toan"] = x is not None
-    d["tat_toan"] = _xuat_chot(x, rec, _but_toan_tt(db, x), d, day_du=True)
+    d["tat_toan"] = _xuat_chot(x, rec, bt, d, day_du=True)
     d["tam_ung_cho"] = _tam_ung_cho(db, driver_id, ky, hoi_lai=False)
+    # G4 (06/10): màn Tất toán khoá nút Chốt và liệt kê từng DO còn dở — cùng phép kiểm máy chủ chặn lúc chốt
+    d["chan_chot"] = chan_chot(db, driver_id, ky) if x is None else []
+    # bỏ chốt được không — phiếu chênh đã ghi sổ / QT_TU đã gửi thì không, nói vì sao (giữ đường bỏ chốt như cũ)
+    d["bo_chot_chan"] = _ly_do_khong_bo(rec, bt) if x is not None else None
     return d
 
 
@@ -337,9 +346,59 @@ def _tam_ung_cho(db, driver_id, ky, hoi_lai=True):
              "error_message": r.error_message} for r in ds]
 
 
+def chan_chot(db, driver_id, ky):
+    """G4 (06/10): những gì CÒN DỞ của tài xế trong kỳ mà chốt bây giờ thì số "đã chi thật" còn đổi sau khi chốt (tiền đã chi bù /
+    thu lại theo số sai). Ba loại, mỗi DO một mục, theo thứ tự ngày đi:
+      CHUA_KHOA      DO chưa khoá (xe chưa về / kế toán chưa rà và khoá) — dòng chi còn sửa được
+      KHAI_BAO_CHO   khai đổ dầu dọc đường / báo sự cố của tài xế chưa duyệt — duyệt xong mới thành dòng chi
+      GIA_0          dòng tiền mặt tài xế (cùng luật tờ tạm ứng) có số lượng mà đơn giá 0 — tài xế chỉ khai lít, chưa ai nhập giá
+    Trả [{trip_id, doc_no, ly_do: [ma…], loi, loi_lo, loi_en}] — rỗng là chốt được (phần tạm ứng chờ chi xét riêng)."""
+    from collections import defaultdict
+    from models import TripEvent, TripExpense
+    from routes.tat_toan import MUC_SO, _khoang, _la_tien_mat_sql, _trong_ky
+    dau, cuoi = _khoang(ky)
+    ps = (db.query(Trip.id, Trip.doc_no, Trip.locked).filter(Trip.driver_id == driver_id, *_trong_ky(dau, cuoi))
+          .order_by(func.coalesce(Trip.out_date, Trip.doc_date), Trip.doc_no).all())
+    ids = [p.id for p in ps] or [""]
+    ev = defaultdict(lambda: [0, 0])                               # [khai dầu, báo sự cố] chưa duyệt
+    for tid, kind in db.query(TripEvent.trip_id, TripEvent.kind).filter(TripEvent.trip_id.in_(ids), TripEvent.status == "reported"):
+        ev[tid][0 if kind == "refuel" else 1] += 1
+    gia0 = defaultdict(list)                                       # ["III 2", "IV 1"…]
+    for tid, sec, n in (db.query(TripExpense.trip_id, TripExpense.section, TripExpense.line_no)
+                        .filter(TripExpense.trip_id.in_(ids), _la_tien_mat_sql(), TripExpense.qty > 0,
+                                func.coalesce(TripExpense.unit_price, 0) <= 0)
+                        .order_by(TripExpense.section, TripExpense.line_no)):
+        gia0[tid].append("%s %s" % (MUC_SO.get(sec, sec), n))
+    ra = []
+    for p in ps:
+        vi, lo, en, ma = [], [], [], []
+        if not p.locked:
+            ma.append("CHUA_KHOA"); vi.append("chưa khoá"); lo.append("ຍັງບໍ່ລັອກ"); en.append("not locked")
+        d, s = ev.get(p.id, (0, 0))
+        if d or s:
+            ma.append("KHAI_BAO_CHO")
+            vi.append(", ".join(x for x in ("%d khai đổ dầu" % d if d else "", "%d báo sự cố" % s if s else "") if x) + " chưa duyệt")
+            lo.append(", ".join(x for x in ("ແຈ້ງໃສ່ນໍ້າມັນ %d" % d if d else "", "ແຈ້ງເຫດການ %d" % s if s else "") if x) + " ຍັງບໍ່ອະນຸມັດ")
+            en.append(", ".join(x for x in ("%d refuel declaration(s)" % d if d else "", "%d incident report(s)" % s if s else "") if x)
+                      + " not approved")
+        if gia0.get(p.id):
+            g = ", ".join(gia0[p.id])
+            ma.append("GIA_0")
+            vi.append("dòng tiền mặt chưa có đơn giá (mục %s)" % g)
+            lo.append("ແຖວເງິນສົດຍັງບໍ່ມີລາຄາ (ໝວດ %s)" % g)
+            en.append("cash line(s) without a unit price (section %s)" % g)
+        if ma:
+            ra.append({"trip_id": p.id, "doc_no": p.doc_no, "ly_do": ma,
+                       "loi": "%s: %s" % (p.doc_no, " · ".join(vi)), "loi_lo": "%s: %s" % (p.doc_no, " · ".join(lo)),
+                       "loi_en": "%s: %s" % (p.doc_no, " · ".join(en))})
+    return ra
+
+
 def chot(db, user, driver_id, ky, note=None, phuong_thuc="cash"):
     """Chốt một tài xế một kỳ: bản chốt + QT_TU (bút toán chờ) + phiếu chi bù / thu hoàn bên kế toán (nếu chênh ≥ 1 Kíp).
-    Chốt rồi thì không chốt lại; muốn sửa thì bỏ chốt (khi phiếu bên kế toán chưa ghi sổ) rồi chốt lại."""
+    Chốt rồi thì không chốt lại; muốn sửa thì bỏ chốt (khi phiếu bên kế toán chưa ghi sổ) rồi chốt lại.
+    G4 (06/10): còn DO chưa khoá / khai báo chưa duyệt / dòng tiền mặt giá 0 trong kỳ → CHẶN (không cho "xác nhận vẫn chốt": tiền
+    chênh đi theo số sai, sửa lại phải bỏ chốt và rút phiếu bên kế toán) — câu báo liệt kê từng DO."""
     from routes import tat_toan as TT
     ky = TT._ky_hop_le(ky)
     phuong_thuc = (phuong_thuc or "cash").strip()
@@ -350,6 +409,17 @@ def chot(db, user, driver_id, ky, note=None, phuong_thuc="cash"):
         _loi("KHONG_THAY", "Không có tài xế này.", 404)
     if _ban_chot(db, driver_id, ky) is not None:
         _loi("DA_TAT_TOAN", "Kỳ %s của tài xế %s đã tất toán rồi." % (ky, t.name), 409)
+    con = chan_chot(db, driver_id, ky)
+    if con:
+        thang = "%s/%s" % (ky[5:7], ky[:4])
+        raise HTTPException(409, {
+            "ma": "CHUA_DU_DE_CHOT", "phieu": con,
+            "loi": "Chưa chốt được kỳ %s của %s — còn %d DO chưa xong: %s. Khoá DO, duyệt khai báo của tài xế, nhập đơn giá rồi chốt lại."
+                   % (thang, t.name, len(con), "; ".join(x["loi"] for x in con)),
+            "loi_lo": "ຍັງປິດສະສາງງວດ %s ຂອງ %s ບໍ່ໄດ້ — ຍັງມີ %d DO ບໍ່ສຳເລັດ: %s. ລັອກ DO, ອະນຸມັດການແຈ້ງຂອງໂຊເຟີ, ໃສ່ລາຄາ ແລ້ວປິດຄືນ."
+                      % (thang, t.name, len(con), "; ".join(x["loi_lo"] for x in con)),
+            "loi_en": "Cannot close %s for %s — %d DO(s) are not finished: %s. Lock the DOs, approve the driver's declarations, enter the "
+                      "prices, then close again." % (thang, t.name, len(con), "; ".join(x["loi_en"] for x in con))})
     cho = _tam_ung_cho(db, driver_id, ky)
     if cho:
         _loi("TAM_UNG_CHUA_CHI_XONG", "Kỳ %s còn tạm ứng chưa chi xong ở hệ kế toán (%s) — thủ quỹ chi xong, hoặc huỷ tờ tạm ứng, "
@@ -394,19 +464,51 @@ def chot(db, user, driver_id, ky, note=None, phuong_thuc="cash"):
     return mot(db, driver_id, ky, cap_nhat=False)
 
 
+def _ly_do_khong_bo(rec, bt):
+    """Vì sao KHÔNG bỏ chốt được (G4, 06/10 — câu ba tiếng), None = bỏ được. Phiếu chênh bên kế toán ĐÃ GHI SỔ: tiền chi bù đã ra
+    khỏi quỹ / tiền tài xế nộp đã vào quỹ — bỏ chốt ở đây là bên này về "chưa tất toán" mà bên kia vẫn giữ phiếu đã ghi sổ, hai sổ
+    lệch nhau; QT_TU đã gửi: sổ cái bên đó đã có quyết toán. Sửa số thì đối soát / lập phiếu điều chỉnh ở hệ kế toán."""
+    if rec is not None and rec.status == "da_chi":
+        so = rec.document_no or rec.real_id or ""
+        ai = (" · %s" % rec.post_by) if rec.post_by else ""
+        luc = (" %s" % rec.post_at.strftime("%d/%m/%Y")) if rec.post_at else ""
+        if rec.loai == "TT_THU":
+            vi = "tài xế đã nộp lại tiền vào quỹ"; lo = "ໂຊເຟີໄດ້ສົ່ງເງິນຄືນເຂົ້າຄັງແລ້ວ"; en = "the driver's refund is already in the cash fund"
+        else:
+            vi = "tiền chi bù đã ra khỏi quỹ"; lo = "ເງິນຈ່າຍເພີ່ມອອກຈາກຄັງແລ້ວ"; en = "the top-up has already left the cash fund"
+        return {"ma": "DA_CHI_O_KE_TOAN",
+                "loi": "Không bỏ chốt được: phiếu %s bên hệ kế toán đã ghi sổ%s%s — %s. Bỏ chốt ở đây thì bên này về \"chưa tất toán\" mà "
+                       "bên kế toán vẫn giữ phiếu đã ghi sổ, hai sổ lệch nhau. Muốn sửa số: đối soát với kế toán (phiếu điều chỉnh bên "
+                       "đó), bản chốt ở đây giữ nguyên." % (so, luc, ai, vi),
+                "loi_lo": "ຍົກເລີກການປິດບໍ່ໄດ້: ໃບ %s ຢູ່ລະບົບບັນຊີລົງບັນຊີແລ້ວ%s%s — %s. ຍົກເລີກຢູ່ນີ້ ຝັ່ງນີ້ຈະກັບເປັນ \"ຍັງບໍ່ສະສາງ\" ແຕ່ຝັ່ງ"
+                          "ບັນຊີຍັງເກັບໃບທີ່ລົງບັນຊີແລ້ວ, ສອງປຶ້ມບໍ່ກົງກັນ. ຢາກແກ້ຕົວເລກ: ກວດສອບກັບບັນຊີ (ໃບປັບປຸງຢູ່ຝັ່ງນັ້ນ)." % (so, luc, ai, lo),
+                "loi_en": "Cannot reopen: voucher %s is already posted in accounting%s%s — %s. Reopening here would mark this period "
+                          "\"not settled\" while accounting keeps the posted voucher, so the two books disagree. To change the figures, "
+                          "reconcile with accounting (an adjustment voucher there); this closing stays." % (so, luc, ai, en)}
+    if bt is not None and bt.status == "da_gui":
+        so = bt.so_ben_ke_toan or ""
+        return {"ma": "BUT_TOAN_DA_GUI",
+                "loi": "Không bỏ chốt được: quyết toán tạm ứng QT_TU (Nợ 625 / Có 1601) của kỳ này đã gửi sang hệ kế toán %s — sổ cái bên "
+                       "đó đã ghi chi phí theo số đã chốt. Muốn sửa số: đối soát với kế toán (bút toán điều chỉnh bên đó)." % so,
+                "loi_lo": "ຍົກເລີກການປິດບໍ່ໄດ້: ການສະສາງເງິນລ່ວງໜ້າ QT_TU (ໜີ້ 625 / ມີ 1601) ຂອງງວດນີ້ສົ່ງໄປລະບົບບັນຊີແລ້ວ %s. "
+                          "ຢາກແກ້ຕົວເລກ: ກວດສອບກັບບັນຊີ." % so,
+                "loi_en": "Cannot reopen: the advance settlement entry QT_TU (Dr 625 / Cr 1601) for this period was already sent to "
+                          "accounting %s — its ledger holds the closed figures. To change them, reconcile with accounting." % so}
+    return None
+
+
 def bo_chot(db, user, driver_id, ky):
-    """Bỏ chốt để sửa lại: phiếu bên kế toán chưa ghi sổ thì bỏ bên đó, bút toán QT_TU chưa gửi thì rút. Đã chi / đã gửi → 409."""
+    """Bỏ chốt để sửa lại: phiếu bên kế toán chưa ghi sổ thì bỏ bên đó, bút toán QT_TU chưa gửi thì rút. Đã chi / đã gửi → 409
+    nói rõ vì sao (06/10 — _ly_do_khong_bo, đủ ba tiếng)."""
     from routes import tat_toan as TT
     x = _ban_chot(db, driver_id, TT._ky_hop_le(ky))
     if x is None:
         _loi("KHONG_THAY", "Kỳ %s của tài xế này chưa tất toán." % ky, 404)
     rec, bt = _phieu_tt(db, x), _but_toan_tt(db, x)
     _hoi_truoc_khi_rut(db, rec)
-    if rec is not None and rec.status == "da_chi":
-        _loi("DA_CHI_O_KE_TOAN", "Phiếu %s bên hệ kế toán đã ghi sổ (tiền đã đi) — không bỏ chốt được ở đây, đối soát ở hệ kế toán "
-                                 "trước." % (rec.document_no or rec.real_id), 409)
-    if bt is not None and bt.status == "da_gui":             # chặn TRƯỚC khi đụng phiếu bên kế toán
-        BTC.rut(db, NGUON_TT, ma_nguon_tt(x), by_user=_ten(user))           # → 409 BUT_TOAN_DA_GUI
+    chan = _ly_do_khong_bo(rec, bt)                          # chặn TRƯỚC khi đụng phiếu bên kế toán
+    if chan is not None:
+        raise HTTPException(409, chan)
     try:
         if rec is not None and rec.status != "huy":
             _rut_ben_ke_toan(db, rec)

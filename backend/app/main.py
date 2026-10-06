@@ -36,6 +36,10 @@ def khoi_dong():
     # tính sẵn báo cáo tháng này / tháng trước trong luồng riêng — người mở báo cáo đầu tiên không phải chờ (24/09)
     from services import lam_nong
     lam_nong.bat_dau()
+    # 06/10: hỏi lại hệ kế toán anh Tune theo lịch (đã chi / đã thu) — trước chỉ hỏi khi người dùng bấm Cập nhật.
+    # EPL_DONG_BO_NEN_PHUT (mặc định 5, 0 = tắt) — services/dong_bo_nen.py
+    from services import dong_bo_nen
+    dong_bo_nen.bat_dau()
 
 
 @app.exception_handler(Exception)
@@ -62,6 +66,7 @@ for r in (dang_nhap, danh_muc, tuyen, phieu, phieu_linh, tat_toan, theo_doi, vi_
 app.include_router(__import__("routes.ho_so_do", fromlist=["router"]).router)   # Hồ sơ DO hai bên (02/10) — chỉ đọc
 app.include_router(__import__("routes.tat_toan_doi_tac", fromlist=["router"]).router)   # Tất toán đối tác (02/10)
 app.include_router(__import__("routes.ban_giao_dau", fromlist=["router"]).router)   # Phiếu đề nghị xuất dầu → kho QLSX (05/10)
+app.include_router(__import__("routes.dong_bo_nen", fromlist=["router"]).router)   # Tình trạng tự đồng bộ nền với kế toán (06/10)
 
 # Giao diện: / → index.html ; mọi tệp khác lấy thẳng từ thư mục frontend
 app.mount("/css", StaticFiles(directory=os.path.join(FRONTEND, "css")), name="css")

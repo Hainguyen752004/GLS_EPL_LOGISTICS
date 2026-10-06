@@ -108,3 +108,7 @@
 .tt2-khoa{display:inline-flex;flex-direction:column;align-items:flex-end;gap:2px}
 .tt2-khoa .btn[disabled]{opacity:.5;cursor:not-allowed}
 .tt2-khoa small{font-size:11px;font-weight:600;color:var(--amber)}
+/* 06/10 G4 — DO còn dở trong kỳ (chưa khoá · khai báo chưa duyệt · dòng tiền mặt giá 0): danh sách từng DO dưới đầu khối tài xế */
+.tt2-cc{line-height:1.5}
+.tt2-cc ul{margin:4px 0;padding-left:18px}
+.tt2-cc small{display:block;color:var(--ink-2)}

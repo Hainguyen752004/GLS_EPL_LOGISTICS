@@ -141,8 +141,9 @@ def _tien_te(v, ten, bat_buoc=False):
     return m
 
 
-def _ghi_log(db, phieu, user, hanh_dong):
-    db.add(TripLog(trip_id=phieu.id, user_name=user.full_name, role=user.role, action=hanh_dong))
+def _ghi_log(db, phieu, user, hanh_dong, ts=None):
+    """`ts` (06/10): giờ thật của thao tác gửi muộn từ hàng đợi máy tài xế — None thì giờ máy chủ như trước."""
+    db.add(TripLog(trip_id=phieu.id, user_name=user.full_name, role=user.role, action=hanh_dong, **({"ts": ts} if ts else {})))
 
 
 def _muc_cua(db, phieu):
@@ -1123,16 +1124,67 @@ def sua_phieu(tid: str, data: dict = Body(...), db: Session = Depends(get_db), u
 
 
 # ---------------------------------------------------------------- duyệt từng mục
-def _chan_chua_cap_theo_de_nghi(db, p):
+def _chan_chua_cap_theo_de_nghi(db, p, dong=None):
     """Mọi lần xuất dầu kho phải có PHIẾU ĐỀ NGHỊ đã cấp (chủ dự án 30/09): trước đây ghi sổ mục III tự xuất kho dòng dầu
     chưa cấp — dầu rời kho không có tờ đề nghị nào. Nay dòng dầu kho EPL ứng chưa được thủ kho cấp theo phiếu đề nghị
-    xuất nhiên liệu thì chặn ghi sổ, nói rõ dòng nào."""
-    thieu = [(i, e) for i, e in enumerate([e for e in _dong_chi(db, p) if e.section == "fuel"], 1)
+    xuất nhiên liệu thì chặn ghi sổ, nói rõ dòng nào. `dong`: dòng chi đã nạp sẵn (06/10 — ghi sổ III nạp một lần)."""
+    thieu = [(i, e) for i, e in enumerate([e for e in (dong if dong is not None else _dong_chi(db, p)) if e.section == "fuel"], 1)
              if e.source == "kho" and e.paid_by_epl and (e.qty or 0) > 0 and not e.stock_move_id]
     if thieu:
         raise HTTPException(409, {"ma": "CHUA_CAP_THEO_DE_NGHI", "loi": (
             "Mục III: %s lấy từ kho chưa được cấp theo phiếu đề nghị xuất kho nhiên liệu. Bãi in phiếu đề nghị, thủ kho cấp dầu ở "
             "Cấp phát, rồi mới ghi sổ mục III." % ", ".join("dòng %d (%s lít)" % (i, _gon(e.qty)) for i, e in thieu))})
+
+
+def muc_iii_co_tien(dong):
+    """Mục III còn khoản QUỸ phải chi không (G11, 06/10): dòng EPL ứng không lấy kho — dầu mua trạm ngoài trả tiền mặt (vào tạm
+    ứng) hoặc ghi nợ trạm. Mọi dòng EPL ứng đều LẤY KHO thì không có đồng nào qua tay thủ quỹ VC: bước "Chi" của họ chỉ đổi
+    trạng thái, không sinh chứng từ — việc chờ đếm mãi không ai làm."""
+    return any(d.section == "fuel" and d.paid_by_epl and d.source != "kho" and (d.qty or 0) > 0 for d in dong)
+
+
+def muc_iv_khong_tien_mat(p, dong):
+    """Mục IV KHÔNG có đồng tạm ứng nào cho quỹ chi (06/10, điều phối — ví dụ G4-0006): cả phiếu không có dòng tiền mặt tài xế cầm
+    (la_tien_mat_tai_xe — tờ tạm ứng gói cả III dầu mua dọc đường, IV, VI), mọi khoản EPL ứng của mục IV là "trả cùng lương" / nợ
+    nhà cung cấp / thẻ. Khi đó không có tờ tạm ứng, không có phiếu chi "Chi trước" bên kế toán (chi_tune.gui_sau_ghi_so thôi), nên
+    trước đây mục IV kẹt "đã ghi sổ · chờ chi" mãi — khoản cùng lương do kế toán Web lập phiếu chi lương theo DO, trang này không đọc
+    lại."""
+    return not _dong_tam_ung(p, dong)
+
+
+def _qua_chi_ton(db, user):
+    """Dọn một lần — mục III đã ghi sổ mà chỉ lấy kho (G11) và mục IV đã ghi sổ mà không có tạm ứng tiền mặt (cùng lương) TRƯỚC khi có
+    luật tự qua bước Chi → "đã chi" (không còn nằm trong việc chờ của thủ quỹ VC / quỹ tiền mặt). Mục IV đã có phiếu chi tạm ứng bên
+    kế toán (chi_tune) thì để luồng đó lo. Trả [(số DO, mục)]."""
+    from models import ChiTune
+    ds = db.query(TripSection).filter(TripSection.section.in_(("fuel", "travel")), TripSection.status == "booked").all()
+    dong = defaultdict(list)
+    for e in db.query(TripExpense).filter(TripExpense.trip_id.in_(list({s.trip_id for s in ds}) or [""])):
+        dong[e.trip_id].append(e)
+    co_chi = {t for (t,) in db.query(ChiTune.trip_id).filter(ChiTune.trip_id.in_(list({s.trip_id for s in ds}) or [""]),
+                                                            ChiTune.status != "huy")}
+    ra = []
+    for s in ds:
+        p = db.get(Trip, s.trip_id)
+        if s.section == "fuel" and not muc_iii_co_tien(dong[s.trip_id]):
+            s.status = "paid"
+            _ghi_log(db, p, user, "sec_fuel:pay_auto")
+            ra.append((p.doc_no, "III"))
+        elif s.section == "travel" and s.trip_id not in co_chi and muc_iv_khong_tien_mat(p, dong[s.trip_id]):
+            s.status = "paid"
+            _ghi_log(db, p, user, "sec_travel:pay_luong")
+            ra.append((p.doc_no, "IV"))
+    db.commit()
+    return ra
+
+
+@router.post("/api/muc/qua-chi-ton")
+def qua_chi_ton(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Dọn một lần (06/10) — CHỈ Sếp: xem _qua_chi_ton. Gọi lại không đổi gì (idempotent). Trả các DO đã chuyển theo mục."""
+    if user.role != "admin":
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ Sếp dọn mục đã ghi sổ còn treo bước Chi."})
+    ra = _qua_chi_ton(db, user)
+    return {"so_do": len(ra), "do": sorted(d for d, m in ra if m == "III"), "do_iv": sorted(d for d, m in ra if m == "IV")}
 
 
 @router.post("/api/trips/{tid}/sections/{muc}/{hanh_dong}")
@@ -1190,13 +1242,26 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
                 " Dòng lấy từ kho chưa có giá vì kho đó chưa có phiếu nhập nào có giá." if kho else "")})
     # từ 30/09 ghi sổ mục III không xuất kho nữa (dầu kho chỉ rời kho theo phiếu đề nghị đã cấp); vẫn lưu trong GiaoDichKho
     # như mọi lần lưu có thể đụng trang kế toán
+    tu_qua_chi = False
     with KK.GiaoDichKho(db, user):
         s.status = moi_trang_thai
         if muc == "fuel" and hanh_dong == "book":
-            _chan_chua_cap_theo_de_nghi(db, p)
+            dong_iii = _dong_chi(db, p)
+            _chan_chua_cap_theo_de_nghi(db, p, dong_iii)
+            # G11 (06/10): mọi dòng EPL ứng đều lấy kho (dầu đã cấp theo phiếu đề nghị) → không có tiền cho thủ quỹ VC chi: mục tự
+            # qua bước Chi ngay khi ghi sổ, không xếp vào việc chờ của họ. Còn dòng tiền mặt / ghi nợ trạm thì giữ như cũ.
+            tu_qua_chi = not muc_iii_co_tien(dong_iii)
+            if tu_qua_chi:
+                s.status = "paid"
         if muc == "travel" and hanh_dong == "book":
             # Phí cầu đường trả bằng thẻ: ghi sổ là lúc trừ thẻ, đúng như dòng xuất kho nhiên liệu ở trên.
             THE.tru_the_theo_phieu(db, p, user)
+            # 06/10 (điều phối, G4-0006): không có tạm ứng tiền mặt nào (mục IV chỉ "trả cùng lương" / nợ NCC / thẻ) → không có phiếu
+            # chi tạm ứng cho quỹ chi: mục IV tự qua bước Chi lúc ghi sổ ("Chi ở kế toán — cùng lương"), không xếp vào việc chờ của quỹ
+            # (như G11 mục III lấy kho). Có tiền mặt thì giữ như cũ: "đã chi" khi thủ quỹ bên kế toán ghi sổ phiếu chi tạm ứng.
+            if muc_iv_khong_tien_mat(p, _dong_chi(db, p)):
+                s.status = "paid"
+                tu_qua_chi = True
         if hanh_dong == "pay" and muc == "travel":
             # Mục IV có HAI đường thành "đã chi": quỹ quét QR phiếu tạm ứng (sinh PC_TU ở phieu_linh.py), hoặc quỹ bấm
             # thẳng "Chi tiền" ở đây. Đường thứ hai trước đây không sinh tờ nào — bấm tay 23/09 chi 2.183.500 LAK mà sổ
@@ -1242,6 +1307,9 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
                        payload={"lines": [{"item": d.item_key or d.item_name, "qty": d.qty, "unit_price": d.unit_price,
                                            "currency": d.currency, "acct_code": TK.tk_dong(p.company, d)} for d in dong]})
         _ghi_log(db, p, user, "sec_%s:%s" % (muc, hanh_dong))
+        if tu_qua_chi:
+            # nhật ký nói rõ vì sao tự qua bước Chi: mục III chỉ lấy kho (G11) · mục IV không có tạm ứng tiền mặt (cùng lương)
+            _ghi_log(db, p, user, "sec_fuel:pay_auto" if muc == "fuel" else "sec_travel:pay_luong")
     if muc == "travel" and hanh_dong == "book":
         # ghi sổ mục IV xong → phiếu chi "Chi trước" bên hệ kế toán (chưa ghi sổ). Hỏng thì lỗi nằm trên tờ tạm ứng, gửi lại
         # ở màn Phiếu đề nghị chi; ghi sổ mục IV vẫn giữ — tài xế chỉ chưa xuất phát được cho tới khi thủ quỹ chi.
@@ -1504,6 +1572,13 @@ def doi_trang_thai_van_chuyen(tid: str, data: dict = Body(...), db: Session = De
     if user.role not in ("yard", "admin", "driver"):
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ Admin Thà Bốc hoặc tài xế của phiếu cập nhật trạng thái xe."})
     _cua_tai_xe(db, p, user)
+    # G7 (06/10): «Xuất phát» bấm lúc MẤT MẠNG nằm trong hàng đợi của máy tài xế, có mạng lại mới gửi (kèm `ma_gui` + `luc` giờ
+    # máy). Gửi lại / gửi muộn mà xe đã đi (hoặc đã tới) thì trả nguyên, không đổi gì — không ghi trùng, không kéo phiếu đã tới
+    # về "đang chạy". `luc` hợp lệ thì nhật ký ghi theo giờ bấm thật.
+    from routes.vi_tri import luc_thao_tac
+    if (data.get("ma_gui") or "").strip() and data.get("status") == "transit" and p.transport_status != "dispatched":
+        return xuat_phieu(db, p, vai=user.role)
+    luc = luc_thao_tac(data, p) if (data.get("ma_gui") or "").strip() else None
     _chan_khoa(p, user)
     truoc_khoa = BTC.dau_khoa(db, p)        # phiếu đã khoá: cân cuối của xe thuê đổi tiền thuê / phí / quá tải (02/10)
     moi = data.get("status")
@@ -1559,7 +1634,7 @@ def doi_trang_thai_van_chuyen(tid: str, data: dict = Body(...), db: Session = De
     else:
         _doi_trang_thai_xe_tai_xe(db, p, "on_trip", "on_trip")
     p.transport_status = moi
-    _ghi_log(db, p, user, "st_%s" % moi)
+    _ghi_log(db, p, user, "st_%s" % moi, ts=luc)
     BTC.chan_sua_sau_khoa(db, p, truoc_khoa)
     with KK.GiaoDichKho(db, user) as gd:
         # Xe về tới nơi: DO gom thì hàng VÀO KHO bãi (sổ và phiếu nhập kho ở trang kế toán — tắt thì chưa báo tới được),
@@ -1627,7 +1702,39 @@ def _canh_bao_khoa(db, p):
     for m in MUC_CHI:
         if any(d.section == m for d in dong) and tt.get(m) in ("wait", "entered"):
             cb.append({"ma": "MUC_CHUA_KIEM", "loi": "Mục %s có dòng chi nhưng chưa kiểm." % m})
+    # G5 (06/10): khai báo của tài xế CHƯA DUYỆT (khai đổ dầu dọc đường, báo sự cố) — khoá phiếu mà chưa duyệt là khoản dầu / sửa
+    # chữa tài xế đã trả không vào phiếu, tất toán tài xế thiếu. Liệt kê từng lần; không có số tiền (Bãi cũng gọi kiểm lại — A2).
+    cho = db.query(TripEvent).filter(TripEvent.trip_id == p.id, TripEvent.status == "reported").order_by(TripEvent.ts).all()
+    if cho:
+        diem = {x.id: x.name for x in db.query(FuelPlace).filter(FuelPlace.id.in_([e.place_id for e in cho if e.place_id] or [""]))}
+        vi, lo, en = [], [], []
+        for e in cho:
+            luc = e.ts.strftime("%d/%m %H:%M") if e.ts else ""
+            if e.kind == "refuel":
+                tram = diem.get(e.place_id) or ""
+                vi.append("khai đổ dầu %s L%s (%s)" % (_gon(e.qty_l), (" ở " + tram) if tram else "", luc))
+                lo.append("ແຈ້ງໃສ່ນໍ້າມັນ %s L%s (%s)" % (_gon(e.qty_l), (" ທີ່ " + tram) if tram else "", luc))
+                en.append("refuel declaration %s L%s (%s)" % (_gon(e.qty_l), (" at " + tram) if tram else "", luc))
+            else:
+                ghi = (" — " + e.note[:60]) if e.note else ""
+                vi.append("báo sự cố %s%s (%s)" % (_LOAI_SU_CO_VI.get(e.incident_type, e.incident_type or ""), ghi, luc))
+                lo.append("ແຈ້ງເຫດການ %s%s (%s)" % (_LOAI_SU_CO_LO.get(e.incident_type, e.incident_type or ""), ghi, luc))
+                en.append("incident report %s%s (%s)" % (_LOAI_SU_CO_EN.get(e.incident_type, e.incident_type or ""), ghi, luc))
+        cb.append({"ma": "KHAI_BAO_CHO_DUYET", "so": len(cho),
+                   "loi": "Tài xế còn %d khai báo chưa duyệt: %s — duyệt hoặc từ chối trước khi khoá (Theo dõi tuyến → duyệt báo hỏng / "
+                          "khai dầu)." % (len(cho), "; ".join(vi)),
+                   "loi_lo": "ໂຊເຟີຍັງມີ %d ລາຍການແຈ້ງທີ່ຍັງບໍ່ອະນຸມັດ: %s — ອະນຸມັດ ຫຼື ປະຕິເສດ ກ່ອນລັອກ." % (len(cho), "; ".join(lo)),
+                   "loi_en": "The driver has %d unapproved declaration(s): %s — approve or reject them before locking." % (len(cho), "; ".join(en))})
     return cb
+
+
+# tên loại sự cố trong câu cảnh báo khoá phiếu (G5) — cùng nghĩa với khoá inc_* của giao diện
+_LOAI_SU_CO_VI = {"breakdown": "hỏng xe", "tire": "nổ / thủng lốp", "accident": "tai nạn", "delay": "chậm / chờ", "held": "bị giữ xe",
+                  "other": "khác"}
+_LOAI_SU_CO_LO = {"breakdown": "ລົດເສຍ", "tire": "ຢາງແຕກ / ຮົ່ວ", "accident": "ອຸບັດເຫດ", "delay": "ຊ້າ / ລໍຖ້າ", "held": "ຖືກກັກລົດ",
+                  "other": "ອື່ນໆ"}
+_LOAI_SU_CO_EN = {"breakdown": "breakdown", "tire": "tyre burst / puncture", "accident": "accident", "delay": "delay", "held": "held / inspected",
+                  "other": "other"}
 
 
 @router.get("/api/trips/{tid}/kiem-lai")
@@ -1867,18 +1974,46 @@ def xoa_thu_tien(pid: str, user=Depends(nguoi_hien_tai)):
 
 
 # ---------------------------------------------------------------- tài xế báo sự cố → duyệt theo loại → mục V hoặc VI
+def _lan_gui_tai_xe(db, p, user, data, loai):
+    """Lần khai báo gửi từ HÀNG ĐỢI MẤT MẠNG của máy tài xế (G7, 06/10 — như ký giao nhận / báo cân ở mỏ): mang `ma_gui` (mã lần
+    gửi) và `luc` (giờ máy lúc bấm). Trả (luc, da_nhan): `luc` = giờ thật dùng làm giờ khai báo (None: không phải lần gửi từ hàng
+    đợi, hoặc giờ máy vô lý → giờ máy chủ); `da_nhan` = máy chủ ĐÃ ghi lần này rồi (gửi lại vì mất phản hồi) — khoá chống trùng
+    là (phiếu, người khai, loại, đúng giờ máy tới phần nghìn giây). Giờ máy vô lý thì không có khoá — vẫn nhận, như trước."""
+    from routes.vi_tri import luc_thao_tac
+    if not (data.get("ma_gui") or "").strip():
+        return None, False
+    luc = luc_thao_tac(data, p)
+    if luc is None:
+        return None, False
+    da = db.query(TripEvent.id).filter(TripEvent.trip_id == p.id, TripEvent.by_user == user.full_name, TripEvent.kind.in_(loai),
+                                       TripEvent.ts == luc).first()
+    return luc, da is not None
+
+
+def _bao_truoc_khi_toi(db, p, luc):
+    """Khai báo gửi muộn (hàng đợi) mà giờ thật TRƯỚC lúc phiếu được ghi "đã tới" — xảy ra trên đường, vẫn nhận (phiếu chưa khoá)."""
+    from routes.vi_tri import moc_toi
+    if luc is None or p.transport_status != "arrived" or p.locked:
+        return False
+    m = moc_toi(db, p)
+    return m is not None and luc <= m
+
+
 @router.post("/api/trips/{tid}/bao-hong")
 def bao_hong(tid: str, data: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     """TÀI XẾ báo sự cố / hỏng xe trên đường, kèm số tiền dự kiến. Chỉ là BÁO — chưa thành chi phí.
     Duyệt ở đường /duyet bên dưới: hỏng xe, lốp, tai nạn → tổ sửa chữa, dòng chi mục V; kẹt đường, bị giữ xe, khác → Bãi,
-    dòng chi mục VI (`SU_CO_SUA_CHUA`)."""
+    dòng chi mục VI (`SU_CO_SUA_CHUA`). Gửi từ hàng đợi mất mạng (06/10): `ma_gui` + `luc` — xem _lan_gui_tai_xe."""
     p = db.get(Trip, tid)
     if not p:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
     if user.role not in ("driver", "yard", "admin"):
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ tài xế của phiếu (hoặc Bãi) báo hỏng."})
     _cua_tai_xe(db, p, user)
-    if p.transport_status == "arrived" or p.finance_status == "paid":
+    luc, da_nhan = _lan_gui_tai_xe(db, p, user, data, ("incident", "repair"))
+    if da_nhan:
+        return xuat_phieu(db, p, vai=user.role)
+    if (p.transport_status == "arrived" and not _bao_truoc_khi_toi(db, p, luc)) or p.finance_status == "paid":
         raise HTTPException(409, {"ma": "PHIEU_DA_XONG", "loi": "Phiếu đã về / đã thu tiền, không báo hỏng nữa."})
     lt = data.get("incident_type") or "breakdown"
     if lt not in LOAI_SU_CO:
@@ -1891,6 +2026,8 @@ def bao_hong(tid: str, data: dict = Body(...), db: Session = Depends(get_db), us
         raise HTTPException(422, {"ma": "SO_AM", "loi": "Số tiền không được âm."})
     e = TripEvent(trip_id=p.id, kind="incident", incident_type=lt, note=ghi, by_user=user.full_name,
                   status="reported", reported_cost=tien, currency=str(data.get("currency") or "LAK").upper())
+    if luc is not None:
+        e.ts = luc                       # giờ máy lúc báo thật (hàng đợi mất mạng, 06/10)
     # màn tài xế mới (30/09): còn chạy được không · khoản chi tài xế đã tự trả hay chưa (chỉ có nghĩa khi có số tiền)
     if data.get("can_run") is not None:
         e.can_run = bool(data["can_run"])
@@ -1899,7 +2036,7 @@ def bao_hong(tid: str, data: dict = Body(...), db: Session = Depends(get_db), us
     if data.get("stop_seq") not in (None, ""):
         e.stop_seq = int(data["stop_seq"])
     db.add(e)
-    _ghi_log(db, p, user, "ev_reported")
+    _ghi_log(db, p, user, "ev_reported", ts=luc)
     db.commit()
     return xuat_phieu(db, p, vai=user.role)
 
@@ -1993,7 +2130,8 @@ def bao_nhien_lieu(tid: str, data: dict = Body(...), db: Session = Depends(get_d
 
     Đây là dầu MUA NGOÀI, không phải lĩnh kho, nên không có phiếu xuất kho: nó thành một dòng chi
     mục III nguồn "mua", định khoản …/402, và ghi rõ mua ở trạm nào của nhà cung cấp nào. Khai xong
-    chỉ là BÁO, kế toán duyệt mới thành dòng chi thật — giống hệt cách báo hỏng.
+    chỉ là BÁO, kế toán duyệt mới thành dòng chi thật — giống hệt cách báo hỏng. Gửi từ hàng đợi mất mạng (06/10): `ma_gui` +
+    `luc` — xem _lan_gui_tai_xe (gửi lại lần đã nhận không ghi trùng; giờ khai = giờ máy lúc bấm).
     """
     p = db.get(Trip, tid)
     if not p:
@@ -2001,6 +2139,9 @@ def bao_nhien_lieu(tid: str, data: dict = Body(...), db: Session = Depends(get_d
     if user.role not in ("driver", "yard", "admin"):
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ tài xế của phiếu (hoặc Bãi) khai đổ dầu."})
     _cua_tai_xe(db, p, user)
+    luc, da_nhan = _lan_gui_tai_xe(db, p, user, data, ("refuel",))
+    if da_nhan:
+        return xuat_phieu(db, p, vai=user.role)
     if p.finance_status == "paid":
         raise HTTPException(409, {"ma": "PHIEU_DA_XONG", "loi": "Phiếu đã thu tiền xong, không khai thêm."})
     lit = _so(data.get("qty_l"), "qty_l") or 0
@@ -2018,8 +2159,10 @@ def bao_nhien_lieu(tid: str, data: dict = Body(...), db: Session = Depends(get_d
                   reported_cost=(_so(data.get("unit_price"), "unit_price") or 0) if nhap_gia_chi(user.role) else 0,
                   currency=str(data.get("currency") or "VND").upper(), place_id=diem.id,
                   supplier_id=(data.get("supplier_id") or diem.supplier_id or None))
+    if luc is not None:
+        e.ts = luc                       # giờ máy lúc khai thật (hàng đợi mất mạng, 06/10)
     db.add(e)
-    _ghi_log(db, p, user, "ev_refuel_reported")
+    _ghi_log(db, p, user, "ev_refuel_reported", ts=luc)
     db.commit()
     return xuat_phieu(db, p, vai=user.role)
 

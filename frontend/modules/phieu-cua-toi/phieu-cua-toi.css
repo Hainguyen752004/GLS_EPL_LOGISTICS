@@ -422,3 +422,8 @@
 .tx2 .tx-qr-quy { margin-top: 10px; font-size: 15px; color: var(--ink); }
 .tx2 .tx-qr-bc { margin-top: 6px; font-size: 13px; color: var(--ink-2); }
 .tx2 .tx-qr-quy b { font-size: 17px; letter-spacing: .02em; white-space: nowrap; }
+/* 06/10 — hàng đợi mất mạng: dòng đang chờ gửi (khai dầu, báo hỏng bấm lúc mất sóng) và danh sách chờ trong thẻ "Mất mạng vẫn báo được" */
+.tx2 .list-row.x2-cho-gui{background:var(--amber-bg)}
+.tx2 .tx-cho-ds{margin:6px 0 8px;padding-left:18px;font-size:13px;line-height:1.6}
+.tx2 .tx-cho-ds .x2-tag-sm{height:20px;padding:0 8px;font-size:11px;vertical-align:middle}
+.tx2 .offline-card .btn-outline{margin-top:4px}

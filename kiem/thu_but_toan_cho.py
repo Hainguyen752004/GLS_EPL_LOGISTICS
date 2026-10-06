@@ -2,12 +2,17 @@
 """Thử BÚT TOÁN CHỜ GỬI (chủ dự án 01/10/2026) — khoản không qua tiền mà sổ kế toán phải ghi, giữ ở trang điều xe chờ hệ anh
 Tune có API bút toán tổng hợp.
 
-    python kiem/thu_but_toan_cho.py [http://127.0.0.1:8014]
+    python kiem/thu_but_toan_cho.py                     (mặc định 06/10: trong tiến trình, bản sao _d7, cuối ROLLBACK)
+    python kiem/thu_but_toan_cho.py http://127.0.0.1:8014  (cách cũ: gọi một máy thử đang chạy — lập rồi xoá phiếu thử)
+
+Chạy mặc định (06/10): FastAPI TestClient trên bản sao _d7, MỌI THỨ trong một giao dịch ngoài (phiên chạy savepoint), cuối ROLLBACK
+— không ghi gì vào d7, không cần máy 8014; mọi lời gọi mạng ra ngoài bị chặn (urllib), không chạy sự kiện khởi động.
 
 Lúc KHOÁ PHIẾU:
   · xe thuê: Nợ 621 chi phí vận chuyển / Có 4022 phải trả chủ xe, bằng TIỀN THUÊ (theo tiền thuê), đối tượng chủ xe;
-  · mỗi dòng chi ghi nợ nhà cung cấp (định khoản …/4021): Nợ 625 · 614 (xe thuê 4022) / Có 4021, quy Kíp theo tỷ giá khoá trên
-    phiếu — dầu trạm VN ghi nợ, chipping (trả theo đợt), lốp nợ cửa hàng. KHÔNG gồm: khoản QUỸ TRẢ NGAY mục V (vào chi phí qua
+  · mỗi dòng chi ghi nợ nhà cung cấp (định khoản …/4021): Nợ 625 · 614 (xe thuê 4022) / Có 4021 — dầu trạm VN ghi nợ, chipping
+    (trả theo đợt), lốp nợ cửa hàng. Tiền theo NGUYÊN TỆ của dòng (06/10, G12: dầu trạm VN ghi VND) kèm tỷ giá khoá trên phiếu
+    (`ty_gia`) và số quy Kíp (`tien_lak`); dòng Kíp như cũ. KHÔNG gồm: khoản QUỸ TRẢ NGAY mục V (vào chi phí qua
     phiếu chi bên kế toán), tiền mặt tạm ứng, trả cùng lương, chủ xe tự trả.
 Lúc MỞ KHOÁ: huỷ bút toán chưa gửi; khoá lại → sống lại đúng một bản theo số mới. Xoá phiếu → huỷ.
 Đường đọc GET /api/but-toan-cho: chỉ KT Thu/Chi VC, KT Chi phí VC, Sếp (bảng 12 vai). Gói phiếu mang khối but_toan_cho chỉ với
@@ -21,9 +26,25 @@ import sys
 import urllib.error
 import urllib.request
 
-GOC = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8014").rstrip("/")
-if GOC.endswith((":8010", ":8020")):
+GOC = (sys.argv[1] if len(sys.argv) > 1 else "").rstrip("/")          # trống = trong tiến trình (TestClient, _d7, ROLLBACK)
+if GOC.endswith((":8010", ":8020", ":8001")):
     sys.exit("Không chạy bài này trên máy thật.")
+APP = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "backend", "app")
+C = None                                   # TestClient khi chạy trong tiến trình
+if not GOC:
+    URL = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".may_thu", "url_epl_lao_d7.txt"), encoding="utf-8").read().strip()
+    if "_d7" not in URL.rsplit("/", 1)[-1]:
+        sys.exit("Chuỗi nối không trỏ bản sao _d7 — bài chỉ chạy trên bản sao.")
+    os.environ["DATABASE_URL"] = URL
+    os.environ.pop("QLSX_GUI_BUT_TOAN", None)                           # cờ gửi tắt: bút toán chỉ nằm chờ gửi
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except AttributeError:
+        pass
+
+    def _cam_mang(*a, **k):
+        raise OSError("bài kiểm không được gọi mạng ra ngoài")
+    urllib.request.urlopen = _cam_mang
 TK, LOI = {}, []
 SO_A, SO_B = "THU-BTC-A/EPL", "THU-BTC-B/EPL"
 VAI = {"admin": "admin", "ketoan": "acct", "ketoancp": "expacct", "khonl": "fuel", "khotb": "depot", "khopt": "parts",
@@ -32,6 +53,13 @@ XEM = ("admin", "ketoan", "ketoancp")
 
 
 def goi(duong, body=None, u=None, method=None):
+    if C is not None:                      # trong tiến trình: TestClient, cùng phiên trong giao dịch ROLLBACK
+        r = C.request(method or ("POST" if body is not None else "GET"), duong, json=body,
+                      headers={"Authorization": "Bearer " + TK[u]} if u else {})
+        try:
+            return r.status_code, r.json()
+        except ValueError:
+            return r.status_code, {}
     r = urllib.request.Request(GOC + duong, data=json.dumps(body).encode() if body is not None else None,
                                method=method or ("POST" if body is not None else "GET"),
                                headers={"Content-Type": "application/json", **({"Authorization": "Bearer " + TK[u]} if u else {})})
@@ -69,7 +97,7 @@ def don():
 
 def giao_uoc():
     """Phần giao ước không cần DB: khoá nguồn, dạng dòng (services/but_toan_cho.py)."""
-    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "backend", "app"))
+    sys.path.insert(0, APP)
     from services import but_toan_cho as B
     bat = lambda f: (lambda: (f(), False))
     for ten, f in (("nguồn rỗng", lambda: B._khoa("", "x")), ("nguồn quá 16 ký tự", lambda: B._khoa("x" * 17, "x")),
@@ -131,16 +159,23 @@ def lap(so, cong_ty, xe, tx, kh, ncc, tram):
     return p["id"]
 
 
+def ty(p):
+    return {"USD": p["rate_usd"], "THB": p["rate_thb"], "VND": p["rate_vnd"], "CNY": p["rate_cny"], "LAK": 1}
+
+
 def mong_ncc(p):
-    """Các dòng phải vào bút toán ghi nợ NCC — đọc lại từ chính phiếu (định khoản, tiền quy Kíp)."""
-    r = {"USD": p["rate_usd"], "THB": p["rate_thb"], "VND": p["rate_vnd"], "CNY": p["rate_cny"], "LAK": 1}
+    """Các dòng phải vào bút toán ghi nợ NCC — đọc lại từ chính phiếu: (định khoản Nợ, tiền theo NGUYÊN TỆ, tiền tệ, quy Kíp).
+    06/10 (G12): dòng ngoại tệ ghi đúng nguyên tệ (VND làm tròn đồng, tiền khác hai số lẻ) — trước đây quy Kíp."""
+    r = ty(p)
     ra = {}
     for e in p["expenses"]:
         if e.get("paid_by_epl") is False or not (e.get("acct_code") or "").endswith("/4021"):
             continue
         if e["section"] == "repair" and not e.get("item_key"):
             continue                                     # garage quỹ trả ngay
-        ra[e["id"]] = (e["acct_code"].split("/")[0], round((e["qty"] or 0) * (e["unit_price"] or 0) * r[e["currency"]]))
+        ccy = (e["currency"] or "LAK").upper()
+        goc = (e["qty"] or 0) * (e["unit_price"] or 0)
+        ra[e["id"]] = (e["acct_code"].split("/")[0], round(goc) if ccy in ("LAK", "VND") else round(goc, 2), ccy, round(goc * r[ccy]))
     return ra
 
 
@@ -160,22 +195,87 @@ def kiem_khoa(tid, cong_ty):
         dung("thue_xe" not in cho, "xe nhà: không có bút toán tiền thuê")
     n = cho.get("no_ncc")
     mong = mong_ncc(p)
-    co = {x.get("ref"): (x["no"], x["tien"]) for x in (n or {}).get("dong") or []}
-    dung(n and co == mong and all(x["co"] == "4021" and x["ccy"] == "LAK" for x in n["dong"]),
-         "ghi nợ NCC: đúng các dòng …/4021, Nợ %s / Có 4021, quy Kíp" % ("4022" if cong_ty == "joint" else "625 · 614"),
-         "%s dòng · %s" % (len(co), sorted(v for v in co.values())))
+    co = {x.get("ref"): (x["no"], x["tien"], x["ccy"], x["tien"] if x["ccy"] == "LAK" else x.get("tien_lak"))
+          for x in (n or {}).get("dong") or []}
+    r = ty(p)
+    dung(n and co == mong and all(x["co"] == "4021" for x in n["dong"])
+         and all(x["ccy"] == "LAK" and "ty_gia" not in x or x["ccy"] != "LAK" and x.get("ty_gia") == r[x["ccy"]] for x in n["dong"]),
+         "ghi nợ NCC: đúng các dòng …/4021, Nợ %s / Có 4021, theo nguyên tệ (ngoại tệ kèm tỷ giá phiếu + quy Kíp)" % (
+             "4022" if cong_ty == "joint" else "625 · 614"), "%s dòng · %s" % (len(co), sorted(co.values())))
     ten = {e["id"]: (e.get("item_key") or e.get("item_name")) for e in p["expenses"]}
     bo = [ten[i] for i in ten if i not in co]
     dung("thử BTC: garage" in bo and "x_food" in bo, "không gồm garage quỹ trả ngay, tiền mặt tạm ứng, %s" % (
         "chủ xe tự trả" if cong_ty == "joint" else "trả cùng lương"), ", ".join(str(x) for x in bo))
     tram = next((x for x in n["dong"] if x["section"] == "fuel"), None) if n else None
-    dung(tram and tram.get("ccy_goc") == "VND" and tram.get("tien_goc") == 2500000 and (tram.get("doi_tuong") or {}).get("loai") == "ncc",
-         "dòng dầu trạm VN: giữ tiền gốc 2.500.000 VND, đối tượng nhà cung cấp")
+    dung(tram and tram["ccy"] == "VND" and tram["tien"] == 2500000 and tram.get("ty_gia") == p["rate_vnd"]
+         and tram.get("tien_lak") == round(2500000 * p["rate_vnd"]) and "ccy_goc" not in tram
+         and (tram.get("doi_tuong") or {}).get("loai") == "ncc",
+         "dòng dầu trạm VN (G12): ghi 2.500.000 VND, tỷ giá khoá trên phiếu %s, quy Kíp %s, đối tượng nhà cung cấp" % (
+             p["rate_vnd"], tram and tram.get("tien_lak")))
     return p
+
+
+def trong_tien_trinh():
+    """TestClient trên _d7: một kết nối, một giao dịch ngoài, phiên chạy savepoint (route commit chỉ chốt savepoint), hết request
+    thì bỏ phần chưa commit (như database.get_db). Bảng mới mà d7 chưa có thì dựng TRONG giao dịch (ROLLBACK xoá luôn).
+    → hàm dọn (ROLLBACK)."""
+    global C
+    from fastapi.testclient import TestClient
+    from sqlalchemy import create_engine, text
+    from sqlalchemy.orm import Session
+    import models as M
+    from database import get_db
+    from main import app
+    eng = create_engine(URL, connect_args={"options": "-c timezone=UTC"})
+    conn = eng.connect()
+    ngoai = conn.begin()
+    conn.execute(text("SET LOCAL lock_timeout = '10s'"))       # máy 8011 chạy song song: chờ khoá quá 10 giây thì hỏng, không treo
+    M.Base.metadata.create_all(bind=conn, checkfirst=True)
+    # bộ đếm báo cáo tự dựng bảng bằng KẾT NỐI RIÊNG (db.get_bind().connect()) — phiên ở đây gắn một Connection nên không làm
+    # được: dựng (nếu thiếu) ngay trong giao dịch này rồi báo bộ đếm là đã có
+    from services import dem_bao_cao as DEM
+    conn.execute(text(DEM._BANG_SQL))
+    if not DEM._CO_BANG:
+        DEM._CO_BANG.append(True)
+    import json as _j
+
+    def _khong_dem(db, viec, theo_ngay=False, tinh_lo=None):
+        # bản lưu của bộ đệm đọc / ghi bằng kết nối riêng — trong bài tính thẳng (cùng dạng JSON như bản lưu)
+        kq = tinh_lo(list(range(len(viec)))) if tinh_lo is not None else [t() for _, _, t in viec]
+        return [_j.loads(_j.dumps(v, default=str)) for v in kq]
+    DEM.lay_nhieu = _khong_dem
+    db = Session(bind=conn, join_transaction_mode="create_savepoint", autoflush=False)
+
+    def _db():
+        try:
+            yield db
+        finally:
+            db.rollback()
+    app.dependency_overrides[get_db] = _db
+    C = TestClient(app, raise_server_exceptions=False)
+
+    def xong():
+        app.dependency_overrides.clear()
+        db.close()
+        ngoai.rollback()
+        conn.close()
+        print("đã ROLLBACK — bản sao d7 không đổi")
+    return xong
 
 
 def main():
     giao_uoc()
+    xong = trong_tien_trinh() if not GOC else None
+    try:
+        chay()
+    finally:
+        if xong:
+            xong()
+    print("\n%s" % ("BÚT TOÁN CHỜ: ĐẠT" if not LOI else "BÚT TOÁN CHỜ: SAI %d chỗ:\n  - " % len(LOI) + "\n  - ".join(LOI)))
+    sys.exit(1 if LOI else 0)
+
+
+def chay():
     for u in VAI:
         s, g = goi("/api/dang-nhap", {"username": u, "password": "1234"})
         if s != 200:
@@ -245,9 +345,8 @@ def main():
         s, g = goi("/api/but-toan-cho?nguon=no_ncc&status=huy&gioi_han=1000", u="admin")
         dung(any(b["ma_nguon"] == B for b in g["ds"]), "bút toán của phiếu đã xoá còn dấu vết, trạng thái huỷ")
     finally:
-        don()
-    print("\n%s" % ("BÚT TOÁN CHỜ: ĐẠT" if not LOI else "BÚT TOÁN CHỜ: SAI %d chỗ:\n  - " % len(LOI) + "\n  - ".join(LOI)))
-    sys.exit(1 if LOI else 0)
+        if GOC:                            # máy thử đang chạy: xoá phiếu thử; trong tiến trình thì ROLLBACK lo
+            don()
 
 
 if __name__ == "__main__":

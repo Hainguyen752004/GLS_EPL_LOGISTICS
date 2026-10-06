@@ -13877,6 +13877,26 @@ window.EPL_TU_DIEN = {
   "lo": "ສິນຄ້າຄູ່ຮ່ວມຊື້ຢູ່ໜ້າຮ້ານ, ຫັກຈາກເງິນຈ່າຍຄູ່ຮ່ວມ — ໜີ້ 4022 / ມີ 707 ຕາມລາຄາຂາຍ, ເມື່ອຄັງເງິນຈ່າຍໃບຈ່າຍແລ້ວ.",
   "en": "Goods the partner bought at the counter, deducted from the payout — Dr 4022 / Cr 707 at sale price, once the cashier has paid."
  },
+ "btc_nguon_doanh_thu": {
+  "vi": "Doanh thu cước — SO cước",
+  "lo": "ລາຍຮັບຄ່າຂົນສົ່ງ — SO ຄ່າຂົນສົ່ງ",
+  "en": "Freight revenue — freight SO"
+ },
+ "btc_nguon_doanh_thu_ban": {
+  "vi": "Doanh thu bán dầu / phụ tùng — SO nhiên liệu",
+  "lo": "ລາຍຮັບຂາຍນໍ້າມັນ / ອາໄຫຼ່ — SO ນໍ້າມັນ",
+  "en": "Fuel / parts sales revenue — fuel SO"
+ },
+ "btc_g_doanh_thu": {
+  "vi": "Lúc «Tạo SO bên kế toán»: ghi doanh thu cước — Nợ 1211 phải thu khách / Có 708, bằng tiền SO cước (tiền của SO, tỷ giá khoá trên phiếu), đối tượng khách của DO. Thu nợ, cấn trừ bên kế toán ghi Có 1211.",
+  "lo": "ຕອນ «ສ້າງ SO ຢູ່ບັນຊີ»: ບັນທຶກລາຍຮັບຄ່າຂົນສົ່ງ — ໜີ້ 1211 ລູກໜີ້ລູກຄ້າ / ມີ 708, ເທົ່າເງິນ SO ຄ່າຂົນສົ່ງ (ສະກຸນເງິນຂອງ SO, ອັດຕາແລກປ່ຽນລັອກໃນໃບ), ຄູ່ບັນຊີແມ່ນລູກຄ້າຂອງ DO. ການເກັບໜີ້, ຫັກລົບ ຢູ່ບັນຊີ ບັນທຶກ ມີ 1211.",
+  "en": "On «Create SO in accounting»: freight revenue — Dr 1211 customer receivable / Cr 708, for the freight SO amount (SO currency, rate locked on the slip), object = the DO's customer. Collections and offsets in accounting credit 1211."
+ },
+ "btc_g_doanh_thu_ban": {
+  "vi": "Lúc «Tạo SO bên kế toán» (xe thuê lấy dầu / phụ tùng kho EPL): ghi doanh thu bán — Nợ 1211 / Có 707 theo từng dòng SO nhiên liệu (Kíp), đối tượng đối tác. Giá vốn là bút toán Xuất bán (607 / 1371).",
+  "lo": "ຕອນ «ສ້າງ SO ຢູ່ບັນຊີ» (ລົດເຊົ່າເອົານໍ້າມັນ / ອາໄຫຼ່ສາງ EPL): ບັນທຶກລາຍຮັບຂາຍ — ໜີ້ 1211 / ມີ 707 ຕາມແຕ່ລະແຖວ SO ນໍ້າມັນ (ກີບ), ຄູ່ບັນຊີແມ່ນຄູ່ຮ່ວມ. ຕົ້ນທຶນແມ່ນບັນທຶກ ຂາຍສິນຄ້າ (607 / 1371).",
+  "en": "On «Create SO in accounting» (hired truck takes EPL store fuel / parts): sales revenue — Dr 1211 / Cr 707 per fuel SO line (LAK), object = the partner. The cost is the Stock sale entry (607 / 1371)."
+ },
  "btc_g_khac": {
   "vi": "Khoản không qua tiền do một màn khác ghi.",
   "lo": "ລາຍການບໍ່ຜ່ານເງິນ ທີ່ໜ້າອື່ນບັນທຶກ.",
@@ -14241,6 +14261,71 @@ window.EPL_TU_DIEN = {
   "vi": "Máy sẽ cấn trừ {tien} SO nhiên liệu còn nợ trước, rồi lập phiếu chi phần còn lại bên kế toán.",
   "lo": "ເຄື່ອງຈະຫັກລົບ SO ນ້ຳມັນທີ່ຄ້າງ {tien} ກ່ອນ, ແລ້ວອອກໃບຈ່າຍສ່ວນທີ່ເຫຼືອຢູ່ບັນຊີ.",
   "en": "The system first offsets {tien} of unpaid fuel SO, then makes a payment voucher for the rest in accounting."
+ },
+ "ttd_c_quay": {
+  "vi": "Mua ở quầy",
+  "lo": "ຊື້ຢູ່ໜ້າຮ້ານ",
+  "en": "Counter purchases"
+ },
+ "ttd_quay": {
+  "vi": "Mua ở quầy (SO bán hàng)",
+  "lo": "ຊື້ຢູ່ໜ້າຮ້ານ (SO ຂາຍສິນຄ້າ)",
+  "en": "Counter purchases (sales SO)"
+ },
+ "ttd_quay_trong": {
+  "vi": "Không có SO bán hàng nào còn nợ",
+  "lo": "ບໍ່ມີ SO ຂາຍສິນຄ້າທີ່ຍັງຄ້າງ",
+  "en": "No unpaid sales SO"
+ },
+ "ttd_quay_chua_doc": {
+  "vi": "Chưa đọc công nợ đối tác bên kế toán — bấm Cập nhật",
+  "lo": "ຍັງບໍ່ໄດ້ອ່ານໜີ້ຄູ່ຮ່ວມຢູ່ບັນຊີ — ກົດ ອັບເດດ",
+  "en": "Partner debt not read from accounting yet — click Refresh"
+ },
+ "ttd_quay_loi": {
+  "vi": "Không đọc được SO bán hàng của đối tác bên kế toán: {loi}",
+  "lo": "ອ່ານ SO ຂາຍສິນຄ້າຂອງຄູ່ຮ່ວມຢູ່ບັນຊີບໍ່ໄດ້: {loi}",
+  "en": "Could not read the partner's sales SOs from accounting: {loi}"
+ },
+ "ttd_quay_goi_y": {
+  "vi": "Lập đề nghị trả: máy cấn trừ các SO này vào tiền trả (cũ trước, SO nào vừa số còn trả thì trừ cả SO); SO không vừa để đợt sau.",
+  "lo": "ອອກໃບສະເໜີຈ່າຍ: ເຄື່ອງຫັກລົບ SO ເຫຼົ່ານີ້ອອກຈາກເງິນຈ່າຍ (ເກົ່າກ່ອນ, SO ໃດພໍດີກັບເງິນທີ່ຍັງຕ້ອງຈ່າຍ ກໍຫັກທັງ SO); SO ທີ່ບໍ່ພໍ ໄວ້ງວດໜ້າ.",
+  "en": "Raising a payout request offsets these SOs against the payout (oldest first; an SO that fits the remaining payout is offset in full); SOs that don't fit wait for the next payout."
+ },
+ "ttd_quay_uoc": {
+  "vi": "nếu lập cho mọi chuyến chưa trả: trừ {tien}, còn trả {con}",
+  "lo": "ຖ້າອອກໃຫ້ທຸກຖ້ຽວທີ່ຍັງບໍ່ຈ່າຍ: ຫັກ {tien}, ຍັງຕ້ອງຈ່າຍ {con}",
+  "en": "if raised for all unpaid trips: offset {tien}, to pay {con}"
+ },
+ "ttd_quay_dang": {
+  "vi": "đang trong đề nghị {so}",
+  "lo": "ຢູ່ໃນໃບສະເໜີ {so}",
+  "en": "in request {so}"
+ },
+ "ttd_quay_se_tru": {
+  "vi": "sẽ cấn trừ",
+  "lo": "ຈະຫັກລົບ",
+  "en": "will be offset"
+ },
+ "ttd_quay_de_lai": {
+  "vi": "để đợt sau",
+  "lo": "ໄວ້ງວດໜ້າ",
+  "en": "next payout"
+ },
+ "ttd_quay_de_lai_ds": {
+  "vi": "Không vừa số còn trả, để đợt sau: {so}",
+  "lo": "ບໍ່ພໍກັບເງິນທີ່ຍັງຕ້ອງຈ່າຍ, ໄວ້ງວດໜ້າ: {so}",
+  "en": "Too large for the remaining payout, left for the next one: {so}"
+ },
+ "ttd_hoi_quay": {
+  "vi": "Máy cũng cấn trừ {tien} mua ở quầy (SO bán hàng {so}) vào tiền trả.",
+  "lo": "ເຄື່ອງຍັງຫັກລົບ {tien} ທີ່ຊື້ຢູ່ໜ້າຮ້ານ (SO ຂາຍສິນຄ້າ {so}) ອອກຈາກເງິນຈ່າຍ.",
+  "en": "The system also offsets {tien} of counter purchases (sales SO {so}) against the payout."
+ },
+ "ttd_quay_ngan": {
+  "vi": "quầy",
+  "lo": "ໜ້າຮ້ານ",
+  "en": "counter"
  },
  "ttd_hoi_bo": {
   "vi": "Bỏ đề nghị {so}? Phiếu chi chưa ghi sổ bên kế toán sẽ bị rút, các chuyến về chờ trả.",
@@ -14836,5 +14921,175 @@ window.EPL_TU_DIEN = {
   "vi": "Chưa lấy được tờ để in: {loi}",
   "lo": "ຍັງບໍ່ໄດ້ຮັບໃບເພື່ອພິມ: {loi}",
   "en": "Could not load the note to print: {loi}"
+ },
+ "tx_dang_cho_gui_n": {
+  "vi": "Đang chờ gửi ({n})",
+  "lo": "ກຳລັງລໍຖ້າສົ່ງ ({n})",
+  "en": "Waiting to send ({n})"
+ },
+ "tx_da_gui_het": {
+  "vi": "Đã gửi hết",
+  "lo": "ສົ່ງໝົດແລ້ວ",
+  "en": "All sent"
+ },
+ "tx_mat_mang_ngan": {
+  "vi": "Mất mạng — đang dùng bản lưu trong máy",
+  "lo": "ບໍ່ມີເນັດ — ກຳລັງໃຊ້ຂໍ້ມູນທີ່ເກັບໄວ້ໃນເຄື່ອງ",
+  "en": "Offline — using the copy on this phone"
+ },
+ "tx_dang_cho_gui_1": {
+  "vi": "Đang chờ gửi",
+  "lo": "ລໍຖ້າສົ່ງ",
+  "en": "Waiting to send"
+ },
+ "tx_da_gui_hang": {
+  "vi": "Đã gửi {n} thao tác chờ (xuất phát, báo hỏng, khai dầu)",
+  "lo": "ສົ່ງ {n} ລາຍການທີ່ລໍຖ້າແລ້ວ (ອອກລົດ, ແຈ້ງລົດເສຍ, ແຈ້ງໃສ່ນໍ້າມັນ)",
+  "en": "Sent {n} waiting action(s) (departure, incident, refuelling)"
+ },
+ "tx_gps_cho_n": {
+  "vi": "GPS chờ gửi: {n} điểm",
+  "lo": "GPS ລໍຖ້າສົ່ງ: {n} ຈຸດ",
+  "en": "GPS waiting: {n} points"
+ },
+ "gps_hint2": {
+  "vi": "Đang chia sẻ vị trí. Màn hình được giữ sáng; mất sóng thì máy giữ điểm và gửi bù khi có sóng lại. Giữ trang này mở.",
+  "lo": "ກຳລັງແບ່ງປັນຕຳແໜ່ງ. ໜ້າຈໍຈະເປີດແຈ້ງໄວ້; ບໍ່ມີສັນຍານ ເຄື່ອງຈະເກັບຈຸດໄວ້ ແລ້ວສົ່ງເມື່ອມີສັນຍານຄືນ. ເປີດໜ້ານີ້ໄວ້.",
+  "en": "Sharing location. The screen stays on; without signal the phone keeps the points and sends them when the signal returns. Keep this page open."
+ },
+ "tx_hang_doi_trong2": {
+  "vi": "Xuất phát, báo hỏng, khai dầu, báo cân, ký giao nhận và điểm GPS được lưu trong máy khi mất sóng; có mạng lại tự gửi, giữ đúng giờ đã bấm.",
+  "lo": "ອອກລົດ, ແຈ້ງລົດເສຍ, ແຈ້ງໃສ່ນໍ້າມັນ, ແຈ້ງນ້ຳໜັກ, ເຊັນຮັບ ແລະ ຈຸດ GPS ຈະເກັບໄວ້ໃນເຄື່ອງເມື່ອບໍ່ມີສັນຍານ; ມີເນັດຄືນຈະສົ່ງເອງ ຕາມເວລາທີ່ກົດແທ້.",
+  "en": "Departure, incident and refuelling reports, mine weights, delivery signatures and GPS points are kept on the phone without signal and sent automatically when it returns, with the time you pressed."
+ },
+ "tx_gui_ngay": {
+  "vi": "Gửi ngay",
+  "lo": "ສົ່ງດຽວນີ້",
+  "en": "Send now"
+ },
+ "tx_n_cho_di": {
+  "vi": "Đã bấm xuất phát lúc mất mạng — đang chờ gửi. Có mạng lại sẽ tự gửi, rồi mới báo về được.",
+  "lo": "ກົດອອກລົດຕອນບໍ່ມີເນັດ — ກຳລັງລໍຖ້າສົ່ງ. ມີເນັດຄືນຈະສົ່ງເອງ ແລ້ວຈຶ່ງແຈ້ງກັບໄດ້.",
+  "en": "Departure was pressed while offline — waiting to send. It sends itself when the network returns; then you can report back."
+ },
+ "ct_tieu_de": {
+  "vi": "Chi thật của tài xế",
+  "lo": "ລາຍຈ່າຍຕົວຈິງຂອງໂຊເຟີ",
+  "en": "Driver's actual spending"
+ },
+ "ct_mo": {
+  "vi": "Sửa được — kỳ {ky} chưa chốt tất toán",
+  "lo": "ແກ້ໄດ້ — ງວດ {ky} ຍັງບໍ່ປິດສະສາງ",
+  "en": "Editable — period {ky} not settled yet"
+ },
+ "ct_khoa": {
+  "vi": "Đã khoá — kỳ {ky} đã chốt tất toán",
+  "lo": "ລັອກແລ້ວ — ງວດ {ky} ປິດສະສາງແລ້ວ",
+  "en": "Locked — period {ky} is settled"
+ },
+ "ct_giai_thich": {
+  "vi": "Tạm ứng mục IV đã chi. Tài xế về khai chi thật ít hay nhiều hơn số đã ứng thì sửa ở đây — phiếu chi tạm ứng giữ nguyên, chênh lệch tính vào Tất toán tài xế kỳ {ky}.",
+  "lo": "ເງິນລ່ວງໜ້າໝວດ IV ຈ່າຍແລ້ວ. ໂຊເຟີກັບມາແຈ້ງລາຍຈ່າຍຕົວຈິງໜ້ອຍ ຫຼື ຫຼາຍກວ່າທີ່ເບີກ ໃຫ້ແກ້ຢູ່ນີ້ — ໃບຈ່າຍເງິນລ່ວງໜ້າຄືເກົ່າ, ສ່ວນຕ່າງໄປຢູ່ການສະສາງໂຊເຟີງວດ {ky}.",
+  "en": "The section IV advance is paid. If the driver spent less or more than advanced, edit it here — the advance payment stays as it is; the difference goes into the driver settlement for {ky}."
+ },
+ "ct_dang_ghi": {
+  "vi": "Đang ghi",
+  "lo": "ບັນທຶກຢູ່",
+  "en": "Recorded"
+ },
+ "ct_chi_that": {
+  "vi": "Chi thật",
+  "lo": "ຈ່າຍຕົວຈິງ",
+  "en": "Actual"
+ },
+ "ct_ghi_chu_ph": {
+  "vi": "Ghi chú (vd: tài xế nộp hoá đơn)",
+  "lo": "ໝາຍເຫດ (ເຊັ່ນ: ໂຊເຟີສົ່ງໃບບິນ)",
+  "en": "Note (e.g. driver handed in receipts)"
+ },
+ "ct_luu": {
+  "vi": "Lưu chi thật",
+  "lo": "ບັນທຶກລາຍຈ່າຍຕົວຈິງ",
+  "en": "Save actual spending"
+ },
+ "ct_lich_su": {
+  "vi": "Lịch sử sửa chi thật ({n})",
+  "lo": "ປະຫວັດການແກ້ລາຍຈ່າຍຕົວຈິງ ({n})",
+  "en": "Actual spending edits ({n})"
+ },
+ "ct_dong": {
+  "vi": "Dòng {n} · {khoan}",
+  "lo": "ແຖວ {n} · {khoan}",
+  "en": "Line {n} · {khoan}"
+ },
+ "ct_log": {
+  "vi": "Sửa chi thật dòng {n} ({khoan}): {cu} → {moi}",
+  "lo": "ແກ້ລາຍຈ່າຍຕົວຈິງ ແຖວ {n} ({khoan}): {cu} → {moi}",
+  "en": "Actual spending line {n} ({khoan}): {cu} → {moi}"
+ },
+ "ct_so_sai": {
+  "vi": "Chi thật phải là số không âm.",
+  "lo": "ລາຍຈ່າຍຕົວຈິງຕ້ອງເປັນຕົວເລກບໍ່ຕິດລົບ.",
+  "en": "Actual spending must be a non-negative number."
+ },
+ "ct_khong_doi": {
+  "vi": "Không có số nào đổi.",
+  "lo": "ບໍ່ມີຕົວເລກໃດປ່ຽນ.",
+  "en": "Nothing changed."
+ },
+ "ct_da_luu": {
+  "vi": "Đã lưu chi thật — chênh lệch vào Tất toán tài xế.",
+  "lo": "ບັນທຶກລາຍຈ່າຍຕົວຈິງແລ້ວ — ສ່ວນຕ່າງໄປຢູ່ການສະສາງໂຊເຟີ.",
+  "en": "Actual spending saved — the difference goes to the driver settlement."
+ },
+ "a_pay_auto": {
+  "vi": "Tự qua bước Chi (chỉ lấy kho, không có tiền cho thủ quỹ chi)",
+  "lo": "ຜ່ານຂັ້ນຈ່າຍອັດຕະໂນມັດ (ເບີກຈາກສາງເທົ່ານັ້ນ, ບໍ່ມີເງິນໃຫ້ຄັງຈ່າຍ)",
+  "en": "Passed the payment step automatically (stock only, no cash for the cashier)"
+ },
+ "a_pay_luong": {
+  "vi": "Chi ở kế toán (cùng lương) — không có tạm ứng tiền mặt",
+  "lo": "ຈ່າຍຢູ່ບັນຊີ (ພ້ອມເງິນເດືອນ) — ບໍ່ມີເງິນສົດລ່ວງໜ້າ",
+  "en": "Paid by accounting (with salary) — no cash advance"
+ },
+ "stt_iv_luong": {
+  "vi": "Chi ở kế toán (cùng lương)",
+  "lo": "ຈ່າຍຢູ່ບັນຊີ (ພ້ອມເງິນເດືອນ)",
+  "en": "Paid by accounting (with salary)"
+ },
+ "stt_iv_khong_tm": {
+  "vi": "Không có tạm ứng tiền mặt",
+  "lo": "ບໍ່ມີເງິນສົດລ່ວງໜ້າ",
+  "en": "No cash advance"
+ },
+ "tt_cc_khoa": {
+  "vi": "Chưa chốt được: còn {n} DO chưa xong (xem danh sách)",
+  "lo": "ຍັງປິດບໍ່ໄດ້: ຍັງມີ {n} DO ບໍ່ສຳເລັດ (ເບິ່ງລາຍການ)",
+  "en": "Cannot close yet: {n} DO(s) not finished (see the list)"
+ },
+ "tt_cc_ngan": {
+  "vi": "còn DO chưa xong",
+  "lo": "ຍັງມີ DO ບໍ່ສຳເລັດ",
+  "en": "DOs not finished"
+ },
+ "tt_cc_tieu_de": {
+  "vi": "Chưa chốt được — còn {n} DO chưa xong trong kỳ:",
+  "lo": "ຍັງປິດບໍ່ໄດ້ — ຍັງມີ {n} DO ບໍ່ສຳເລັດໃນງວດ:",
+  "en": "Cannot close — {n} DO(s) in the period are not finished:"
+ },
+ "tt_cc_goi_y": {
+  "vi": "Khoá DO (KT Thu/Chi), duyệt khai báo của tài xế (Theo dõi tuyến), nhập đơn giá dòng tiền mặt (KT Chi phí) rồi chốt lại.",
+  "lo": "ລັອກ DO (ບັນຊີຮັບ/ຈ່າຍ), ອະນຸມັດການແຈ້ງຂອງໂຊເຟີ (ຕິດຕາມເສັ້ນທາງ), ໃສ່ລາຄາແຖວເງິນສົດ (ບັນຊີລາຍຈ່າຍ) ແລ້ວປິດຄືນ.",
+  "en": "Lock the DOs (receipts/payments accountant), approve the driver's declarations (Route tracking), enter cash-line prices (cost accountant), then close again."
+ },
+ "tt_bo_khong_duoc": {
+  "vi": "không bỏ chốt được",
+  "lo": "ຍົກເລີກການປິດບໍ່ໄດ້",
+  "en": "cannot reopen"
+ },
+ "kho_web_chua_dat": {
+  "vi": "Chưa đặt địa chỉ màn Quản lý kho — báo quản trị.",
+  "lo": "ຍັງບໍ່ໄດ້ຕັ້ງທີ່ຢູ່ໜ້າຄຸ້ມຄອງສາງ — ແຈ້ງຜູ້ດູແລລະບົບ.",
+  "en": "The warehouse management address is not set — ask the administrator."
  }
 };

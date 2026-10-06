@@ -279,3 +279,19 @@
 .px-kho-hang-so:empty{display:none}
 .hop-thoai .px-thieu{border-color:var(--red,#A83232)!important;box-shadow:0 0 0 3px rgba(168,50,50,.15)}
 .px-hop-loi{margin:0 0 4px;padding:8px 10px;border-radius:var(--r);background:var(--red-soft);color:var(--red);font-weight:600;font-size:13px;line-height:1.45}
+
+/* 06/10 G6 — khối "Chi thật của tài xế" dưới bảng mục IV (KT Chi phí sửa sau khi đã chi tạm ứng, tới khi kỳ tất toán chốt) */
+.px-chi-that{margin:10px 0 6px;padding:10px 12px;border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:var(--r);background:var(--bg)}
+.px-ct-dau{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.px-ct-tt{padding:1px 9px;border-radius:999px;font-size:12px;font-weight:600}
+.px-ct-tt.mo{background:var(--green-soft);color:var(--green)}
+.px-ct-tt.khoa{background:var(--red-soft);color:var(--red)}
+.px-chi-that .small.muted{margin:4px 0 6px;line-height:1.45}
+.px-ct-ly{margin:0 0 6px;padding:6px 10px;border-radius:6px;background:var(--red-soft);color:var(--red);font-size:12.5px;line-height:1.45}
+.px-ct-bang input.px-ct-o{width:120px;max-width:100%}
+.px-ct-nut{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}
+.px-ct-nut input{flex:1 1 220px;min-width:0}
+.px-ct-nk{margin-top:8px;font-size:12px}
+.px-ct-nk summary{cursor:pointer;color:var(--ink-2)}
+.px-ct-nk ul{margin:6px 0 0;padding-left:18px;line-height:1.55}
+.px-ct-nk .ts{color:var(--ink-3, #7A858F);font-variant-numeric:tabular-nums}

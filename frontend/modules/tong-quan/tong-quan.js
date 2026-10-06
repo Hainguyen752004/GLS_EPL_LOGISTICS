@@ -21,6 +21,15 @@
    * có phiếu khi người dùng TỰ chọn một tháng trống — nút trên thanh công cụ đưa về đó. */
   let BAO = null, GAN = null;
   const nhanThang = (v) => (v ? v.slice(5, 7) + '/' + v.slice(0, 4) : '');
+  /** G8 (06/10): ô «phiếu lĩnh chờ» mở Web kho anh Tune: Quản lý kho → Danh sách chứng từ (gốc `kho_web` = QLSX_WEB_URL — như
+   *  services/kho_ke_toan.web_ke_toan). Trước đây mở <gốc>/#/cap-phat của kho tạm đã bỏ (05/10). */
+  async function moKhoChungTu() {
+    try {
+      const web = ((await API.get('/api/lien-thong/dia-chi', { giu: true })) || {}).kho_web || '';
+      if (!web) return EPL.toast(NN.t('kho_web_chua_dat'), 'loi');
+      window.open(web.replace(/\/+$/, '') + '/Warehouse/DocumentList', '_blank', 'noopener');
+    } catch (e) { EPL.baoLoi(e); }
+  }
 
   /** Tháng `th` có phiếu không; không có thì tháng nào GẦN NHẤT có (cùng bộ lọc `loc` của /api/trips). Hỏi hai lần, mỗi lần
    *  một dòng: phiếu mới nhất tới cuối tháng `th`, phiếu cũ nhất từ đầu tháng `th` — không tải cả năm. Cách đều: tháng trước. */
@@ -268,7 +277,7 @@
       ['tq_q_incident', q.su_co, 'bad', 'theo-doi-tuyen', { o: 'su_co_mo' }],
       ['tq_q_cho_so', q.cho_hoa_don, 'warn', 'theo-doi-tuyen', { o: 'cho_hoa_don' }],
       ['tq_q_my_work', q.viec_toi, 'info', 'phieu-xuat-xe', q.viec_phieu ? { id: q.viec_phieu } : {}],
-      ['tq_q_fuel', q.phieu_linh_cho, 'tan', 'kt:cap-phat', {}],        // màn Cấp phát ở trang kế toán (28/09)
+      ['tq_q_fuel', q.phieu_linh_cho, 'tan', 'kho:chung-tu', {}],       // G8 06/10: Web kho anh Tune → Danh sách chứng từ
       ['tq_q_unpaid', q.chua_thu_lak != null ? so(q.chua_thu_lak / 1e6, 1) + 'M LAK' : null, 'warn', 'theo-doi', { finance_status: 'unpaid', thang }],
     ].filter(ch => !(laBai() && ['tq_q_unpaid', 'tq_q_cho_so'].includes(ch[0])));   // hoá đơn và thu tiền không phải việc của Bãi
     root.querySelector('#tq-xem-nhanh').innerHTML = `<span class="lbl">${NN.h('tq_quick')}</span>` +
@@ -276,7 +285,7 @@
       `<span class="sep"></span><span class="right"><span id="tq-quick-stamp"></span><label><input type="checkbox" id="tq-auto">${NN.h('tq_auto')}</label></span>`;
     root.querySelector('#tq-quick-stamp').textContent = `${NN.t('tq_updated')} ${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
     root.querySelectorAll('.tq-chip').forEach(el => { const ch = chips[+el.dataset.i];
-      el.addEventListener('click', () => (ch[3].startsWith('kt:') ? EPL.moKeToan(ch[3].slice(3), ch[4]) : EPL.di(ch[3], ch[4]))); });
+      el.addEventListener('click', () => (ch[3] === 'kho:chung-tu' ? moKhoChungTu() : ch[3].startsWith('kt:') ? EPL.moKeToan(ch[3].slice(3), ch[4]) : EPL.di(ch[3], ch[4]))); });
     const auto = root.querySelector('#tq-auto'); auto.checked = !!autoTimer;
     auto.addEventListener('change', () => { clearInterval(autoTimer); autoTimer = auto.checked ? setInterval(() => tai().catch(EPL.baoLoi), 60000) : null; });
   }

@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Thử API BÀN GIAO DO cho hệ kế toán anh Tune (30/09) — đúng khuôn EPL_System, khoá máy riêng, chỉ phiếu đã khoá.
+"""Thử API BÀN GIAO DO cho hệ kế toán anh Tune (30/09) — đúng khuôn EPL_System, khoá máy riêng, mặc định chỉ phiếu đã khoá
+(06/10: `scope=all` có cả DO đang chạy, B2 trả DO chưa xong với status thật — mục 5).
 
     python kiem/thu_ban_giao.py [http://127.0.0.1:8011]
+    python kiem/thu_ban_giao_trong_gd.py      (cùng bài, chạy trong tiến trình trên bản sao _d7, cuối ROLLBACK — thử mã mới
+                                               mà không phải khởi động lại máy 8011)
 
 CHỈ chạy trên máy thử (bản sao DB): bài này TẠO LẠI khoá `token_nhan_qlsx` của máy đang gọi. Ngoài khoá đó không đổi dữ
 liệu. Không in khoá ra màn hình.
@@ -192,9 +195,16 @@ def main():
     s, ds = goi("/api/trips?co=80", u="admin")
     mo = next((p for p in ds if not p.get("locked")), None)
     if mo:
+        # 06/10: DO chưa xong cũng bàn giao (Vụ việc cho phiếu chi tạm ứng / mục V–VI) — status nói thật, Web cũ chỉ nhận
+        # "delivered" nên vẫn không lập được gì trên DO này; trước 06/10 là 409 DO_CHUA_KHOA
         s, g = goi("/api/handover/delivery-orders/EPLLAO-" + mo["id"], khoa=khoa)
-        dung(s == 409 and g["detail"]["ma"] == "DO_CHUA_KHOA", "phiếu chưa khoá %s → 409 DO_CHUA_KHOA" % mo.get("doc_no"))
-        dung(goi("/api/handover/xem-truoc/" + mo["id"], u="ketoan")[0] == 409, "xem trước phiếu chưa khoá → 409")
+        h = ((g or {}).get("data") or {}).get("header") or {}
+        dung(s == 200 and h.get("status") in ("in_transit", "arrived") and h.get("trip_status") == "in_progress"
+             and isinstance(h.get("payment_status"), dict),
+             "phiếu chưa khoá %s → 200, status %s (không giả delivered), có payment_status" % (mo.get("doc_no"), h.get("status")))
+        s, g = goi("/api/handover/delivery-orders?scope=all&page_size=200", khoa=khoa)
+        dung(s == 200 and "EPLLAO-" + mo["id"] in {x["do_id"] for x in g["data"]["items"]}, "scope=all có phiếu chưa khoá")
+        dung(goi("/api/handover/xem-truoc/" + mo["id"], u="ketoan")[0] == 200, "xem trước phiếu chưa khoá → 200")
     dung(goi("/api/handover/delivery-orders/EPLLAO-khongco", khoa=khoa)[0] == 404, "mã không có → 404")
     dung(goi("/api/handover/delivery-orders/T4-0428-08", khoa=khoa)[0] == 404, "số phiếu thay cho mã DO → 404")
     if items:

@@ -326,3 +326,167 @@ def bo_chot(driver_id: str, ky: str = "", db: Session = Depends(get_db), user=De
     from services import chi_tat_toan_tune as TTT
     TTT.chan_vai(user, TTT.CHOT_TT, "bỏ chốt tất toán (việc của KT Chi phí VC)")
     return TTT.bo_chot(db, user, driver_id, _ky_hop_le(ky))
+
+
+# ================================================================ G6 (06/10): CHI THẬT mục IV sau khi đã chi
+# Chủ dự án chốt "KT Chi phí chỉnh chi thật mục IV": tài xế cầm tạm ứng đi (mục IV "đã chi" — phiếu chi tạm ứng bên kế toán đã ghi
+# sổ), về khai chi thật ÍT hơn (hoặc nhiều hơn). Trước đây chỉ Sếp mở khoá mục mới sửa được đơn giá — mà mở khoá là rút / lập lại phiếu
+# chi tạm ứng đã đưa tiền. Nay KT Chi phí VC (và Sếp) sửa SỐ CHI THẬT của từng dòng TIỀN MẶT TÀI XẾ CẦM mục IV, XE NHÀ, cho tới khi
+# kỳ tất toán tài xế chứa DO đó đã chốt. KHÔNG đụng phiếu chi tạm ứng, tờ PTU, chứng từ PC_TU, bút toán: tạm ứng là tiền đã đưa —
+# "đã ứng" giữ nguyên, "đã chi thật" theo số mới, chênh lệch đi vào tất toán tài xế (chi bù / nộp lại). Mỗi lần sửa một dòng nhật ký
+# phiếu: "chi_that {json}" (dòng, khoản, cũ → mới, tiền tệ, ghi chú) — người và giờ là của dòng nhật ký.
+TIEN_TO_NK = "chi_that "
+XEM_CHI_THAT = ("expacct", "admin", "cash", "treasury")
+
+
+def _loi3(http, ma, vi, lo, en):
+    raise HTTPException(http, {"ma": ma, "loi": vi, "loi_lo": lo, "loi_en": en})
+
+
+def ky_cua_phieu(p):
+    """Kỳ tất toán chứa DO: tháng của NGÀY XE ĐI (không có thì ngày lập) — cùng luật _phieu_cua."""
+    n = p.out_date or p.doc_date
+    return n.strftime("%Y-%m") if n else None
+
+
+def _ban_chot_cua(db, p):
+    from models import DriverSettlement
+    ky = ky_cua_phieu(p)
+    if not p.driver_id or not ky:
+        return None
+    return db.query(DriverSettlement).filter(DriverSettlement.driver_id == p.driver_id, DriverSettlement.period == ky).first()
+
+
+def _chan_chi_that(p, vai, muc_iv, chot):
+    """None = sửa được; còn lại {ma, loi, loi_lo, loi_en, http} nói vì sao không (cùng câu cho API và giao diện)."""
+    from services.phan_quyen import SUA_CHI_THAT
+    thang = (lambda k: "%s/%s" % (k[5:7], k[:4]) if k else "")(ky_cua_phieu(p))
+    if vai not in SUA_CHI_THAT:
+        return {"http": 403, "ma": "KHONG_CO_QUYEN", "loi": "Chỉ KT Chi phí VC (và Sếp) sửa số chi thật mục IV.",
+                "loi_lo": "ສະເພາະບັນຊີລາຍຈ່າຍ ວຽງຈັນ (ແລະ ຫົວໜ້າ) ແກ້ລາຍຈ່າຍຕົວຈິງ ໝວດ IV.",
+                "loi_en": "Only the Vientiane cost accountant (and the owner) can edit actual spending in section IV."}
+    if p.company == "joint":
+        return {"http": 409, "ma": "XE_THUE", "loi": "Phiếu xe thuê: tạm ứng là công nợ chủ xe, không tất toán với tài xế — chỉ sửa chi thật "
+                                                     "cho xe nhà.",
+                "loi_lo": "ໃບລົດເຊົ່າ: ເງິນລ່ວງໜ້າເປັນໜີ້ເຈົ້າຂອງລົດ, ບໍ່ສະສາງກັບໂຊເຟີ — ແກ້ລາຍຈ່າຍຕົວຈິງໄດ້ສະເພາະລົດບໍລິສັດ.",
+                "loi_en": "Hired truck: the advance is owed by the truck owner, not settled with the driver — actual spending is edited "
+                          "for company trucks only."}
+    if muc_iv != "paid":
+        return {"http": 409, "ma": "CHUA_CHI", "loi": "Mục IV chưa chi tạm ứng — KT Chi phí nhập / sửa đơn giá lúc kiểm mục IV như thường.",
+                "loi_lo": "ໝວດ IV ຍັງບໍ່ໄດ້ຈ່າຍເງິນລ່ວງໜ້າ — ບັນຊີລາຍຈ່າຍໃສ່ / ແກ້ລາຄາຕອນກວດໝວດ IV ຕາມປົກກະຕິ.",
+                "loi_en": "Section IV advance is not paid yet — the cost accountant enters / edits prices when checking section IV."}
+    if not p.driver_id:
+        return {"http": 409, "ma": "THIEU_TAI_XE", "loi": "Phiếu chưa gắn tài xế trong danh mục — không biết kỳ tất toán nào.",
+                "loi_lo": "ໃບນີ້ຍັງບໍ່ໄດ້ຜູກໂຊເຟີໃນລາຍການ — ບໍ່ຮູ້ງວດສະສາງ.",
+                "loi_en": "The slip has no driver from the list — the settlement period is unknown."}
+    if chot is not None:
+        ai = " — %s %s" % (chot.settled_by or "", chot.settled_at.strftime("%d/%m/%Y") if chot.settled_at else "")
+        return {"http": 409, "ma": "KY_DA_CHOT",
+                "loi": "Kỳ %s của tài xế %s đã chốt tất toán%s: số chi thật đã khoá. Muốn sửa: bỏ chốt ở màn Tất toán tài xế (khi phiếu "
+                       "chênh bên kế toán chưa ghi sổ), sửa, rồi chốt lại." % (thang, p.driver_name or "", ai),
+                "loi_lo": "ງວດ %s ຂອງໂຊເຟີ %s ປິດສະສາງແລ້ວ%s: ລາຍຈ່າຍຕົວຈິງຖືກລັອກ. ຢາກແກ້: ຍົກເລີກການປິດຢູ່ໜ້າສະສາງໂຊເຟີ (ເມື່ອໃບສ່ວນຕ່າງ"
+                          "ຢູ່ບັນຊີຍັງບໍ່ລົງບັນຊີ), ແກ້, ແລ້ວປິດຄືນ." % (thang, p.driver_name or "", ai),
+                "loi_en": "Period %s for driver %s is already settled%s: actual spending is locked. To change it: reopen on the Driver "
+                          "settlement screen (while the difference voucher is not posted), edit, then close again."
+                          % (thang, p.driver_name or "", ai)}
+    return None
+
+
+def _dong_tien_mat_iv(db, p):
+    """Dòng mục IV là TIỀN MẶT TÀI XẾ CẦM (cùng luật tờ tạm ứng / tất toán — la_tien_mat_tai_xe), theo thứ tự trên phiếu."""
+    return [e for e in db.query(TripExpense).filter(TripExpense.trip_id == p.id, TripExpense.section == "travel")
+            .order_by(TripExpense.line_no) if la_tien_mat_tai_xe(e, p.company)]
+
+
+def _nhat_ky_chi_that(db, p):
+    import json
+    from models import TripLog
+    ra = []
+    for l in (db.query(TripLog).filter(TripLog.trip_id == p.id, TripLog.action.like(TIEN_TO_NK + "%"))
+              .order_by(TripLog.ts.desc()).limit(100)):
+        try:
+            x = json.loads(l.action[len(TIEN_TO_NK):])
+        except ValueError:
+            continue
+        x.update({"ts": l.ts.isoformat() if l.ts else None, "user": l.user_name, "role": l.role})
+        ra.append(x)
+    return ra
+
+
+def xuat_chi_that(db, p, vai):
+    """Gói màn "Chi thật mục IV" (phiếu xuất xe): sửa được không và vì sao, từng dòng tiền mặt (đang ghi = SL × đơn giá), nhật ký."""
+    from models import TripSection
+    muc_iv = (db.query(TripSection.status).filter(TripSection.trip_id == p.id, TripSection.section == "travel").scalar()) or "wait"
+    chot = _ban_chot_cua(db, p)
+    chan = _chan_chi_that(p, vai, muc_iv, chot)
+    return {"trip_id": p.id, "doc_no": p.doc_no, "ky": ky_cua_phieu(p), "muc_iv": muc_iv, "duoc_sua": chan is None,
+            "ly_do": {k: v for k, v in chan.items() if k != "http"} if chan else None,
+            "tat_toan": ({"status": chot.status, "settled_by": chot.settled_by,
+                          "settled_at": chot.settled_at.isoformat(timespec="minutes") if chot.settled_at else None} if chot else None),
+            "dong": [{"id": e.id, "line_no": e.line_no, "item_key": e.item_key, "item_name": e.item_name, "qty": e.qty,
+                      "unit_price": e.unit_price, "currency": e.currency or "LAK",
+                      "chi_that": round((e.qty or 0) * (e.unit_price or 0), 6), "note": e.note} for e in _dong_tien_mat_iv(db, p)],
+            "nhat_ky": _nhat_ky_chi_that(db, p)}
+
+
+@router.get("/api/trips/{tid}/chi-that")
+def xem_chi_that(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    if user.role not in XEM_CHI_THAT:
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không xem chi thật mục IV." % user.role})
+    p = db.get(Trip, tid)
+    if not p:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
+    return xuat_chi_that(db, p, user.role)
+
+
+@router.post("/api/trips/{tid}/chi-that")
+def sua_chi_that(tid: str, d: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """{dong: [{id, chi_that}], ghi_chu?} — `chi_that` là THÀNH TIỀN thật của dòng theo tiền tệ của dòng (≥ 0). Máy giữ số lượng, đặt
+    đơn giá = chi thật ÷ số lượng (số lượng 0 thì thành 1 × chi thật). Dòng không đổi thì bỏ qua, không ghi nhật ký."""
+    import json
+    from models import TripLog, TripSection
+    from services.tinh_toan import lam_tron
+    p = db.get(Trip, tid)
+    if not p:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
+    muc_iv = (db.query(TripSection.status).filter(TripSection.trip_id == p.id, TripSection.section == "travel").scalar()) or "wait"
+    chan = _chan_chi_that(p, user.role, muc_iv, _ban_chot_cua(db, p))
+    if chan:
+        raise HTTPException(chan.pop("http"), chan)
+    gui = d.get("dong")
+    if not isinstance(gui, list) or not gui:
+        raise HTTPException(422, {"ma": "THIEU_DONG", "loi": "Chưa có dòng nào để sửa chi thật."})
+    ghi_chu = (str(d.get("ghi_chu") or "").strip() or None)
+    dong = {e.id: e for e in _dong_tien_mat_iv(db, p)}
+    sua = []
+    for x in gui:
+        x = x if isinstance(x, dict) else {}
+        e = dong.get(str(x.get("id") or ""))
+        if e is None:
+            _loi3(409, "KHONG_PHAI_TIEN_MAT", "Chỉ sửa chi thật dòng TIỀN MẶT tài xế cầm của mục IV (không phải dòng thẻ, trả cùng lương, nợ "
+                                              "nhà cung cấp, hay dòng của phiếu khác).",
+                  "ແກ້ລາຍຈ່າຍຕົວຈິງໄດ້ສະເພາະແຖວເງິນສົດທີ່ໂຊເຟີຖືໄປ ໝວດ IV.",
+                  "Only section IV cash lines carried by the driver can be edited (not card, salary or supplier lines).")
+        try:
+            v = float(str(x.get("chi_that")).replace(",", ""))
+        except (TypeError, ValueError):
+            v = None
+        if v is None or v != v or v < 0:
+            _loi3(422, "SO_SAI", "Chi thật phải là số không âm, nhận '%s'." % x.get("chi_that"),
+                  "ລາຍຈ່າຍຕົວຈິງຕ້ອງເປັນຕົວເລກບໍ່ຕິດລົບ.", "Actual spending must be a non-negative number.")
+        moi = lam_tron(v, e.currency or "LAK")
+        cu = round((e.qty or 0) * (e.unit_price or 0), 6)
+        if abs(moi - cu) < 1e-6:
+            continue
+        sua.append((e, cu, moi))
+    for e, cu, moi in sua:
+        if (e.qty or 0) <= 0:
+            e.qty = 1
+        e.unit_price = round(moi / e.qty, 6)
+        db.add(TripLog(trip_id=p.id, user_name=user.full_name, role=user.role,
+                       action=TIEN_TO_NK + json.dumps({"dong": e.line_no, "dong_id": e.id, "item_key": e.item_key, "item_name": e.item_name,
+                                                       "cu": cu, "moi": moi, "tien_te": e.currency or "LAK", "ghi_chu": ghi_chu},
+                                                      ensure_ascii=False)))
+    if sua:
+        db.commit()
+    return xuat_chi_that(db, p, user.role)

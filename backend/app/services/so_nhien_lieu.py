@@ -4,7 +4,9 @@
 Xe thuê lấy dầu (mục III) / phụ tùng (mục V) ở KHO EPL = xuất bán cho đối tác (chủ xe). Trước đây phần bán là bút toán chờ
 Nợ 4022 / Có 707; nay phần bán thành MỘT SO bên anh Tune, khách của SO = đối tác (đối tượng EPLCX-<owner_id>), treo công nợ như
 SO cước. Giá vốn 607 / 1371 vẫn là bút toán `xuat_ban` (services/but_toan_cho.dong_xuat_kho). Khi trả đối tác, máy tự CẤN TRỪ
-phần SO còn nợ vào tiền trả (services/tra_chu_xe.py · chi_tune.de_nghi_tra_chu_xe).
+phần SO còn nợ vào tiền trả (services/tra_chu_xe.py · chi_tune.de_nghi_tra_chu_xe). 06/10: doanh thu của SO này (Nợ 1211 / Có 707,
+đối tượng đối tác) là bút toán chờ `doanh_thu_ban` ghi cùng nút «Tạo SO» (but_toan_cho.ghi_doanh_thu); cùng đường cấn trừ dùng cho
+SO bán hàng đối tác mua ở quầy (tra_chu_xe.so_quay — goi_can_tru theo tiền của SO).
 
     POST {goc}/api/v1/integrations/logistics/fuel-sales-orders       tạo (Idempotency-Key logistics-fuel:EPLLAO-<Trip.id>)
     GET  {goc}/api/v1/integrations/logistics/fuel-sales-orders/{do}  đọc lại (kèm dư nợ hiện tại)
@@ -317,10 +319,12 @@ def _ap_get(b, kq):
     return True
 
 
-def doc_thu(db, cac_so):
+def doc_thu(db, cac_so, san=None):
     """Đọc lại còn nợ của các SO nhiên liệu (đã synced) từ hệ anh Tune: công nợ của từng ĐỐI TÁC (customer-detail — một lời gọi một
     đối tác, cùng cách đọc SO cước: de_nghi_thu.ap_thu), SO không thấy ở đó thì hỏi thẳng GET fuel-sales-orders/{do}. Ghi vào
-    thu_*; KHÔNG commit. → {"da_doc": n, "loi": câu lỗi | None}. Hỏng thì dừng, giữ số đọc lần trước, ghi lỗi lên bản ghi."""
+    thu_*; KHÔNG commit. → {"da_doc": n, "loi": câu lỗi | None}. Hỏng thì dừng, giữ số đọc lần trước, ghi lỗi lên bản ghi.
+    `san` (06/10): {owner_id: công nợ đối tác đã đọc (chi_tune.cong_no_doi_tac)} — màn Tất toán đối tác đọc một lần cho cả SO nhiên
+    liệu lẫn SO bán hàng mua ở quầy, không gọi hai lần."""
     from services import chi_tune as CHI
     from services.de_nghi_thu import ap_thu
     ds = [b for b in cac_so if b is not None and b.status == "synced" and b.order_code]
@@ -331,7 +335,7 @@ def doc_thu(db, cac_so):
     for oid, cac in theo.items():
         o = db.get(Owner, oid) if oid else None
         try:
-            kq = CHI.cong_no_doi_tac(db, o) if o is not None else None
+            kq = (san or {}).get(oid) or (CHI.cong_no_doi_tac(db, o) if o is not None else None)
             for b in cac:
                 no, don = (kq or {}).get("no") or [], (kq or {}).get("don") or []
                 if any((x.get("so") or "") == b.order_code for x in no + don):
@@ -378,10 +382,22 @@ def khoa_can_tru(ref_no, order_code, huy=False):
     return k
 
 
-def goi_can_tru(order_code, so_tien, ref_no, ly_do, ngay=None):
-    """Thân lời gọi cấn trừ (giao ước 02/10): {OrderCode, Amount, CurrencyCode, RefNo, Reason, Date} — tiền SO (Kíp)."""
-    return {"OrderCode": order_code, "Amount": GT._so_json(GT._tien(so_tien, "Amount")), "CurrencyCode": TIEN, "RefNo": ref_no,
-            "Reason": (ly_do or "")[:250], "Date": (ngay or dt.date.today()).isoformat()}
+def goi_can_tru(order_code, so_tien, ref_no, ly_do, ngay=None, tien=TIEN, ty_gia=None):
+    """Thân lời gọi cấn trừ (giao ước 02/10): {OrderCode, Amount, CurrencyCode, RefNo, Reason, Date} — tiền SO (Kíp).
+    06/10: cấn trừ cả SO BÁN HÀNG mua ở quầy (tra_chu_xe.so_quay) — tiền theo tiền của SO (`tien`; thủ tục bên kế toán chặn mã tiền
+    khác tiền SO, 52789); SO không phải Kíp thì kèm ExchangeRate (Kíp / một đơn vị, ≤ 5 số lẻ — giới hạn của thủ tục). SO Kíp: thân
+    y như cũ (không thêm khoá)."""
+    tien = (tien or TIEN).upper()
+    x = {"OrderCode": order_code, "Amount": GT._so_json(GT._tien(so_tien, "Amount")), "CurrencyCode": tien, "RefNo": ref_no,
+         "Reason": (ly_do or "")[:250], "Date": (ngay or dt.date.today()).isoformat()}
+    if tien != TIEN and ty_gia:
+        x["ExchangeRate"] = GT._so_json(Decimal(str(round(float(ty_gia), 5))))
+    return x
+
+
+def ly_do_quay():
+    """Lý do cấn trừ SO bán hàng mua ở quầy (06/10) — ngắn như ly_do_can_tru: bên kế toán tự ghép số đề nghị, số SO, số TKN."""
+    return "Mua ở quầy"
 
 
 def ly_do_can_tru(doc_no):
@@ -422,7 +438,14 @@ def _lam_moi_can_tru(db, ct):
     if not GT.KEY_HOP_LE.match(k):
         _loi("KEY_SAI", "Không dựng được Idempotency-Key mới cho lần cấn trừ SO %s." % ct.order_code)
     ct.idempotency_key = k
-    ct.request_body = json.dumps(goi_can_tru(ct.order_code, ct.amount, ct.ref_no, ly_do_can_tru(p.doc_no if p is not None else "")),
+    try:
+        cu = json.loads(ct.request_body or "{}")
+    except ValueError:
+        cu = {}
+    # 06/10: SO bán hàng mua ở quầy (không theo chuyến — trip_id trống) giữ tiền / tỷ giá / lý do của gói cũ
+    ly_do = ly_do_can_tru(p.doc_no) if p is not None else (cu.get("Reason") or ly_do_quay())
+    ct.request_body = json.dumps(goi_can_tru(ct.order_code, ct.amount, ct.ref_no, ly_do, tien=cu.get("CurrencyCode") or getattr(ct, "currency", None) or TIEN,
+                                             ty_gia=cu.get("ExchangeRate")),
                                  ensure_ascii=False, separators=(",", ":"))
 
 
@@ -453,8 +476,8 @@ def gui_can_tru(db, ct, _lam_lai=False):
             ct.status, ct.error_code = "loi", "DEBT_OFFSET_DA_GO"
             ct.error_message = "Bên kế toán trả lần cấn trừ %s đã gỡ, cả với khoá mới." % (so_cu or "")
             db.commit()
-            _loi("DEBT_OFFSET_DA_GO", "Bên kế toán chưa cấn trừ SO nhiên liệu %s: lần cấn trừ %s đã bị gỡ bên đó — báo bên kế toán."
-                 % (ct.order_code, so_cu or ""), 409)
+            _loi("DEBT_OFFSET_DA_GO", "Bên kế toán chưa cấn trừ %s %s: lần cấn trừ %s đã bị gỡ bên đó — báo bên kế toán."
+                 % (ten_so(ct), ct.order_code, so_cu or ""), 409)
         _lam_moi_can_tru(db, ct)
         db.commit()
         return gui_can_tru(db, ct, _lam_lai=True)
@@ -466,7 +489,7 @@ def gui_can_tru(db, ct, _lam_lai=False):
         return ct
     ct.status, ct.error_code, ct.error_message = "loi", ma_loi, cau
     db.commit()
-    _loi(ma_loi, "Bên kế toán chưa cấn trừ SO nhiên liệu %s: %s" % (ct.order_code, cau), 502 if (ma or 0) >= 500 else 422)
+    _loi(ma_loi, "Bên kế toán chưa cấn trừ %s %s: %s" % (ten_so(ct), ct.order_code, cau), 502 if (ma or 0) >= 500 else 422)
 
 
 def huy_can_tru(db, ct, ly_do=None):
@@ -494,10 +517,17 @@ def huy_can_tru(db, ct, ly_do=None):
     if ok or ma == 404:
         ct.status, ct.huy_luc = "huy", dt.datetime.utcnow()
         return ct
-    _loi(ma_loi, "Bên kế toán chưa bỏ cấn trừ SO nhiên liệu %s (%s): %s" % (ct.order_code, ct.so_tkn or "—", cau),
+    _loi(ma_loi, "Bên kế toán chưa bỏ cấn trừ %s %s (%s): %s" % (ten_so(ct), ct.order_code, ct.so_tkn or "—", cau),
          502 if (ma or 0) >= 500 else 409)
 
 
+def ten_so(ct):
+    """Tên loại SO của một lần cấn trừ cho câu báo (06/10): theo chuyến → SO nhiên liệu; không theo chuyến → SO bán hàng mua ở quầy."""
+    return "SO nhiên liệu" if getattr(ct, "trip_id", None) else "SO bán hàng (mua ở quầy)"
+
+
 def xuat_can_tru(ct):
+    # 06/10: `loai` — so_nhien_lieu (theo chuyến) · so_quay (SO bán hàng mua ở quầy của đối tác, không theo chuyến)
     return {"order_code": ct.order_code, "so_tkn": ct.so_tkn, "tien": ct.amount, "tien_te": ct.currency, "trang_thai": ct.status,
-            "trip_id": ct.trip_id, "do_id": ct.do_id, "error_code": ct.error_code, "error_message": ct.error_message}
+            "trip_id": ct.trip_id, "do_id": ct.do_id, "error_code": ct.error_code, "error_message": ct.error_message,
+            "loai": "so_nhien_lieu" if ct.trip_id else "so_quay"}

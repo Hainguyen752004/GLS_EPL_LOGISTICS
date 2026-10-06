@@ -30,6 +30,15 @@
   // `laBai` ở trên tính cả Sếp (AUTH.la luôn đúng với admin) — đúng cho quyền thao tác, nhưng
   // KHÔNG dùng để giấu tiền: Sếp phải thấy hết. Chỗ giấu tiền dùng đúng vai yard.
   const chiBai = () => AUTH.role === 'yard';
+  /** G8 (06/10): dầu cấp ở KHO ANH TUNE — nút «Cấp dầu» mở Web QLSX: Quản lý kho → Danh sách chứng từ. Gốc là `kho_web` máy chủ trả
+   *  (QLSX_WEB_URL — services/kho_ke_toan.web_ke_toan). Trước đây mở <gốc>/#/cap-phat của kho tạm đã bỏ (05/10) → trang không có. */
+  async function moKhoChungTu() {
+    try {
+      const web = ((await API.get('/api/lien-thong/dia-chi', { giu: true })) || {}).kho_web || '';
+      if (!web) return EPL.toast(NN.t('kho_web_chua_dat'), 'loi');
+      window.open(web.replace(/\/+$/, '') + '/Warehouse/DocumentList', '_blank', 'noopener');
+    } catch (e) { EPL.baoLoi(e); }
+  }
 
   /* ---------------------------------------------------------------- dải ô số */
   // Mỗi ô: khoá từ điển · lấy số ở đâu · lọc danh sách thế nào khi bấm vào.
@@ -505,7 +514,7 @@
 
     q('#tdt-xe').querySelectorAll('[data-muc]').forEach(b => b.addEventListener('click', () => EPL.di('phieu-xuat-xe', { id: P.id })));
     const nutToi = q('#tdt-xe [data-toi]'); if (nutToi) nutToi.addEventListener('click', () => toiDiem(+nutToi.dataset.toi, diem.length));
-    const nutCap = q('#tdt-xe [data-cap]'); if (nutCap) nutCap.addEventListener('click', () => EPL.moKeToan('cap-phat'));   // màn Cấp phát ở KHO TẠM (EPL_KETOAN — 01/10 chỉ còn phần kho)
+    const nutCap = q('#tdt-xe [data-cap]'); if (nutCap) nutCap.addEventListener('click', moKhoChungTu);   // G8 06/10: Web kho anh Tune, không còn /#/cap-phat kho tạm
     const nutSC = q('#tdt-xe [data-su-co]'); if (nutSC) nutSC.addEventListener('click', moSuCo);
   }
 

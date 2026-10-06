@@ -8,8 +8,9 @@ anh Tune) lập chứng từ thật — phiếu chi, SO, bút toán tổng hợp
     chi_muc   Chi mục V / VI          mục V · VI (quỹ trả ngay)      ↔ phiếu chi "Chi khác" (CKH)
     xuat_kho  Xuất kho                tờ PLNL · phụ tùng lấy kho     ↔ bút toán xuất nội bộ / xuất bán (GL…)
     but_toan  Thuê xe · nợ NCC        khoá phiếu                     ↔ bút toán 621/4022 · …/4021 (GL…)
-    thu       Đề nghị thu             tờ PDT                         ↔ SO dịch vụ vận chuyển (TK-…) + đã thu
-    so_nl     SO nhiên liệu (xe thuê) — đường mới, chưa có bản ghi ở bên này (sap_co)
+    thu       Đề nghị thu             tờ PDT                         ↔ SO dịch vụ vận chuyển (TK-…) + đã thu + bút toán doanh thu
+                                                                         1211/708 (GL…, ghi lúc Tạo SO — 06/10)
+    so_nl     SO nhiên liệu (xe thuê) dòng kho xuất bán             ↔ SO nhiên liệu + cấn trừ TKN + bút toán doanh thu 1211/707 (06/10)
     tra_dt    Trả đối tác (xe thuê)   đề nghị TCX                    ↔ phiếu chi "Chi khác"
 
 Mỗi nhóm: {ap_dung, muc, em: [tờ bên điều xe], kt: [chứng từ bên kế toán], ghi_chu}. `muc` là một chữ cho cả nhóm:
@@ -50,6 +51,9 @@ LOAI_PDT = "PDT"                                             # de_nghi_thu.LOAI
 VAI_XEM_BT = ("acct", "expacct", "admin")                    # but_toan_cho.VAI_XEM — vai xem số tiền bút toán
 NGUON_XK = ("xuat_noi_bo", "xuat_ban")
 NGUON_GL = ("thue_xe", "no_ncc")
+# 06/10: bút toán doanh thu ghi lúc «Tạo SO bên kế toán» (services/but_toan_cho.ghi_doanh_thu) — hiện cạnh SO của nó
+NGUON_DT_CUOC, NGUON_DT_BAN = "doanh_thu", "doanh_thu_ban"
+THU_TU_MUC = {"loi": 0, "chua": 1, "cho_gui": 2, "cho_kt": 3, "xong": 4}
 MUC_V = {"repair": "V", "other": "VI"}
 HANG = {"da_chi": 3, "da_gui": 2, "loi": 1}
 
@@ -159,6 +163,14 @@ def _nhom(p, N, chi, ban, xem_bt):
             return "cho_gui"
         return "xong" if all(x["chinh_thuc"] for x in ds_gl) else "cho_kt"
 
+    def gop(muc, ds_gl):
+        """06/10: mức của nhóm SO gộp thêm bút toán doanh thu của SO đó — lấy mức KÉM hơn (lỗi › chưa › chờ gửi › chờ kế toán ›
+        xong). DO tạo SO trước 06/10 không có bút toán doanh thu → giữ mức theo SO như cũ."""
+        m = muc_gl(ds_gl)
+        if m is None or muc not in THU_TU_MUC:
+            return muc
+        return m if THU_TU_MUC[m] < THU_TU_MUC[muc] else muc
+
     ra = {}
 
     # ---- 1. tạm ứng: tờ PTU ↔ phiếu chi "Chi trước"
@@ -262,6 +274,8 @@ def _nhom(p, N, chi, ban, xem_bt):
             x.update({"tong": b.thu_tong if b.thu_tong is not None else b.total_amount, "da_thu": b.thu_da_thu,
                       "con_no": b.thu_con_no, "ccy": b.currency})
         g["kt"].append(x)
+    dt_cuoc = [gl(r) for r in btc if r.nguon == NGUON_DT_CUOC]       # 06/10: Nợ 1211 / Có 708 theo SO cước
+    g["kt"].extend(dt_cuoc)
     if not p.locked:
         g["muc"], g["ghi_chu"] = "chua", "cho_khoa"
     elif b is None or b.status not in ("synced", "failed", "conflict"):
@@ -269,7 +283,7 @@ def _nhom(p, N, chi, ban, xem_bt):
     elif b.status != "synced":
         g["muc"] = "loi"
     else:
-        g["muc"] = "xong" if b.thu_trang_thai == "da_thu" else "cho_kt"
+        g["muc"] = gop("xong" if b.thu_trang_thai == "da_thu" else "cho_kt", dt_cuoc)
     ra["thu"] = g
 
     # ---- 6. SO nhiên liệu (xe thuê): dòng kho xuất bán ↔ SO bên kế toán ghi công nợ đối tác (+ cấn trừ TKN lúc trả đối tác)
@@ -291,16 +305,18 @@ def _nhom(p, N, chi, ban, xem_bt):
             for c in cts:
                 g["kt"].append({"loai": "tkn", "so": c.so_tkn, "ref": c.ref_no, "tt": c.status,
                                 "tien_lak": c.amount if ban else None, "loi": c.error_message if c.status == "loi" else None})
+        dt_ban = [gl(r) for r in btc if r.nguon == NGUON_DT_BAN]        # 06/10: Nợ 1211 / Có 707 theo SO nhiên liệu
+        g["kt"].extend(dt_ban)
         if not g["ap_dung"]:
             g["muc"] = "khong"
         elif not p.locked:
             g["muc"], g["ghi_chu"] = "chua", "cho_khoa"
         elif b is None:
             g["muc"], g["ghi_chu"] = "chua", "nl_cho_tao"
-        elif g["kt"][0]["tt"] == "loi" or any(x["tt"] == "loi" for x in g["kt"][1:]):
+        elif g["kt"][0]["tt"] == "loi" or any(x["tt"] == "loi" for x in g["kt"][1:] if x["loai"] == "tkn"):
             g["muc"] = "loi"
         else:
-            g["muc"] = "xong" if g["kt"][0]["tt"] in ("da_thu", "can_tru") else "cho_kt"
+            g["muc"] = gop("xong" if g["kt"][0]["tt"] in ("da_thu", "can_tru") else "cho_kt", dt_ban)
         ra["so_nl"] = g
 
     # ---- 7. trả đối tác (xe thuê): đề nghị TCX ↔ phiếu chi "Chi khác"

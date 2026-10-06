@@ -404,9 +404,14 @@ def gan(db, p, goi, dong, so):
         if d.id in xk:
             n, m = xk[d.id]
             c = mot_lan("kho_cu", lambda: _xuat_kho_cu(db, p))[0].get(d.id)
-            return _ket("pending", "journal", "%s%s — chưa có bút toán xuất kho (ghi lúc khoá phiếu; phiếu khoá trước khi có luật bút "
-                        "toán xuất kho); đối soát với kế toán, không lập phiếu chi." % (
-                            TEN_NGUON[n], (" (sổ kho cũ %s)" % c.so) if c is not None else ""), ref_no=_ma_ben_em(n, m))
+            ten = "%s%s" % (TEN_NGUON[n], (" (sổ kho cũ %s)" % c.so) if c is not None else "")
+            if not p.locked:
+                # 06/10: B2 trả cả DO đang chạy — chưa có bút toán là ĐÚNG (bút toán xuất kho ghi lúc khoá DO), không phải lệch cần
+                # đối soát như phiếu khoá trước luật 01/10
+                return _ket("pending", "journal", "%s — bút toán xuất kho ghi lúc khoá DO (DO chưa khoá); không lập phiếu chi." % ten,
+                            ref_no=_ma_ben_em(n, m))
+            return _ket("pending", "journal", "%s — chưa có bút toán xuất kho (ghi lúc khoá phiếu; phiếu khoá trước khi có luật bút "
+                        "toán xuất kho); đối soát với kế toán, không lập phiếu chi." % ten, ref_no=_ma_ben_em(n, m))
         if d.id in mot_lan("no_ncc", no_ncc):
             return _ket("pending", "journal", "%s — chưa có bút toán (ghi lúc khoá phiếu); không lập phiếu chi, trả nhà cung cấp theo "
                         "đợt." % _ten_no(d), ref_no=_ma_ben_em(BTC.NO_NCC, p.id))

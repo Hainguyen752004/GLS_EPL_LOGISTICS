@@ -142,7 +142,9 @@
       try {
         const r = await API.post(`/api/trips/${x.trip_id}/tao-so`, {});
         // xe thuê có xuất bán: cùng nút tạo cả SO nhiên liệu cho đối tác (02/10) — báo cả hai số
-        const so = (r.trang_thai || {}).order_code || '', nl = (r.nhien_lieu || {}).order_code || '';
+        // 06/10: máy chủ trả nhien_lieu = {trang_thai: {order_code…}, da_co_truoc} — trước đây đọc nhầm tầng nên không báo số SO nhiên liệu
+        const n = r.nhien_lieu || {};
+        const so = (r.trang_thai || {}).order_code || '', nl = (n.trang_thai || {}).order_code || n.order_code || '';
         EPL.toast(nl ? NN.t('dt_so_xong_nl', { so, nl }) : NN.t('dt_so_xong', { so }), 'ok');
       }
       catch (e) { EPL.baoLoi(e); }

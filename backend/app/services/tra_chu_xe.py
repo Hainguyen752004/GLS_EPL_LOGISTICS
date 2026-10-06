@@ -13,6 +13,9 @@ bên đó chi và ghi sổ, rồi gọi `danh_dau_tra` với mã đợt "TUNE:<s
      (EPL_KETOAN, ba đường máy /api/lien-thong/ban-hang/…). Đề nghị trả lấy SỐ TRẢ THỰC = Σ phiếu − Σ hàng mua: `tinh_tru`.
      Lúc lập đề nghị giữ chỗ các phiếu bán ("TUNE-CHO:<số đề nghị>"), thủ quỹ đã chi thì chốt ("TUNE:<số phiếu chi>") và ghi
      bút toán chờ Nợ 4022 / Có 707, đề nghị bị bỏ thì trả phiếu bán về chờ trừ.
+     06/10 — kho QLSX (KHO_NGUON mặc định): quầy ở hệ kế toán, hàng mua ở quầy là SO BÁN HÀNG còn nợ của đối tác bên đó (`so_quay`);
+     cùng `tinh_tru`, nhưng "giữ chỗ" là CẤN TRỪ SO đó (collection-offset, như SO nhiên liệu) lúc lập đề nghị; bỏ đề nghị thì gỡ cấn
+     trừ. Không ghi bút toán Nợ 4022 / Có 707 ở đây: bên kế toán ghi bút toán cấn trừ cùng lần (Nợ phải trả đối tác / Có 1211).
   4. **TẤT TOÁN ĐỐI TÁC** (chủ dự án chốt 02/10) — `phan_tra`: trả đối tác = tiền thuê − phí quản lý − cắt quá tải − tạm ứng EPL
      đưa (tiền mặt) − nợ nhà cung cấp EPL trả thay − SO NHIÊN LIỆU còn nợ. Dầu / phụ tùng kho xuất bán cho đối tác không trừ thẳng
      nữa mà thành SO nhiên liệu bên kế toán (services/so_nhien_lieu.py); lập đề nghị trả thì máy CẤN TRỪ phần SO còn nợ (phiếu cấn
@@ -171,11 +174,77 @@ def _kho(db, method, duong, body=None, user=None):
 
 def hang_cho_tru(db, owner_id, user):
     """Phiếu bán chủ xe mua ở quầy CHƯA trừ (chưa thu, chưa nằm đề nghị nào) — cũ trước. Kho tạm không nối được thì ném 503.
-    Kho QLSX (05/10): quầy không còn ở đây → không có phiếu bán chờ trừ."""
+    Kho QLSX (06/10, chủ dự án chốt «làm đủ» — trước đây nhánh này trả rỗng nên tiền mua ở quầy không còn trừ vào tiền trả): SO BÁN
+    HÀNG còn nợ của đối tác bên hệ kế toán (so_quay), bỏ SO đang chờ cấn trừ trong một đề nghị khác. Đọc không được thì ném."""
     from services import kho_qlsx as KQ
     if KQ.bat():
-        return []
+        if not owner_id or db.get(Owner, owner_id) is None:
+            return []                               # không phải đối tác bên trang này (xe nhà…) → không có SO quầy để trừ, không gọi mạng
+        return [x for x in so_quay(db, owner_id) if not x.get("dang_de_nghi")]
     return _kho(db, "GET", "/api/lien-thong/ban-hang/cho-tru?owner_id=%s" % quote(owner_id), user=user) or []
+
+
+# ---------------------------------------------------------------- SO bán hàng mua ở quầy ở hệ kế toán (06/10)
+# Kho / quầy dời sang hệ anh Tune (05/10): đối tác mua ở quầy là một SO BÁN HÀNG thường bên đó đứng tên đối tác (EPLCX-<chủ xe>),
+# treo công nợ đối tác — khác SO cước (OrderSource LOGISTICS) và SO nhiên liệu (LOGISTICS_FUEL) của trang này. Lập đề nghị trả thì
+# máy CẤN TRỪ các SO đó (collection-offset — thủ tục bên đó nhận mọi SO có phiếu bán + một dòng công nợ, không giới hạn loại SO) đúng
+# cách SO nhiên liệu (chi_tune.de_nghi_tra_chu_xe → can_tru_tune, trip_id trống). Luật trừ giữ như phiếu bán kho tạm (tinh_tru): cũ
+# trước, SO nào vừa số còn trả thì trừ CẢ phần còn nợ của SO, không vừa để đợt sau — không trừ lố thành đối tác nợ ngược.
+LOAI_QUAY = "so_quay"
+NGUON_SO_TRANG_NAY = ("LOGISTICS", "LOGISTICS_FUEL")   # TicketOrder.OrderSource của SO cước · SO nhiên liệu — không phải hàng quầy
+TIEN_QUAY = ("LAK", "USD", "THB", "VND", "CNY")         # tiền trang này quy Kíp được (tinh_toan.TIEN_TE)
+
+
+def so_quay(db, owner_id, kq=None):
+    """SO bán hàng (mua ở quầy) CÒN NỢ của đối tác bên hệ kế toán, cũ trước. `kq` = công nợ đối tác đã đọc (chi_tune.cong_no_doi_tac);
+    None → đọc (một lời gọi; lỗi → HTTPException, người gọi quyết). Mỗi SO, dạng tinh_tru dùng được (cùng khoá phiếu bán kho tạm):
+      {id, doc_no, so: số SO, loai: "so_quay", sale_date, currency, total: CÒN NỢ (tiền SO — số sẽ cấn trừ), total_lak, ty_gia,
+       tong_so, da_thu, phieu_ban, dang_de_nghi: số đề nghị đang chờ cấn trừ SO này | None}
+    Bỏ: SO cước / SO nhiên liệu (OrderSource, và mã SO trang này đã gửi — phòng DB bên đó chưa áp script nên không có OrderSource), SO
+    hết nợ, tiền lạ. Tỷ giá SO không phải Kíp = tỷ giá hiện hành (danh mục Tỷ giá — ngày cấn trừ), ≤ 5 số lẻ như thủ tục cấn trừ nhận."""
+    from models import CanTruTune, ChiChuXeTune, GuiSoNhienLieuTune, GuiSoTune
+    from services import chi_tune as CHI
+    from services.gia_von import ty_gia_lak
+    o = db.get(Owner, owner_id)
+    if o is None:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có chủ xe này bên trang điều xe."})
+    if kq is None:
+        kq = CHI.cong_no_doi_tac(db, o)
+    no = [x for x in (kq or {}).get("no") or [] if (x.get("so") or "").strip()]
+    ngay_don = {(d.get("so") or ""): d.get("ngay") for d in (kq or {}).get("don") or []}
+    ma = sorted({x["so"].strip() for x in no})
+    cua_trang = set()
+    if ma:
+        cua_trang = ({c for (c,) in db.query(GuiSoTune.order_code).filter(GuiSoTune.order_code.in_(ma))}
+                     | {c for (c,) in db.query(GuiSoNhienLieuTune.order_code).filter(GuiSoNhienLieuTune.order_code.in_(ma))})
+    # SO đang nằm trong một đề nghị CHƯA cấn trừ xong (lần cấn trừ chưa gửi được) — bên kia chưa trừ nợ; đề nghị khác lấy lại là trừ hai lần
+    dang = {}
+    if ma:
+        for ct, ref in (db.query(CanTruTune, ChiChuXeTune.ref_no).join(ChiChuXeTune, ChiChuXeTune.id == CanTruTune.de_nghi_id)
+                        .filter(ChiChuXeTune.owner_id == owner_id, ChiChuXeTune.status != "huy", CanTruTune.status == "loi",
+                                CanTruTune.order_code.in_(ma))):
+            dang[ct.order_code] = ref
+    ra = []
+    for x in no:
+        so = x["so"].strip()
+        if (x.get("nguon") or "").upper() in NGUON_SO_TRANG_NAY or so in cua_trang:
+            continue
+        ccy = str(x.get("ccy") or "").strip().upper()
+        try:
+            con = float(x.get("con_no") or 0)
+        except (TypeError, ValueError):
+            continue
+        if ccy not in TIEN_QUAY or con <= 0.005:
+            continue
+        con = lam_tron(con, ccy)
+        if con <= 0:
+            continue
+        ty = 1.0 if ccy == "LAK" else round(float(ty_gia_lak(db, ccy)), 5)
+        ngay = str(x.get("ngay") or ngay_don.get(so) or "")[:10] or None
+        ra.append({"id": so, "doc_no": so, "so": so, "loai": LOAI_QUAY, "sale_date": ngay, "currency": ccy, "total": con,
+                   "total_lak": round(con * ty), "ty_gia": ty, "tong_so": x.get("tien"), "da_thu": x.get("da_tra"),
+                   "phieu_ban": x.get("phieu_ban"), "dang_de_nghi": dang.get(so)})
+    return sorted(ra, key=lambda b: (b.get("sale_date") or "", b["so"]))
 
 
 def tinh_tru(chon, hang):
@@ -205,9 +274,16 @@ def tinh_tru(chon, hang):
     tru = lam_tron(sum(d["tru"] for d in dong), ccy)
     return {"ccy": ccy, "tong": tong, "tong_lak": tong_lak, "tru": tru, "tru_lak": tru_lak,
             "tra_thuc": lam_tron(tong - tru, ccy), "tra_thuc_lak": tong_lak - tru_lak,
-            "hang": [{k: b.get(k) for k in ("id", "doc_no", "sale_date", "currency", "total", "total_lak")} for b in lay],
-            "hang_de_lai": [{k: b.get(k) for k in ("id", "doc_no", "sale_date", "currency", "total", "total_lak")} for b in de_lai],
-            "dong": dong}
+            "hang": [_gon(b) for b in lay], "hang_de_lai": [_gon(b) for b in de_lai], "dong": dong}
+
+
+def _gon(b):
+    """Một món hàng quầy trong kết quả tinh_tru (lưu vào đề nghị). 06/10: SO bán hàng ở hệ kế toán giữ thêm số SO, loại, tỷ giá —
+    chi_tune lập lần cấn trừ theo đó; phiếu bán kho tạm (cũ) giữ đúng sáu khoá như trước."""
+    x = {k: b.get(k) for k in ("id", "doc_no", "sale_date", "currency", "total", "total_lak")}
+    if b.get("loai") == LOAI_QUAY:
+        x.update({k: b.get(k) for k in ("so", "loai", "ty_gia")})
+    return x
 
 
 def tru_hang_quay(db, owner_id, chon, user):
