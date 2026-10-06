@@ -1,206 +1,170 @@
 # -*- coding: utf-8 -*-
-"""Thử BA MÓN NỢ KỸ THUẬT đã dọn 22/09 (mục 3 tệp CONG_VIEC_CHO_ANH_KHAMPLA_CHOT).
+"""Thử BA MÓN NỢ KỸ THUẬT đã dọn 22/09 (mục 3 tệp CONG_VIEC_CHO_ANH_KHAMPLA_CHOT) — chạy TRONG TIẾN TRÌNH (06/10).
 
-    python kiem/thu_no_ky_thuat.py [http://127.0.0.1:8010]
+    python kiem/thu_no_ky_thuat.py
 
-  · **3.1 — máy chủ không trả giá bán cho vai không được thấy.** Trước đây `/api/trips` và
-    `/api/bao-cao/theo-doi` vẫn trả đơn giá, doanh thu, lãi cho mọi vai; giao diện che nhưng mở công
-    cụ trình duyệt là đọc được hết. Nay các khoá đó bị **bỏ hẳn** khỏi gói trả về.
-  · **3.2 — ảnh xe lưu được**, dùng lại đúng chỗ chứa tệp của phiếu.
-  · **3.4 — ô "Việc của tôi" của KT Doanh thu** đếm phiếu đã khoá chưa xuất hoá đơn + hoá đơn chưa
-    thu đủ, thay vì luôn là 0 (họ không phụ trách mục nào trên phiếu). Từ 01/10 (bỏ trang kế toán tạm): "hoá đơn" là SO
-    bên hệ kế toán anh Tune (`da_tao_so`), "chưa thu đủ" theo bản đọc lại thu tiền bên đó — không còn cờ invoiced.
+Khung kiem/_khung_tien_trinh.py: bản sao _d7, một giao dịch, cuối ROLLBACK; xe, tài xế (kèm tài khoản), khách, DO thử dựng mới ở một
+tháng d7 chưa có DO; không gọi mạng. (Trước 06/10 bài gọi máy 8010 và đọc / sửa dữ liệu thật: ảnh xe đầu danh sách…)
+
+  · **3.1 — máy chủ không trả giá bán cho vai không được thấy.** `/api/trips`, `/api/bao-cao/theo-doi`, chi tiết một phiếu, phiếu
+    in (tạm ứng · phiếu thu · phiếu lĩnh): Bãi, tài xế, thủ kho không nhận khoá tiền bán; Bãi không nhận cả tiền chi; kế toán đủ.
+  · **3.2 — ảnh xe lưu được**, dùng lại đúng chỗ chứa tệp của phiếu; **ảnh tài xế** cùng bộ máy (chuyển từ kiem/thu_chot_22_09.py,
+    nay ở kiem/loi_thoi/).
+  · **3.4 — ô "Việc của tôi" của KT Doanh thu** đếm phiếu đã khoá chưa tạo SO + SO chưa thu đủ (không còn cờ invoiced).
+  · Mã kế toán cấu hình (mã hàng khách gửi, mã giá vốn) chỉ Sếp đặt — kế toán đặt → 403 (từ kiem/thu_chot_22_09.py; bài không ghi
+    thử cấu hình: đó là dòng đang có trên d7).
 """
-import io
-import json
-import sys
-import urllib.error
-import urllib.parse
-import urllib.request
-import os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _khung_tien_trinh as K                           # đặt DATABASE_URL = _d7, chặn mạng, cài bộ giả — trước mọi mã máy chủ
 
-GOC = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8010").rstrip("/")
-TOKEN = {}
-# Ảnh PNG 1×1 thật (đủ để máy chủ nhận là image/png), không cần thư viện ngoài.
+dung, phai, ma = K.dung, K.phai, K.ma
 PNG_1x1 = bytes.fromhex(
     "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489"
     "0000000a49444154789c6360000002000100ffff03000006000557bfabd4000000"
     "0049454e44ae426082")
-
-
-def goi(duong, du_lieu=None, vai=None, method=None):
-    dau = {"Content-Type": "application/json"}
-    if vai:
-        dau["Authorization"] = "Bearer " + TOKEN[vai]
-    than = json.dumps(du_lieu).encode() if du_lieu is not None else None
-    r = urllib.request.Request(GOC + duong, data=than, headers=dau,
-                               method=method or ("POST" if than is not None else "GET"))
-    try:
-        with urllib.request.urlopen(r, timeout=60) as t:
-            return t.status, json.loads(t.read())
-    except urllib.error.HTTPError as e:
-        try:
-            return e.code, json.loads(e.read())
-        except ValueError:
-            return e.code, {}
-
-
-def gui_anh(duong, ten, du, vai):
-    """Gửi multipart/form-data bằng tay — bộ kiểm không kéo thêm thư viện ngoài."""
-    ranh = "----eplkiem1234567890"
-    than = io.BytesIO()
-    than.write(("--%s\r\n" % ranh).encode())
-    than.write(('Content-Disposition: form-data; name="tep"; filename="%s"\r\n' % ten).encode())
-    than.write(b"Content-Type: image/png\r\n\r\n")
-    than.write(du)
-    than.write(("\r\n--%s--\r\n" % ranh).encode())
-    r = urllib.request.Request(GOC + duong, data=than.getvalue(), method="POST", headers={
-        "Content-Type": "multipart/form-data; boundary=%s" % ranh,
-        "Authorization": "Bearer " + TOKEN[vai]})
-    try:
-        with urllib.request.urlopen(r, timeout=60) as t:
-            return t.status, json.loads(t.read())
-    except urllib.error.HTTPError as e:
-        try:
-            return e.code, json.loads(e.read())
-        except ValueError:
-            return e.code, {}
-
-
-def phai(s, mong, buoc, g=None):
-    dt_ = (g or {}).get("detail") if isinstance(g, dict) else None
-    ma = dt_.get("ma", "") if isinstance(dt_, dict) else ""
-    print("%s %-60s %s %s" % ("  ✓" if s == mong else "  SAI", buoc, s, ma))
-    if s != mong:
-        raise SystemExit("DỪNG: %s trả %s, mong %s — %s" % (buoc, s, mong, g))
-
-
 KHOA_BAN = ("price", "price_ccy", "hire_price", "hire_ccy", "fee_pct", "over_limit_t", "over_price")
 TINH_BAN = ("doanh_thu", "doanh_thu_lak", "lai", "lai_lak", "tien_thue", "tra_chu_xe", "da_thu_lak", "con_lai_lak")
 TINH_CHI = ("tong_chi_lak", "chi", "tan_tinh")
 
 
 def main():
-    for u in ("thabok", "ketoan", "doanhthu", "khotb", "tx01", "admin"):
-        s, g = goi("/api/dang-nhap", {"username": u, "password": "1234"})
-        if s != 200:
-            raise SystemExit("Không đăng nhập được %s: %s" % (u, g))
-        TOKEN[u] = g["token"]
-    print("✓ đăng nhập 6 vai")
+    with K.Khung() as m:
+        goi = m.goi
+        print("== 0. dữ liệu thử (tháng %s, dựng trong giao dịch)" % m.thang)
+        xe, xe2 = m.xe("THU-NK-01"), m.xe("THU-NK-02")
+        tx = m.tai_xe("ທ້າວ ທົດລອງ ໜີ້", tai_khoan=True)
+        tx2 = m.tai_xe("ທ້າວ ທົດລອງ ໜີ້ 2")
+        kh = m.khach("ລູກຄ້າ ທົດລອງ ໜີ້")
+        m.commit()
+        s, p1 = goi("/api/trips", {"doc_no": "THU-NK-1/EPL", "kind": "giao", "vehicle_id": xe.id, "driver_id": tx.id, "customer_id": kh.id,
+                                   "doc_date": m.ngay(3).isoformat(), "price": 12, "price_ccy": "USD", "weight_origin": 30,
+                                   "expenses": [{"section": "travel", "item_key": "x_phone", "qty": 1, "unit_price": 150000, "paid_by_epl": True},
+                                                {"section": "travel", "item_key": "x_water", "qty": 1, "unit_price": 60000, "paid_by_epl": True}]},
+                   "admin")
+        phai(s, 200, "Sếp lập DO thử 1 (12 USD/t, điện thoại tiền mặt, tiền nước)", p1)
+        s, p2 = goi("/api/trips", {"doc_no": "THU-NK-2/EPL", "kind": "giao", "vehicle_id": xe2.id, "driver_id": tx2.id, "customer_id": kh.id,
+                                   "doc_date": m.ngay(4).isoformat(), "price": 10, "price_ccy": "USD", "weight_origin": 20}, "admin")
+        phai(s, 200, "Sếp lập DO thử 2 (không dòng chi)", p2)
 
-    # ================================================================ 3.1 giá bán không ra khỏi máy chủ
-    for vai, ten in (("thabok", "Bãi"), ("tx01", "Tài xế"), ("khotb", "Thủ kho")):
-        s, ds = goi("/api/trips", vai=vai)
-        phai(s, 200, "%s gọi /api/trips" % ten, ds)
-        if not ds:
-            continue
-        lo = sorted({k for p in ds for k in KHOA_BAN if k in p})
-        lo_t = sorted({k for p in ds for k in TINH_BAN if k in (p.get("tinh") or {})})
-        assert not lo and not lo_t, "%s vẫn nhận khoá tiền bán: %s %s" % (ten, lo, lo_t)
-        con = sorted({k for k in TINH_CHI if k in (ds[0].get("tinh") or {})})
-        if vai == "thabok":
-            # anh Khampla A2 (23/09): Bãi không thấy cả tiền CHI (tổng chi, đơn giá, tỷ giá); tài xế vẫn thấy tạm ứng của mình
-            lo_chi = sorted({k for k in ("tong_chi_lak", "chi") if k in (ds[0].get("tinh") or {})})
-            lo_dg = [d for p in ds for d in (p.get("expenses") or []) if "unit_price" in d]
-            assert not lo_chi and not lo_dg and not any("rate_usd" in p for p in ds), "%s vẫn nhận tiền chi: %s" % (ten, lo_chi)
-        elif vai == "khotb":
-            # thủ kho không thấy giá vốn kho (chủ dự án 30/09) — tổng chi có giá kho bên trong nên cũng bỏ
-            assert not ({"tong_chi_lak", "chi"} & set(ds[0].get("tinh") or {})), "%s vẫn nhận tổng chi (lộ giá kho): %s" % (ten, con)
-        else:
-            assert len(con) == len(TINH_CHI), "phần CHI PHÍ phải giữ nguyên cho %s: %s" % (ten, con)
-    print("  ✓ %-60s" % "Ba vai không thấy tiền bán; Bãi không thấy cả tiền chi")
+        print("== 3.1 giá bán không ra khỏi máy chủ")
+        for vai, ten in (("thabok", "Bãi"), (tx.username, "Tài xế"), ("khotb", "Thủ kho")):
+            s, ds = goi("/api/trips", vai=vai)
+            phai(s, 200, "%s gọi /api/trips" % ten, ds)
+            lo = sorted({k for p in ds for k in KHOA_BAN if k in p})
+            lo_t = sorted({k for p in ds for k in TINH_BAN if k in (p.get("tinh") or {})})
+            dung(not lo and not lo_t, "%s không nhận khoá tiền bán (%d phiếu)" % (ten, len(ds)), (lo, lo_t))
+            if not ds:
+                continue
+            con = sorted({k for k in TINH_CHI if k in (ds[0].get("tinh") or {})})
+            if vai == "thabok":
+                # anh Khampla A2 (23/09): Bãi không thấy cả tiền CHI (tổng chi, đơn giá, tỷ giá); tài xế vẫn thấy tạm ứng của mình
+                lo_chi = sorted({k for p in ds for k in ("tong_chi_lak", "chi") if k in (p.get("tinh") or {})})
+                lo_dg = [d for p in ds for d in (p.get("expenses") or []) if "unit_price" in d]
+                dung(not lo_chi and not lo_dg and not any("rate_usd" in p for p in ds), "Bãi không nhận tiền chi (tổng chi, đơn giá, tỷ giá)",
+                     lo_chi)
+            elif vai == "khotb":
+                # thủ kho không thấy giá vốn kho (chủ dự án 30/09) — tổng chi có giá kho bên trong nên cũng bỏ
+                dung(not ({"tong_chi_lak", "chi"} & set(ds[0].get("tinh") or {})), "Thủ kho không nhận tổng chi (lộ giá kho)", con)
+            else:
+                dung([p["doc_no"] for p in ds] == ["THU-NK-1/EPL"] and len(con) == len(TINH_CHI),
+                     "Tài xế chỉ thấy phiếu của mình, phần CHI PHÍ giữ nguyên", (len(ds), con))
 
-    s, ds = goi("/api/bao-cao/theo-doi", vai="thabok")
-    lo = sorted({k for p in ds for k in KHOA_BAN if k in p})
-    assert not lo, "báo cáo Theo dõi vẫn trả tiền bán cho Bãi: %s" % lo
-    print("  ✓ %-60s" % "Báo cáo Theo dõi cũng không trả tiền bán cho Bãi")
+        s, ds = goi("/api/bao-cao/theo-doi", vai="thabok")
+        phai(s, 200, "Bãi mở báo cáo Theo dõi", None)
+        dung(not sorted({k for p in ds for k in KHOA_BAN if k in p}), "Báo cáo Theo dõi không trả tiền bán cho Bãi")
 
-    # rà giao diện 23/09: phiếu in (tạm ứng, phiếu thu, phiếu lĩnh) từng là đường lộ tiền cho Bãi
-    s, ds_b = goi("/api/trips", vai="thabok")
-    pb = ds_b[0]["id"]
-    s, pc = goi("/api/trips/%s/phieu-chi" % pb, vai="thabok"); phai(s, 200, "Bãi mở phiếu chi tạm ứng để in", pc)
-    assert pc["tong_lak"] is None and all("unit_price" not in d and "tien_lak" not in d for d in pc["dong"]),         "phiếu tạm ứng gửi cho Bãi không được có đơn giá / thành tiền / tổng: %s" % pc
-    # phiếu thu tiền khách: không còn ở trang điều xe, cũng không ở trang kế toán tạm (01/10) — thu ở hệ kế toán anh Tune
-    s, g = goi("/api/trips/%s/phieu-thu" % pb, vai="thabok"); phai(s, 409, "Bãi mở phiếu thu tiền khách → 409 (thu ở hệ kế toán)", g)
-    assert "hệ kế toán" in (g.get("detail") or {}).get("loi", ""), "câu báo phải chỉ sang hệ kế toán: %s" % g
-    s, vs = goi("/api/trips/%s/vouchers" % pb, vai="thabok")
-    assert all(v.get("amount_lak") is None for v in (vs or [])), "phiếu lĩnh / tạm ứng gửi cho Bãi không được có số tiền"
-    s, pc2 = goi("/api/trips/%s/phieu-chi" % pb, vai="ketoan")
-    assert pc2["tong_lak"] is not None, "kế toán vẫn phải thấy tổng tạm ứng"
-    print("  ✓ %-60s" % "Phiếu in: Bãi không nhận tiền (tạm ứng · phiếu thu · phiếu lĩnh), kế toán vẫn đủ")
+        # rà giao diện 23/09: phiếu in (tạm ứng, phiếu thu, phiếu lĩnh) từng là đường lộ tiền cho Bãi
+        s, pc = goi("/api/trips/%s/phieu-chi" % p1["id"], vai="thabok"); phai(s, 200, "Bãi mở phiếu chi tạm ứng để in", pc)
+        dung(pc["tong_lak"] is None and all("unit_price" not in d and "tien_lak" not in d for d in pc["dong"]),
+             "Phiếu tạm ứng gửi cho Bãi không có đơn giá / thành tiền / tổng", pc.get("tong_lak"))
+        s, g = goi("/api/trips/%s/phieu-thu" % p1["id"], vai="thabok")
+        dung(s == 409 and "hệ kế toán" in ((g or {}).get("detail") or {}).get("loi", ""),
+             "Bãi mở phiếu thu tiền khách → 409, câu báo chỉ sang hệ kế toán", (s, ma(g)))
+        s, vs = goi("/api/trips/%s/vouchers" % p1["id"], vai="thabok")
+        dung(s == 200 and all(v.get("amount_lak") is None for v in (vs or [])), "Phiếu lĩnh / tạm ứng gửi cho Bãi không có số tiền", len(vs or []))
+        s, pc2 = goi("/api/trips/%s/phieu-chi" % p1["id"], vai="ketoan")
+        dung(s == 200 and pc2["tong_lak"] == 150000, "Kế toán vẫn thấy tổng tạm ứng (150.000 điện thoại tiền mặt)", pc2.get("tong_lak"))
 
-    s, ds = goi("/api/trips", vai="ketoan")
-    p0 = next((p for p in ds if p.get("price")), None)
-    assert p0 and p0.get("price_ccy") and p0["tinh"].get("doanh_thu") is not None, \
-        "kế toán PHẢI thấy đủ tiền bán — nếu không thì phép lọc đã cắt nhầm cả vai được xem"
-    print("  ✓ %-60s %s %s" % ("Kế toán vẫn thấy đủ (phép lọc không cắt nhầm)", p0["price"], p0["price_ccy"]))
+        s, ds = goi("/api/trips", vai="ketoan")
+        k1 = next((p for p in ds if p["id"] == p1["id"]), None)
+        dung(k1 and k1.get("price") == 12 and k1.get("price_ccy") == "USD" and k1["tinh"].get("doanh_thu") is not None,
+             "Kế toán vẫn thấy đủ tiền bán (phép lọc không cắt nhầm)", k1 and (k1.get("price"), k1.get("price_ccy")))
+        s, g = goi("/api/trips/%s" % p1["id"], vai="thabok")
+        dung("price" not in g and "doanh_thu" not in g["tinh"] and "so_ke_toan" not in g and "but_toan_cho" not in g,
+             "Xem chi tiết một phiếu cũng lọc đúng như danh sách (cả SO, bút toán chờ)", [k for k in g if "so_" in k])
+        for vai in ("thabok", "ketoan", "admin"):
+            s, g = goi("/api/trips/%s" % p1["id"], vai=vai)
+            lo = [k for k in ("invoiced", "inv_no", "invoice_id", "invoiced_date", "last_paid_date") if k in g]
+            dung(not lo and "da_tao_so" in g, "%s: gói phiếu không còn cờ hoá đơn trang tạm, có 'đã tạo SO'" % vai, lo)
 
-    s, g = goi("/api/trips/%s" % p0["id"], vai="thabok")
-    assert "price" not in g and "doanh_thu" not in g["tinh"], "xem một phiếu cũng phải lọc: %s" % list(g)[:30]
-    # SO bên kế toán (cước, đã thu) và bút toán chờ (tiền thuê xe) là tiền bán — Bãi không nhận; cờ hoá đơn trang tạm không còn
-    assert "so_ke_toan" not in g and "but_toan_cho" not in g, "Bãi không được nhận SO / bút toán chờ: %s" % [k for k in g if "so_" in k]
-    print("  ✓ %-60s" % "Xem chi tiết một phiếu cũng lọc đúng như danh sách (cả SO, bút toán chờ)")
-    for vai in ("thabok", "ketoan", "admin"):
-        s, g = goi("/api/trips/%s" % p0["id"], vai=vai)
-        lo = [k for k in ("invoiced", "inv_no", "invoice_id", "invoiced_date", "last_paid_date") if k in g]
-        assert not lo and "da_tao_so" in g, "%s: gói phiếu không còn cờ hoá đơn trang tạm, có da_tao_so: %s" % (vai, lo)
-    print("  ✓ %-60s" % "Gói phiếu không còn cờ hoá đơn của trang tạm, có 'đã tạo SO'")
+        print("== 3.2 ảnh xe (xe thử)")
+        s, g = m.gui_tep("/api/vehicles/%s/anh" % xe.id, "thu-anh-xe.png", PNG_1x1, "image/png", tx.username)
+        phai(s, 403, "Tài xế đưa ảnh xe lên → bị chặn", g)
+        s, ds_anh = m.gui_tep("/api/vehicles/%s/anh" % xe.id, "thu-anh-xe.png", PNG_1x1, "image/png", "thabok")
+        phai(s, 200, "Bãi đưa ảnh xe THU-NK-01 lên", ds_anh)
+        try:
+            a = ds_anh[0]
+            dung(a["chinh"], "Ảnh đầu tiên tự thành ảnh đại diện", a["filename"])
+            s, du = m.tai(a["url"], "thabok")
+            dung(s == 200 and du == PNG_1x1, "Tải ảnh về đúng bằng tệp đã gửi lên", "%s · %d byte" % (s, len(du or b"")))
+            s, _ = m.tai(a["url"])
+            dung(s == 401, "Mở ảnh khi chưa đăng nhập → bị chặn", s)
+            s, xs = goi("/api/vehicles", vai="thabok")
+            s2, ct = goi("/api/vehicles/%s" % xe.id, vai="thabok")
+            dung(next(v for v in xs if v["id"] == xe.id).get("anh_chinh") and len(ct.get("anh") or []) == 1,
+                 "Danh sách và hồ sơ xe đều mang ảnh")
+        finally:
+            s, con = goi("/api/anh-xe/%s" % ds_anh[0]["id"], vai="thabok", method="DELETE")      # xoá tệp trên đĩa (rollback không xoá)
+        dung(s == 200 and not con, "Xoá ảnh thử → không còn ảnh nào", s)
 
-    # ================================================================ 3.2 ảnh xe
-    s, xe = goi("/api/vehicles", vai="thabok")
-    x0 = xe[0]
-    s, g = gui_anh("/api/vehicles/%s/anh" % x0["id"], "thu-anh-xe.png", PNG_1x1, "tx01")
-    phai(s, 403, "Tài xế đưa ảnh xe lên → bị chặn", g)
-    s, ds_anh = gui_anh("/api/vehicles/%s/anh" % x0["id"], "thu-anh-xe.png", PNG_1x1, "thabok")
-    phai(s, 200, "Bãi đưa ảnh xe %s lên" % x0["truck_no"], ds_anh)
-    a = ds_anh[0]
-    assert a["chinh"], "ảnh đầu tiên phải tự thành ảnh đại diện"
-    print("  ✓ %-60s %s" % ("Ảnh đầu tiên tự thành ảnh đại diện", a["filename"]))
+        print("== 3.2b ảnh tài xế (tài xế thử — từ kiem/thu_chot_22_09.py)")
+        s, g = m.gui_tep("/api/drivers/%s/anh" % tx.id, "anh-tx.png", PNG_1x1, "image/png", tx.username)
+        phai(s, 403, "Tài xế tự đưa ảnh lên → bị chặn", g)
+        s, ds_anh = m.gui_tep("/api/drivers/%s/anh" % tx.id, "anh-tx.png", PNG_1x1, "image/png", "thabok")
+        phai(s, 200, "Bãi đưa ảnh tài xế lên", ds_anh)
+        try:
+            a = ds_anh[0]
+            s, du = m.tai(a["url"], "thabok")
+            dung(a["chinh"] and s == 200 and du == PNG_1x1, "Ảnh tài xế tải về đúng tệp, ảnh đầu là ảnh đại diện")
+            s, tl = goi("/api/drivers", vai="thabok")
+            s2, ct = goi("/api/drivers/%s" % tx.id, vai="thabok")
+            dung(next(x for x in tl if x["id"] == tx.id).get("anh_chinh") and len(ct.get("anh") or []) == 1,
+                 "Danh sách và hồ sơ tài xế đều mang ảnh")
+        finally:
+            s, _ = goi("/api/anh-tai-xe/%s" % ds_anh[0]["id"], vai="thabok", method="DELETE")
+        dung(s == 200, "Xoá ảnh tài xế thử", s)
 
-    r = urllib.request.Request(GOC + a["url"] + "?tk=" + urllib.parse.quote(TOKEN["thabok"]))
-    with urllib.request.urlopen(r, timeout=30) as t:
-        du = t.read()
-    assert du == PNG_1x1, "ảnh tải về phải đúng tệp đã gửi lên (%d byte)" % len(du)
-    print("  ✓ %-60s %d byte" % ("Tải ảnh về đúng bằng tệp đã gửi lên", len(du)))
+        print("== 3.4 việc của tôi của KT Doanh thu")
+        s, g = goi("/api/trips/%s/transport-status" % p2["id"], {"status": "arrived", "weight_dest": 20, "back_date": m.ngay(5).isoformat()},
+                   "admin")
+        phai(s, 200, "DO thử 2 về tới", g)
+        s, g = goi("/api/trips/%s/khoa" % p2["id"], {"xac_nhan": True}, "ketoan"); phai(s, 200, "Kế toán khoá DO thử 2 (chưa tạo SO)", g)
+        s, tq = goi("/api/bao-cao/xu-huong?thang=" + m.thang, vai="doanhthu")
+        phai(s, 200, "KT Doanh thu mở Tổng quan tháng thử", None)
+        xn = tq["xem_nhanh"]
+        dung(xn["viec_toi"] >= 1 and xn.get("viec_phieu"), "Ô Việc của tôi đếm phiếu đã khoá chưa tạo SO, bấm mở thẳng phiếu",
+             (xn["viec_toi"], xn.get("viec_phieu")))
+        s, tq2 = goi("/api/bao-cao/tong-quan", vai="thabok")
+        dung(s == 200 and "doanh_thu_lak" not in tq2, "Tổng quan của Bãi không có doanh thu", s)
 
-    try:
-        urllib.request.urlopen(urllib.request.Request(GOC + a["url"]), timeout=30)
-        raise SystemExit("DỪNG: mở ảnh không có phiên mà vẫn được")
-    except urllib.error.HTTPError as e:
-        phai(e.code, 401, "Mở ảnh khi chưa đăng nhập → bị chặn")
-
-    s, xe2 = goi("/api/vehicles", vai="thabok")
-    assert next(v for v in xe2 if v["id"] == x0["id"]).get("anh_chinh"), "danh sách xe phải mang ảnh đại diện"
-    s, ct = goi("/api/vehicles/%s" % x0["id"], vai="thabok")
-    assert len(ct.get("anh") or []) == 1, "hồ sơ xe phải kể ảnh: %s" % ct.get("anh")
-    print("  ✓ %-60s" % "Danh sách và hồ sơ xe đều mang ảnh")
-
-    s, ds_anh = goi("/api/anh-xe/%s" % a["id"], vai="thabok", method="DELETE")
-    phai(s, 200, "Xoá ảnh thử (dọn)", ds_anh)
-    assert not ds_anh, "xoá xong không còn ảnh nào"
-
-    # ================================================================ 3.4 việc của tôi của KT Doanh thu
-    s, ds = goi("/api/trips?locked=true&co=1", vai="doanhthu")
-    thang = (ds[0]["doc_date"] or "")[:7] if ds else ""          # tháng có phiếu đã khoá mới nhất (tháng này có thể chưa có)
-    s, tq = goi("/api/bao-cao/xu-huong?thang=" + thang, vai="doanhthu")
-    xn = tq["xem_nhanh"]
-    s, ds = goi("/api/trips?co=500&thang=" + thang, vai="doanhthu")
-    mong = len([p for p in ds if p.get("locked") and not p.get("da_tao_so")]) \
-        + len([p for p in ds if p.get("da_tao_so") and p.get("finance_status") != "paid"])
-    # cùng tháng nhưng Tổng quan đếm theo ngày lập phiếu, danh sách theo trang — chỉ kiểm CÓ VIỆC chứ không so bằng nhau.
-    assert xn["viec_toi"] > 0 or mong == 0, \
-        "KT Doanh thu phải có số việc thật (phiếu chờ tạo SO + SO chưa thu đủ), không phải luôn 0"
-    print("  ✓ %-60s %s" % ("KT Doanh thu: ô Việc của tôi đã có số thật", xn["viec_toi"]))
-    if xn["viec_toi"]:
-        assert xn.get("viec_phieu"), "bấm vào ô phải mở thẳng một phiếu cụ thể"
-        print("  ✓ %-60s" % "Bấm vào ô mở thẳng phiếu đang chờ")
-
-    s, tq2 = goi("/api/bao-cao/tong-quan", vai="thabok")
-    assert "doanh_thu_lak" not in tq2, "Tổng quan của Bãi vẫn không có doanh thu (giữ như cũ)"
-    print("\n✅ NỢ KỸ THUẬT: giá bán không ra khỏi máy chủ với vai không được xem · ảnh xe lưu được ·")
-    print("   ô Việc của tôi của KT Doanh thu đã đếm đúng việc của họ.")
+        print("== mã kế toán cấu hình (từ kiem/thu_chot_22_09.py)")
+        s, g = goi("/api/ke-toan/cau-hinh", {"ma_gia_von": "632"}, vai="ketoan", method="PUT")
+        dung(s == 403, "Kế toán đặt mã giá vốn / mã hàng khách gửi → 403 (chỉ Sếp)", (s, ma(g)))
+        s, ch = goi("/api/ke-toan/cau-hinh", vai="admin")
+        dung(s == 200 and "ma_hang_khach_gui" in ch and "ma_gia_von" in ch, "Sếp xem được hai ô mã cấu hình", s)
+        dung(not K.MANG, "không có lời gọi mạng nào ra ngoài", K.MANG[:2])
+        import os
+        from services import tep as TEP
+        for d in (os.path.join(TEP.TEP_DIR, "xe", xe.id), os.path.join(TEP.TEP_DIR, "tai-xe", tx.id)):
+            try:
+                os.rmdir(d)                             # thư mục ảnh rỗng của xe / tài xế thử (tệp đã xoá qua API; rollback không xoá đĩa)
+            except OSError:
+                pass
+    K.ket_thuc("NỢ KỸ THUẬT")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except RuntimeError as e:
+        print(e)
+        K.ket_thuc("NỢ KỸ THUẬT")

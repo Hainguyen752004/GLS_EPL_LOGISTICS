@@ -1,221 +1,135 @@
 # -*- coding: utf-8 -*-
-"""Thử HAI VAI MỚI ở Thà Bốc (C1.2) và ĐỔI XE GIỮA ĐƯỜNG (C2.2).
+"""Thử HAI VAI MỚI ở Thà Bốc (C1.2) và ĐỔI XE GIỮA ĐƯỜNG (C2.2) — chạy TRONG TIẾN TRÌNH (06/10).
 
-    python kiem/thu_vai_va_doi_xe.py [http://127.0.0.1:8010]
+    python kiem/thu_vai_va_doi_xe.py
+
+Khung kiem/_khung_tien_trinh.py: bản sao _d7, một giao dịch, cuối ROLLBACK; ba xe (hai xe nhà, một xe liên kết của chủ xe thử), hai tài
+xế (một có tài khoản), khách, DO thử dựng mới ở một tháng d7 chưa có DO; không gọi mạng — kho QLSX (tồn, xuất phụ tùng) GIẢ LẬP.
+(Trước 06/10 bài gọi máy 8010 và kho phụ tùng ở trang kế toán tạm 8031 — đã bỏ: nhập kho phụ tùng nay ở Web anh Tune.)
 
 Anh Khampla trả lời 22/09:
-  · C1.2 — kho phụ tùng và tổ sửa chữa ở Thà Bốc là **người riêng**, không phải Admin Bãi. Nên
-    mục V (sửa chữa) rút khỏi Bãi, kho phụ tùng rút khỏi Bãi và kế toán; tổ sửa chữa là người duyệt
-    báo hỏng của tài xế và quyết lấy phụ tùng từ kho hay mang ra gara.
-  · C2.2 — xe hỏng nặng giữa đường thì **đổi xe khác chở tiếp**, dù mục I đã kiểm xong. Việc này
-    làm trên chính tờ phiếu đang chạy: hàng, khách, tuyến và tiền đã chi vẫn là của chuyến đó.
+  · C1.2 — kho phụ tùng và tổ sửa chữa ở Thà Bốc là **người riêng**, không phải Admin Bãi. Mục V (sửa chữa) rút khỏi Bãi; tổ sửa chữa là
+    người duyệt báo hỏng của tài xế và quyết lấy phụ tùng từ kho hay mang ra gara.
+  · C2.2 — xe hỏng nặng giữa đường thì **đổi xe khác chở tiếp**, dù mục I đã kiểm xong. Làm trên chính tờ phiếu đang chạy: hàng,
+    khách, tuyến và tiền đã chi vẫn là của chuyến đó. Không đổi chéo xe nhà ↔ xe liên kết (chứng từ mang mã loại cũ — từ
+    kiem/thu_chot_22_09.py).
 
-Kịch bản: tài xế báo hỏng → Bãi duyệt bị chặn, tổ sửa chữa duyệt được, dòng chi vào mục V →
-Bãi nhập/xuất kho phụ tùng bị chặn, thủ kho phụ tùng làm được → đổi xe giữa đường: chặn vai khác,
-chặn thiếu lý do, chặn trùng xe; đổi xong phiếu mang xe mới, có dòng diễn biến, mục I về "đã nhập".
+Kịch bản: tài xế báo hỏng → Bãi duyệt bị chặn, tổ sửa chữa duyệt được, dòng chi vào mục V → Bãi / kế toán khai sửa xe bị chặn, tổ sửa
+chữa lấy phụ tùng kho (kho QLSX trừ tồn) → đổi xe giữa đường: chặn vai khác, chặn thiếu lý do, chặn trùng xe, chặn đổi chéo loại xe;
+đổi xong phiếu mang xe mới, có dòng diễn biến, mục I về "đã nhập" → xoá phiếu thì phiếu xuất phụ tùng ở kho được huỷ, tồn về.
 """
-import json
-import sys
-import urllib.error
-import urllib.request
-import os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import _quy_trinh as Q  # Bãi lập không tiền → KT nhập giá (quy trình 23/09)
+import _khung_tien_trinh as K                           # đặt DATABASE_URL = _d7, chặn mạng, cài bộ giả — trước mọi mã máy chủ
+import _quy_trinh as Q                                  # noqa: E402 — Bãi lập không tiền → KT nhập giá (quy trình 23/09)
 
-GOC = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8010").rstrip("/")
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import _ke_toan as K       # noqa: E402 — kho phụ tùng ở trang kế toán (28/09)
-TOKEN = {}
-SO_PHIEU = "VAI-DOIXE-01/EPL"
-
-
-def goi(duong, du_lieu=None, vai=None, method=None):
-    dau = {"Content-Type": "application/json"}
-    if vai:
-        dau["Authorization"] = "Bearer " + TOKEN[vai]
-    than = json.dumps(du_lieu).encode() if du_lieu is not None else None
-    r = urllib.request.Request(GOC + duong, data=than, headers=dau,
-                               method=method or ("POST" if than is not None else "GET"))
-    try:
-        with urllib.request.urlopen(r, timeout=60) as t:
-            return t.status, json.loads(t.read())
-    except urllib.error.HTTPError as e:
-        try:
-            return e.code, json.loads(e.read())
-        except ValueError:
-            return e.code, {}
-
-
-def phai(s, mong, buoc, g=None):
-    dt_ = (g or {}).get("detail") if isinstance(g, dict) else None
-    ma = dt_.get("ma", "") if isinstance(dt_, dict) else ""
-    print("%s %-60s %s %s" % ("  ✓" if s == mong else "  SAI", buoc, s, ma))
-    if s != mong:
-        raise SystemExit("DỪNG: %s trả %s, mong %s — %s" % (buoc, s, mong, g))
-
-
-def don():
-    s, ds = goi("/api/trips", vai="admin")
-    for p in [x for x in ds if x["doc_no"] == SO_PHIEU]:
-        goi("/api/trips/%s/mo-khoa" % p["id"], {}, vai="admin")
-        goi("/api/trips/%s" % p["id"], vai="admin", method="DELETE")
-
-
-def chi_tam_ung(pid, phai):
-    """Quy trình: tài xế cầm tiền đi đường (mục IV "đã chi") rồi mới xuất phát / báo xe tới — từ 23/09 máy chặn
-    cả hai cửa. Từ 01/10 tạm ứng chi ở hệ kế toán (kiem/thu_chi_tam_ung_ke_toan.py thử đường đó); bài này không phải về
-    tạm ứng nên bước chi do SẾP chi tay — máy rút phiếu chi còn chờ bên kế toán, không để thủ quỹ chi lần nữa."""
-    for hd, v in (("send", "thabok"), ("verify", "ketoancp"), ("book", "ketoancp"), ("pay", "admin")):
-        s, g = goi("/api/trips/%s/sections/travel/%s" % (pid, hd), {}, vai=v)
-        if s == 409 and isinstance(g, dict) and (g.get("detail") or {}).get("ma") in ("MUC_TRONG", "SAI_BUOC"):
-            return          # mục IV trống, hoặc đã đi qua bước này rồi
-        phai(s, 200, "mục IV: %s (%s)" % (hd, v), g)
+dung, phai, ma = K.dung, K.phai, K.ma
 
 
 def main():
-    for u in ("thabok", "ketoan", "ketoancp", "khonl", "quytb", "totsua", "khopt", "tx01", "admin"):
-        s, g = goi("/api/dang-nhap", {"username": u, "password": "1234"})
-        if s != 200:
-            raise SystemExit("Không đăng nhập được %s: %s" % (u, g))
-        TOKEN[u] = g["token"]
-    print("✓ đăng nhập 9 vai (có thủ kho phụ tùng và tổ sửa chữa)")
-    don()
+    with K.Khung() as m:
+        goi, M = m.goi, m.M
+        from services import kho_qlsx as KQ
+        print("== 0. dữ liệu thử (tháng %s, dựng trong giao dịch)" % m.thang)
+        chu = m.chu_xe("ເຈົ້າຂອງລົດ ທົດລອງ ປ່ຽນລົດ")
+        xe1, xe2, xe_lk = m.xe("THU-VD-01"), m.xe("THU-VD-02"), m.xe("THU-VD-LK", loai="joint", chu=chu)
+        tx = m.tai_xe("ທ້າວ ທົດລອງ ປ່ຽນລົດ", tai_khoan=True)
+        tx2 = m.tai_xe("ທ້າວ ທົດລອງ ປ່ຽນລົດ 2")
+        kh = m.khach("ລູກຄ້າ ທົດລອງ ປ່ຽນລົດ")
+        pt = m.db.query(M.Part).filter(M.Part.active.is_(True)).order_by(M.Part.id).first()
+        K.GIA.ton[(KQ.kho_pt(), KQ.ma_pt(pt.id))] = [5, 520000]          # tồn phụ tùng bên kho QLSX (giả lập)
+        m.commit()
 
-    s, kh = goi("/api/customers", vai="ketoan")
-    s, tuyen = goi("/api/routes", vai="ketoan")
-    s, xe = goi("/api/vehicles", vai="thabok")
-    s, tx = goi("/api/drivers", vai="thabok")
-    # Tài xế của phiếu phải đúng người đang đăng nhập bằng tx01, nếu không màn tài xế từ chối.
-    s, toi = goi("/api/toi", vai="tx01")
-    tx = sorted(tx, key=lambda d: 0 if d["name"] == toi["full_name"] else 1)
-    xe_nha = [x for x in xe if x.get("owner_type") != "joint" and x.get("active") is not False]
-    if len(xe_nha) < 2:
-        raise SystemExit("DỪNG: cần ít nhất hai xe nhà để thử đổi xe — chạy lại seed.py --dung-lai")
+        print("== 1. lập phiếu, kiểm mục I")
+        s, P = Q.lap_phieu(goi, {
+            "doc_no": "THU-VD-%s/EPL" % m.thang, "kind": "gom", "doc_date": m.ngay(21).isoformat(), "out_date": m.ngay(21).isoformat(),
+            "vehicle_id": xe1.id, "driver_id": tx.id, "customer_id": kh.id, "goods_type": "iron_ore", "weight_origin": 35,
+            "hang": [{"goods_name": "ແຮ່ເຫຼັກ (quặng sắt)", "qty_t": 35}],
+            "expenses": [{"section": "fuel", "item_key": "diesel", "qty": 80, "unit_price": 30000, "currency": "LAK", "place": "fp_yard"}],
+        }, vai="thabok")
+        phai(s, 200, "Bãi lập phiếu với xe THU-VD-01", P)
+        pid = P["id"]
+        s, g = goi("/api/trips/%s/sections/info/send" % pid, {}, vai="thabok"); phai(s, 200, "Bãi gửi kiểm mục I", g)
+        s, g = goi("/api/trips/%s/sections/info/verify" % pid, {}, vai="ketoan"); phai(s, 200, "Kế toán kiểm mục I", g)
 
-    # ---------------------------------------------------------------- 1. lập phiếu, kiểm mục I
-    s, P = Q.lap_phieu(goi, {
-        "doc_no": SO_PHIEU, "kind": "gom", "doc_date": "2026-09-21", "out_date": "2026-09-21",
-        "vehicle_id": xe_nha[0]["id"], "driver_id": tx[0]["id"], "customer_id": kh[0]["id"],
-        "route_id": tuyen[0]["id"], "goods_type": "iron_ore", "weight_origin": 35,
-        "hang": [{"goods_name": "ແຮ່ເຫຼັກ (quặng sắt)", "qty_t": 35}],
-        "expenses": [{"section": "fuel", "item_key": "diesel", "qty": 80, "unit_price": 30000, "currency": "LAK", "place": "fp_yard"}],
-    }, vai="thabok")
-    phai(s, 200, "Bãi lập phiếu %s với xe %s" % (SO_PHIEU, xe_nha[0]["truck_no"]), P)
-    pid = P["id"]
-    s, g = goi("/api/trips/%s/sections/info/send" % pid, {}, vai="thabok"); phai(s, 200, "Bãi gửi kiểm mục I", g)
-    s, g = goi("/api/trips/%s/sections/info/verify" % pid, {}, vai="ketoan"); phai(s, 200, "Kế toán kiểm mục I", g)
+        print("== 2. C1.2 — mục V là của tổ sửa chữa")
+        s, g = goi("/api/trips/%s/events" % pid, {"kind": "arrive_stop", "stop_seq": 1, "note": "vào mỏ"}, vai="thabok")
+        phai(s, 200, "Bãi vẫn ghi diễn biến bình thường", g)
+        s, parts = goi("/api/parts", vai="totsua")
+        ton = next(x for x in parts if x["id"] == pt.id)["qty"]
+        dung(ton == 5, "Tồn phụ tùng đọc từ kho QLSX (giả lập)", ton)
+        than_sua = {"kind": "repair", "incident_type": "breakdown", "note": "thử: hỏng bơm", "repair": {"source": "kho", "part_id": pt.id, "qty": 1}}
+        s, g = goi("/api/trips/%s/events" % pid, than_sua, vai="thabok"); phai(s, 403, "Bãi khai khoản sửa chữa → bị chặn (C1.2)", g)
+        s, g = goi("/api/trips/%s/events" % pid, than_sua, vai="ketoancp"); phai(s, 403, "Kế toán chi phí khai khoản sửa chữa → bị chặn", g)
+        s, g = goi("/api/trips/%s/events" % pid, than_sua, vai="totsua"); phai(s, 200, "Tổ sửa chữa khai sửa xe, lấy phụ tùng từ kho", g)
+        dong = [e for e in g["expenses"] if e["section"] == "repair"]
+        dung(dong and dong[-1]["source"] == "kho" and (dong[-1]["stock_move_id"] or "").startswith("qlsx:") and g["sections"]["repair"] == "entered",
+             "Sinh dòng mục V nguồn kho, có phiếu xuất kho QLSX, mục V về 'đã nhập'", dong and (dong[-1]["stock_move_id"], g["sections"]["repair"]))
+        s, parts2 = goi("/api/parts", vai="totsua")
+        dung(next(x for x in parts2 if x["id"] == pt.id)["qty"] == ton - 1, "Tồn phụ tùng giảm đúng 1", ton - 1)
+        s, g = goi("/api/parts/%s/moves" % pt.id, {"kind": "in", "qty": 1, "note": "thử trả kho"}, vai="khopt")
+        phai(s, 409, "Trang điều xe không còn nhập kho phụ tùng (nhập ở kho Web anh Tune)", g)
 
-    # ---------------------------------------------------------------- 2. C1.2 — mục V là của tổ sửa chữa
-    s, g = goi("/api/trips/%s/events" % pid, {"kind": "arrive_stop", "stop_seq": 1, "note": "vào mỏ"}, vai="thabok")
-    phai(s, 200, "Bãi vẫn ghi diễn biến bình thường", g)
-    s, parts = goi("/api/parts", vai="totsua")
-    pt = next(x for x in parts if x["qty"] >= 1); ton = pt["qty"]
-    than_sua = {"kind": "repair", "incident_type": "breakdown", "note": "thử: hỏng bơm",
-                "repair": {"source": "kho", "part_id": pt["id"], "qty": 1}}
-    s, g = goi("/api/trips/%s/events" % pid, than_sua, vai="thabok")
-    phai(s, 403, "Bãi khai khoản sửa chữa → bị chặn (C1.2)", g)
-    s, g = goi("/api/trips/%s/events" % pid, than_sua, vai="ketoancp")
-    phai(s, 403, "Kế toán chi phí khai khoản sửa chữa → bị chặn", g)
-    s, g = goi("/api/trips/%s/events" % pid, than_sua, vai="totsua")
-    phai(s, 200, "Tổ sửa chữa khai sửa xe, lấy phụ tùng từ kho", g)
-    dong = [e for e in g["expenses"] if e["section"] == "repair"]
-    assert dong and dong[-1]["source"] == "kho", "phải sinh dòng mục V nguồn kho: %s" % dong
-    assert g["sections"]["repair"] == "entered", "mục V phải về 'đã nhập': %s" % g["sections"]["repair"]
-    s, parts2 = goi("/api/parts", vai="totsua")
-    assert next(x for x in parts2 if x["id"] == pt["id"])["qty"] == ton - 1, "tồn phụ tùng phải giảm 1"
-    print("  ✓ %-60s %s → %s" % ("Tồn phụ tùng giảm đúng 1", ton, ton - 1))
+        # tài xế báo hỏng → tổ sửa chữa duyệt
+        s, g = goi("/api/trips/%s/bao-hong" % pid, {"note": "thử: kêu lạ ở cầu sau", "reported_cost": 250000}, vai=tx.username)
+        phai(s, 200, "Tài xế báo hỏng", g)
+        ev = [e for e in g["events"] if e["status"] == "reported"][-1]
+        mua = {"source": "mua", "item_name": "thử: thay bạc đạn", "qty": 1, "unit_price": 250000}
+        s, g = goi("/api/trips/%s/events/%s/duyet" % (pid, ev["id"]), mua, vai="thabok")
+        phai(s, 403, "Bãi duyệt báo hỏng → bị chặn (việc tổ sửa chữa)", g)
+        s, g = goi("/api/trips/%s/events/%s/duyet" % (pid, ev["id"]), mua, vai="totsua")
+        phai(s, 200, "Tổ sửa chữa duyệt báo hỏng → thành dòng mục V", g)
+        dung(len([e for e in g["expenses"] if e["section"] == "repair"]) == 2, "Có hai dòng mục V")
+        s, g = goi("/api/trips/%s/sections/repair/send" % pid, {}, vai="thabok"); phai(s, 403, "Bãi gửi kiểm mục V → bị chặn", g)
+        s, g = goi("/api/trips/%s/sections/repair/verify" % pid, {}, vai="ketoancp"); phai(s, 200, "KT Chi phí kiểm mục V", g)
+        s, g = goi("/api/trips/%s/sections/repair/verify" % pid, {}, vai="totsua")
+        phai(s, 403, "Tổ sửa chữa tự kiểm mục V → bị chặn (KT Chi phí kiểm)", g)
 
-    s, g = goi("/api/parts/%s/moves" % pt["id"], {"kind": "in", "qty": 1, "note": "thử trả kho"}, vai="khopt")
-    phai(s, 409, "Trang điều xe không còn nhập kho phụ tùng (đã dời sang kế toán)", g)
-    s, g = K.kt("/api/phu-tung/%s/nhap-xuat" % pt["id"], {"kind": "in", "qty": 1, "note": "thử trả kho"}, vai="thabok")
-    phai(s, 403, "Bãi nhập kho phụ tùng ở trang kế toán → bị chặn (C1.2)", g)
-    s, g = K.kt("/api/phu-tung/%s/nhap-xuat" % pt["id"], {"kind": "in", "qty": 1, "note": "thử trả kho"}, vai="ketoan")
-    phai(s, 403, "Kế toán nhập kho phụ tùng ở trang kế toán → bị chặn", g)
-    s, g = K.kt("/api/phu-tung/%s/nhap-xuat" % pt["id"], {"kind": "in", "qty": 1, "note": "thử trả kho"}, vai="khopt")
-    phai(s, 200, "Thủ kho phụ tùng nhập kho được (trang kế toán)", g)
+        # TIỀN BÁN: hai vai mới xếp cùng nhóm Bãi — không xem lãi chuyến, không xem công nợ chủ xe, khách
+        s, ds_chu = goi("/api/owners", vai="totsua")
+        dung(s == 200 and all("fee_pct" not in o for o in ds_chu), "Tổ sửa chữa không thấy phí chủ xe", s)
+        s, g = goi("/api/bao-cao/xe-lien-ket", vai="khopt"); phai(s, 403, "Thủ kho phụ tùng xem báo cáo xe liên kết (lãi) → bị chặn", g)
+        s, g = goi("/api/de-nghi-thu", vai="totsua"); phai(s, 403, "Tổ sửa chữa xem đề nghị thu (cước) → bị chặn (tiền bán)", g)
+        s, g = goi("/api/customers-cong-no", vai="totsua"); phai(s, 403, "Tổ sửa chữa xem công nợ khách → bị chặn (tiền bán)", g)
 
-    # tài xế báo hỏng → tổ sửa chữa duyệt
-    s, g = goi("/api/trips/%s/bao-hong" % pid, {"note": "thử: kêu lạ ở cầu sau", "reported_cost": 250000}, vai="tx01")
-    phai(s, 200, "Tài xế báo hỏng", g)
-    ev = [e for e in g["events"] if e["status"] == "reported"][-1]
-    s, g = goi("/api/trips/%s/events/%s/duyet" % (pid, ev["id"]),
-               {"source": "mua", "item_name": "thử: thay bạc đạn", "qty": 1, "unit_price": 250000}, vai="thabok")
-    phai(s, 403, "Bãi duyệt báo hỏng → bị chặn (việc tổ sửa chữa)", g)
-    s, g = goi("/api/trips/%s/events/%s/duyet" % (pid, ev["id"]),
-               {"source": "mua", "item_name": "thử: thay bạc đạn", "qty": 1, "unit_price": 250000}, vai="totsua")
-    phai(s, 200, "Tổ sửa chữa duyệt báo hỏng → thành dòng mục V", g)
-    assert len([e for e in g["expenses"] if e["section"] == "repair"]) == 2, "phải có hai dòng mục V"
+        print("== 3. C2.2 — đổi xe giữa đường")
+        s, g = goi("/api/trips/%s/doi-xe" % pid, {"vehicle_id": xe2.id, "ly_do": "thử"}, vai="ketoan")
+        phai(s, 403, "Kế toán đổi xe → bị chặn (Bãi điều xe)", g)
+        s, g = goi("/api/trips/%s/doi-xe" % pid, {"vehicle_id": xe2.id}, vai="thabok"); phai(s, 422, "Đổi xe không ghi lý do → bị từ chối", g)
+        s, g = goi("/api/trips/%s/doi-xe" % pid, {"vehicle_id": xe1.id, "ly_do": "thử"}, vai="thabok")
+        phai(s, 409, "Đổi sang chính xe đang chạy → bị từ chối", g)
+        s, g = goi("/api/trips/%s/doi-xe" % pid, {"vehicle_id": xe_lk.id, "ly_do": "thử chéo"}, vai="thabok")
+        dung(s == 409 and ma(g) == "KHAC_LOAI_XE", "Đổi chéo xe nhà → xe liên kết → 409 KHAC_LOAI_XE (chứng từ mang mã loại cũ)", (s, ma(g)))
+        s, g = goi("/api/trips/%s/doi-xe" % pid, {"vehicle_id": xe2.id, "driver_id": tx2.id, "ly_do": "thử: gãy nhíp giữa đường",
+                                                   "xe_cu_hong": True}, vai="thabok")
+        phai(s, 200, "Bãi đổi sang xe THU-VD-02 giữa đường", g)
+        dung(g["truck_no"] == xe2.truck_no and g["plate_head"] == xe2.plate_head and g["driver_name"] == tx2.name,
+             "Phiếu mang xe mới và tài xế mới", (g["truck_no"], g["driver_name"]))
+        dung(g["sections"]["info"] == "entered", "Mục I quay về 'đã nhập' để kiểm lại", g["sections"]["info"])
+        dx = [e for e in g["events"] if e["kind"] == "change_truck"]
+        dung(dx and xe1.truck_no in dx[-1]["note"] and xe2.truck_no in dx[-1]["note"], "Diễn biến ghi rõ đổi từ xe nào sang xe nào",
+             dx and dx[-1]["note"][:60])
+        dung(len(g["expenses"]) >= 3, "Tiền đã chi của chuyến còn nguyên trên phiếu", len(g["expenses"]))
+        m.db.expire_all()
+        dung((m.db.get(M.Vehicle, xe1.id).status, m.db.get(M.Vehicle, xe2.id).status) == ("maintenance", "on_trip"),
+             "Trạng thái hai xe đổi theo: xe cũ vào xưởng, xe mới đang chạy",
+             (m.db.get(M.Vehicle, xe1.id).status, m.db.get(M.Vehicle, xe2.id).status))
+        s, g = goi("/api/trips/%s/sections/info/verify" % pid, {}, vai="ketoan"); phai(s, 200, "Kế toán kiểm lại mục I sau khi đổi xe", g)
+        s, g = goi("/api/trips/%s/transport-status" % pid, {"status": "arrived", "weight_dest": 35, "odo_back": 100}, vai="thabok")
+        phai(s, 200, "Xe (mới) báo tới nơi", g)
+        s, g = goi("/api/trips/%s/doi-xe" % pid, {"vehicle_id": xe1.id, "ly_do": "thử"}, vai="thabok")
+        phai(s, 409, "Đổi xe khi đã tới nơi → bị từ chối", g)
 
-    s, g = goi("/api/trips/%s/sections/repair/send" % pid, {}, vai="thabok")
-    phai(s, 403, "Bãi gửi kiểm mục V → bị chặn", g)
-    s, g = goi("/api/trips/%s/sections/repair/verify" % pid, {}, vai="ketoancp")
-    phai(s, 200, "KT Chi phí kiểm mục V (tổ sửa chữa không tự kiểm)", g)
-    s, g = goi("/api/trips/%s/sections/repair/verify" % pid, {}, vai="totsua")
-    phai(s, 403, "Tổ sửa chữa tự kiểm mục V → bị chặn (KT Chi phí kiểm)", g)
-
-    # TIỀN BÁN: hai vai mới xếp cùng nhóm Bãi — không xem lãi chuyến, không xem công nợ chủ xe.
-    s, ds_chu = goi("/api/owners", vai="totsua")
-    assert all("fee_pct" not in o for o in ds_chu), "tổ sửa chữa không được thấy phí chủ xe: %s" % ds_chu[:1]
-    s, g = goi("/api/bao-cao/xe-lien-ket", vai="khopt")
-    phai(s, 403, "Thủ kho phụ tùng xem báo cáo xe liên kết (lãi) → bị chặn", g)
-    # hoá đơn, công nợ khách ở hệ kế toán anh Tune từ 01/10 (bỏ trang kế toán tạm) — bên này chỉ còn đề nghị thu, công nợ đọc lại
-    s, g = goi("/api/de-nghi-thu", vai="totsua")
-    phai(s, 403, "Tổ sửa chữa xem đề nghị thu (cước) → bị chặn (tiền bán)", g)
-    s, g = goi("/api/customers-cong-no", vai="totsua")
-    phai(s, 403, "Tổ sửa chữa xem công nợ khách → bị chặn (tiền bán)", g)
-
-    # ---------------------------------------------------------------- 3. C2.2 — đổi xe giữa đường
-    s, g = goi("/api/trips/%s/doi-xe" % pid, {"vehicle_id": xe_nha[1]["id"], "ly_do": "thử"}, vai="ketoan")
-    phai(s, 403, "Kế toán đổi xe → bị chặn (Bãi điều xe)", g)
-    s, g = goi("/api/trips/%s/doi-xe" % pid, {"vehicle_id": xe_nha[1]["id"]}, vai="thabok")
-    phai(s, 422, "Đổi xe không ghi lý do → bị từ chối", g)
-    s, g = goi("/api/trips/%s/doi-xe" % pid, {"vehicle_id": xe_nha[0]["id"], "ly_do": "thử"}, vai="thabok")
-    phai(s, 409, "Đổi sang chính xe đang chạy → bị từ chối", g)
-    xe_lk = next((x for x in xe if x.get("owner_type") == "joint" and x.get("active") is not False), None)
-    if xe_lk:
-        s, g = goi("/api/trips/%s/doi-xe" % pid, {"vehicle_id": xe_lk["id"], "ly_do": "thử chéo"}, vai="thabok")
-        phai(s, 409, "Đổi chéo xe nhà → xe liên kết → bị từ chối (chứng từ mang mã loại cũ)", g)
-
-    s, g = goi("/api/trips/%s/doi-xe" % pid,
-               {"vehicle_id": xe_nha[1]["id"], "driver_id": tx[1]["id"], "ly_do": "thử: gãy nhíp giữa đường",
-                "xe_cu_hong": True}, vai="thabok")
-    phai(s, 200, "Bãi đổi sang xe %s giữa đường" % xe_nha[1]["truck_no"], g)
-    assert g["truck_no"] == xe_nha[1]["truck_no"] and g["plate_head"] == xe_nha[1]["plate_head"], \
-        "phiếu phải mang xe mới: %s" % g["truck_no"]
-    assert g["driver_name"] == tx[1]["name"], "phiếu phải mang tài xế mới: %s" % g["driver_name"]
-    assert g["sections"]["info"] == "entered", "mục I phải quay về 'đã nhập' để kiểm lại: %s" % g["sections"]["info"]
-    dx = [e for e in g["events"] if e["kind"] == "change_truck"]
-    assert dx and xe_nha[0]["truck_no"] in dx[-1]["note"] and xe_nha[1]["truck_no"] in dx[-1]["note"], \
-        "diễn biến phải ghi rõ đổi từ xe nào sang xe nào: %s" % dx
-    print("  ✓ %-60s %s" % ("Diễn biến giữ lại xe cũ", dx[-1]["note"][:52]))
-    assert len(g["expenses"]) >= 3, "dòng chi của chuyến phải còn nguyên sau khi đổi xe"
-    print("  ✓ %-60s %d dòng" % ("Tiền đã chi của chuyến còn nguyên trên phiếu", len(g["expenses"])))
-
-    s, xe2 = goi("/api/vehicles", vai="thabok")
-    cu = next(x for x in xe2 if x["id"] == xe_nha[0]["id"]); moi = next(x for x in xe2 if x["id"] == xe_nha[1]["id"])
-    assert cu["status"] == "maintenance", "xe cũ phải vào xưởng: %s" % cu["status"]
-    assert moi["status"] == "on_trip", "xe mới phải là đang chạy: %s" % moi["status"]
-    print("  ✓ %-60s %s · %s" % ("Trạng thái hai xe đổi theo", cu["status"], moi["status"]))
-
-    s, g = goi("/api/trips/%s/sections/info/verify" % pid, {}, vai="ketoan")
-    phai(s, 200, "Kế toán kiểm lại mục I sau khi đổi xe", g)
-
-    chi_tam_ung(pid, phai)
-    s, g = goi("/api/trips/%s/transport-status" % pid, {"status": "arrived", "weight_dest": 35, "odo_back": 100}, vai="thabok")
-    phai(s, 200, "Xe (mới) báo tới nơi", g)
-    s, g = goi("/api/trips/%s/doi-xe" % pid, {"vehicle_id": xe_nha[0]["id"], "ly_do": "thử"}, vai="thabok")
-    phai(s, 409, "Đổi xe khi đã tới nơi → bị từ chối", g)
-
-    # ---------------------------------------------------------------- 4. dọn
-    s, g = goi("/api/trips/%s" % pid, vai="admin", method="DELETE"); phai(s, 200, "Xoá phiếu thử (dọn)", g)
-    s, parts3 = goi("/api/parts", vai="totsua")      # xoá phiếu → phụ tùng mục V về kho bên trang kế toán
-    assert next(x for x in parts3 if x["id"] == pt["id"])["qty"] == ton + 1, "xoá phiếu phải trả phụ tùng về kho (tồn + 1 lần nhập thử)"
-    print("  ✓ %-60s" % "Xoá phiếu → phụ tùng mục V về kho bên trang kế toán")
-    for x, tt in ((xe_nha[0]["id"], "available"), (xe_nha[1]["id"], "available")):
-        goi("/api/vehicles/%s" % x, {"status": tt}, vai="thabok", method="PUT")
-    print("\n✅ HAI VAI MỚI & ĐỔI XE: mục V và kho phụ tùng đã rút khỏi Bãi, tổ sửa chữa duyệt báo hỏng,")
-    print("   đổi xe giữa đường giữ nguyên chuyến và bắt kiểm lại mục I.")
+        print("== 4. xoá phiếu → phiếu xuất phụ tùng ở kho được huỷ")
+        s, g = goi("/api/trips/%s" % pid, vai="admin", method="DELETE"); phai(s, 200, "Xoá phiếu thử", g)
+        s, parts3 = goi("/api/parts", vai="totsua")
+        dung(next(x for x in parts3 if x["id"] == pt.id)["qty"] == ton, "Xoá phiếu → phụ tùng mục V về kho (kho QLSX nhận lệnh huỷ)",
+             next(x for x in parts3 if x["id"] == pt.id)["qty"])
+        dung(not K.MANG, "không có lời gọi mạng nào ra ngoài", K.MANG[:2])
+    K.ket_thuc("HAI VAI MỚI & ĐỔI XE")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except RuntimeError as e:
+        print(e)
+        K.ket_thuc("HAI VAI MỚI & ĐỔI XE")
