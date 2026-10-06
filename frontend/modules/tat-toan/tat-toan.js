@@ -355,13 +355,13 @@
       if (c && (c.phieu || []).length) {
         const rows = [];
         c.phieu.forEach(p => {
-          rows.push([p.doc_no, EPL.oNgay(p.out_date), p.truck_no || '', (p.origin || '') + ' → ' + (p.destination || ''), '', '', null, '', '', '', '',
+          rows.push([p.doc_no, EPL.oNgay(p.out_date), p.truck_no || '', (p.origin || '') + ' → ' + (p.destination || ''), '', '', null, '', '', '', '', '',
             EPL.oSo(soP(p, 'da_ung_lak')), EPL.oSo(chiP(p)), EPL.oSo(chenhP(p))]);
-          (p.dong || []).forEach(d => rows.push(['', '', '', '', d.muc || '', d.khoan || '', EPL.oSo(d.sl, 2), d.don_gia == null ? '' : EPL.tien(d.don_gia, d.tien_te || 'LAK'),
+          (p.dong || []).forEach(d => rows.push(['', '', '', '', d.muc || '', d.khoan || '', EPL.oSo(d.sl, 2), d.don_gia == null ? null : EPL.oSo(d.don_gia, EPL.leTien(d.tien_te || 'LAK')), d.don_gia == null ? '' : (d.tien_te || 'LAK'),
             d.cach_tra ? T(CACH_TT[d.cach_tra] || 'tt_ng_khac') : '', T((NGUON_TT[d.nguon] || [0, 'tt_ng_khac'])[1]), [d.so_ptu, d.phieu_chi].filter(Boolean).join(' · '),
             '', vaoChi(d.nguon) ? EPL.oSo(d.tien_lak) : null, EPL.oSo(d.tien_lak)]));
         });
-        sh.push(EPL.xuatSheet(c.driver_name || T('driver'), [T('doc_no'), T('d_out'), T('truck_no'), T('route'), T('hs_cot_muc'), T('item'), T('qty'), T('unit_price'),
+        sh.push(EPL.xuatSheet(c.driver_name || T('driver'), [T('doc_no'), T('d_out'), T('truck_no'), T('route'), T('hs_cot_muc'), T('item'), T('qty'), T('unit_price'), T('ccy'),
           T('tt_cach_tra'), T('tt_nguon'), T('tt_so_ptu') + ' · ' + T('tt_phieu_chi_kt'), T('tt_advanced'), T('tt_spent'), T('tt_diff') + ' / ' + T('amount_lak')], rows));
       }
       return sh;
