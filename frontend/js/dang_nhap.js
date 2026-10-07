@@ -102,6 +102,8 @@
     // 07/10 (lên host): máy chủ tắt danh sách tài khoản mẫu (EPL_LAO_DANG_NHAP_MAU) → trả rỗng: ẩn hẳn khối «chọn nhanh»
     const anMau = Array.isArray(st.ds) && !st.ds.length && !st.loi;
     o.hidden = anMau; if (tieuDe && tieuDe.parentElement) tieuDe.parentElement.hidden = anMau;
+    // dòng «mật khẩu mọi tài khoản là 1234» chỉ hiện khi máy bật danh sách tài khoản mẫu — máy chủ thật không báo mật khẩu cho người lạ
+    const demo = $('lgDemo'); if (demo) demo.hidden = !(Array.isArray(st.ds) && st.ds.length);
     if (anMau) { o.innerHTML = ''; return; }
     const b = buoc(st.buoc), vai = st.loc && b ? b.vai : null;
     tieuDe.innerHTML = vai
