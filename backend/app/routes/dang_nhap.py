@@ -44,7 +44,12 @@ def toi(user=Depends(nguoi_hien_tai)):
 
 @router.get("/api/tai-khoan-mau")
 def tai_khoan_mau(db: Session = Depends(get_db)):
-    """Danh sách tài khoản để bấm nhanh trên màn đăng nhập — bản demo. Không trả mật khẩu."""
+    """Danh sách tài khoản để bấm nhanh trên màn đăng nhập — CHỈ bản demo / máy thử. Không trả mật khẩu.
+    07/10 (lên host): mặc định TẮT — trả rỗng, màn đăng nhập ẩn khối «chọn nhanh» (ai mở trang cũng thấy hết tên tài khoản là lộ).
+    Bật bằng EPL_LAO_DANG_NHAP_MAU=1 (máy thử 8011 — tools/may_thu/khoi_dong_thu.ps1)."""
+    import os
+    if os.environ.get("EPL_LAO_DANG_NHAP_MAU", "0").strip() != "1":
+        return []
     return [xuat_user(u) for u in db.query(User).filter(User.active.is_(True)).order_by(User.role).all()]
 
 

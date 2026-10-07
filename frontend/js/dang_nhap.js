@@ -92,13 +92,17 @@
       '<div class="sc-head"><span class="sc-num">' + NN.h('lg2_buoc', { i: i + 1, n: BUOC.length }) + '</span><h3>' + NN.h('lg2_s_' + b.id) + '</h3><span class="sc-place" lang="lo">' + esc(NN.t('lg2_p_' + b.id)) + '</span></div>' +
       '<div><span class="sc-label">' + NN.h('lg2_viec') + '</span><ul><li>' + NN.h('lg2_t_' + b.id + '_1') + '</li><li>' + NN.h('lg2_t_' + b.id + '_2') + '</li></ul></div>' +
       '<div><span class="sc-label">' + NN.h('lg2_ai_lam') + '</span><div class="roles">' + tenVai(b).map(k => '<span class="role-tag">' + NN.h(k) + '</span>').join('') + '</div></div>' +
-      '<p class="hint"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>' + NN.h('lg2_chon_tk') + '</p>';
+      (Array.isArray(st.ds) && !st.ds.length ? '' : '<p class="hint"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>' + NN.h('lg2_chon_tk') + '</p>');
   }
 
   /* ---------------- khung tài khoản ---------------- */
   function veTaiKhoan() {
     const o = $('acctList'), tieuDe = $('lgNhanh');
     if (!o) return;
+    // 07/10 (lên host): máy chủ tắt danh sách tài khoản mẫu (EPL_LAO_DANG_NHAP_MAU) → trả rỗng: ẩn hẳn khối «chọn nhanh»
+    const anMau = Array.isArray(st.ds) && !st.ds.length && !st.loi;
+    o.hidden = anMau; if (tieuDe && tieuDe.parentElement) tieuDe.parentElement.hidden = anMau;
+    if (anMau) { o.innerHTML = ''; return; }
     const b = buoc(st.buoc), vai = st.loc && b ? b.vai : null;
     tieuDe.innerHTML = vai
       ? NN.h('lg2_tk_cho_buoc', { i: viTri(st.buoc) + 1 }) + ' <b>' + NN.h('lg2_s_' + b.id) + '</b><button type="button" id="lgHienHet">' + NN.h('lg2_hien_het') + '</button>'

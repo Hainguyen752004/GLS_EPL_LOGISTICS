@@ -21,7 +21,7 @@ foreach ($c in $Cong) {
   # chủ dự án 01/10 chiều: tạm quên demo-lao-api - danh mục tài khoản (EPL_ACC_CODE_API) cũng đọc từ API ở máy
   # 02/10: API bút toán bên anh Tune đã áp script và chạy thật (GL021020263/264) - máy thử 8011 bật gửi bút toán
   # 05/10: bỏ kho tạm — kho EPL là kho anh Tune (API 5090, màn Quản lý kho Web 5014); quay lui: đặt $env:KHO_NGUON = "kho_tam" trước khi chạy script này (không đặt = qlsx)
-  if ($c -eq "8011") { $env:QLSX_BASE_URL = "http://127.0.0.1:5090"; $env:EPL_ACC_CODE_API = "http://127.0.0.1:5090"; $env:QLSX_GUI_BUT_TOAN = "1"; $env:KHO_NGUON = $(if ($env:KHO_NGUON) { $env:KHO_NGUON } else { "qlsx" }); $env:QLSX_WEB_URL = "https://localhost:5014"; $env:EPL_DONG_BO_CHI_LUONG = "1" }
+  if ($c -eq "8011") { $env:QLSX_BASE_URL = "http://127.0.0.1:5090"; $env:EPL_ACC_CODE_API = "http://127.0.0.1:5090"; $env:QLSX_GUI_BUT_TOAN = "1"; $env:KHO_NGUON = $(if ($env:KHO_NGUON) { $env:KHO_NGUON } else { "qlsx" }); $env:QLSX_WEB_URL = "https://localhost:5014"; $env:EPL_DONG_BO_CHI_LUONG = "1"; $env:EPL_LAO_DANG_NHAP_MAU = "1" }
   else { Remove-Item Env:KHO_NGUON -ErrorAction SilentlyContinue; Remove-Item Env:QLSX_WEB_URL -ErrorAction SilentlyContinue; Remove-Item Env:QLSX_BASE_URL -ErrorAction SilentlyContinue; Remove-Item Env:EPL_ACC_CODE_API -ErrorAction SilentlyContinue; Remove-Item Env:QLSX_GUI_BUT_TOAN -ErrorAction SilentlyContinue; Remove-Item Env:EPL_DONG_BO_CHI_LUONG -ErrorAction SilentlyContinue }
   Start-Process -FilePath $py -ArgumentList '-X','utf8','-m','uvicorn','backend.app.main:app','--host','127.0.0.1','--port',$c,'--no-access-log' `
     -WorkingDirectory $m.Thu -RedirectStandardOutput (Join-Path $sp "may_$c.log") -RedirectStandardError (Join-Path $sp "may_$c.err") -WindowStyle Hidden
