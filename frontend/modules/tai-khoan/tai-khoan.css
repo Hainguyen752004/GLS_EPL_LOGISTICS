@@ -40,3 +40,4 @@
 .tk-lt-khoa { display: block; padding: 8px 10px; background: var(--nen-phu, #f3f5f4); border-radius: 6px; word-break: break-all; user-select: all; }
 .tk-lt-nut { display: flex; gap: 8px; flex-wrap: wrap; }
 .tk-lt-kq:empty { display: none; }
+.tk-gan { margin-top: 2px; }

@@ -15161,5 +15161,25 @@ window.EPL_TU_DIEN = {
   "vi": "Chưa có phiếu chi lương đã ghi sổ",
   "lo": "ຍັງບໍ່ມີໃບຈ່າຍເງິນເດືອນທີ່ບັນທຶກແລ້ວ",
   "en": "No posted salary payment voucher yet"
+ },
+ "tk_gan_tai_xe": {
+  "vi": "Gắn với tài xế",
+  "lo": "ເຊື່ອມກັບໂຊເຟີ",
+  "en": "Linked driver"
+ },
+ "tk_gan_kho": {
+  "vi": "Gắn với kho nhiên liệu",
+  "lo": "ເຊື່ອມກັບສາງນໍ້າມັນ",
+  "en": "Linked fuel depot"
+ },
+ "tk_chon_tai_xe": {
+  "vi": "Chọn tài xế cho tài khoản vai Tài xế",
+  "lo": "ເລືອກໂຊເຟີສຳລັບບັນຊີບົດບາດໂຊເຟີ",
+  "en": "Choose the driver for a Driver account"
+ },
+ "tk_chon_kho": {
+  "vi": "Chọn kho cho tài khoản vai Thủ kho nhiên liệu",
+  "lo": "ເລືອກສາງສຳລັບບັນຊີຜູ້ຮັກສາສາງນໍ້າມັນ",
+  "en": "Choose the depot for a Fuel depot keeper account"
  }
 };

@@ -2,17 +2,24 @@
  * công đoạn nào, vào màn nào, quyền trên phiếu, thấy tiền không, sinh chứng từ nào). */
 (function () {
   const { API, NN, esc } = EPL;
-  const VAI = ['yard', 'acct', 'expacct', 'fuel', 'parts', 'repair', 'treasury', 'cash', 'rev', 'admin'];
+  // 07/10: thêm Thủ kho nhiên liệu (depot) và Tài xế (driver) — hai vai này phải gắn một kho / một tài xế (máy chủ bắt buộc)
+  const VAI = ['yard', 'acct', 'expacct', 'fuel', 'depot', 'parts', 'repair', 'treasury', 'cash', 'rev', 'driver', 'admin'];
   // Tóm tắt bằng lời theo bảng Nhiệm Vụ của khách — một câu cho mỗi vai, khoá tk_lam_<vai> trong từ điển (vi · lo · en)
   const lam = (v) => ((window.EPL_TU_DIEN || {})['tk_lam_' + v] ? NN.h('tk_lam_' + v) : '');
-  let root, ds = [], D = null;
+  let root, ds = [], D = null, taiXe = [], kho = [];
+  // tài khoản tài xế / thủ kho đang gắn với ai / kho nào — hiện dưới cột «Làm gì»
+  const gan = (u) => {
+    if (u.role === 'driver') { const d = taiXe.find(x => x.id === u.driver_id); return d ? NN.h('tk_gan_tai_xe') + ': <b lang="lo">' + esc(EPL.tenTaiXe(d, false)) + '</b>' : ''; }
+    if (u.role === 'depot') { const k = kho.find(x => x.id === u.place_id); return k ? NN.h('tk_gan_kho') + ': <b lang="lo">' + esc(k.name) + '</b>' : ''; }
+    return '';
+  };
   const q = (s) => root.querySelector(s);
 
   function ve() {
     q('#tk-than').innerHTML = ds.map((u, i) => `<tr class="${u.active ? '' : 'tk-tat'}">
       <td>${i + 1}</td><td class="mono">${esc(u.username)}</td><td><span class="tk-av">${esc(u.avatar)}</span><b lang="lo">${esc(u.full_name)}</b></td>
       <td><button class="tk-vai-nut" data-den-vai="${u.role}">${NN.h('r_' + u.role)}</button></td>
-      <td class="small muted tk-lam">${lam(u.role)}</td>
+      <td class="small muted tk-lam">${lam(u.role)}${gan(u) ? '<div class="tk-gan">' + gan(u) + '</div>' : ''}</td>
       <td>${EPL.tag(u.active ? 'ok' : 'plain', u.active ? 'active' : 'inactive')}</td>
       <td><button class="btn sm" data-sua="${u.id}">${NN.h('edit')}</button></td></tr>`).join('');
     root.querySelectorAll('[data-sua]').forEach(b => b.addEventListener('click', () => sua(ds.find(x => x.id === b.dataset.sua))));
@@ -102,17 +109,34 @@
   }
 
   async function sua(u) {
-    const v = await EPL.hopNhap(u ? NN.t('edit') : NN.t('add'), [
+    const cho = EPL.hopNhap(u ? NN.t('edit') : NN.t('add'), [
       ...(u ? [] : [{ id: 'username', label: 'username', value: '' }]),
       { id: 'full_name', label: 'full_name', value: u ? u.full_name : '', lo: true },
       { id: 'avatar', label: 'avatar', value: u ? u.avatar : '' },
       { id: 'role', label: 'role', type: 'select', value: u ? u.role : 'yard', options: VAI.map(r => [r, NN.t('r_' + r)]) },
+      // chỉ hiện khi vai là Tài xế / Thủ kho nhiên liệu (ẩn hiện theo ô vai, ngay dưới)
+      { id: 'driver_id', label: 'tk_gan_tai_xe', type: 'select', value: u ? u.driver_id || '' : '',
+        options: [['', NN.t('tk_chon_tai_xe')], ...taiXe.filter(d => d.active || (u && d.id === u.driver_id)).map(d => [d.id, EPL.tenTaiXe(d)])] },
+      { id: 'place_id', label: 'tk_gan_kho', type: 'select', value: u ? u.place_id || '' : '',
+        options: [['', NN.t('tk_chon_kho')], ...kho.filter(k => k.active || (u && k.id === u.place_id)).map(k => [k.id, (k.code ? k.code + ' · ' : '') + k.name])] },
       { id: 'password', label: u ? 'new_password' : 'password', type: 'password', value: '' },
       ...(u ? [{ id: 'active', label: 'status', type: 'select', value: u.active ? '1' : '0', options: [['1', NN.t('active')], ['0', NN.t('inactive')]] }] : []),
     ], NN.t('save'));
+    // hộp đã dựng xong (EPL.hoi mở hộp ngay khi gọi) — ô gắn tài xế / kho chỉ hiện với đúng vai
+    const oVai = document.getElementById('hn-role');
+    const anHien = () => {
+      const r = oVai.value, tx = document.getElementById('hn-driver_id'), kh = document.getElementById('hn-place_id');
+      if (tx) tx.closest('.field').hidden = r !== 'driver';
+      if (kh) kh.closest('.field').hidden = r !== 'depot';
+    };
+    if (oVai) { oVai.addEventListener('change', anHien); anHien(); }
+    const v = await cho;
     if (!v) return;
+    if (v.role === 'driver' && !v.driver_id) return EPL.toast(NN.t('tk_chon_tai_xe'), 'loi');
+    if (v.role === 'depot' && !v.place_id) return EPL.toast(NN.t('tk_chon_kho'), 'loi');
     try {
-      const body = { full_name: v.full_name, avatar: v.avatar, role: v.role };
+      const body = { full_name: v.full_name, avatar: v.avatar, role: v.role,
+        driver_id: v.role === 'driver' ? v.driver_id : null, place_id: v.role === 'depot' ? v.place_id : null };
       if (v.password) body.password = v.password;
       if (u) body.active = v.active === '1'; else body.username = v.username;
       if (!u && (!v.username.trim() || !v.password)) return EPL.toast(NN.t('username') + ' / ' + NN.t('password') + '?', 'loi');
@@ -120,7 +144,10 @@
       EPL.toast(NN.t('saved'), 'ok'); await tai();
     } catch (e) { EPL.baoLoi(e); }
   }
-  async function tai() { ds = await API.get('/api/users'); ve(); veVai(); }
+  async function tai() {
+    [ds, taiXe, kho] = await Promise.all([API.get('/api/users'), API.get('/api/drivers').catch(() => []), API.get('/api/fuel-places?tat_ca=1').catch(() => [])]);
+    ve(); veVai();
+  }
   EPL.modules['tai-khoan'] = {
     async init(r) {
       root = r;
