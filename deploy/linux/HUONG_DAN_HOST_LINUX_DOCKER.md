@@ -69,7 +69,8 @@ Mở `https://<tên miền>/` → màn đăng nhập.
 
 ```bash
 cd /opt/epl_lao && git pull && docker compose up -d --build      # cách A thêm: --profile https
-docker compose restart dieu-xe                                     # chỉ khởi động lại (vd. sau khi sửa .env)
+docker compose up -d --force-recreate dieu-xe                      # sau khi sửa .env: tạo lại container để nạp giá trị mới
+docker compose restart dieu-xe                                     # chỉ khởi động lại — KHÔNG đọc lại .env
 ```
 Ảnh / hợp đồng đính kèm và nhật ký nằm ở volume `tep`, `logs` — giữ nguyên qua mỗi lần cập nhật.
 Sao lưu ảnh: `docker run --rm -v epl_lao_tep:/d -v $PWD:/b alpine tar czf /b/tep_$(date +%F).tgz -C /d .`
