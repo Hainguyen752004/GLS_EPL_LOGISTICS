@@ -21,7 +21,7 @@ from models import (ChungTu, Driver, GuiSoTune, Part, Route, RouteStop, Supplier
                     TollCardMove, Trip, TripEvent, TripExpense, TripSection, Voucher)
 from routes.phieu import CO_TOI_DA, da_thu_theo_phieu, loc_phieu, nap_lo, xuat_phieu
 from routes.theo_doi import NGAY_COI_LA_LAU
-from services.bao_mat import nguoi_hien_tai
+from services.bao_mat import can_vai, nguoi_hien_tai
 from services.phan_quyen import QUYEN, thay_tien_ban, thay_tien_chi, viec_dang_cho
 from services.tinh_toan import cach_tra, tien_dong, tinh_phieu, ty_gia
 from services import dem_bao_cao as DEM
@@ -30,6 +30,11 @@ from services.chi_luong_tune import KHOAN_TAI_XE
 from services.chi_tune import GIO_KE_TOAN
 
 router = APIRouter()
+
+# 07/10 (kiểm máy chủ): báo cáo chỉ cho vai CÓ màn báo cáo (frontend/js/chung.js MODULES). Tài xế, thủ kho nhiên liệu,
+# kho phụ tùng, tổ sửa chữa không có màn Tổng quan / Theo dõi phiếu / Tiền chuyến & nước / Xe liên kết — trước đây chỉ
+# ẩn ở giao diện, gọi thẳng API vẫn đọc được tiền chuyến của mọi tài xế. Admin luôn qua (can_vai).
+XEM_BAO_CAO = can_vai("yard", "acct", "expacct", "fuel", "treasury", "cash", "rev")
 
 
 def _thang(thang):
@@ -99,7 +104,7 @@ def _da_thu_gon(db, dau, cuoi, *loc):
 
 
 @router.get("/api/bao-cao/tong-quan")
-def tong_quan(thang: str = None, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+def tong_quan(thang: str = None, db: Session = Depends(get_db), user=Depends(XEM_BAO_CAO)):
     dau, cuoi = _thang(thang)
     t = _gop_tq(_theo_ngay(db, "tq6", _cac_ngay(dau, cuoi), _tq_lo).values())
     chu_y = list(t["chu_y"])
@@ -347,7 +352,7 @@ def _xh_lo(db, cac_ngay):
 
 
 @router.get("/api/bao-cao/xu-huong")
-def xu_huong(thang: str = None, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+def xu_huong(thang: str = None, db: Session = Depends(get_db), user=Depends(XEM_BAO_CAO)):
     """Số liệu xu hướng cho màn Tổng quan: so tháng trước, sáu tháng gần nhất, theo ngày, hao hụt,
     hiệu suất xe, vận hành, xem nhanh, và dòng thời gian từng chuyến.
 
@@ -519,7 +524,7 @@ def _loc_td(qs, q=None, transport_status=None, finance_status=None, company=None
 
 @router.get("/api/bao-cao/theo-doi/tong")
 def theo_doi_tong(thang: str = None, q: str = None, transport_status: str = None, finance_status: str = None,
-                  company: str = None, quy: str = None, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+                  company: str = None, quy: str = None, db: Session = Depends(get_db), user=Depends(XEM_BAO_CAO)):
     """Dòng TỔNG của bảng theo dõi trên TOÀN BỘ phiếu khớp bộ lọc (không chỉ trang đang xem) — cộng riêng từng loại
     tiền; `quy` (LAK · USD · …) thì mọi phiếu quy theo tỷ giá đã khoá trên chính phiếu đó, còn một con số. Cùng cách
     cộng với giao diện trước đây (modules/theo-doi: cong / ve_tien)."""
@@ -610,7 +615,7 @@ def _tron_tien(theo_tien):
 @router.get("/api/bao-cao/theo-doi")
 def theo_doi(response: Response, thang: str = None, trang: int = 1, co: int = None, q: str = None,
              transport_status: str = None, finance_status: str = None, company: str = None,
-             db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+             db: Session = Depends(get_db), user=Depends(XEM_BAO_CAO)):
     """Bảng "ລາຍງານ ຕິດຕາມໃບຂົນສົ່ງສິນຄ້າ" — một dòng một phiếu, đủ 29 cột như Excel.
 
     Vai không được thấy tiền bán thì các cột cước, doanh thu, lãi **không có trong gói trả về** —
@@ -625,7 +630,7 @@ def theo_doi(response: Response, thang: str = None, trang: int = 1, co: int = No
 
 
 @router.get("/api/bao-cao/can-tru")
-def can_tru(thang: str = None, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+def can_tru(thang: str = None, db: Session = Depends(get_db), user=Depends(XEM_BAO_CAO)):
     """CẤN TRỪ CUỐI THÁNG với khách — gộp hai thứ khách đã trả hộ EPL (anh Khampla C5.1 · C6.1).
 
     Bên Lào có hai chỗ tiền chạy ngược chiều với cước:
@@ -733,7 +738,7 @@ def ghi_can_tru(user=Depends(nguoi_hien_tai)):
 
 
 @router.get("/api/bao-cao/xe-lien-ket")
-def xe_lien_ket(thang: str = None, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+def xe_lien_ket(thang: str = None, db: Session = Depends(get_db), user=Depends(XEM_BAO_CAO)):
     # Bảng này CHỈ là biên lợi nhuận: nhận giá 2, thuê lại giá 1, lời 1. Vai không được thấy tiền bán
     # thì chặn hẳn ở máy chủ, không chỉ giấu mục trên thanh điều hướng.
     if not thay_tien_ban(user.role):
@@ -747,7 +752,7 @@ def xe_lien_ket(thang: str = None, db: Session = Depends(get_db), user=Depends(n
 
 
 @router.get("/api/bao-cao/tien-tai-xe")
-def tien_tai_xe(thang: str = None, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+def tien_tai_xe(thang: str = None, db: Session = Depends(get_db), user=Depends(XEM_BAO_CAO)):
     """ເງິນຖ້ຽວໂຊເຟີ ແລະ ເງິນເຕີມນ້ຳ — tiền chuyến và tiền nước theo TÀI XẾ, gom từ mục IV.
 
     Bãi KHÔNG xem (chủ dự án chốt 23/09): phiếu đã giấu tiền mục IV với Bãi, màn này cộng lại đúng số đó.

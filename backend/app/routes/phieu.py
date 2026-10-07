@@ -1344,7 +1344,10 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
 
 # ---------------------------------------------------------------- diễn biến trên đường
 @router.get("/api/trips/{tid}/events")
-def ds_su_kien(tid: str, db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
+def ds_su_kien(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    p = db.get(Trip, tid)
+    if p:
+        _cua_tai_xe(db, p, user)      # 07/10: tài xế chỉ đọc diễn biến phiếu của mình
     return [_xuat_su_kien(e) for e in db.query(TripEvent).filter(TripEvent.trip_id == tid).order_by(TripEvent.ts).all()]
 
 
@@ -1763,6 +1766,7 @@ def kiem_lai(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_ta
     p = db.get(Trip, tid)
     if not p:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
+    _cua_tai_xe(db, p, user)          # 07/10: tài xế không đọc bảng rà phiếu người khác
     chan = []
     if not p.locked:
         # 06/10 (chạy thử kịch bản CA-3): báo trước chỗ CHẶN khoá — hộp Khoá từng báo «không có điểm lệch» rồi mới ra 409

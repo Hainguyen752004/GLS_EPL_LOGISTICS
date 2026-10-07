@@ -694,8 +694,10 @@ def xuat_tai_xe(db, d, chi_tiet=False, dem=None, dang=None, xe=None, bang=None):
 
 
 @router.get("/api/drivers")
-def ds_tai_xe(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
+def ds_tai_xe(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     ds = db.query(Driver).order_by(Driver.active.desc(), Driver.name).all()
+    if user.role == "driver":         # 07/10: tài khoản tài xế chỉ thấy hồ sơ của chính mình (bằng lái, điện thoại người khác là riêng tư)
+        ds = [d for d in ds if d.id == user.driver_id]
     dem, dang = _phu_tai_xe(db, ds)
     xe, bang = _phu_bang_xe(db, ds)
     anh = ANH.anh_chinh_map(ANH.TAI_XE, db)
@@ -708,9 +710,11 @@ def ds_tai_xe(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
 
 
 @router.get("/api/drivers/{did}/lich")
-def lich_tai_xe(did: str, tuan: str = None, db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
+def lich_tai_xe(did: str, tuan: str = None, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     """Lịch một tuần của tài xế — cùng cách nghĩ với lịch xe: không có bảng lịch riêng, lịch chính là
     các phiếu người này cầm, trải từ ngày xuất tới ngày về. Ngày không có phiếu thì rảnh."""
+    if user.role == "driver" and did != user.driver_id:     # 07/10: tài xế chỉ xem hồ sơ / lịch của mình
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Tài xế chỉ xem được hồ sơ của mình."})
     d = db.get(Driver, did)
     if not d:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có tài xế này."})
@@ -741,7 +745,9 @@ def lich_tai_xe(did: str, tuan: str = None, db: Session = Depends(get_db), _=Dep
 
 
 @router.get("/api/drivers/{did}")
-def xem_tai_xe(did: str, db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
+def xem_tai_xe(did: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    if user.role == "driver" and did != user.driver_id:     # 07/10: tài xế chỉ xem hồ sơ / lịch của mình
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Tài xế chỉ xem được hồ sơ của mình."})
     d = db.get(Driver, did)
     if not d:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có tài xế này."})

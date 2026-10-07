@@ -38,7 +38,7 @@ if not GOC:
     if "_d7" not in URL.rsplit("/", 1)[-1]:
         sys.exit("Chuỗi nối không trỏ bản sao _d7 — bài chỉ chạy trên bản sao.")
     os.environ["DATABASE_URL"] = URL
-    os.environ.pop("QLSX_GUI_BUT_TOAN", None)                           # cờ gửi tắt: bút toán chỉ nằm chờ gửi
+    os.environ["QLSX_GUI_BUT_TOAN"] = "0"   # cờ gửi tắt: bút toán chỉ nằm chờ gửi (đặt "0", không xoá — .env máy thật có =1 và load_dotenv sẽ nạp lại)
     try:
         sys.stdout.reconfigure(encoding="utf-8")
     except AttributeError:
