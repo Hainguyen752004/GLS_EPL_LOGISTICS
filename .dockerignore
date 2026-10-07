@@ -1,0 +1,19 @@
+# chỉ backend/ + frontend/ + deploy/linux/requirements.lock.txt vào ảnh — không bí mật, không tài liệu, không bộ kiểm
+.git
+.env
+.env.*
+!.env.example
+.may_thu
+DOCS
+kiem
+tools
+logs
+tep
+phieu-in-a4
+deploy/iis
+**/__pycache__
+**/*.pyc
+**/*.zip
+**/*.docx
+*.bat
+EPL-Transport-UI.html

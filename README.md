@@ -25,6 +25,8 @@ python -m uvicorn backend.app.main:app --host 0.0.0.0 --port 8010 --no-access-lo
 Hoặc bấm đúp `chay.bat` (cổng 8010; đổi cổng tuỳ máy). Giao diện và API cùng một cổng (`/` và `/api`). Bảng tự dựng khi khởi động (`create_all`, không migration).
 `backend/app/seed.py` chỉ dùng cho DB demo trống — **không** chạy trên DB đang có dữ liệu.
 
+**Host máy chủ:** Linux + Docker → [deploy/linux/HUONG_DAN_HOST_LINUX_DOCKER.md](deploy/linux/HUONG_DAN_HOST_LINUX_DOCKER.md) (`Dockerfile`, `docker-compose.yml`, Caddy tự lấy HTTPS) · Windows + IIS → [deploy/iis/HUONG_DAN_HOST_IIS.md](deploy/iis/HUONG_DAN_HOST_IIS.md).
+
 Mỗi người dùng một tài khoản do Sếp tạo ở màn **Tài khoản**; vai quyết định thấy màn nào, sửa / kiểm / ghi sổ mục nào (`backend/app/services/phan_quyen.py`, theo bảng nhiệm vụ của khách). Màn đăng nhập **không** liệt kê tài khoản trừ khi bật `EPL_LAO_DANG_NHAP_MAU=1` (chỉ máy thử / demo).
 
 ## Cấu hình (`.env`, không commit)

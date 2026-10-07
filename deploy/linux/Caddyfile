@@ -1,0 +1,8 @@
+# Caddy tự lấy và gia hạn chứng chỉ HTTPS (Let's Encrypt) cho DOMAIN — tên miền phải trỏ về máy này, mở cổng 80 + 443.
+{$DOMAIN} {
+	encode gzip
+	request_body {
+		max_size 50MB
+	}
+	reverse_proxy dieu-xe:8000
+}

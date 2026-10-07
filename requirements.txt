@@ -4,6 +4,7 @@ uvicorn
 sqlalchemy
 psycopg2-binary
 python-dotenv
+python-multipart # FastAPI cần để nhận ảnh / tệp đính kèm (Form, UploadFile)
 certifi         # bộ chứng chỉ HTTPS riêng — kho chứng chỉ Windows hỏng thì vẫn gọi được API anh Khang
 qrcode          # sinh ảnh mã QR in trên phiếu lĩnh
 pillow          # qrcode cần để xuất PNG

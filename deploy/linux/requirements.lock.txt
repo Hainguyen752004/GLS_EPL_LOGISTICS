@@ -1,0 +1,14 @@
+# Thư viện CHỐT PHIÊN BẢN cho bản chạy thật (Docker / Linux) — đúng bộ đang chạy ổn trên máy thử 07/10/2026.
+# Đổi phiên bản thì chạy lại bộ kiểm (README «Kiểm») trước khi lên máy thật.
+fastapi==0.115.6
+starlette==0.41.3
+pydantic==2.10.3
+uvicorn==0.34.0
+httptools==0.7.1
+python-multipart==0.0.20
+SQLAlchemy==2.0.36
+psycopg2-binary==2.9.10
+python-dotenv==1.0.1
+certifi==2026.2.25
+qrcode==8.0
+pillow==12.2.0

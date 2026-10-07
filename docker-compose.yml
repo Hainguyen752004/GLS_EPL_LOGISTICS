@@ -1,0 +1,39 @@
+# Trang điều xe EPL Lào trên máy Linux.
+#   docker compose up -d --build                         chỉ trang điều xe, nghe 127.0.0.1:8020 (đặt sau nginx / proxy có sẵn)
+#   docker compose --profile https up -d --build         thêm Caddy tự lấy chứng chỉ HTTPS cho DOMAIN (cổng 80 / 443)
+# Cấu hình: tệp .env cạnh tệp này (chép từ máy thật — có mật khẩu DB, KHÔNG đưa lên git). DOMAIN đặt trong .env khi dùng profile https.
+services:
+  dieu-xe:
+    build: .
+    image: epl-lao-dieu-xe:latest
+    env_file: .env
+    environment:
+      EPL_LAO_TEP: /data/tep
+      TZ: Asia/Vientiane
+    volumes:
+      - tep:/data/tep
+      - logs:/app/logs
+    ports:
+      - "127.0.0.1:8020:8000"
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    profiles: ["https"]
+    depends_on: [dieu-xe]
+    environment:
+      DOMAIN: ${DOMAIN:-}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/linux/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  tep: {}
+  logs: {}
+  caddy_data: {}
+  caddy_config: {}
