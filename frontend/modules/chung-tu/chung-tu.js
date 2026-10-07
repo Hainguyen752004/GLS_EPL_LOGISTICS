@@ -472,9 +472,12 @@
           (x.origin || '') + ' → ' + (x.destination || ''), ...NHOM.map(k => chuNhom((x.nhom || {})[k]))]))];
       const h = CT[chonId], x = D.ds.find(y => y.trip_id === chonId);
       if (h && x && (h.dong || []).length) {
-        sh.push(EPL.xuatSheet(x.doc_no, [T('hs_cot_muc'), T('item'), T('qty'), T('unit_price'), T('cur'), T('amount_lak'), T('hs_cot_xu_ly'), T('hs_cot_chung_tu'), T('status')],
+        // 07/10 (bộ kiểm xuất Excel): vai không thấy tiền chi (Bãi) — màn ẩn cột đơn giá / thành tiền (coTien), tệp cũng bỏ hai cột đó
+        const coTien = !!h.thay_tien_chi;
+        sh.push(EPL.xuatSheet(x.doc_no, [T('hs_cot_muc'), T('item'), T('qty'), ...(coTien ? [T('unit_price'), T('cur'), T('amount_lak')] : []),
+          T('hs_cot_xu_ly'), T('hs_cot_chung_tu'), T('status')],
           h.dong.map(d => { const s = d.settlement || {}; return [d.kind === 'thu' ? T('hs_thu_ngan') : d.section || '', d.kind === 'thu' ? T('hs_cuoc') : (d.name || ''),
-            EPL.oSo(d.qty, 2), d.unit_price == null ? null : EPL.oSo(d.unit_price, 2), d.currency || '', d.amount_lak == null ? null : EPL.oSo(d.amount_lak),
+            EPL.oSo(d.qty, 2), ...(coTien ? [d.unit_price == null ? null : EPL.oSo(d.unit_price, 2), d.currency || '', d.amount_lak == null ? null : EPL.oSo(d.amount_lak)] : []),
             T(KIND[s.kind] || 'hs_x_khac'), [s.doc_no, s.ref_no].filter(Boolean).join(' · '), T('hs_s_' + (s.state || 'open'))]; })));
       }
       return sh;
