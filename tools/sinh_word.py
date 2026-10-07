@@ -57,6 +57,23 @@ def main():
     d = Document()
     d.styles['Normal'].font.name = 'Segoe UI'
     d.styles['Normal'].font.size = Pt(10.5)
+    # 07/10: chữ Lào là "complex script" — đặt font cs (Leelawadee UI có sẵn trên Windows) cho mọi kiểu chữ, không thì Word
+    # tự chọn font thiếu dấu. Bản tiếng Lào (tên tệp có _LO) lấy luôn Leelawadee UI làm font chính.
+    from docx.oxml.ns import qn
+    la_lao = '_LO' in os.path.basename(nguon).upper()
+    for st in d.styles:
+        try:
+            rpr = st.element.get_or_add_rPr()
+        except AttributeError:
+            continue
+        f = rpr.find(qn('w:rFonts'))
+        if f is None:
+            f = rpr.makeelement(qn('w:rFonts'), {})
+            rpr.append(f)
+        f.set(qn('w:cs'), 'Leelawadee UI')
+        if la_lao:
+            for k in ('w:ascii', 'w:hAnsi'):
+                f.set(qn(k), 'Leelawadee UI')
 
     i = 0
     while i < len(dong):
@@ -104,6 +121,26 @@ def main():
         if trich:
             l = re.sub(r'^\s*>\s?', '', l)
         if not l.strip():
+            i += 1
+            continue
+        # 07/10: ảnh màn hình "![chú thích](đường/dẫn.png)" (đường dẫn tương đối theo tệp .md) → ảnh rộng 16 cm + chú thích nghiêng
+        anh = re.match(r'^\s*!\[([^\]]*)\]\(([^)]+)\)\s*$', l)
+        if anh:
+            duong = anh.group(2)
+            if not os.path.isabs(duong):
+                duong = os.path.join(os.path.dirname(os.path.abspath(nguon)), duong)
+            if os.path.isfile(duong):
+                from docx.shared import Cm
+                d.add_picture(duong, width=Cm(16))
+                d.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                if anh.group(1).strip():
+                    p = d.add_paragraph()
+                    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    r = p.add_run(anh.group(1).strip())
+                    r.italic = True
+                    r.font.size = Pt(9)
+            else:
+                print('THIẾU ẢNH: %s' % duong)
             i += 1
             continue
         if l.startswith('# '):
