@@ -217,7 +217,8 @@ def main():
         dung(loi is None and not any("kho-hang/phieu" in k for k in mang), "phiếu gom đã vào kho, cân không đổi: gửi kiểm được, không hỏi "
              "kho tạm (trước: 409 HANG_DA_NHAP_KHO)", (loi, mang))
     if giao_dau:
-        luot("Gửi kiểm III · phiếu giao", giao_dau, "fuel", "send", "yard", True, mo("fuel"), 50)
+        # 07/10: phiếu giao lấy lô + dầu HAI kho (hai tờ PLNL, CA-2 T4-0002) chạy 52 câu — cùng ngưỡng 60 với «phiếu giao có hàng»
+        luot("Gửi kiểm III · phiếu giao", giao_dau, "fuel", "send", "yard", True, mo("fuel"), 60)
     if nha_iv:
         luot("Kiểm IV (lưu giá rồi kiểm)", nha_iv, "travel", "verify", "expacct", True, gia("travel", "entered"), 55)
         luot("Trả lại IV", nha_iv, "travel", "return", "expacct", False, gia("travel", "entered"), 28)
