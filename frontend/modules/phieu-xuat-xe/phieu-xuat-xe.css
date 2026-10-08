@@ -226,6 +226,10 @@
 
 /* ô tìm + ô chọn phiếu đứng cạnh nhau (một năm ~365.000 phiếu: chọn trong 50 mới nhất, hoặc gõ để tìm) */
 .px-chon-hang{display:flex;gap:6px;min-width:0}
+/* ô tìm trên ô chọn xe / tài xế (08/10) — xếp trên ô chọn, cùng bề ngang ô */
+.px-tim-o{display:flex;flex-direction:column;gap:4px;min-width:0}
+.px-tim-o input{width:100%;min-width:0}
+.px-tim-o input[hidden]{display:none}
 .px-chon-hang input{flex:0 1 19em;min-width:6em}
 .px-chon-hang select{flex:1 1 auto;min-width:0}
 /* Ngày xe về, km về: chỉ điền khi xe về — dòng nhỏ dưới ô nói điền ở đâu (29/09) */

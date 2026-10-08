@@ -94,6 +94,23 @@ def gia_goi_y(db, route_id, m, d):
     return None
 
 
+def cach_tra_goi_y(db, route_id, m, d):
+    """Cách trả mặc định của MỘT dòng mục IV / VI theo bộ gợi ý của tuyến (cùng khoản mục) — dòng Bãi khai mới mang cách trả này,
+    Bãi không tự chọn (08/10). Không có trong bộ gợi ý → None (theo mặc định của khoản mục)."""
+    r = db.get(Route, route_id) if route_id and m in ("travel", "other") else None
+    if r is None:
+        return None
+    ds, _ = goi_y_cua(db, r)
+    for x in ds:
+        if x.get("section") != m:
+            continue
+        if (x.get("item_key") or None) != (d.get("item_key") or None) or \
+                (not x.get("item_key") and (x.get("item_name") or "").strip() != (d.get("item_name") or "").strip()):
+            continue
+        return x.get("pay_channel") or None
+    return None
+
+
 def _bo_gia(ds):
     return [{k: v for k, v in x.items() if k not in ("unit_price", "currency")} for x in ds]
 

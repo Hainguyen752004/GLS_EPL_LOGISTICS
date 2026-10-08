@@ -36,7 +36,7 @@ from urllib.parse import urlsplit
 
 from fastapi import HTTPException
 
-from models import ChiChuXeTune, ChiTune, DoiTuongTune, Driver, Owner, Trip, TripLog, TripSection, Voucher
+from models import ChiChuXeTune, ChiTune, Customer, DoiTuongTune, Driver, Owner, Supplier, Trip, TripLog, TripSection, Voucher
 from services import chung_tu as CT
 from services import gui_tune as GT
 
@@ -149,8 +149,16 @@ def doi_tuong(db, loai, ref_id, ten, sdt=None, dia_chi=None, to_chuc=None, ma=No
     duong, tien_to, goi_la = LOAI_DOI_TUONG[loai]
     if not ref_id:
         _loi("THIEU_DOI_TUONG", "Phiếu chưa có %s — không lập chứng từ bên kế toán được." % goi_la, 409)
+    # Việc 9 / 10 (08/10): khách · nhà cung cấp · chủ xe là đối tượng danh mục chung — đã gắn (obj_id) thì dùng thẳng, không tìm /
+    # tạo lại; chưa gắn thì tìm / tạo như cũ rồi ghi obj_id lên hồ sơ. Tài xế (tai_xe) giữ đường cũ.
+    bang = {"khach": Customer, "ncc": Supplier, "chu_xe": Owner}.get(loai)
+    kh = db.get(bang, ref_id) if bang is not None else None
+    if kh is not None and kh.obj_id:
+        return int(kh.obj_id)
     r = db.get(DoiTuongTune, (loai, ref_id))
     if r is not None and (ma is None or r.object_no == ma):
+        if kh is not None:
+            kh.obj_id = r.obj_id                        # Việc 9: nhớ luôn obj_id trên khách — lần sau dùng thẳng
         return r.obj_id
     so = ma or (tien_to + ref_id)
     tim = _goi("POST", "/api/v1/master-data/%s/list" % duong, {"PageIndex": 1, "ObjKey": so}) or {}
@@ -162,7 +170,7 @@ def doi_tuong(db, loai, ref_id, ten, sdt=None, dia_chi=None, to_chuc=None, ma=No
     if not oid:
         than = {"ObjectNo": so, "ObjectName": (ten or so)[:100], "CountryAutoId": _cfg("QLSX_COUNTRY_ID", 11),
                 "ObjectOfOrganization": _cfg("QLSX_ORG_ID", 1368), "HandPhone": sdt or None, "Address": dia_chi or None,
-                "Description": "%s trang điều xe EPL Lào" % goi_la.capitalize()}
+                "Description": "%s — module Vận tải EPL" % goi_la.capitalize()}
         if to_chuc is not None:
             than["IsOrganization"] = bool(to_chuc)
         oid = _goi("POST", "/api/v1/master-data/%s/upsert" % duong, than)
@@ -172,6 +180,8 @@ def doi_tuong(db, loai, ref_id, ten, sdt=None, dia_chi=None, to_chuc=None, ma=No
         db.delete(r)
         db.flush()
     db.add(DoiTuongTune(loai=loai, ref_id=ref_id, obj_id=int(oid), object_no=so))
+    if kh is not None:
+        kh.obj_id = int(oid)
     db.flush()
     return int(oid)
 

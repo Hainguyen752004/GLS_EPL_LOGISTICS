@@ -41,6 +41,7 @@ from services import tai_khoan as TK
 from services import gia_von as GV
 from services import kho_ke_toan as KK
 from services import kho_qlsx as KQ
+from services import diem_do_web as DDW
 
 router = APIRouter()
 TIEN_TO = {"fuel": "PLNL", "advance": "PTU"}
@@ -49,7 +50,8 @@ TIEN_TO = {"fuel": "PLNL", "advance": "PTU"}
 # ================================================================ điểm đổ nhiên liệu
 def xuat_diem(db, x, chi_tiet=False):
     ra = {"id": x.id, "code": x.code, "name": x.name, "country": x.country, "owner_type": x.owner_type,
-          "supplier_id": x.supplier_id, "address": x.address, "note": x.note, "active": x.active}
+          "supplier_id": x.supplier_id, "address": x.address, "note": x.note, "active": x.active,
+          "wh_id": x.wh_id, "wh_synced_at": x.wh_synced_at.isoformat(timespec="minutes") if x.wh_synced_at else None}
     if x.supplier_id:
         ncc = db.get(Supplier, x.supplier_id)
         ra["supplier_name"] = ncc.name if ncc else None
@@ -66,24 +68,97 @@ def ds_diem(tat_ca: int = 0, db: Session = Depends(get_db), user=Depends(nguoi_h
     return [xuat_diem(db, x, True) for x in q.order_by(FuelPlace.country, FuelPlace.name).all()]
 
 
-DA_DOI = {"ma": "DA_DOI_SANG_KE_TOAN",
-          "loi": "Điểm đổ nhiên liệu nay quản lý ở trang kế toán (Kho → Điểm đổ nhiên liệu). Ở đây chỉ còn bản chép để đọc."}
+# 08/10 (anh Khampla "tạo kho mới"): thêm / sửa điểm đổ MỞ LẠI ở đây — trang kế toán tạm 8031 (người ghi duy nhất từ 28/09) đã bỏ
+# 05/10. Kho dầu EPL tạo ở Web (Khai báo kho) rồi chọn từ danh mục kho; trạm dầu ngoài thêm / sửa tại chỗ. services/diem_do_web.py.
+# Không xoá điểm đổ (phiếu, phiếu đề nghị, tài khoản thủ kho trỏ vào) — ngưng dùng.
+VAI_DIEM = ("fuel", "expacct")            # KT kho xăng dầu VC (kho dầu) · KT Chi phí VC (trạm ngoài, nhà cung cấp) — Sếp luôn qua
+SUA_DIEM = can_vai(*VAI_DIEM)
+COT_TRAM = ("code", "name", "country", "supplier_id", "address", "note", "active")
 
 
-# Thêm / sửa / xoá điểm đổ dời sang trang kế toán (28/09): bản gốc ở đó, bên này là bản chép chỉ đọc (routes/lien_thong.py).
+def _chuan_diem(db, x, d, tram):
+    """Ghi các ô gửi lên vào điểm đổ `x`. Kho dầu EPL đã gắn kho Web: chỉ nước và ghi chú (còn lại theo Web)."""
+    cot = COT_TRAM if tram else ("country", "note")
+    for c in cot:
+        if c not in d:
+            continue
+        v = d[c]
+        if c == "active":
+            v = bool(v)
+        elif isinstance(v, str):
+            v = v.strip() or None
+        if c == "country":
+            v = (v or "LA").upper()
+            if v not in ("LA", "VN"):
+                raise HTTPException(422, {"ma": "NUOC_SAI", "loi": "Nước phải là LA (Lào) hoặc VN (Việt Nam)."})
+        if c == "supplier_id" and v and not db.get(Supplier, v):
+            raise HTTPException(422, {"ma": "KHONG_THAY_NCC", "loi": "Không có nhà cung cấp này."})
+        setattr(x, c, v)
+    if tram:
+        if not (x.name or "").strip():
+            raise HTTPException(422, {"ma": "THIEU_TEN", "loi": "Điểm đổ phải có tên."})
+        if not (x.code or "").strip():
+            raise HTTPException(422, {"ma": "THIEU_MA", "loi": "Điểm đổ phải có mã (vd VN-02, LA-03)."})
+        trung = db.query(FuelPlace).filter(FuelPlace.code == x.code, FuelPlace.id != (x.id or "")).first()
+        if trung is not None:
+            raise HTTPException(409, {"ma": "TRUNG_MA", "loi": "Mã %s đã có (%s)." % (x.code, trung.name)})
+
+
+@router.get("/api/fuel-places/quyen")
+def quyen_diem(user=Depends(nguoi_hien_tai)):
+    return {"sua": user.role == "admin" or user.role in VAI_DIEM}
+
+
 @router.post("/api/fuel-places")
-def them_diem(user=Depends(nguoi_hien_tai)):
-    raise HTTPException(409, DA_DOI)
+def them_diem(d: dict = Body(...), db: Session = Depends(get_db), user=Depends(SUA_DIEM)):
+    """Thêm TRẠM DẦU NGOÀI. Kho dầu EPL không thêm ở đây — tạo ở Web rồi chọn từ danh mục kho (POST /api/fuel-places/kho-web/{id})."""
+    if (d.get("owner_type") or "ngoai") != "ngoai":
+        raise HTTPException(422, {"ma": "KHO_TAO_O_WEB", "loi": "Kho dầu EPL tạo ở Web (Quản lý kho → Khai báo kho) rồi chọn từ danh mục kho."})
+    x = FuelPlace(owner_type="ngoai", country="LA", active=True)
+    _chuan_diem(db, x, dict(d, active=d.get("active", True)), tram=True)
+    db.add(x)
+    db.commit()
+    return xuat_diem(db, x, True)
 
 
 @router.put("/api/fuel-places/{pid}")
-def sua_diem(pid: str, user=Depends(nguoi_hien_tai)):
-    raise HTTPException(409, DA_DOI)
+def sua_diem(pid: str, d: dict = Body(...), db: Session = Depends(get_db), user=Depends(SUA_DIEM)):
+    x = db.get(FuelPlace, pid)
+    if x is None:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có điểm đổ này."})
+    _chuan_diem(db, x, d, tram=x.owner_type == "ngoai")
+    db.commit()
+    return xuat_diem(db, x, True)
 
 
 @router.delete("/api/fuel-places/{pid}")
 def xoa_diem(pid: str, user=Depends(nguoi_hien_tai)):
-    raise HTTPException(409, DA_DOI)
+    raise HTTPException(409, {"ma": "KHONG_XOA_DIEM", "loi": "Điểm đổ không xoá được (phiếu, phiếu đề nghị trỏ vào) — sửa và chọn Ngưng dùng."})
+
+
+@router.get("/api/fuel-places/kho-web")
+def kho_web(db: Session = Depends(get_db), user=Depends(SUA_DIEM)):
+    """Danh mục kho trên Web để chọn làm kho dầu EPL — mỗi kho kèm điểm đổ đã gắn (nếu có). Mở màn là chép lại luôn thông tin các kho
+    đã gắn."""
+    ds = DDW.kho_web()
+    DDW.dong_bo(db, ds)
+    db.commit()
+    gan = {x.code: x.id for x in db.query(FuelPlace).filter(FuelPlace.owner_type == "epl").all()}
+    return [dict(w, place_id=gan.get(w["code"])) for w in ds]
+
+
+@router.post("/api/fuel-places/kho-web/{wh_id}")
+def gan_kho_web(wh_id: str, d: dict = Body(default={}), db: Session = Depends(get_db), user=Depends(SUA_DIEM)):
+    x = DDW.gan(db, wh_id, (d or {}).get("country"))
+    db.commit()
+    return xuat_diem(db, x, True)
+
+
+@router.post("/api/fuel-places/dong-bo-kho")
+def dong_bo_kho(db: Session = Depends(get_db), user=Depends(SUA_DIEM)):
+    kq = DDW.dong_bo(db)
+    db.commit()
+    return kq
 
 
 # ================================================================ phiếu lĩnh

@@ -8168,9 +8168,24 @@ window.EPL_TU_DIEN = {
   "en": "Qty: number of parts, or number of repairs (tyre repair / replacement × 1). The accountant enters the price when verifying; parts from the store carry the store's average cost."
  },
  "ca_nhac": {
-  "vi": "Cách trả theo cột ghi chú Excel. Dòng «Chi ngay khi xe đi» vào tiền tạm ứng.",
-  "lo": "ວິທີຈ່າຍ ຕາມໝາຍເຫດ Excel. ແຖວ «ຈ່າຍເລີຍຕາມໂຊເຟີອອກລົດ» ເຂົ້າເງິນລ່ວງໜ້າ.",
-  "en": "Payment method as in the Excel note column. Lines marked «Paid at dispatch» go into the cash advance."
+  "vi": "Cách trả theo mặc định của khoản mục (cột ghi chú Excel); KT Chi phí VC đổi khi kiểm mục. Dòng «Chi ngay khi xe đi» vào tiền tạm ứng.",
+  "lo": "ວິທີຈ່າຍ ຕາມຄ່າເລີ່ມຕົ້ນຂອງລາຍການ (ໝາຍເຫດ Excel); ບັນຊີລາຍຈ່າຍ ວຽງຈັນ ປ່ຽນໄດ້ຕອນກວດ. ແຖວ «ຈ່າຍເລີຍຕາມໂຊເຟີອອກລົດ» ເຂົ້າເງິນລ່ວງໜ້າ.",
+  "en": "Payment method follows the item's default (Excel note column); the Vientiane cost accountant changes it when verifying. Lines marked «Paid at dispatch» go into the cash advance."
+ },
+ "px_ca_kt": {
+  "vi": "KT Chi phí VC chọn cách trả khi kiểm mục",
+  "lo": "ບັນຊີລາຍຈ່າຍ ວຽງຈັນ ເລືອກວິທີຈ່າຍຕອນກວດ",
+  "en": "The Vientiane cost accountant sets the payment method when verifying"
+ },
+ "px_tim_xe": {
+  "vi": "Tìm số xe, biển số…",
+  "lo": "ຄົ້ນຫາ ເລກລົດ, ປ້າຍທະບຽນ…",
+  "en": "Search truck no., plate…"
+ },
+ "px_tim_tai_xe": {
+  "vi": "Tìm tên, mã tài xế…",
+  "lo": "ຄົ້ນຫາ ຊື່, ລະຫັດໂຊເຟີ…",
+  "en": "Search driver name, code…"
  },
  "k2_tim": {
   "vi": "Tìm kho, số phiếu, số xe",
@@ -15181,5 +15196,150 @@ window.EPL_TU_DIEN = {
   "vi": "Chọn kho cho tài khoản vai Thủ kho nhiên liệu",
   "lo": "ເລືອກສາງສຳລັບບັນຊີຜູ້ຮັກສາສາງນໍ້າມັນ",
   "en": "Choose the depot for a Fuel depot keeper account"
+ },
+ "tk_gls": {
+  "vi": "Tài khoản đăng nhập Web",
+  "lo": "ບັນຊີເຂົ້າລະບົບເວັບ",
+  "en": "Web login"
+ },
+ "tk_gls_goi_y": {
+  "vi": "Tên đăng nhập Web kế toán – kho (để trống nếu chưa có)",
+  "lo": "ຊື່ເຂົ້າລະບົບເວັບບັນຊີ – ສາງ (ປະຫວ່າງໄວ້ຖ້າຍັງບໍ່ມີ)",
+  "en": "Accounting / warehouse Web login (leave blank if none)"
+ },
+ "nav_diem_do": {
+  "vi": "Điểm đổ nhiên liệu",
+  "lo": "ສະຖານທີ່ເຕີມນໍ້າມັນ",
+  "en": "Fuel places"
+ },
+ "nav_khoan_muc": {
+  "vi": "Khoản mục chi phí",
+  "lo": "ລາຍການຄ່າໃຊ້ຈ່າຍ",
+  "en": "Cost items"
+ },
+ "dd_tu_kho": {
+  "vi": "Thêm kho dầu từ danh mục kho",
+  "lo": "ເພີ່ມສາງນໍ້າມັນ ຈາກລາຍຊື່ສາງ",
+  "en": "Add fuel depot from warehouse list"
+ },
+ "dd_them_tram": {
+  "vi": "Thêm trạm dầu ngoài",
+  "lo": "ເພີ່ມປໍ້ານໍ້າມັນພາຍນອກ",
+  "en": "Add outside fuel station"
+ },
+ "dd_cap_nhat": {
+  "vi": "Cập nhật từ danh mục kho",
+  "lo": "ອັບເດດຈາກລາຍຊື່ສາງ",
+  "en": "Refresh from warehouse list"
+ },
+ "dd_giai_thich": {
+  "vi": "Kho dầu EPL tạo ở Web (Quản lý kho → Khai báo kho) rồi bấm «Thêm kho dầu từ danh mục kho» để chọn — tên, trạng thái theo Web. Trạm dầu ngoài thêm, sửa ngay ở đây. Điểm đổ không xoá — chọn Ngưng dùng.",
+  "lo": "ສາງນໍ້າມັນ EPL ສ້າງຢູ່ເວັບ (ຈັດການສາງ → ຕັ້ງຄ່າສາງ) ແລ້ວກົດ «ເພີ່ມສາງນໍ້າມັນ ຈາກລາຍຊື່ສາງ» ເພື່ອເລືອກ — ຊື່, ສະຖານະ ຕາມເວັບ. ປໍ້ານໍ້າມັນພາຍນອກ ເພີ່ມ, ແກ້ໄຂ ຢູ່ນີ້. ບໍ່ລຶບສະຖານທີ່ — ເລືອກ ຢຸດໃຊ້.",
+  "en": "EPL fuel depots are created on the Web (Warehouse → Warehouse setup), then picked with «Add fuel depot from warehouse list» — name and status follow the Web. Outside fuel stations are added and edited here. Fuel places are never deleted — set them to Inactive."
+ },
+ "dd_kho_web": {
+  "vi": "Danh mục kho trên Web",
+  "lo": "ລາຍຊື່ສາງໃນເວັບ",
+  "en": "Web warehouse list"
+ },
+ "dd_loai_kho": {
+  "vi": "Loại kho",
+  "lo": "ປະເພດສາງ",
+  "en": "Warehouse type"
+ },
+ "dd_chon": {
+  "vi": "Chọn làm kho dầu",
+  "lo": "ເລືອກເປັນສາງນໍ້າມັນ",
+  "en": "Use as fuel depot"
+ },
+ "dd_da_gan": {
+  "vi": "Đã là điểm đổ",
+  "lo": "ເປັນສະຖານທີ່ເຕີມແລ້ວ",
+  "en": "Already a fuel place"
+ },
+ "dd_theo_web": {
+  "vi": "Tên, trạng thái theo danh mục kho trên Web",
+  "lo": "ຊື່, ສະຖານະ ຕາມລາຍຊື່ສາງໃນເວັບ",
+  "en": "Name and status follow the Web warehouse list"
+ },
+ "dd_da_cap_nhat": {
+  "vi": "Đã cập nhật từ danh mục kho: {n} kho dầu đổi thông tin",
+  "lo": "ອັບເດດຈາກລາຍຊື່ສາງແລ້ວ: {n} ສາງນໍ້າມັນ ປ່ຽນຂໍ້ມູນ",
+  "en": "Refreshed from the warehouse list: {n} fuel depot(s) changed"
+ },
+ "dd_mat": {
+  "vi": "Không còn trong danh mục kho trên Web: {ds}",
+  "lo": "ບໍ່ມີໃນລາຍຊື່ສາງໃນເວັບແລ້ວ: {ds}",
+  "en": "No longer in the Web warehouse list: {ds}"
+ },
+ "dd_da_chon": {
+  "vi": "Đã thêm kho dầu {ma} vào điểm đổ",
+  "lo": "ເພີ່ມສາງນໍ້າມັນ {ma} ເຂົ້າສະຖານທີ່ເຕີມແລ້ວ",
+  "en": "Fuel depot {ma} added to fuel places"
+ },
+ "km_them": {
+  "vi": "Thêm khoản mục",
+  "lo": "ເພີ່ມລາຍການ",
+  "en": "Add cost item"
+ },
+ "km_giai_thich": {
+  "vi": "Khoản lưu sẵn để chọn trên phiếu xuất xe thay cho «Khác (tự gõ)». Cách trả mặc định (mục IV, VI): dòng mới mang cách trả này, KT Chi phí VC đổi được khi kiểm mục. Đổi mặc định không làm đổi phiếu cũ. Mục III chỉ có dầu (mã hàng kho).",
+  "lo": "ລາຍການບັນທຶກໄວ້ ເພື່ອເລືອກໃນໃບເບີກລົດ ແທນ «ອື່ນໆ (ພິມເອງ)». ວິທີຈ່າຍຕັ້ງຕົ້ນ (ໝວດ IV, VI): ແຖວໃໝ່ໃຊ້ວິທີນີ້, ບັນຊີລາຍຈ່າຍ ວຽງຈັນ ປ່ຽນໄດ້ຕອນກວດ. ປ່ຽນຄ່າຕັ້ງຕົ້ນ ບໍ່ປ່ຽນໃບເກົ່າ. ໝວດ III ມີແຕ່ນໍ້າມັນ (ລະຫັດສິນຄ້າສາງ).",
+  "en": "Saved items to pick on the dispatch slip instead of «Other (type in)». Default payment (sections IV, VI): new lines take it, the Vientiane cost accountant can change it when verifying. Changing a default does not change past slips. Section III is fuel only (warehouse item code)."
+ },
+ "km_co_san": {
+  "vi": "Có sẵn",
+  "lo": "ມີຢູ່ແລ້ວ",
+  "en": "Built-in"
+ },
+ "km_cach_tra": {
+  "vi": "Cách trả mặc định",
+  "lo": "ວິທີຈ່າຍຕັ້ງຕົ້ນ",
+  "en": "Default payment"
+ },
+ "km_so_dong": {
+  "vi": "Dòng đang dùng",
+  "lo": "ແຖວທີ່ໃຊ້ຢູ່",
+  "en": "Lines using it"
+ },
+ "km_muc": {
+  "vi": "Mục chi",
+  "lo": "ໝວດຄ່າໃຊ້ຈ່າຍ",
+  "en": "Expense section"
+ },
+ "km_ten_vi": {
+  "vi": "Tên (tiếng Việt)",
+  "lo": "ຊື່ (ພາສາຫວຽດ)",
+  "en": "Name (Vietnamese)"
+ },
+ "km_ten_lo": {
+  "vi": "Tên (tiếng Lào)",
+  "lo": "ຊື່ (ພາສາລາວ)",
+  "en": "Name (Lao)"
+ },
+ "km_ten_en": {
+  "vi": "Tên (tiếng Anh)",
+  "lo": "ຊື່ (ພາສາອັງກິດ)",
+  "en": "Name (English)"
+ },
+ "km_thu_tu": {
+  "vi": "Thứ tự",
+  "lo": "ລຳດັບ",
+  "en": "Order"
+ },
+ "km_doi_mac_dinh_hoi": {
+  "vi": "Đổi cách trả mặc định của «{ten}»? {n} dòng trên phiếu cũ giữ cách trả đang có; từ nay dòng mới theo cách trả mới.",
+  "lo": "ປ່ຽນວິທີຈ່າຍຕັ້ງຕົ້ນຂອງ «{ten}»? {n} ແຖວໃນໃບເກົ່າ ຄົງວິທີຈ່າຍເດີມ; ແຕ່ນີ້ໄປ ແຖວໃໝ່ໃຊ້ວິທີໃໝ່.",
+  "en": "Change the default payment of «{ten}»? {n} line(s) on past slips keep their current payment; new lines use the new one."
+ },
+ "km_khong_ap": {
+  "vi": "— (mục này không có cách trả)",
+  "lo": "— (ໝວດນີ້ບໍ່ມີວິທີຈ່າຍ)",
+  "en": "— (no payment method in this section)"
+ },
+ "title_khoan_muc": {
+  "vi": "Khoản mục chi phí<span class=\"sub\">Khoản chi lưu sẵn trên phiếu xuất xe · cách trả mặc định</span>",
+  "lo": "ລາຍການຄ່າໃຊ້ຈ່າຍ<span class=\"sub\">ລາຍການບັນທຶກໄວ້ໃນໃບເບີກລົດ · ວິທີຈ່າຍຕັ້ງຕົ້ນ</span>",
+  "en": "Cost items<span class=\"sub\">Saved expense items on the dispatch slip · default payment</span>"
  }
 };

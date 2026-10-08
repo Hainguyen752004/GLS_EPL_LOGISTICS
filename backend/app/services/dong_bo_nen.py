@@ -14,6 +14,9 @@ hỏi lại MỘT LƯỢT các bản ghi còn chờ — CHỈ GỌI các hàm đ
     so_nl       thu tiền SO nhiên liệu (GuiSoNhienLieuTune synced, chưa thu đủ) → so_nhien_lieu.doc_thu
     chi_luong   trả cùng lương (06/10): dòng cùng lương của DO đã ghi sổ mục IV mà chưa "đã trả" → chi_luong_tune.dong_bo
                 (phiếu chi lương lập trên Web theo DO, hỏi theo khoá dòng, lô 500) — CHỈ khi EPL_DONG_BO_CHI_LUONG=1
+    khach_gls   thông tin chung khách đã liên kết Đối tượng GLS (customers.obj_id, Việc 9 08/10) chép quá 60 phút → khach_gls.dong_bo
+                (tên · điện thoại · địa chỉ · mã) — CHỈ khi EPL_KHACH_GLS=1
+    ncc_gls     như trên cho nhà cung cấp + chủ xe liên kết (Việc 10) → doi_tuong_gls.dong_bo — CHỈ khi EPL_NCC_GLS=1
 
 Mỗi lượt mỗi loại tối đa `gioi_han()` bản ghi, bản ghi hỏi lâu nhất trước (checked_at / thu_doc_luc); bản ghi đã xong (đã chi, đã
 thu đủ, lỗi) không hỏi. Lỗi máy chủ / mạng bên kia (HTTP ≥ 500, không gọi được, chưa có token) → ghi log, DỪNG lượt, lượt sau thử
@@ -155,6 +158,69 @@ def _chi_luong(db, n, ket, ten):
         ket["cap_nhat"][ten] = ket["cap_nhat"].get(ten, 0) + kq["cap_nhat"]
 
 
+def _khach_gls(db, n, ket, ten):
+    """Khách là đối tượng GLS (Việc 9): chép lại thông tin chung các khách chép quá 60 phút, lâu nhất trước. Đối tượng không còn
+    bên GLS → ghi loi_ban_ghi (khách vẫn dùng bản chép cũ)."""
+    from services import khach_gls as KG
+    try:
+        kq = KG.dong_bo(db, n, cu_hon_phut=60)
+        db.commit()
+    except Exception as e:                                          # noqa: BLE001
+        db.rollback()
+        if _dung_luot(e):
+            raise _DungLuot("%s: %s" % (ten, _cau_loi(e)))
+        ket["loi_ban_ghi"].append("%s: %s" % (ten, _cau_loi(e)))
+        return
+    if kq["da_hoi"]:
+        ket["da_hoi"][ten] = ket["da_hoi"].get(ten, 0) + kq["da_hoi"]
+    if kq["cap_nhat"]:
+        ket["cap_nhat"][ten] = ket["cap_nhat"].get(ten, 0) + kq["cap_nhat"]
+    for m in kq["mat"]:
+        ket["loi_ban_ghi"].append("%s %s: đối tượng GLS %s không còn" % (ten, m["name"], m["obj_id"]))
+
+
+def _ncc_gls(db, n, ket, ten):
+    """Nhà cung cấp + chủ xe liên kết (Việc 10): như _khach_gls, mỗi loại tối đa `n` hồ sơ chép quá 60 phút."""
+    from services import doi_tuong_gls as DT
+    for loai in ("ncc", "chu_xe"):
+        try:
+            kq = DT.dong_bo(db, loai, n, cu_hon_phut=60)
+            db.commit()
+        except Exception as e:                                      # noqa: BLE001
+            db.rollback()
+            if _dung_luot(e):
+                raise _DungLuot("%s: %s" % (ten, _cau_loi(e)))
+            ket["loi_ban_ghi"].append("%s %s: %s" % (ten, loai, _cau_loi(e)))
+            continue
+        if kq["da_hoi"]:
+            ket["da_hoi"][ten] = ket["da_hoi"].get(ten, 0) + kq["da_hoi"]
+        if kq["cap_nhat"]:
+            ket["cap_nhat"][ten] = ket["cap_nhat"].get(ten, 0) + kq["cap_nhat"]
+        for m in kq["mat"]:
+            ket["loi_ban_ghi"].append("%s %s %s: đối tượng %s không còn" % (ten, loai, m["name"], m["obj_id"]))
+
+
+def _kho_web(db, n, ket, ten):
+    """Điểm đổ kho dầu EPL ↔ danh mục kho trên Web (08/10): chép lại tên / địa chỉ / trạng thái, tối đa mỗi giờ một lần."""
+    from services import diem_do_web as DDW
+    if not DDW.can_dong_bo(db):
+        return
+    try:
+        kq = DDW.dong_bo(db)
+        db.commit()
+    except Exception as e:                                          # noqa: BLE001
+        db.rollback()
+        if _dung_luot(e):
+            raise _DungLuot("%s: %s" % (ten, _cau_loi(e)))
+        ket["loi_ban_ghi"].append("%s: %s" % (ten, _cau_loi(e)))
+        return
+    ket["da_hoi"][ten] = ket["da_hoi"].get(ten, 0) + 1
+    if kq["cap_nhat"]:
+        ket["cap_nhat"][ten] = ket["cap_nhat"].get(ten, 0) + kq["cap_nhat"]
+    for m in kq["mat"]:
+        ket["loi_ban_ghi"].append("%s %s: không còn trong danh mục kho trên Web" % (ten, m))
+
+
 def _viec():
     from models import ChiChuXeTune, ChiMucTune, ChiTune, GuiSoNhienLieuTune, GuiSoTune, PhieuTienTune
     from services import chi_luong_tune as CL
@@ -173,6 +239,15 @@ def _viec():
     ]
     if CL.bat():                                                    # cuối lượt: lỗi của nó không chặn các loại trên
         viec.append(("chi_luong", lambda db, n, k: _chi_luong(db, n, k, "chi_luong")))
+    from services import khach_gls as KG
+    if KG.bat():                                                    # thông tin chung khách — sau cùng, không chặn tiền
+        viec.append(("khach_gls", lambda db, n, k: _khach_gls(db, n, k, "khach_gls")))
+    from services import doi_tuong_gls as DT
+    if DT.bat("ncc"):                                               # nhà cung cấp + chủ xe (Việc 10)
+        viec.append(("ncc_gls", lambda db, n, k: _ncc_gls(db, n, k, "ncc_gls")))
+    from services import kho_qlsx as KQ
+    if KQ.bat():                                                    # kho dầu EPL ↔ danh mục kho Web (08/10)
+        viec.append(("kho_web", lambda db, n, k: _kho_web(db, n, k, "kho_web")))
     return viec
 
 

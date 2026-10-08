@@ -207,7 +207,10 @@ def main():
         os.environ.pop("EPL_DONG_BO_CHI_LUONG", None)
         dung(not CL.bat() and "chi_luong" not in dict(DBN._viec()), "mặc định TẮT: lượt không có loại chi_luong (API chưa có đường)")
         os.environ["EPL_DONG_BO_CHI_LUONG"] = "1"
-        dung(CL.bat() and list(dict(DBN._viec()))[-1] == "chi_luong", "EPL_DONG_BO_CHI_LUONG=1 → chi_luong là loại CUỐI lượt")
+        # sau chi_luong chỉ còn các bước chép danh mục (không phải tiền): khách / NCC từ danh mục chung, kho dầu từ danh mục kho Web (08/10)
+        thu_tu = list(dict(DBN._viec()))
+        dung(CL.bat() and "chi_luong" in thu_tu and set(thu_tu[thu_tu.index("chi_luong") + 1:]) <= {"khach_gls", "ncc_gls", "kho_web"},
+             "EPL_DONG_BO_CHI_LUONG=1 → chi_luong là loại tiền CUỐI lượt (sau nó chỉ còn chép danh mục)", thu_tu)
 
         print("== 1. dòng chờ hỏi: cùng lương · xe nhà · mục IV đã ghi sổ · khoản tài xế")
         mong = {dong(s, k).id for s, k in (("A", "x_water"), ("A", "x_trip"), ("D1", "x_water"), ("D1", "x_trip"),

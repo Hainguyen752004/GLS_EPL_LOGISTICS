@@ -20,7 +20,6 @@ hiệu lực của khách (và của chủ xe nếu là xe liên kết) — xem 
 import datetime as dt
 import mimetypes
 import os
-import re
 
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
@@ -28,10 +27,10 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import LOAI_HOP_DONG, Contract, ContractFile, Customer, Owner, Trip, User, ma_moi
-from services.bao_mat import doc_phien, nguoi_hien_tai
+from models import LOAI_HOP_DONG, Contract, ContractFile, Customer, Owner, Trip, ma_moi
+from services.bao_mat import nguoi_hien_tai, nguoi_tu_token
 from services.phan_quyen import thay_tien_ban
-from services.tep import loi_co_tep, TEP_KIEU, TEP_TOI_DA, THU_MUC_HOP_DONG
+from services.tep import loi_co_tep, ten_tep, TEP_KIEU, TEP_TOI_DA, THU_MUC_HOP_DONG
 
 router = APIRouter()
 SAP_HET_NGAY = 30                     # còn ≤ 30 ngày thì báo "sắp hết hạn" (bằng lái dùng 60, hợp đồng ký lại nhanh hơn)
@@ -230,7 +229,7 @@ async def them_tep(cid: str, tep: UploadFile = File(...), db: Session = Depends(
         _loi("TEP_QUA_LON", loi_co_tep(kieu, len(du)) or "Tệp %.1f MB, tối đa 10 MB." % (len(du) / 1048576))
     if not du:
         _loi("TEP_RONG", "Tệp rỗng.")
-    f = ContractFile(contract_id=c.id, filename=re.sub(r"[^\w.\-() ]+", "_", tep.filename or "hop_dong")[:120],
+    f = ContractFile(contract_id=c.id, filename=ten_tep(tep.filename, "hop_dong"),          # giữ chữ Lào (08/10)
                      content_type=kieu, size=len(du), by_user=user.full_name)
     f.id = ma_moi()
     f.stored = f.id + TEP_KIEU[kieu]
@@ -247,10 +246,7 @@ def mo_tep(fid: str, request: Request, tk: str = "", db: Session = Depends(get_d
     f = db.get(ContractFile, fid) or _loi("KHONG_THAY", "Không có tệp này.", 404)
     dau = request.headers.get("Authorization", "")
     token = tk or (dau[7:].strip() if dau.lower().startswith("bearer ") else "")
-    ten = doc_phien(token) if token else None
-    u = db.query(User).filter(User.username == ten, User.active.is_(True)).first() if ten else None
-    if not u:
-        _loi("CHUA_DANG_NHAP", "Vui lòng đăng nhập.", 401)
+    u = nguoi_tu_token(db, token)      # token EPL cũ hoặc token GLS (08/10); không có / sai → 401
     if not thay_tien_ban(u.role):
         _loi("KHONG_CO_QUYEN", "Bản hợp đồng có giá cước — vai này không mở được.", 403)
     duong = os.path.join(THU_MUC_HOP_DONG, f.contract_id, f.stored)

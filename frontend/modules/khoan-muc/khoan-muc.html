@@ -1,0 +1,23 @@
+<!-- Khoản mục chi phí — ລາຍການຄ່າໃຊ້ຈ່າຍ (08/10, anh Khampla: khoản chi lưu sẵn để chọn trên phiếu, thay "Khác — tự gõ").
+     Cách trả mặc định (mục IV, VI) cấu hình ở đây; KT Chi phí VC đổi từng dòng khi kiểm mục. -->
+<div class="toolbar">
+  <div class="field km-tim"><label data-i18n="search"></label><input id="km-q" type="search" autocomplete="off"></div>
+  <div class="field"><label data-i18n="km_muc"></label><select id="km-loc-muc"></select></div>
+  <div class="grow"></div>
+  <button class="btn primary" id="km-them" hidden>+ <span data-i18n="km_them"></span></button>
+</div>
+<p class="small muted km-giai" data-i18n="km_giai_thich"></p>
+
+<div class="card">
+  <div class="hd"><h3 data-i18n="nav_khoan_muc"></h3><div class="grow"></div><span class="small muted" id="km-dem"></span></div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr>
+        <th data-i18n="name"></th><th data-i18n="km_cach_tra"></th>
+        <th class="num" data-i18n="km_so_dong"></th><th class="num" data-i18n="km_thu_tu"></th><th data-i18n="status"></th>
+        <th class="no-print" data-i18n="actions"></th>
+      </tr></thead>
+      <tbody id="km-than"></tbody>
+    </table>
+  </div>
+</div>

@@ -33,6 +33,11 @@ app = FastAPI(title="EPL Lào — Quản lý vận tải", version="1.0", docs_u
 @app.on_event("startup")
 def khoi_dong():
     tao_bang()
+    # 08/10: khoản mục chi phí là danh mục cấu hình được — nạp vào bộ nhớ (services/khoan_muc) trước khi nhận yêu cầu
+    from database import SessionLocal
+    from services import khoan_muc
+    with SessionLocal() as db:
+        khoan_muc.nap(db)
     # tính sẵn báo cáo tháng này / tháng trước trong luồng riêng — người mở báo cáo đầu tiên không phải chờ (24/09)
     from services import lam_nong
     lam_nong.bat_dau()
@@ -67,6 +72,7 @@ app.include_router(__import__("routes.ho_so_do", fromlist=["router"]).router)   
 app.include_router(__import__("routes.tat_toan_doi_tac", fromlist=["router"]).router)   # Tất toán đối tác (02/10)
 app.include_router(__import__("routes.ban_giao_dau", fromlist=["router"]).router)   # Phiếu đề nghị xuất dầu → kho QLSX (05/10)
 app.include_router(__import__("routes.dong_bo_nen", fromlist=["router"]).router)   # Tình trạng tự đồng bộ nền với kế toán (06/10)
+app.include_router(__import__("routes.khoan_muc", fromlist=["router"]).router)   # Khoản mục chi phí (08/10)
 
 # Giao diện: / → index.html ; mọi tệp khác lấy thẳng từ thư mục frontend
 app.mount("/css", StaticFiles(directory=os.path.join(FRONTEND, "css")), name="css")

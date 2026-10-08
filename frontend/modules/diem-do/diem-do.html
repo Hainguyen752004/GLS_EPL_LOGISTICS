@@ -1,0 +1,39 @@
+<!-- Điểm đổ nhiên liệu — ສະຖານທີ່ເຕີມນໍ້າມັນ (08/10, anh Khampla "tạo kho mới"). Ô Nơi đổ trên phiếu đọc danh sách này.
+     Kho dầu EPL: tạo ở Web (Khai báo kho) rồi chọn từ danh mục kho — tên, trạng thái theo Web. Trạm dầu ngoài: thêm / sửa tại đây. -->
+<div class="toolbar">
+  <div class="field dd-tim"><label data-i18n="search"></label><input id="dd-q" type="search" autocomplete="off"></div>
+  <div class="grow"></div>
+  <button class="btn" id="dd-cap-nhat" hidden><span data-i18n="dd_cap_nhat"></span></button>
+  <button class="btn" id="dd-them-tram" hidden>+ <span data-i18n="dd_them_tram"></span></button>
+  <button class="btn primary" id="dd-tu-kho" hidden>+ <span data-i18n="dd_tu_kho"></span></button>
+</div>
+<p class="small muted dd-giai" data-i18n="dd_giai_thich"></p>
+
+<div class="dd-khung">
+  <div class="card">
+    <div class="hd"><h3 data-i18n="nav_diem_do"></h3><div class="grow"></div><span class="small muted" id="dd-dem"></span></div>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr>
+          <th data-i18n="code"></th><th data-i18n="name"></th><th data-i18n="type"></th><th data-i18n="fp_country"></th>
+          <th data-i18n="supplier"></th><th data-i18n="address"></th><th data-i18n="status"></th><th class="no-print" data-i18n="actions"></th>
+        </tr></thead>
+        <tbody id="dd-than"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- danh mục kho trên Web: chọn kho làm kho dầu EPL (mở bằng nút «Thêm kho dầu từ danh mục kho») -->
+  <div class="card dd-kho" id="dd-kho" hidden>
+    <div class="hd"><h3 data-i18n="dd_kho_web"></h3><div class="grow"></div>
+      <input id="dd-kho-q" type="search" autocomplete="off" data-i18n-ph="search">
+      <button class="btn sm" id="dd-kho-dong"><span data-i18n="close"></span></button>
+    </div>
+    <div class="tbl-wrap">
+      <table class="tbl tbl-compact">
+        <thead><tr><th data-i18n="code"></th><th data-i18n="name"></th><th data-i18n="dd_loai_kho"></th><th data-i18n="status"></th><th class="no-print"></th></tr></thead>
+        <tbody id="dd-kho-than"></tbody>
+      </table>
+    </div>
+  </div>
+</div>

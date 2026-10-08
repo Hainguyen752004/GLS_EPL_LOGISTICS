@@ -87,6 +87,17 @@ def duoc_sua_chi_that(vai, trang_thai_muc_iv):
     return vai in SUA_CHI_THAT and trang_thai_muc_iv == "paid"
 
 
+# 08/10 (anh Khampla góp ý trên trang host, chủ dự án chốt): CÁCH TRẢ một dòng chi mục IV / VI (chi ngay khi xe đi · trả cùng lương ·
+# nợ nhà cung cấp) không do Admin Thà Bốc — người lập phiếu — quyết. Dòng mang cách trả mặc định (bộ gợi ý của tuyến, rồi khoản mục);
+# KT Chi phí VC đổi lúc kiểm mục (đơn giá cùng lúc — duoc_sua_tien), Sếp đổi lúc nào cũng được.
+DOI_CACH_TRA = ("expacct", "admin")
+
+
+def doi_cach_tra(vai):
+    """Vai này có được đổi cách trả dòng chi mục IV / VI không (chưa xét trạng thái mục — duoc_sua_tien)."""
+    return vai in DOI_CACH_TRA
+
+
 def thay_tien_ban(vai):
     """Vai này có được thấy TIỀN BÁN không: đơn giá cước, doanh thu, khách chưa trả, giá thuê xe
     liên kết, lãi chuyến. Bãi, tài xế, thủ kho và hai tổ ở Thà Bốc thì KHÔNG — đó là biên lợi nhuận

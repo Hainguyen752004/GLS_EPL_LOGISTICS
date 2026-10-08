@@ -31,11 +31,12 @@
       <div class="field"><label data-i18n="do_kind"></label><select id="f-kind"><option value="giao" data-i18n="do_giao"></option><option value="gom" data-i18n="do_gom"></option></select></div>
       <div class="field"><label data-i18n="truck_type"></label><select id="f-company"><option value="EPL" data-i18n="co_epl"></option><option value="joint" data-i18n="co_joint"></option></select></div>
       <div class="field px-lk"><label data-i18n="owner"></label><input id="f-owner_name" lang="lo"></div>
-      <div class="field"><label data-i18n="truck_no"></label><select id="f-vehicle_id"></select></div>
+      <!-- ô tìm trên ô chọn xe / tài xế (anh Khampla 08/10: hơn 500 xe) — gõ số xe, biển, tên, mã → ô chọn chỉ còn dòng khớp -->
+      <div class="field"><label data-i18n="truck_no"></label><div class="px-tim-o"><input type="search" data-loc="f-vehicle_id" data-i18n-ph="px_tim_xe" autocomplete="off"><select id="f-vehicle_id"></select></div></div>
       <div class="field"><label data-i18n="brand_model"></label><input id="f-brand_model"></div>
       <div class="field"><label data-i18n="plate_head"></label><input id="f-plate_head" lang="lo"></div>
       <div class="field"><label data-i18n="plate_trailer"></label><input id="f-plate_trailer" lang="lo"></div>
-      <div class="field"><label data-i18n="driver"></label><select id="f-driver_id"></select></div>
+      <div class="field"><label data-i18n="driver"></label><div class="px-tim-o"><input type="search" data-loc="f-driver_id" data-i18n-ph="px_tim_tai_xe" autocomplete="off"><select id="f-driver_id"></select></div></div>
       <div class="field"><label data-i18n="d_issue"></label><input type="date" id="f-doc_date"></div>
       <div class="field"><label data-i18n="d_out"></label><input type="date" id="f-out_date"></div>
       <div class="field"><label data-i18n="d_back"></label><input type="date" id="f-back_date"><small class="px-khi-ve" data-i18n="khi_xe_ve" hidden></small></div>
@@ -123,7 +124,7 @@
   </section>
   <section class="px-muc" data-muc="travel">
     <div class="px-muc-dau"><span class="rn">IV</span><h4 data-i18n="sec4"></h4><span class="px-stt" data-stt="travel"></span><div class="grow"></div><div class="px-act no-print" data-act="travel"></div><div class="px-who small muted"><span data-i18n="r_exp_acct"></span> · <span data-i18n="r_petty"></span></div></div>
-    <div class="px-muc-than"><p class="px-ht" data-ht="tam_ung"></p><div class="tbl-wrap"><table class="tbl tbl-compact px-chi" data-bang="travel"><thead><tr><th>#</th><th data-i18n="item"></th><th class="num" data-i18n="qty_lan"></th><th class="num px-gia" data-i18n="unit_price"></th><th class="num px-gia" data-i18n="amount_lak"></th><th class="px-lk" data-i18n="who_pays"></th><th class="px-gia" data-i18n="acct_code"></th><th class="no-print"></th></tr></thead><tbody></tbody><tfoot></tfoot></table></div><!-- G6 06/10: KT Chi phí sửa CHI THẬT dòng tiền mặt sau khi mục IV đã chi --><div class="px-chi-that no-print" id="px-chi-that" hidden></div><button class="btn quiet sm no-print px-them" data-them="travel">+ <span data-i18n="add_row"></span></button><p class="small muted no-print px-sl-nhac" data-i18n="sl_nhac_iv"></p><p class="small muted no-print px-sl-nhac" data-i18n="ca_nhac"></p></div>
+    <div class="px-muc-than"><p class="px-ht" data-ht="tam_ung"></p><div class="tbl-wrap"><table class="tbl tbl-compact px-chi" data-bang="travel"><thead><tr><th>#</th><th data-i18n="item"></th><th class="num" data-i18n="qty_lan"></th><th class="num px-gia" data-i18n="unit_price"></th><th class="num px-gia" data-i18n="amount_lak"></th><th class="px-lk" data-i18n="who_pays"></th><th class="px-gia" data-i18n="acct_code"></th><th class="no-print"></th></tr></thead><tbody></tbody><tfoot></tfoot></table></div><!-- G6 06/10: KT Chi phí sửa CHI THẬT dòng tiền mặt sau khi mục IV đã chi --><div class="px-chi-that no-print" id="px-chi-that" hidden></div><button class="btn quiet sm no-print px-them" data-them="travel">+ <span data-i18n="add_row"></span></button><p class="small muted no-print px-sl-nhac" data-i18n="sl_nhac_iv"></p><p class="small muted no-print px-sl-nhac px-tien" data-i18n="ca_nhac"></p></div>
   </section>
   <section class="px-muc" data-muc="repair">
     <div class="px-muc-dau"><span class="rn">V</span><h4 data-i18n="sec5"></h4><span class="px-stt" data-stt="repair"></span><div class="grow"></div><div class="px-act no-print" data-act="repair"></div><div class="px-who small muted"><span data-i18n="r_exp_acct"></span> · <span data-i18n="r_petty"></span></div></div>
@@ -131,7 +132,7 @@
   </section>
   <section class="px-muc" data-muc="other">
     <div class="px-muc-dau"><span class="rn">VI</span><h4 data-i18n="sec6"></h4><span class="px-stt" data-stt="other"></span><div class="grow"></div><div class="px-act no-print" data-act="other"></div><div class="px-who small muted"><span data-i18n="r_exp_acct"></span> · <span data-i18n="r_petty"></span></div></div>
-    <div class="px-muc-than"><div class="tbl-wrap"><table class="tbl tbl-compact px-chi" data-bang="other"><thead><tr><th>#</th><th data-i18n="item"></th><th class="num" data-i18n="qty_lan"></th><th class="num px-gia" data-i18n="unit_price"></th><th class="num px-gia" data-i18n="amount_lak"></th><th class="px-lk" data-i18n="who_pays"></th><th class="px-gia" data-i18n="acct_code"></th><th class="no-print"></th></tr></thead><tbody></tbody><tfoot></tfoot></table></div><button class="btn quiet sm no-print px-them" data-them="other">+ <span data-i18n="add_row"></span></button><p class="small muted no-print px-sl-nhac" data-i18n="sl_nhac_iv"></p><p class="small muted no-print px-sl-nhac" data-i18n="ca_nhac"></p></div>
+    <div class="px-muc-than"><div class="tbl-wrap"><table class="tbl tbl-compact px-chi" data-bang="other"><thead><tr><th>#</th><th data-i18n="item"></th><th class="num" data-i18n="qty_lan"></th><th class="num px-gia" data-i18n="unit_price"></th><th class="num px-gia" data-i18n="amount_lak"></th><th class="px-lk" data-i18n="who_pays"></th><th class="px-gia" data-i18n="acct_code"></th><th class="no-print"></th></tr></thead><tbody></tbody><tfoot></tfoot></table></div><button class="btn quiet sm no-print px-them" data-them="other">+ <span data-i18n="add_row"></span></button><p class="small muted no-print px-sl-nhac" data-i18n="sl_nhac_iv"></p><p class="small muted no-print px-sl-nhac px-tien" data-i18n="ca_nhac"></p></div>
   </section>
 
   <div id="px-tong-ket" class="px-tien"></div>

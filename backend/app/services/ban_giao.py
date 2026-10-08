@@ -110,6 +110,9 @@ def _ten(db, d):
             return pt.name, pt.name
     if d.item_name:
         return d.item_name, d.item_name
+    from services import khoan_muc
+    if khoan_muc.ten(d.item_key):            # khoản thêm ở màn Khoản mục chi phí (08/10) — tên ở bảng, không ở từ điển giao diện
+        return khoan_muc.ten(d.item_key)
     t = _tu_dien().get(d.item_key or "") or {}
     return t.get("vi") or d.item_key or "", t.get("lo") or t.get("vi") or d.item_key or ""
 

@@ -97,6 +97,9 @@
   let lang = 'vi';
   try { const l = localStorage.getItem('epl_lao_lang'); if (NGON_NGU.includes(l)) lang = l; } catch (e) { /* bỏ qua */ }
 
+  /** Thêm / thay mục từ điển lúc chạy (08/10: tên ba thứ tiếng của khoản mục chi phí thêm ở màn Khoản mục chi phí — mọi màn đọc tên
+   *  khoản bằng NN.t(item_key) như khoản có sẵn). `tu` = { khoá: { vi, lo, en } }. */
+  EPL.themTu = (tu) => { Object.entries(tu || {}).forEach(([k, v]) => { if (k && v) TU_DIEN[k] = v; }); };
   const NN = EPL.NN = {
     get lang() { return lang; },
     /** Chữ THUẦN (cho placeholder, title, toast): bỏ thẻ HTML trong từ điển. Chế độ vi+lo → "vi / lo".
@@ -273,14 +276,36 @@
     NN.apDung(dlg);
   });
   /** Hộp nhập một/nhiều ô: fields = [{id,label(khoa),type,value,options}] → object hoặc null. */
+  /** Lọc một ô chọn theo chữ gõ (08/10, anh Khampla: hơn 500 xe, ô chọn dài không tìm nổi): so không dấu trên chữ của dòng + chữ tìm
+   *  phụ `data-tim` (biển rơ-moóc, chủ xe, mã / điện thoại tài xế…). Dòng trống và dòng đang chọn luôn còn. `chon`: khớp đúng một
+   *  dòng thì chọn luôn dòng đó và báo 'input' (để ô khác tự điền theo). */
+  const boDau = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').toLowerCase();
+  EPL.locChon = (sel, chu, chon) => {
+    if (!sel) return;
+    const q = boDau(String(chu || '').trim()), khop = [];
+    [...sel.options].forEach(o => {
+      const trung = !q || boDau(o.textContent + ' ' + (o.dataset.tim || '')).includes(q);
+      o.hidden = !(trung || !o.value || o.selected);
+      if (q && trung && o.value) khop.push(o);
+    });
+    if (chon && khop.length === 1 && !sel.disabled && sel.value !== khop[0].value) {
+      sel.value = khop[0].value; sel.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  };
+
+  /** Hộp nhập nhiều ô. Ô select có `tim` (khoá chữ gợi ý) thì có thêm ô tìm phía trên (EPL.locChon); dòng chọn có phần tử thứ tư
+   *  là chữ tìm phụ (data-tim). */
   EPL.hopNhap = async (tieuDe, fields, nhanOk) => {
     const html = fields.map(f => `<div class="field"><label>${NN.h(f.label)}</label>${
-      f.type === 'select' ? `<select id="hn-${f.id}">${(f.options || []).map(o => `<option value="${esc(o[0])}" ${o[0] === f.value ? 'selected' : ''} ${o[2] ? 'disabled' : ''}>${esc(o[1])}</option>`).join('')}</select>`
+      f.type === 'select' && f.tim ? `<input type="search" class="hn-tim" data-hn-loc="hn-${f.id}" placeholder="${esc(NN.t(f.tim))}" autocomplete="off" style="margin-bottom:4px">` : ''}${
+      f.type === 'select' ? `<select id="hn-${f.id}">${(f.options || []).map(o => `<option value="${esc(o[0])}" ${o[0] === f.value ? 'selected' : ''} ${o[2] ? 'disabled' : ''}${o[3] ? ` data-tim="${esc(o[3])}"` : ''}>${esc(o[1])}</option>`).join('')}</select>`
       : f.type === 'textarea' ? `<textarea id="hn-${f.id}" rows="3">${esc(f.value || '')}</textarea>`
       // Ô số PHẢI nhận số lẻ: cân 40,6 tấn, tiền 1.812,80 USD, tỷ giá, lít dầu. Thiếu step="any" thì trình duyệt
       // chỉ nhận số nguyên và chặn nút Đồng ý bằng câu tiếng Anh — Bãi không báo xe tới được, KT không ghi thu được.
       : `<input id="hn-${f.id}" type="${f.type || 'text'}" ${f.type === 'number' ? 'step="any" inputmode="decimal"' : ''} ${f.placeholder ? `placeholder="${esc(f.placeholder)}"` : ''} value="${esc(f.value == null ? '' : f.value)}" ${f.lo ? 'lang="lo"' : ''}>`}</div>`).join('');
-    const ok = await EPL.hoi(tieuDe, html, nhanOk);
+    const hoi = EPL.hoi(tieuDe, html, nhanOk);            // hộp hiện ngay khi gọi — gắn ô tìm rồi mới chờ
+    document.querySelectorAll('[data-hn-loc]').forEach(inp => inp.addEventListener('input', () => EPL.locChon(document.getElementById(inp.dataset.hnLoc), inp.value, true)));
+    const ok = await hoi;
     if (!ok) return null;
     const ra = {}; fields.forEach(f => { const el = document.getElementById('hn-' + f.id); ra[f.id] = el ? el.value : undefined; });
     return ra;
@@ -429,8 +454,14 @@
     document.getElementById('roleAv').textContent = USER.avatar || USER.full_name.slice(0, 2).toUpperCase();
     document.getElementById('uName').textContent = USER.full_name;
     document.getElementById('uRole').innerHTML = NN.h('r_' + USER.role);
+    // tên khoản mục chi phí thêm mới (08/10) — nạp một lần, màn đầu tiên chờ xong rồi mới dựng (napModule)
+    EPL.tuKhoanMuc = EPL.napTenKhoanMuc();
     noiVoBoc(); apKieuXem(); veNav(); dieuHuong(); taiDem();
   }
+  /** Nạp lại tên khoản mục chi phí thêm mới vào từ điển. Lỗi mạng → bỏ qua (màn Phiếu xuất xe tự nạp lại khi mở). */
+  EPL.napTenKhoanMuc = async () => {
+    try { EPL.themTu(((await API.get('/api/khoan-muc')) || {}).names); } catch (e) { /* bỏ qua */ }
+  };
 
 
   /* ================================================================ Module & điều hướng */
@@ -489,6 +520,12 @@
     { id: 'ty-gia',         nhom: 'mod_master',    nav: 'nav_rates', vai: ['acct', 'expacct', 'rev', 'treasury', 'cash'],
       ic: 'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' },
     { id: 'tuyen-duong',    nhom: 'mod_master',    nav: 'nav_routes',   ic: 'M6 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6M18 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6M6 9v3a3 3 0 0 0 3 3h6a3 3 0 0 1 3 3' },
+    // 08/10 (anh Khampla): điểm đổ mở lại ở đây (trang kế toán tạm 8031 đã bỏ) — kho dầu EPL chọn từ danh mục kho Web, trạm ngoài thêm tại
+    // chỗ; khoản mục chi phí cấu hình được. Xem mọi vai làm phiếu; sửa theo quyền máy chủ (fuel-places/quyen · khoan-muc/danh-sach).
+    { id: 'diem-do',        nhom: 'mod_master',    nav: 'nav_diem_do', vai: ['yard', 'acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel'],
+      ic: 'M3 22V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v17M3 22h12M6 8h6M15 8h2a2 2 0 0 1 2 2v6a1 1 0 0 0 2 0V9l-3-3' },
+    { id: 'khoan-muc',      nhom: 'mod_master',    nav: 'nav_khoan_muc', vai: ['yard', 'acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel'],
+      ic: 'M9 5h11M9 12h11M9 19h11M4 5h.01M4 12h.01M4 19h.01' },
     { id: 'quy-trinh',      nhom: 'mod_system',    nav: 'nav_workflow', nav_s: 'nav_workflow_s', ic: 'M12 3v4M6 21v-4M18 21v-4M4 11h16M9 7h6v4H9zM3 17h6v4H3zM15 17h6v4h-6z' },
     { id: 'tai-khoan',      nhom: 'mod_system',    nav: 'nav_users',    ic: 'M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10M4 22a8 8 0 0 1 16 0M19 8l2 2-4 4-2-2', vai: ['admin'] },
   ];
@@ -924,6 +961,7 @@
       // tới DB ở xa) trông như màn hỏng — Theo dõi phiếu, Phiếu chi của Bãi. Tắt khi init xong, kể cả khi lỗi.
       root.classList.add('mod-dang-tai'); root.dataset.tai = NN.t('loading');
       daInit = true;
+      if (EPL.tuKhoanMuc) await EPL.tuKhoanMuc;          // tên khoản mục chi phí thêm mới đã vào từ điển (08/10)
       await mod.init(root, { tham: EPL.thamSo(), user: USER });
       if (conHienTai()) NN.apDung(root);
     } catch (e) {

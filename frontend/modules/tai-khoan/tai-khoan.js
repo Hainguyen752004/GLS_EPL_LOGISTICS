@@ -19,7 +19,7 @@
     q('#tk-than').innerHTML = ds.map((u, i) => `<tr class="${u.active ? '' : 'tk-tat'}">
       <td>${i + 1}</td><td class="mono">${esc(u.username)}</td><td><span class="tk-av">${esc(u.avatar)}</span><b lang="lo">${esc(u.full_name)}</b></td>
       <td><button class="tk-vai-nut" data-den-vai="${u.role}">${NN.h('r_' + u.role)}</button></td>
-      <td class="small muted tk-lam">${lam(u.role)}${gan(u) ? '<div class="tk-gan">' + gan(u) + '</div>' : ''}</td>
+      <td class="small muted tk-lam">${lam(u.role)}${gan(u) ? '<div class="tk-gan">' + gan(u) + '</div>' : ''}${u.gls_username ? '<div class="tk-gan">' + NN.h('tk_gls') + ': <b class="mono">' + esc(u.gls_username) + '</b></div>' : ''}</td>
       <td>${EPL.tag(u.active ? 'ok' : 'plain', u.active ? 'active' : 'inactive')}</td>
       <td><button class="btn sm" data-sua="${u.id}">${NN.h('edit')}</button></td></tr>`).join('');
     root.querySelectorAll('[data-sua]').forEach(b => b.addEventListener('click', () => sua(ds.find(x => x.id === b.dataset.sua))));
@@ -120,6 +120,8 @@
       { id: 'place_id', label: 'tk_gan_kho', type: 'select', value: u ? u.place_id || '' : '',
         options: [['', NN.t('tk_chon_kho')], ...kho.filter(k => k.active || (u && k.id === u.place_id)).map(k => [k.id, (k.code ? k.code + ' · ' : '') + k.name])] },
       { id: 'password', label: u ? 'new_password' : 'password', type: 'password', value: '' },
+      // 08/10: tên đăng nhập GLS (Web anh Khang) — đăng nhập bằng tài khoản GLS thì vào với vai của tài khoản này
+      { id: 'gls_username', label: 'tk_gls', value: u ? u.gls_username || '' : '', placeholder: NN.t('tk_gls_goi_y') },
       ...(u ? [{ id: 'active', label: 'status', type: 'select', value: u.active ? '1' : '0', options: [['1', NN.t('active')], ['0', NN.t('inactive')]] }] : []),
     ], NN.t('save'));
     // hộp đã dựng xong (EPL.hoi mở hộp ngay khi gọi) — ô gắn tài xế / kho chỉ hiện với đúng vai
@@ -136,7 +138,8 @@
     if (v.role === 'depot' && !v.place_id) return EPL.toast(NN.t('tk_chon_kho'), 'loi');
     try {
       const body = { full_name: v.full_name, avatar: v.avatar, role: v.role,
-        driver_id: v.role === 'driver' ? v.driver_id : null, place_id: v.role === 'depot' ? v.place_id : null };
+        driver_id: v.role === 'driver' ? v.driver_id : null, place_id: v.role === 'depot' ? v.place_id : null,
+        gls_username: (v.gls_username || '').trim() };
       if (v.password) body.password = v.password;
       if (u) body.active = v.active === '1'; else body.username = v.username;
       if (!u && (!v.username.trim() || !v.password)) return EPL.toast(NN.t('username') + ' / ' + NN.t('password') + '?', 'loi');

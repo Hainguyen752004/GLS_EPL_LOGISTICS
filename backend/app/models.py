@@ -53,6 +53,9 @@ class User(Base):
     driver_id = Column(String, ForeignKey("drivers.id"))   # tài khoản vai driver gắn với tài xế nào
     place_id = Column(String, ForeignKey("fuel_places.id"))  # tài khoản vai depot phụ trách điểm đổ nào
     active = Column(Boolean, nullable=False, default=True)
+    # 08/10 (chuyển sang module Vận tải C#): tên đăng nhập GLS (Web / API anh Khang) gắn với tài khoản EPL này — đăng nhập
+    # bằng tài khoản GLS thì vào với vai / tài xế / kho của tài khoản EPL này (services/dang_nhap_gls.py). So khớp không phân biệt hoa thường.
+    gls_username = Column(String, index=True)
 
 
 # ---------------------------------------------------------------- dữ liệu gốc
@@ -71,6 +74,11 @@ class Customer(Base):
     # một ô dùng chung, gửi đi trong phiếu đề nghị thu / bàn giao DO. Loại khách: person (cá nhân) · company (công ty).
     code = Column(String, index=True)
     cust_type = Column(String)
+    # Việc 9 chuyển sang C# (08/10): khách là ĐỐI TƯỢNG GLS — `obj_id` = OBJ_AUTOID của đối tượng khách bên GLS (PUBOBJECT, màn
+    # Đối tượng của Web). Có obj_id thì tên · điện thoại · địa chỉ · mã là BẢN CHÉP từ GLS (services/khach_gls), dòng này giữ phần
+    # riêng của vận tải (cách xuất hoá đơn, loại khách, ghi chú; bảng giá, hợp đồng trỏ customers.id như cũ).
+    obj_id = Column(Integer, index=True)
+    gls_synced_at = Column(DateTime)                 # lần chép thông tin chung từ GLS gần nhất
 
 
 CACH_XUAT_HOA_DON = ("phieu", "thang")           # mỗi phiếu một hoá đơn · gộp một tờ cuối tháng
@@ -96,6 +104,11 @@ class Owner(Base):
     pay_mode = Column(String, nullable=False, default="phieu")  # CACH_TRA_CHU_XE
     note = Column(Text)
     active = Column(Boolean, nullable=False, default=True)
+    # Việc 10 (08/10): chủ xe là đối tượng trong danh mục nhà cung cấp chung (services/doi_tuong_gls) — có obj_id thì tên · điện
+    # thoại · địa chỉ · mã là bản chép; phí, ngưỡng, cách trả ở trên là phần riêng vận tải.
+    code = Column(String, index=True)                # OBJ_OBJECTNO (EPLCX-… hoặc mã có sẵn)
+    obj_id = Column(Integer, index=True)
+    gls_synced_at = Column(DateTime)
 
 
 TRANG_THAI_XE = ("available", "on_trip", "maintenance", "inactive")   # rảnh · đang chạy · đang sửa · ngưng dùng
@@ -233,6 +246,13 @@ class Supplier(Base):
     customer_name = Column(String)
     note = Column(Text)
     active = Column(Boolean, nullable=False, default=True)
+    # Việc 10 (08/10): nhà cung cấp là đối tượng trong danh mục nhà cung cấp chung (services/doi_tuong_gls) — có obj_id thì tên ·
+    # điện thoại · địa chỉ · mã là bản chép; khoản mục, mã kế toán, kỳ trả, khách cấn trừ ở trên là phần riêng vận tải.
+    code = Column(String, index=True)                # OBJ_OBJECTNO (EPLNCC-… hoặc mã có sẵn)
+    phone = Column(String)
+    address = Column(String)
+    obj_id = Column(Integer, index=True)
+    gls_synced_at = Column(DateTime)
 
 
 class SupplierPayment(Base):
@@ -788,6 +808,30 @@ class FuelPlace(Base):
     address = Column(String)
     note = Column(String)
     active = Column(Boolean, nullable=False, default=True)
+    # 08/10 (anh Khampla: "tạo kho mới"): kho dầu EPL tạo ở Web (Khai báo kho) — điểm đổ owner_type 'epl' gắn kho bên đó theo mã
+    # (code = WarehouseCode); tên, địa chỉ, trạng thái chép từ Web (services/diem_do_web). Trạm ngoài thêm / sửa ngay ở đây.
+    wh_id = Column(Integer)                          # WhAutoId kho bên Web
+    wh_synced_at = Column(DateTime)                  # lần chép thông tin kho từ Web gần nhất
+
+
+class CostItem(Base):
+    """Khoản mục chi phí trên phiếu xuất xe — ລາຍການຄ່າໃຊ້ຈ່າຍ (08/10, anh Khampla: thay "Khác — tự gõ" bằng khoản lưu sẵn, dùng lại).
+
+    Khoản có sẵn (built_in: diesel, x_water, x_toll…) giữ tên theo từ điển giao diện; khoản thêm mới mang tên ba thứ tiếng. Cách trả mặc
+    định (mục IV / VI) cấu hình ở đây — đổi thì dòng cũ giữ cách trả đang có (services/khoan_muc.doi_cach_tra_mac_dinh)."""
+    __tablename__ = "cost_items"
+    id = Column(String, primary_key=True, default=ma_moi)
+    key = Column(String, nullable=False, unique=True)          # item_key trên dòng chi
+    section = Column(String, nullable=False)                   # fuel · travel · repair · other
+    name_vi = Column(String)
+    name_lo = Column(String)
+    name_en = Column(String)
+    pay_default = Column(String)                               # tien_mat · luong · ncc (chỉ mục IV / VI)
+    sort = Column(Integer, nullable=False, default=0)
+    active = Column(Boolean, nullable=False, default=True)
+    built_in = Column(Boolean, nullable=False, default=False)
+    updated_by = Column(String)
+    updated_at = Column(DateTime, default=dt.datetime.utcnow)
 
 
 # ---------------------------------------------------------------- phiếu lĩnh (có mã QR)

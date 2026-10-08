@@ -19,11 +19,13 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import Customer, Supplier, Trip, TripExpense
+from services import doi_tuong_gls as DT
 from services.bao_mat import can_vai, nguoi_hien_tai
 from services.phan_quyen import thay_tien_chi
 from services.tinh_toan import MAC_DINH, tien_dong
 
 router = APIRouter()
+SUA_NCC = can_vai("expacct")                     # KT Chi phí VC (và Sếp) sửa danh mục nhà cung cấp
 
 
 def _dong_cua(db, s, dau=None, sau=None):
@@ -184,7 +186,10 @@ def _xuat(db, s, tong=None, kem_tien=False):
         ghi_no = sum(tien_dong(p, d) for d, p in dong if d.ghi_no)
     r = {"id": s.id, "name": s.name, "item_key": s.item_key, "acct_code": s.acct_code,
          "payment_term": s.payment_term, "note": s.note, "active": s.active,
-         "customer_id": s.customer_id, "customer_name": s.customer_name, "so_dong": n}
+         "customer_id": s.customer_id, "customer_name": s.customer_name, "so_dong": n,
+         # Việc 10: nhà cung cấp là đối tượng danh mục chung — tên · điện thoại · địa chỉ · mã là bản chép (services/doi_tuong_gls)
+         "code": s.code, "phone": s.phone, "address": s.address, "obj_id": s.obj_id,
+         "gls_synced_at": s.gls_synced_at.isoformat() if s.gls_synced_at else None}
     if kem_tien:
         r.update({"phat_sinh_lak": round(phat_sinh), "ghi_no_lak": round(ghi_no)})
     return r
@@ -220,8 +225,73 @@ def ds(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     return ra
 
 
+def _ap_rieng(db, s, data):
+    """Phần riêng vận tải của nhà cung cấp: khoản mục chi, mã kế toán, kỳ trả, ghi chú, đang dùng, khách cấn trừ."""
+    for k in ("item_key", "acct_code", "payment_term", "note", "active"):
+        if k in data:
+            setattr(s, k, data[k].strip() if isinstance(data[k], str) else data[k])
+    s.payment_term = s.payment_term or "t_monthly"
+    _ap_khach(db, s, data)
+
+
+# danh sách chọn của màn Nhà cung cấp (trước 08/10 ghi cứng trong JS màn cũ) — Web đọc qua /api/suppliers/quyen; nhãn dịch theo khoá
+# LOG_<MÃ>. Không chặn giá trị khác ở máy chủ: dữ liệu cũ có khoản mục ngoài danh sách (ví dụ "diesel" của trạm dầu Việt Nam).
+KHOAN_NCC = ("x_chip_lao", "x_chip_vn", "x_tire", "x_toll", "x_bridge", "x_border", "x_parking", "x_oil", "x_brake", "x_tow", "x_air", "x_misc")
+TK_NCC = ("625/4021", "614/4021", "614/1371", "625/1371")
+KY_TRA_NCC = ("t_monthly", "t_prepaid", "pm_on_dispatch")
+CACH_TRA_NCC = ("cash", "bank")
+
+
+@router.get("/api/suppliers/quyen")
+def quyen_man_ncc(user=Depends(nguoi_hien_tai)):
+    """Việc 10 (màn Nhà cung cấp trên Web): người đang đăng nhập làm được gì — đúng luật quyền của các đường bên dưới (SUA_NCC,
+    thay_tien_chi, chi_tat_toan_tune.XEM_NCC / DE_NGHI_NCC) — và danh sách chọn của màn."""
+    from models import TIEN_TE
+    from services import chi_tat_toan_tune as TTT
+    return {"edit": user.role in ("expacct", "admin"), "view_acct": thay_tien_chi(user.role),
+            "view_debt": user.role in TTT.XEM_NCC, "request_pay": user.role in TTT.DE_NGHI_NCC, "gls": DT.bat("ncc"),
+            "lookups": {"item_keys": list(KHOAN_NCC), "acct_codes": list(TK_NCC), "payment_terms": list(KY_TRA_NCC),
+                        "currencies": list(TIEN_TE), "pay_methods": list(CACH_TRA_NCC)}}
+
+
+@router.get("/api/suppliers/gls")
+def tim_ncc_gls(q: str = "", trang: int = 1, db: Session = Depends(get_db), _=Depends(SUA_NCC)):
+    """Việc 10: tìm trong danh mục nhà cung cấp chung (một phần tên hoặc đúng mã, 100 dòng / trang); dòng đã có hồ sơ kèm
+    `supplier_id` (chủ xe cùng danh mục: kèm `owner_id`)."""
+    return DT.tim_kem_ho_so(db, "ncc", DT.tim("ncc", q, trang))
+
+
+@router.post("/api/suppliers/gls/{obj_id}")
+def lien_ket_ncc_gls(obj_id: int, data: dict = Body(default={}), db: Session = Depends(get_db), _=Depends(SUA_NCC)):
+    """Lập (hoặc chép lại) hồ sơ vận tải cho nhà cung cấp `obj_id` của danh mục chung; thân tuỳ chọn: phần riêng vận tải."""
+    s, _moi = DT.lien_ket(db, "ncc", obj_id)
+    _ap_rieng(db, s, data or {})
+    db.commit(); db.refresh(s)
+    return _xuat(db, s)
+
+
+@router.post("/api/suppliers/dong-bo-gls")
+def dong_bo_ncc_gls(db: Session = Depends(get_db), _=Depends(SUA_NCC)):
+    """Chép lại tên · điện thoại · địa chỉ · mã của mọi nhà cung cấp đã gắn từ danh mục chung."""
+    kq = DT.dong_bo(db, "ncc")
+    db.commit()
+    return kq
+
+
 @router.post("/api/suppliers")
-def them(data: dict = Body(...), db: Session = Depends(get_db), _=Depends(can_vai("expacct"))):
+def them(data: dict = Body(...), db: Session = Depends(get_db), _=Depends(SUA_NCC)):
+    """Thêm nhà cung cấp. Việc 10: có `obj_id` → gắn đối tượng danh mục chung đó; EPL_NCC_GLS=1 mà không có → tạo trong danh mục
+    chung trước (mã: ô Mã hoặc EPLNCC-…) rồi gắn. Cờ tắt → nhà cung cấp riêng như cũ."""
+    if data.get("obj_id") or DT.bat("ncc"):
+        oid = data.get("obj_id") or DT.tao("ncc", data, str(data.get("code") or "").strip() or None)
+        try:
+            oid = int(oid)
+        except (TypeError, ValueError):
+            raise HTTPException(422, {"ma": "OBJ_ID_SAI", "loi": "Mã nhà cung cấp trong danh mục không hợp lệ."})
+        s, _moi = DT.lien_ket(db, "ncc", oid)
+        _ap_rieng(db, s, data)
+        db.commit(); db.refresh(s)
+        return _xuat(db, s)
     if not str(data.get("name") or "").strip():
         raise HTTPException(422, {"ma": "THIEU_TEN", "loi": "Nhà cung cấp phải có tên."})
     s = Supplier(name=data["name"].strip(), item_key=data.get("item_key"), acct_code=data.get("acct_code"),
@@ -232,10 +302,11 @@ def them(data: dict = Body(...), db: Session = Depends(get_db), _=Depends(can_va
 
 
 @router.put("/api/suppliers/{sid}")
-def sua(sid: str, data: dict = Body(...), db: Session = Depends(get_db), _=Depends(can_vai("expacct"))):
+def sua(sid: str, data: dict = Body(...), db: Session = Depends(get_db), _=Depends(SUA_NCC)):
     s = db.get(Supplier, sid)
     if not s:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có nhà cung cấp này."})
+    data = DT.chan_sua_chung("ncc", s, data)          # Việc 10: đã gắn danh mục chung + cờ bật → thông tin chung sửa ở đó
     for k in ("name", "item_key", "acct_code", "payment_term", "note", "active"):
         if k in data:
             setattr(s, k, data[k].strip() if isinstance(data[k], str) else data[k])

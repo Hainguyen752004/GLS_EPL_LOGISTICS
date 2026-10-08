@@ -1,0 +1,80 @@
+1	Chốt kiến trúc chuyển trang điều xe vào Web GLS	Cao	Trang điều xe hiện là FastAPI (Python) + HTML/CSS/JS riêng: 24 màn, 240 đường API, DB PostgreSQL epl_lao. Chuyển GIAO DIỆN vào GLS-QLSX-Web thành module «Vận tải»; API và DB vẫn của EPL, Web gọi qua BFF như mọi module khác.	"☐ Sơ đồ: Razor/JS → BFF Controller → typed ApiClient → Logistics API (FastAPI) → PostgreSQL
+☐ Bảng 24 màn ↔ nhóm đường API
+☐ Quy ước tên thư mục / route / khoá dịch / mã quyền
+☐ Anh Khang duyệt"	Viết handoff theo mẫu §13 tài liệu 04. Logistics API là hệ có owner riêng (tài liệu 01 mục 5: owner DO/chuyến là trang điều xe). Browser không gọi thẳng FastAPI.	0,5 ngày	Hải · anh Khang duyệt
+2	Khung module Vận tải trong Web + typed ApiClient gọi Logistics API	Cao	Tạo khung Controllers/Modules/Logistics, Business/ApiClients/Logistics, Views/Modules/Logistics, wwwroot/ViewAssets/scripts|styles/modules/logistics. Một client gọi FastAPI, địa chỉ lấy từ cấu hình.	"☐ LOGISTICS_API_URL trong appsettings.{local, laoslocal, laos}.json
+☐ Client gửi kèm token người dùng đang đăng nhập
+☐ Lỗi {ma, loi} của FastAPI đổi sang ApiResponse chuẩn
+☐ Timeout, không theo chuyển hướng
+☐ 1 màn mẫu chạy hết luồng"	Dựa trên ApiServiceBase + BackofficeApiService.Request như CatalogClient; endpoint gom ở LogisticsEndpoint.cs. BFF chỉ ghép context (chi nhánh, người dùng), không có logic nghiệp vụ.	1 ngày	Hải
+3	Đăng nhập dùng API đăng nhập của anh Khang	Cao	Bỏ đăng nhập riêng của trang điều xe (bảng users + token HMAC). Màn đăng nhập giữ giao diện EPL (sơ đồ 8 bước, 4 ngôn ngữ) nhưng gọi API đăng nhập của anh Khang; mọi lời gọi FastAPI mang JWT của GLS.	"☐ Màn đăng nhập EPL gọi /Auth/HandleLogin → api/v2/auth/login
+☐ FastAPI nhận JWT GLS thay token cũ
+☐ Token hết hạn / sai → 401, quay về màn đăng nhập
+☐ App tài xế đăng nhập được trên điện thoại"	FastAPI xác thực JWT bằng một trong hai cách: (a) gọi GET api/v1/auth/info + auth/permissons bằng chính token, nhớ 5–10 phút; (b) dùng chung khoá ký JWT (HS256, iss goldenpos.vn). Đề xuất (a) vì không phải chia sẻ khoá. Anh Khang chọn.	2 ngày	Hải · anh Khang chốt cách xác thực
+4	Phân quyền theo mã quyền GLS thay 12 vai viết cứng	Cao	Quyền hiện nằm trong mã (services/phan_quyen.py: 12 vai; quyền nhập / kiểm / ghi sổ / chi theo mục I–VI; thấy tiền bán / tiền chi). Chuyển sang mã quyền Sys_Permission để quản trị gán trên Web, không hard-code vai.	"☐ Bảng mã quyền LOGISTICS.* theo màn + hành động
+☐ Script Sys_Permission chạy lại an toàn
+☐ FastAPI kiểm theo mã quyền lấy từ auth/permissons
+☐ Bảng ánh xạ UserId GLS → tài xế / kho dầu
+☐ Ma trận cũ ↔ mới khớp (bộ kiểm 66 ca hiện có)"	Logic kiểm quyền vẫn ở FastAPI (owner), chỉ đổi nguồn «vai» sang mã quyền. Mục menu đặt RequiredPermissionCode tương ứng.	2 ngày	Hải · anh Khang duyệt mã quyền
+5	Menu «Vận tải» + khoá dịch menu	Trung bình	Thêm nhóm menu Vận tải (Sys_Menu GROUP) và các mục màn; tên hiển thị theo khoá MENU_*.	"☐ Script Sys_Menu (GROUP + khoảng 20 PAGE) chạy lại an toàn
+☐ RequiredPermissionCode từng mục
+☐ MENU_* đủ vi / lo / en
+☐ Thứ tự như thanh bên hiện tại: Vận tải · Kho · Danh mục · Hệ thống"	Làm như script 20261007_menu_khai_bao_kho.sql: tra nhóm cha theo MenuCode, không fix cứng MenuId.	0,5 ngày	Hải · anh Tune chạy script host
+6	Chuyển đa ngôn ngữ vi / lo / en	Trung bình	3.036 khoá trong frontend/js/ngon_ngu.js (có chế độ VI + ລາວ hiện hai dòng) chuyển sang Base/Localization/vi|lo|en.json của Web.	"☐ Công cụ chuyển khoá (tiền tố LOG_)
+☐ Razor dùng Helper.Trans, JS dùng hàm dịch chung của Web
+☐ Không trùng khoá đang có
+☐ Chốt giữ hay bỏ chế độ song ngữ VI + Lào"	Sinh JSON từ ngon_ngu.js một lần, sau đó sửa thẳng JSON của Web; kiểm không lộ khoá bằng bộ kiểm giao diện.	1 ngày	Hải
+7	Khách hàng dùng bảng Đối tượng của anh Khang	Cao	Bỏ danh mục khách riêng (bảng customers); khách lấy từ Đối tượng GLS (PUBOBJECT). Phần riêng của vận tải giữ ở DB EPL, khoá theo OBJ_AUTOID: bảng giá cước theo tuyến, hợp đồng + tệp scan, cách xuất hoá đơn, loại khách.	"☐ Script đối chiếu khách hiện có (mã khách = OBJ_OBJECTNO) → cột obj_id
+☐ Khách chưa có bên GLS → tạo qua API Đối tượng
+☐ Ô chọn khách trên phiếu / bảng giá đọc từ API GLS
+☐ Màn Khách hàng: thông tin chung mở màn Đối tượng GLS; bảng giá / hợp đồng ở module Vận tải
+☐ SO / đề nghị thu gửi đúng obj_id"	FastAPI gọi API Đối tượng GLS (có cache) thay vì đọc bảng customers; giữ bảng customers chỉ đọc vài tuần để đối chiếu rồi bỏ.	2 ngày	Hải
+8	Nhà cung cấp, chủ xe liên kết dùng bảng Đối tượng của anh Khang	Cao	Như khách hàng: NCC (trạm dầu VN, lốp, phí chip, cầu đường…), chủ xe liên kết, tài xế lấy từ Đối tượng GLS. Thuộc tính vận tải (khoản mục chi, Nợ/Có, kỳ hạn trả, cấn trừ với khách) giữ ở DB EPL theo OBJ_AUTOID.	"☐ Đối chiếu NCC + chủ xe (một số bảng đã có obj_id) → một cột obj_id thống nhất
+☐ Công nợ NCC / tất toán đối tác đọc đúng đối tượng
+☐ Tài xế EPLTX- giữ như hiện tại"	Như mục khách hàng; bản ghi chưa có bên GLS thì dùng lại API tạo đối tượng đang chạy (ObjectService).	1,5 ngày	Hải
+9	Màn Phiếu xuất xe (DO)	Cao	Màn chính: lập DO, 6 mục chi I–VI, kiểm / ghi sổ / chi, khoá, tạo SO, hợp đồng + POD, tệp đính kèm, in phiếu (135 nút / ô).	"☐ Form + lưới DevExtreme theo chuẩn UI (tài liệu 02)
+☐ Đủ 135 nút / ô
+☐ Quyền từng mục theo mã quyền
+☐ Tải tệp / ảnh qua BFF
+☐ Chạy đủ kịch bản A1–A8"	Tính toán giữ ở FastAPI, JS chỉ hiển thị (tài liệu 04 §14.1). Chia partial theo mục chi để không dồn một tệp.	4 ngày	Hải
+10	Theo dõi phiếu · Theo dõi tuyến (bản đồ) · Tổng quan	Cao	Báo cáo theo dõi 29 cột như Excel của khách; bản đồ tuyến ArcGIS + chấm xe GPS; tổng quan tháng.	"☐ Lưới phân trang phía máy chủ
+☐ Xuất Excel / PDF
+☐ Bản đồ chạy trong layout Web
+☐ Vai không thấy tiền: cột tiền bị ẩn từ API"	Lưới DevExtreme remote paging gọi FastAPI qua BFF; bản đồ giữ thư viện hiện tại trong partial riêng.	3 ngày	Hải
+11	Đề nghị chi · Đề nghị xuất kho · Đề nghị thu · Đề nghị theo DO · Bút toán chờ gửi	Cao	Các phiếu đề nghị gửi kế toán (anh Tune) và hồ sơ DO.	"☐ Đủ nút như tài liệu hướng dẫn (mục 7.2.6–7.2.8, 7.2.12)
+☐ Luồng gửi sang API kế toán không đổi
+☐ Trạng thái chi đọc lại từ kế toán"	Chỉ đổi giao diện; đường gửi bút toán / SO / phiếu chi giữ ở FastAPI như đang chạy thật.	3 ngày	Hải
+12	Tất toán tài xế · Tiền chuyến & nước · Tất toán đối tác · Xe liên kết	Cao	Tạm ứng / hoàn ứng / chốt kỳ tài xế; tiền chuyến & nước theo phiếu chi lương thật; trả đối tác = thuê − phí 2 % − quá tải − ứng − nợ NCC − SO nhiên liệu; lãi xe liên kết.	"☐ Số trên màn mới = màn cũ trên cùng DB
+☐ Xuất Excel tất toán (đơn giá dạng số, có cột tiền tệ)
+☐ Chỉ vai được thấy tiền mới thấy"	Chỉ đổi giao diện; công thức giữ ở FastAPI.	3 ngày	Hải
+13	Danh mục: Xe · Tài xế · Thẻ cao tốc · Tỷ giá · Tuyến đường	Trung bình	Hồ sơ xe 7 tab + rơ-moóc + lịch tuần; tài xế + bằng lái + ảnh; thẻ cao tốc + nạp / công nợ; tỷ giá; tuyến + chặng + km + gợi ý chi phí.	"☐ Ảnh / tệp qua BFF
+☐ Lịch tuần xe, tài xế
+☐ Tuyến có chặng và km"	Lưới + popup DevExtreme; ảnh dùng lại cách tải tệp của BFF.	3 ngày	Hải
+14	Xem kho (hàng gửi bãi)	Trung bình	Tồn dầu / phụ tùng (kho GLS) + kho hàng quặng theo lô DO, phiếu điều chỉnh.	"☐ Hàng gửi bãi: tồn theo lô, chi tiết lô, đối soát, phiếu điều chỉnh
+☐ Tồn dầu / phụ tùng khớp màn Tồn kho của Web"	Phần tồn dầu / phụ tùng: mở thẳng màn Tồn kho đã có của Web thay vì làm lại; chỉ làm phần hàng gửi bãi.	1,5 ngày	Hải
+15	App tài xế (Phiếu của tôi) trên điện thoại	Cao	6 tab: xuất phát / về, báo hỏng, khai đổ dầu, ký nhận giao hàng, chia sẻ GPS. Phải chạy khi mất mạng (hàng đợi gửi lại).	"☐ Layout điện thoại, không thanh bên
+☐ GPS + giữ sáng màn chỉ chạy trên HTTPS
+☐ Hàng đợi offline giữ nguyên
+☐ Đăng nhập tài khoản GLS gắn tài xế
+☐ Thử Android + iPhone"	Trang Razor riêng layout mobile trong Web (cùng đăng nhập), JS offline giữ gần nguyên. Hoặc, nếu anh Khang muốn, giữ app tài xế là trang riêng nhưng đăng nhập qua API anh Khang.	3 ngày	Hải · anh Khang chọn phương án
+16	Quy trình · Tài khoản	Thấp	Màn Tài khoản bỏ: người dùng / quyền quản ở Hệ thống của Web (mục đăng nhập + phân quyền). Màn Quy trình (sơ đồ công đoạn, ai làm gì) chuyển thành trang giới thiệu.	"☐ Gỡ màn Tài khoản
+☐ Quy trình đọc quyền từ mã quyền mới"	Làm sau cùng.	0,5 ngày	Hải
+17	Xuất Excel / PDF và in phiếu theo chuẩn Web	Trung bình	Hiện mỗi màn có nút Excel / PDF tự viết (xuat.js) và in A4 bằng HTML.	"☐ Excel bằng DevExtreme export
+☐ Phiếu in A4 (DO, phiếu đề nghị) bằng DevExpress Report như PrintStockIn
+☐ Chữ Lào hiện đúng font"	Mẫu in đặt ở Backend.DevExpressReport; dữ liệu lấy qua BFF.	1,5 ngày	Hải
+18	FastAPI chỉ còn là API — dọn phần thừa	Trung bình	Bỏ phục vụ giao diện tĩnh, màn đăng nhập, danh sách tài khoản mẫu, tab «Liên thông kho tạm»; gộp cổng bàn giao DO (LogisticsSource) vào cùng client mới.	"☐ «/» không còn giao diện
+☐ Chỉ mở cho máy Web / API GLS (tường lửa hoặc khoá)
+☐ HTTPS
+☐ Swagger /api/docs cập nhật"	Làm sau khi các màn mới chạy đủ; giữ giao diện cũ tới hết tuần chạy song song.	1 ngày	Hải
+19	Kiểm thử	Cao	Chuyển bộ kiểm hiện có sang module mới: 24 màn × 4 ngôn ngữ, phân quyền 66 ca, kịch bản A1–A8 + CA-1…6.	"☐ Kiểm phân quyền qua BFF
+☐ Từng màn không lỗi console / mạng
+☐ Số liệu màn mới = màn cũ trên cùng DB
+☐ UAT với anh Khampla"	Chạy trên máy thử (Web 5014 + FastAPI DB bản sao) trước, rồi trên host.	3 ngày	Hải · anh Khampla UAT
+20	Triển khai và cắt chuyển	Cao	Publish Web có module Vận tải; cấu hình địa chỉ Logistics API trên host; chạy script menu / quyền; tạo tài khoản GLS cho 15 người dùng EPL và gán quyền.	"☐ appsettings.laos.json có LOGISTICS_API_URL
+☐ Script Sys_Menu + Sys_Permission đã chạy
+☐ 15 tài khoản GLS + ánh xạ tài xế / kho
+☐ Chạy song song trang cũ 1 tuần
+☐ Tắt giao diện cũ"	Theo thứ tự: API GLS (nếu có đổi) → Web → script → tài khoản → song song → tắt cũ.	1 ngày + 1 tuần chạy song song	Hải · anh Tune
+21	Tài liệu	Trung bình	Cập nhật tài liệu hướng dẫn anh Khampla (VI + LO) theo màn mới; handoff kỹ thuật; cập nhật 07-LOGISTICS-INTEGRATION-REVIEW-MAP.	"☐ Ảnh màn mới cả VI + LO
+☐ Handoff theo mẫu §13 tài liệu 04
+☐ Review map logistics cập nhật"	Viết một lần sau khi màn mới chạy ổn (không viết song song khi mã còn đổi).	2 ngày	Hải

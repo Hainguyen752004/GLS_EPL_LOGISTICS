@@ -1,0 +1,9 @@
+/* Điểm đổ nhiên liệu (08/10) — danh sách bên trái, danh mục kho Web bên phải khi mở (dàn ngang, không kéo trang dài) */
+.dd-tim input{min-width:240px}
+.dd-giai{margin:-4px 0 10px;max-width:110ch}
+.dd-khung{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}
+.dd-khung.co-kho{grid-template-columns:minmax(0,1.5fr) minmax(320px,1fr)}
+.dd-kho .hd input{max-width:220px}
+.dd-tat{opacity:.55}
+.dd-web{display:block;font-size:11px;color:var(--ink-3)}
+@media (max-width:1100px){.dd-khung.co-kho{grid-template-columns:minmax(0,1fr)}}

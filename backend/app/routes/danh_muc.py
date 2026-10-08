@@ -19,6 +19,7 @@ from models import (CACH_XUAT_HOA_DON, CACH_TINH_CUOC, TIEN_TE, TRANG_THAI_TAI_X
                     Route, Trailer, TrailerAssignment, Trip, TripExpense, Vehicle)
 from services import goi_ke_toan as KT
 from services import gui_tune as GT
+from services import khach_gls as KG
 from services import tai_khoan as TK
 from services.bao_mat import can_vai, nguoi_hien_tai
 from services.phan_quyen import thay_gia_kho, thay_tien_chi
@@ -26,9 +27,12 @@ from routes import anh as ANH
 from services.tinh_toan import tien_dong
 
 router = APIRouter()
-SUA_DANH_MUC = can_vai("yard", "acct")       # Bãi và Kế toán được sửa danh mục
-SUA_BANG_GIA = can_vai("acct", "admin")      # giá là tiền: chỉ KT Thu/Chi VC (người kiểm mục II) và Sếp
-XEM_BANG_GIA = can_vai("acct", "expacct", "rev", "treasury", "cash", "admin")   # Bãi không thấy tiền
+VAI_SUA_DANH_MUC = ("yard", "acct")           # Bãi và Kế toán được sửa danh mục
+VAI_SUA_BANG_GIA = ("acct", "admin")          # giá là tiền: chỉ KT Thu/Chi VC (người kiểm mục II) và Sếp
+VAI_XEM_BANG_GIA = ("acct", "expacct", "rev", "treasury", "cash", "admin")   # Bãi không thấy tiền
+SUA_DANH_MUC = can_vai(*VAI_SUA_DANH_MUC)
+SUA_BANG_GIA = can_vai(*VAI_SUA_BANG_GIA)
+XEM_BANG_GIA = can_vai(*VAI_XEM_BANG_GIA)
 # Mã khách = mã khách bên kế toán (nối sang sổ công nợ anh Tune). Excel "ໜ້າວຽກ": ລົງຂໍ້ມູນ ລູກຄ້າ — Bãi Thà Bốc nhập,
 # ບັນຊີລາຍຈ່າຍ/ຮັບ ວຽງຈັນ (KT Thu/Chi VC) xác nhận → Bãi nhập thông tin khách, còn MÃ do KT Thu/Chi VC hoặc Sếp gán (30/09).
 GAN_MA_KHACH = ("acct", "admin")
@@ -97,6 +101,10 @@ def ds_khach(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
 
 @router.post("/api/customers")
 def them_khach(data: dict = Body(...), db: Session = Depends(get_db), user=Depends(SUA_DANH_MUC)):
+    """Thêm khách. Việc 9 (08/10): có `obj_id` → lập hồ sơ vận tải cho đối tượng GLS đó; EPL_KHACH_GLS=1 mà không có `obj_id` →
+    tạo đối tượng khách bên GLS trước (mã: ô Mã khách hoặc EPLKH-…) rồi lập hồ sơ. EPL_KHACH_GLS=0 → khách riêng bên em như cũ."""
+    if data.get("obj_id") or KG.bat():
+        return _them_khach_gls(db, data, user)
     if not str(data.get("name") or "").strip():
         raise HTTPException(422, {"ma": "THIEU_TEN", "loi": "Khách hàng phải có tên."})
     c = Customer(); _ap(c, data, ("name", "phone", "address", "note"))
@@ -106,7 +114,78 @@ def them_khach(data: dict = Body(...), db: Session = Depends(get_db), user=Depen
     return _dict(c)
 
 
+def _ap_rieng_van_tai(db, c, data, user):
+    """Phần riêng của vận tải trên hồ sơ khách GLS: cách xuất hoá đơn, loại khách, ghi chú, đang dùng."""
+    _ap(c, data, ("note", "active"))
+    _ap_cach_hoa_don(c, data)
+    _ap_ma_loai(db, c, {k: data[k] for k in ("cust_type",) if k in data}, user)
+
+
+def _them_khach_gls(db, data, user):
+    oid = data.get("obj_id")
+    if not oid:
+        ma = str(data.get("code") or "").strip() or None
+        if ma and user.role not in GAN_MA_KHACH:
+            raise HTTPException(403, {"ma": "MA_KHACH_KE_TOAN",
+                                      "loi": "Mã khách là mã bên kế toán — chỉ KT Thu/Chi Viêng Chăn hoặc Sếp gán / đổi."})
+        if ma and GT.loi_ma_khach(ma):
+            raise HTTPException(422, {"ma": "MA_KHACH_SAI", "loi": GT.loi_ma_khach(ma)})
+        oid = KG.tao(data, ma)
+    try:
+        oid = int(oid)
+    except (TypeError, ValueError):
+        raise HTTPException(422, {"ma": "OBJ_ID_SAI", "loi": "Mã khách trong danh mục không hợp lệ."})
+    c, _ = KG.lien_ket(db, oid)
+    _ap_rieng_van_tai(db, c, data, user)
+    db.commit(); db.refresh(c)
+    return _dict(c)
+
+
+@router.get("/api/customers/quyen")
+def quyen_man_khach(user=Depends(nguoi_hien_tai)):
+    """Việc 9 (màn Khách hàng trên Web): người đang đăng nhập làm được gì ở màn này — đúng luật quyền của các đường bên dưới, để Web
+    ẩn / hiện nút mà không ghi cứng vai — và các danh sách chọn của màn (mã; nhãn dịch ở Web theo khoá LOG_<MÃ>). `gls` = luật
+    khách là Đối tượng GLS đang bật (EPL_KHACH_GLS)."""
+    from routes import hop_dong as HD
+    from services.phan_quyen import thay_tien_ban
+    co = lambda ds: user.role == "admin" or user.role in ds     # noqa: E731 — như can_vai
+    return {"edit": co(VAI_SUA_DANH_MUC), "assign_code": co(GAN_MA_KHACH), "view_debt": thay_tien_ban(user.role),
+            "view_rates": co(VAI_XEM_BANG_GIA), "edit_rates": co(VAI_SUA_BANG_GIA), "gls": KG.bat(),
+            # hợp đồng vận chuyển với khách — đúng luật routes/hop_dong.py (bản scan có giá → chỉ vai thấy tiền bán)
+            "view_contracts": user.role not in HD.VAI_KHONG_XEM, "edit_contracts": user.role in HD.VAI_SUA["khach"],
+            "view_contract_files": thay_tien_ban(user.role),
+            "lookups": {"invoice_modes": list(CACH_XUAT_HOA_DON), "cust_types": list(LOAI_KHACH), "currencies": list(TIEN_TE),
+                        "price_modes": list(CACH_TINH_CUOC), "goods_types": list(LOAI_HANG_GIA)}}
+
+
+@router.get("/api/customers/gls")
+def tim_khach_gls(q: str = "", trang: int = 1, db: Session = Depends(get_db), _=Depends(SUA_DANH_MUC)):
+    """Ô chọn khách từ Đối tượng GLS (Việc 9): tìm theo một phần tên hoặc đúng mã, 100 dòng / trang. Dòng đã có hồ sơ vận tải
+    kèm `customer_id`."""
+    kq = KG.tim(q, trang)
+    co = dict(db.query(Customer.obj_id, Customer.id).filter(Customer.obj_id.in_([x["obj_id"] for x in kq["items"]])).all()) if kq["items"] else {}
+    return {**kq, "items": [{**x, "customer_id": co.get(x["obj_id"])} for x in kq["items"]]}
+
+
+@router.post("/api/customers/gls/{obj_id}")
+def lien_ket_khach_gls(obj_id: int, data: dict = Body(default={}), db: Session = Depends(get_db), user=Depends(SUA_DANH_MUC)):
+    """Lập (hoặc chép lại) hồ sơ vận tải cho đối tượng khách GLS `obj_id`; thân tuỳ chọn: invoice_mode, cust_type, note."""
+    c, _ = KG.lien_ket(db, obj_id)
+    _ap_rieng_van_tai(db, c, data or {}, user)
+    db.commit(); db.refresh(c)
+    return _dict(c)
+
+
+@router.post("/api/customers/dong-bo-gls")
+def dong_bo_khach_gls(db: Session = Depends(get_db), _=Depends(SUA_DANH_MUC)):
+    """Chép lại tên · điện thoại · địa chỉ · mã của mọi khách đã liên kết từ Đối tượng GLS."""
+    kq = KG.dong_bo(db)
+    db.commit()
+    return kq
+
+
 LOAI_KHACH = ("person", "company")
+LOAI_HANG_GIA = ("iron_ore", "other_goods")       # loại hàng của dòng giá (tim_gia: không có giá riêng → dùng giá quặng)
 
 
 def _ap_ma_loai(db, c, data, user):
@@ -124,6 +203,8 @@ def _ap_ma_loai(db, c, data, user):
             trung = (db.query(Customer.id).filter(func.lower(Customer.code) == ma.lower(), Customer.id != (c.id or "")).first())
             if trung:
                 raise HTTPException(409, {"ma": "MA_KHACH_TRUNG", "loi": "Mã khách %s đã dùng cho khách khác." % ma})
+        if (ma or None) != c.code:
+            c.obj_id = None                    # đổi mã (luật cũ, EPL_KHACH_GLS=0) → đối tượng tìm lại theo mã mới lúc gửi
         c.code = ma or None
     if "cust_type" in data:
         v = (data.get("cust_type") or "").strip().lower() or None
@@ -147,6 +228,13 @@ def sua_khach(cid: str, data: dict = Body(...), db: Session = Depends(get_db), u
     c = db.get(Customer, cid)
     if not c:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có khách hàng này."})
+    if KG.bat() and c.obj_id:
+        # Việc 9: thông tin chung là bản chép từ Đối tượng GLS — form gửi lại đúng giá trị đang có thì bỏ qua, đổi thì chặn
+        doi = [o for o in KG.O_CHUNG if o in data and (str(data[o] or "").strip() or None) != (getattr(c, o) or None)]
+        if doi:
+            raise HTTPException(409, {"ma": "SUA_O_GLS", "loi": "Tên, điện thoại, địa chỉ, mã khách dùng chung với danh mục khách "
+                                                                "hàng — sửa ở màn thông tin khách hàng.", "o": doi})
+        data = {k: v for k, v in data.items() if k not in KG.O_CHUNG}
     _ap_ma_loai(db, c, data, user)             # kiểm quyền mã TRƯỚC khi ghi ô khác — bị chặn thì không đổi gì
     _ap(c, data, ("name", "phone", "address", "note", "active"))
     _ap_cach_hoa_don(c, data)
@@ -245,6 +333,20 @@ def cong_no_khach_ke_toan(cid: str, db: Session = Depends(get_db), user=Depends(
                 so[b.order_code] = {"trip_id": p.id, "doc_no": p.doc_no}
         db.commit()
         kq["do_cua_so"] = so                                     # SO bên đó ↔ DO bên em
+        # Việc 9 (màn Web): tình trạng từng chứng từ nợ tính ở đây — Web chỉ hiện nhãn (trước đây màn cũ tự tính trên trình duyệt)
+        hom_nay = dt.date.today()
+        for x in kq.get("no") or []:
+            han = str(x.get("han") or "")[:10]
+            x["qua_han_ngay"] = None
+            if float(x.get("con_no") or 0) <= 0:
+                x["tinh_trang"] = "da_thu_du"
+            elif not han:
+                x["tinh_trang"] = "khong_han"
+            elif han >= hom_nay.isoformat():
+                x["tinh_trang"] = "chua_den_han"
+            else:
+                x["tinh_trang"] = "qua_han"
+                x["qua_han_ngay"] = (hom_nay - dt.date.fromisoformat(han)).days
     return {"co": kq is not None, **(kq or {})}
 
 
@@ -288,13 +390,80 @@ def cong_no_moi_khach(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai
     return ra
 
 
+def _thang_gan(db, cid, thang):
+    """Tháng gần `thang` nhất mà khách có phiếu (phiếu mới nhất tới cuối tháng đó · cũ nhất từ đầu tháng đó) — như màn cũ."""
+    nam, th = (int(x) for x in thang.split("-"))
+    dau = dt.date(nam, th, 1)
+    sau_dau = dt.date(nam + (th == 12), th % 12 + 1, 1)
+    truoc = (db.query(Trip.doc_date).filter(Trip.customer_id == cid, Trip.doc_date.isnot(None), Trip.doc_date < sau_dau)
+             .order_by(Trip.doc_date.desc()).first())
+    sau = (db.query(Trip.doc_date).filter(Trip.customer_id == cid, Trip.doc_date.isnot(None), Trip.doc_date >= dau)
+           .order_by(Trip.doc_date.asc()).first())
+    so = lambda d: d.year * 12 + d.month                                    # noqa: E731
+    if not truoc and not sau:
+        return None
+    if not truoc or not sau:
+        d = (truoc or sau)[0]
+    else:
+        d = sau[0] if so(sau[0]) - so(dau) < so(dau) - so(truoc[0]) else truoc[0]
+    return d.strftime("%Y-%m")
+
+
+@router.get("/api/customers/{cid}/chuyen")
+def chuyen_cua_khach(cid: str, thang: str = None, tu_tim: bool = False, db: Session = Depends(get_db),
+                     user=Depends(nguoi_hien_tai)):
+    """Việc 9 (tab Chuyến & phiếu màn Khách hàng trên Web): phiếu của khách trong `thang` (YYYY-MM, mặc định tháng này), mới
+    nhất trước, tối đa 500. `tu_tim` = tháng đó không có phiếu thì lấy tháng gần nhất có phiếu (`thang` trả về là tháng đang
+    xem, `thang_hoi` là tháng đã hỏi). Tiền bán (đơn giá, thành tiền, SO) chỉ có khi vai thấy tiền bán; cộng tháng tính ở đây."""
+    from routes.phieu import CO_TOI_DA, da_thu_theo_phieu, loc_phieu, nap_lo, xuat_phieu
+    from services.phan_quyen import thay_tien_ban
+    if not db.get(Customer, cid):
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có khách hàng này."})
+    hoi = (thang or dt.date.today().strftime("%Y-%m"))[:7]
+    try:
+        dt.date.fromisoformat(hoi + "-01")
+    except ValueError:
+        raise HTTPException(422, {"ma": "THANG_SAI", "loi": "Tháng phải ghi dạng YYYY-MM."})
+    lay = lambda th: (loc_phieu(db.query(Trip).filter(Trip.customer_id == cid), thang=th)               # noqa: E731
+                      .order_by(Trip.doc_date.desc().nullslast(), Trip.doc_no.desc()).limit(CO_TOI_DA).all())
+    xem, ds = hoi, lay(hoi)
+    if not ds and tu_tim:
+        gan = _thang_gan(db, cid, hoi)
+        if gan and gan != hoi:
+            xem, ds = gan, lay(gan)
+    tien = thay_tien_ban(user.role)
+    thu, nap = da_thu_theo_phieu(db, [p.id for p in ds]), nap_lo(db, ds)
+    items, tan, doanh_thu = [], 0.0, {}
+    for p in ds:
+        x = xuat_phieu(db, p, day_du=False, da_thu=thu.get(p.id, 0), vai=user.role, nap=nap)
+        t = x.get("tinh") or {}
+        r = {"id": x.get("id"), "doc_no": x.get("doc_no"), "doc_date": x.get("doc_date"), "kind": x.get("kind"),
+             "truck_no": x.get("truck_no"), "route": " → ".join(v for v in (x.get("origin"), x.get("destination")) if v) or None,
+             "tan": t.get("tan_tinh")}
+        tan += float(t.get("tan_tinh") or 0)
+        if tien:
+            sk = x.get("so_ke_toan") or {}
+            tt = (sk.get("thu") or {}).get("trang_thai")
+            ccy = t.get("ccy") or x.get("price_ccy")
+            r.update({"don_gia": t.get("don_gia"), "doanh_thu": t.get("doanh_thu"), "ccy": ccy, "so_order": sk.get("order_code"),
+                      "so_trang_thai": (("da_thu" if tt == "da_thu" else "thu_mot_phan" if tt == "thu_mot_phan" else "da_tao_so")
+                                        if x.get("da_tao_so") and sk else ("chua_tao_so" if x.get("locked") else "chua_khoa"))})
+            if ccy:
+                doanh_thu[ccy] = round(doanh_thu.get(ccy, 0) + float(t.get("doanh_thu") or 0), 2)
+        items.append(r)
+    return {"thang": xem, "thang_hoi": hoi, "xem_tien": tien, "items": items,
+            "tong": {"so_phieu": len(items), "tan": round(tan, 3), "doanh_thu": doanh_thu if tien else None}}
+
+
 @router.get("/api/customers/{cid}/bang-gia")
 def ds_gia(cid: str, db: Session = Depends(get_db), _=Depends(XEM_BANG_GIA)):
     if not db.get(Customer, cid):
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có khách hàng này."})
     ds = db.query(CustomerRate).filter(CustomerRate.customer_id == cid).all()
     ds.sort(key=lambda r: (not r.active, r.route_id, -(r.valid_from or dt.date.min).toordinal()))
-    return [_xuat_gia(db, r) for r in ds]
+    # `current` (Việc 9, màn Web): dòng mà phiếu mới hôm nay sẽ lấy giá (tim_gia) — Web tô dòng đó, không tự tính
+    dang = {(r.route_id, r.goods_type): tim_gia(db, cid, r.route_id, r.goods_type) for r in ds if r.active}
+    return [{**_xuat_gia(db, r), "current": bool(r.active and dang.get((r.route_id, r.goods_type)) is r)} for r in ds]
 
 
 @router.post("/api/customers/{cid}/bang-gia")

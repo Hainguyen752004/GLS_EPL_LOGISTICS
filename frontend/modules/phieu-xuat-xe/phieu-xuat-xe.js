@@ -128,11 +128,17 @@
     if (moi) g('px-chon').value = '';
   }
   function veDanhMuc() {
-    g('f-vehicle_id').innerHTML = `<option value="">—</option>` + DM.vehicles.filter(x => x.active || x.id === P.vehicle_id).map(x => `<option value="${x.id}" ${x.id === P.vehicle_id ? 'selected' : ''}>${esc(x.truck_no)} · ${esc(x.plate_head || '')}${x.owner_type === 'joint' ? ' · ' + NN.t('co_joint') : ''}</option>`).join('');
-    g('f-driver_id').innerHTML = `<option value="">—</option>` + DM.drivers.filter(x => x.active || x.id === P.driver_id).map(x => `<option value="${x.id}" ${x.id === P.driver_id ? 'selected' : ''}>${esc(EPL.tenTaiXe(x))}</option>`).join('');
+    g('f-vehicle_id').innerHTML = `<option value="">—</option>` + DM.vehicles.filter(x => x.active || x.id === P.vehicle_id).map(x => `<option value="${x.id}" ${x.id === P.vehicle_id ? 'selected' : ''} data-tim="${esc([x.plate_trailer, x.brand_model, x.owner_name].filter(Boolean).join(' '))}">${esc(x.truck_no)} · ${esc(x.plate_head || '')}${x.owner_type === 'joint' ? ' · ' + NN.t('co_joint') : ''}</option>`).join('');
+    g('f-driver_id').innerHTML = `<option value="">—</option>` + DM.drivers.filter(x => x.active || x.id === P.driver_id).map(x => `<option value="${x.id}" ${x.id === P.driver_id ? 'selected' : ''} data-tim="${esc([x.driver_code, x.phone].filter(Boolean).join(' '))}">${esc(EPL.tenTaiXe(x))}</option>`).join('');
+    root.querySelectorAll('[data-loc]').forEach(inp => locChon(inp, false));   // ô tìm còn chữ thì lọc lại danh sách vừa dựng
     g('f-route_id').innerHTML = `<option value="">—</option>` + DM.routes.filter(x => x.active || x.id === P.route_id).map(x => `<option value="${x.id}" ${x.id === P.route_id ? 'selected' : ''}>${esc(x.name)} · ${so(x.total_km, 1)} km${x.return_km ? ' · ↩ ' + so(x.return_km, 1) + ' km' : ''}</option>`).join('');
     g('f-customer_id').innerHTML = `<option value="">—</option>` + DM.customers.filter(x => x.active || x.id === P.customer_id).map(x => `<option value="${x.id}" ${x.id === P.customer_id ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
   }
+  /* Ô tìm trên ô chọn xe / tài xế (anh Khampla 08/10: hơn 500 xe, ô chọn dài không tìm nổi). Gõ số xe, biển, hiệu xe, chủ xe /
+   * tên, mã, điện thoại tài xế (không cần dấu) → ô chọn chỉ còn dòng khớp; khớp đúng một dòng thì chọn luôn (`chon`) — EPL.locChon.
+   * Ô chọn khoá (mục I đã gửi / đã kiểm) thì giấu ô tìm. */
+  const locChon = (inp, chon) => EPL.locChon(g(inp.dataset.loc), inp.value, chon);
+  function xoaTim() { root.querySelectorAll('[data-loc]').forEach(inp => { inp.value = ''; }); }
   function doTruong() {
     g('px-doc-no').value = P.doc_no || '';
     [...COT_INFO, ...COT_TRANS, ...COT_POD].forEach(c => { const el = g('f-' + c); if (!el) return; el.value = P[c] == null ? '' : P[c]; });
@@ -236,8 +242,10 @@
       const tb = q(`table[data-bang="${m}"] tbody`), khoa = KM.items[m], khoaDuoc = suaDuoc(m);
       const dong = P.expenses.map((d, i) => ({ d, i })).filter(x => x.d.section === m);
       tb.innerHTML = dong.length ? dong.map(({ d, i }, n) => {
-        const tuGo = !khoa.includes(d.item_key);
-        const sel = `<select data-i="${i}" data-f="item_key" ${khoaDuoc ? '' : 'disabled'}>${khoa.map(k => `<option value="${k}" ${k === d.item_key ? 'selected' : ''}>${esc(NN.t(k))}</option>`).join('')}<option value="" ${tuGo ? 'selected' : ''}>${esc(NN.t('x_custom'))}</option></select>${tuGo ? `<input data-i="${i}" data-f="item_name" value="${esc(d.item_name || '')}" placeholder="…" ${khoaDuoc ? '' : 'disabled'} style="margin-top:4px">` : ''}`;
+        // khoản đã ngưng ở màn Khoản mục chi phí (08/10) mà dòng cũ còn mang: vẫn có trong ô chọn của dòng đó, không thành "Khác (tự gõ)"
+        const kl = d.item_key && !khoa.includes(d.item_key) && ((KM.all_items || {})[m] || []).includes(d.item_key) ? [...khoa, d.item_key] : khoa;
+        const tuGo = !kl.includes(d.item_key);
+        const sel = `<select data-i="${i}" data-f="item_key" ${khoaDuoc ? '' : 'disabled'}>${kl.map(k => `<option value="${k}" ${k === d.item_key ? 'selected' : ''}>${esc(NN.t(k))}</option>`).join('')}<option value="" ${tuGo ? 'selected' : ''}>${esc(NN.t('x_custom'))}</option></select>${tuGo ? `<input data-i="${i}" data-f="item_name" value="${esc(d.item_name || '')}" placeholder="…" ${khoaDuoc ? '' : 'disabled'} style="margin-top:4px">` : ''}`;
         const giaMo = giaDuoc(m, d);
         const inp = (f, cls = 'num') => f === 'unit_price'
           ? `<input class="${cls}${giaMo && d.paid_by_epl && EPL.doc(d.qty) > 0 && !EPL.doc(d.unit_price) ? ' px-can-gia' : ''}" data-i="${i}" data-f="${f}" value="${esc(d[f] == null ? '' : d[f])}" ${giaMo ? '' : 'disabled'} inputmode="decimal" title="${esc(nguonKho(m, d) ? NN.t('price_avg_kho') : '')}">`
@@ -253,12 +261,15 @@
             daTru ? `<div class="small muted">${esc(NN.t('tct_da_tru'))} ✓</div>` : ''}`;
         // CÁCH TRẢ (Excel anh Khampla, 29/09): như cột ghi chú của tờ Excel — chi ngay khi xe đi (vào tạm ứng) · trả cùng
         // lương · nợ nhà cung cấp. Dòng phí cao tốc / cầu đường đã có ô thẻ ở trên (tiền mặt hay thẻ) nên không hỏi thêm.
-        const caDuoc = (m === 'travel' || m === 'other') && !theDuoc;
+        // Admin Thà Bốc KHÔNG thấy ô cách trả (anh Khampla 08/10 — không phải việc của người lập phiếu); vai khác thấy, KT Chi phí VC đổi
+        const caDuoc = (m === 'travel' || m === 'other') && !theDuoc && thayChi();
         // Xe THUÊ không có "trả cùng lương" — EPL không trả lương tài xế của chủ xe; khoản EPL ứng là tạm ứng ghi công nợ chủ
         // xe (chủ dự án 30/09, chép luật máy chủ): chỉ còn "chi ngay khi xe đi" và "nợ NCC".
         const caMoc = d.pay_channel || ((KM.pay_default || {})[d.item_key] || 'tien_mat');
         const caEff = lk && caMoc === 'luong' ? 'tien_mat' : caMoc;
-        const caSel = !caDuoc ? '' : `<div><select class="px-ca" data-i="${i}" data-f="pay_channel" ${khoaDuoc ? '' : 'disabled'} style="margin-top:4px">${
+        // 08/10 (anh Khampla): Bãi — người lập phiếu — KHÔNG chọn cách trả; dòng mang mặc định (bộ gợi ý tuyến · khoản mục), KT Chi phí
+        // VC đổi lúc kiểm mục, Sếp lúc nào cũng được. Máy chủ cũng bỏ qua cách trả vai khác gửi lên (phan_quyen.doi_cach_tra).
+        const caSel = !caDuoc ? '' : `<div><select class="px-ca" data-i="${i}" data-f="pay_channel" ${caDoiDuoc(m) ? '' : `disabled title="${esc(NN.t('px_ca_kt'))}"`} style="margin-top:4px">${
           [['tien_mat', 'pm_on_dispatch'], ['luong', 'pm_trip_salary'], ['ncc', 'pm_supplier']].filter(([v]) => !(lk && v === 'luong')).map(([v, k]) => `<option value="${v}" ${v === caEff ? 'selected' : ''}>${esc(NN.t(k))}</option>`).join('')}</select></div>`;
         // .px-xuat: chữ ẩn cho Excel — xuat.js bỏ qua nút bấm, không có dòng này thì cột "Ai chi", "Mã kế toán" ra trống (01/10)
         // Xe thuê: dầu / phụ tùng LẤY KHO EPL luôn là xuất bán cho chủ xe (chủ dự án 30/09, nhắc lại 02/10) — không chọn được
@@ -385,6 +396,8 @@
   const coGiaDeGui = (m) => P.expenses.some(e => e.section === m && (giaDuoc(m, e) || giaBanDuoc(m, e)));
   const guiMuc = (m) => suaDuoc(m) || (!moi && coGiaDeGui(m));
   const suaPodDuoc = () => !moi && AUTH.la('yard', 'acct', 'rev') && !biKhoa();
+  // cách trả dòng mục IV / VI (08/10): KT Chi phí VC khi mục còn chờ / đã nhập (cùng lúc nhập đơn giá), Sếp — chép luật máy chủ
+  const caDoiDuoc = (m) => AUTH.la('expacct') && suaTienDuoc(m);
   function veVaiVaTrangThai() {
     COT_POD.forEach(c => { const el = g('f-' + c); if (el) el.disabled = !suaPodDuoc(); });
     veHopDong();
@@ -461,6 +474,7 @@
     veTep();
     veBen();
     veButToan();
+    root.querySelectorAll('[data-loc]').forEach(inp => { const sel = g(inp.dataset.loc); inp.hidden = !sel || sel.disabled; });
     g('px-log').innerHTML = `<h5>${NN.h('log_title')}</h5><ul>${(P.logs || []).length ? P.logs.map(l => `<li><span class="ts">${EPL.ngayGio(l.ts)}</span><span><b lang="lo">${esc(l.user)}</b> <span class="muted">(${NN.h('r_' + l.role)})</span> · ${esc(nhanLog(l.action))}</span></li>`).join('') : `<li class="muted">${NN.h('log_empty')}</li>`}</ul>`;
   }
   // mã nhật ký máy chủ ghi mà từ điển không có khoá cùng tên — lấy khoá sẵn có cùng nghĩa (01/10: nhật ký hiện chữ thô
@@ -715,7 +729,8 @@
       const hien = (e) => e.getClientRects().length > 0;
       const chuNhan = (e) => e.innerText.replace(/\s*\n\s*/g, ' / ').trim();
       const giaTri = (f) => {                                             // undefined = ô này không có giá trị để ghi
-        const o = f.querySelector(':scope > select, :scope > input, :scope > .ro, :scope > .px-hd');
+        // ô xe / tài xế bọc trong .px-tim-o cùng ô tìm (08/10) — đọc ô chọn, bỏ ô tìm
+        const o = f.querySelector(':scope > select, :scope > .px-tim-o > select, :scope > input, :scope > .ro, :scope > .px-hd');
         if (!o) return undefined;
         if (o.tagName === 'SELECT') return o.value === '' ? '' : (o.options[o.selectedIndex] || {}).text || '';
         if (o.tagName === 'INPUT') return o.type === 'date' ? EPL.oNgay(o.value) : (X ? X.sangO(o.value) : o.value);
@@ -835,7 +850,7 @@
       rate_usd: ty_gia.USD || 22000, rate_thb: ty_gia.THB || 700, rate_vnd: ty_gia.VND || 1.2, rate_cny: ty_gia.CNY || 3000, transport_status: 'dispatched', finance_status: 'unpaid', invoiced: false,
       sections: {}, expenses: [], logs: [] };
   }
-  async function moPhieu(id) { moi = false; tabTay = false; HD_DOI = {}; soGoTay = false; P = await API.get('/api/trips/' + id); await napLo(P.id); anPhieu(false); veHet(); napToKhoHang(); }
+  async function moPhieu(id) { moi = false; tabTay = false; HD_DOI = {}; soGoTay = false; xoaTim(); P = await API.get('/api/trips/' + id); await napLo(P.id); anPhieu(false); veHet(); napToKhoHang(); }
   /** Chưa chọn tờ nào: giấu thân phiếu và dải bước, hiện câu nhắc; ô chọn có dòng trống đứng đầu. */
   function chuaChon() {
     P = null; moi = false;
@@ -858,7 +873,7 @@
     try { LO = await API.get('/api/kho-hang/lo' + (truPhieu ? '?tru_phieu=' + encodeURIComponent(truPhieu) : '')); }
     catch (e) { LO = []; }
   }
-  async function phieuMoi() { moi = true; tabTay = false; HD_DOI = {}; soGoTay = false; P = phieuTrong(); anNhacOdo(); await napLo();
+  async function phieuMoi() { moi = true; tabTay = false; HD_DOI = {}; soGoTay = false; xoaTim(); P = phieuTrong(); anNhacOdo(); await napLo();
     // công-tơ-mét của xe đổi mỗi lần một chuyến về tới (Xe đã tới) — nạp lại để ô Lúc đi điền đúng số mới nhất
     DM.vehicles = await API.get('/api/vehicles').catch(() => DM.vehicles); const s = await API.get('/api/trips-so-moi').catch(() => ({ doc_no: '' })); P.doc_no = s.doc_no; anPhieu(false); veHet(); }
   function anNhacOdo() { const o = g('f-odo_out'); if (o) delete o.dataset.tuDien; const n = g('px-odo-nhac'); if (n) n.hidden = true; }
@@ -1070,10 +1085,12 @@
     const con = (DM.vehicles || []).filter(x => x.active !== false && x.id !== P.vehicle_id);
     if (!con.length) return EPL.toast(NN.t('no_data'), 'loi');
     const v = await EPL.hopNhap(NN.t('change_truck'), [
-      { id: 'vehicle_id', label: 'truck_no', type: 'select', value: con[0].id,
-        options: con.map(x => [x.id, `${x.truck_no}${x.plate_head ? ' · ' + x.plate_head : ''}${x.status === 'on_trip' ? ' · ' + NN.t('v_on_trip') : ''}`]) },
-      { id: 'driver_id', label: 'driver', type: 'select', value: '',
-        options: [['', NN.t('ct_giu_tai_xe')]].concat((DM.drivers || []).filter(d => d.active !== false).map(d => [d.id, EPL.tenTaiXe(d)])) },
+      { id: 'vehicle_id', label: 'truck_no', type: 'select', value: con[0].id, tim: 'px_tim_xe',
+        options: con.map(x => [x.id, `${x.truck_no}${x.plate_head ? ' · ' + x.plate_head : ''}${x.status === 'on_trip' ? ' · ' + NN.t('v_on_trip') : ''}`, false,
+          [x.plate_trailer, x.brand_model, x.owner_name].filter(Boolean).join(' ')]) },
+      { id: 'driver_id', label: 'driver', type: 'select', value: '', tim: 'px_tim_tai_xe',
+        options: [['', NN.t('ct_giu_tai_xe')]].concat((DM.drivers || []).filter(d => d.active !== false).map(d => [d.id, EPL.tenTaiXe(d), false,
+          [d.driver_code, d.phone].filter(Boolean).join(' ')])) },
       { id: 'ly_do', label: 'ct_ly_do', value: '', lo: true },
       { id: 'xe_cu_hong', label: 'ct_xe_cu', type: 'select', value: '1',
         options: [['1', NN.t('ct_xe_cu_hong')], ['0', NN.t('ct_xe_cu_ranh')]] },
@@ -1247,6 +1264,7 @@
         API.get('/api/khoan-muc'), napDs(), API.get('/api/rates'), API.get('/api/customers'),
         API.get('/api/vehicles'), API.get('/api/drivers'), API.get('/api/routes'), API.get('/api/parts'),
         API.get('/api/fuel-places'), API.get('/api/the-cao-toc')]);
+      EPL.themTu(KM.names);              // tên khoản mục thêm ở màn Khoản mục chi phí (08/10) — NN.t(item_key) như khoản có sẵn
       g('px-ve').addEventListener('click', () => EPL.di('theo-doi'));
       g('px-moi').addEventListener('click', () => { NHAP = null; phieuMoi().catch(EPL.baoLoi); });
       g('px-luu').addEventListener('click', luu);
@@ -1279,6 +1297,7 @@
         if (P || moi) veChon(); else chuaChon();
       }).catch(EPL.baoLoi), 350); });
       root.querySelectorAll('.px-them').forEach(b => b.addEventListener('click', () => themDong(b.dataset.them)));
+      root.querySelectorAll('[data-loc]').forEach(inp => inp.addEventListener('input', () => locChon(inp, true)));
       g('px-hang-them').addEventListener('click', () => { (P.goods = P.goods || []).push({ loai: 'hang', goods_name: NN.t('iron_ore'), qty_t: 0, tu_phieu_id: '' }); veHang(); });
       // đầu vào mục I–II → cập nhật số ngay
       [...COT_INFO, ...COT_TRANS].forEach(c => { const el = g('f-' + c); if (!el) return; el.addEventListener('input', () => {

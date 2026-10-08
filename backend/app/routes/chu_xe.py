@@ -29,6 +29,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import CACH_TRA_CHU_XE, TIEN_TE, Owner, Trip, TripExpense, Vehicle
+from services import doi_tuong_gls as DT
 from services.bao_mat import can_vai, nguoi_hien_tai
 from services.phan_quyen import thay_tien_ban
 from services.tinh_toan import tinh_phieu
@@ -67,6 +68,8 @@ def xuat_chu_xe(db, o, user=None, xe=None):
     """`xe` (từ ds_chu_xe) là phần đã nạp sẵn cho cả danh sách — có thì không hỏi DB từng chủ xe."""
     r = {"id": o.id, "name": o.name, "phone": o.phone, "address": o.address, "pay_mode": o.pay_mode or "phieu",
          "note": o.note, "active": bool(o.active),
+         # Việc 10: chủ xe là đối tượng danh mục nhà cung cấp chung — tên · điện thoại · địa chỉ · mã là bản chép
+         "code": o.code, "obj_id": o.obj_id, "gls_synced_at": o.gls_synced_at.isoformat() if o.gls_synced_at else None,
          "so_xe": xe.get(o.id, []) if xe is not None else
                   [v.truck_no for v in db.query(Vehicle).filter(Vehicle.owner_id == o.id, Vehicle.active.is_(True)).all()]}
     if user is None or thay_tien_ban(user.role):
@@ -155,8 +158,47 @@ def _ap(o, data):
         raise HTTPException(422, {"ma": "PHI_SAI", "loi": "Phí phải từ 0 đến 100 %."})
 
 
+@router.get("/api/owners/gls")
+def tim_chu_xe_gls(q: str = "", trang: int = 1, db: Session = Depends(get_db), _=Depends(SUA_CHU_XE)):
+    """Việc 10: tìm chủ xe trong danh mục nhà cung cấp chung; dòng đã có hồ sơ kèm `owner_id` (nhà cung cấp: `supplier_id`)."""
+    return DT.tim_kem_ho_so(db, "chu_xe", DT.tim("chu_xe", q, trang))
+
+
+def _gan_chu_xe(db, oid, data):
+    o, _moi = DT.lien_ket(db, "chu_xe", oid)
+    _ap(o, {k: v for k, v in (data or {}).items() if k not in DT.O_CHUNG})   # phần riêng: phí, ngưỡng, mức trừ, tiền, cách trả, ghi chú
+    return o
+
+
+@router.post("/api/owners/gls/{obj_id}")
+def lien_ket_chu_xe_gls(obj_id: int, data: dict = Body(default={}), db: Session = Depends(get_db), user=Depends(SUA_CHU_XE)):
+    """Lập (hoặc chép lại) hồ sơ vận tải cho chủ xe `obj_id` của danh mục chung; thân tuỳ chọn: phần riêng vận tải."""
+    o = _gan_chu_xe(db, obj_id, data)
+    db.commit(); db.refresh(o)
+    return xuat_chu_xe(db, o, user)
+
+
+@router.post("/api/owners/dong-bo-gls")
+def dong_bo_chu_xe_gls(db: Session = Depends(get_db), _=Depends(SUA_CHU_XE)):
+    """Chép lại tên · điện thoại · địa chỉ · mã của mọi chủ xe đã gắn từ danh mục chung (tên mới chép cả sang danh mục xe)."""
+    kq = DT.dong_bo(db, "chu_xe")
+    db.commit()
+    return kq
+
+
 @router.post("/api/owners")
 def them_chu_xe(data: dict = Body(...), db: Session = Depends(get_db), user=Depends(SUA_CHU_XE)):
+    """Thêm chủ xe. Việc 10: có `obj_id` → gắn đối tượng danh mục chung; EPL_NCC_GLS=1 mà không có → tạo trong danh mục chung
+    trước (mã EPLCX-… hoặc ô Mã) rồi gắn. Cờ tắt → chủ xe riêng như cũ."""
+    if data.get("obj_id") or DT.bat("chu_xe"):
+        oid = data.get("obj_id") or DT.tao("chu_xe", data, str(data.get("code") or "").strip() or None)
+        try:
+            oid = int(oid)
+        except (TypeError, ValueError):
+            raise HTTPException(422, {"ma": "OBJ_ID_SAI", "loi": "Mã chủ xe trong danh mục không hợp lệ."})
+        o = _gan_chu_xe(db, oid, data)
+        db.commit(); db.refresh(o)
+        return xuat_chu_xe(db, o, user)
     o = Owner(); _ap(o, data)
     db.add(o); db.commit(); db.refresh(o)
     return xuat_chu_xe(db, o, user)
@@ -167,6 +209,7 @@ def sua_chu_xe(oid: str, data: dict = Body(...), db: Session = Depends(get_db), 
     o = db.get(Owner, oid)
     if not o:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có chủ xe này."})
+    data = DT.chan_sua_chung("chu_xe", o, data)       # Việc 10: đã gắn danh mục chung + cờ bật → thông tin chung sửa ở đó
     _ap(o, data)
     if "active" in data:
         o.active = bool(data["active"])

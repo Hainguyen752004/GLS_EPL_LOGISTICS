@@ -11,12 +11,19 @@ Một chỗ chứa thì một chỗ sao lưu, và giới hạn dung lượng ch�
 chéo thêm một vòng nữa là vòng lặp nhập.
 """
 import os
+import re
 
 TEP_DIR = os.getenv("EPL_LAO_TEP") or os.path.normpath(
     os.path.join(os.path.dirname(__file__), "..", "..", "tep"))
 TEP_TOI_DA = 10 * 1024 * 1024        # MỖI LẦN TẢI tối đa 10 MB (chủ dự án chốt 24/09: nghìn chuyến / ngày, ảnh gửi liên tục)
 ANH_TOI_DA = 1 * 1024 * 1024         # ảnh: giao diện nén còn ≤ 200 KB (js/nen_anh.js); quá 1 MB là máy không nén được
 PDF_TOI_DA = 2 * 1024 * 1024         # PDF không nén được trong trình duyệt — chặn quá 2 MB, khuyên chụp ảnh thay
+
+
+def ten_tep(ten, mac_dinh="tep"):
+    """Tên tệp người dùng tải lên, bỏ ký tự lạ (đường dẫn, dấu điều khiển) — GIỮ chữ Lào cả dấu nguyên âm / thanh (U+0E80–U+0EFF,
+    \w của Python không nhận các dấu này nên "ສັນຍາ" thành "ສ_ນຍາ") và dấu tiếng Việt viết tách. Tối đa 120 ký tự."""
+    return re.sub(r"[^\w຀-໿̀-ͯ.\-() ]+", "_", ten or mac_dinh)[:120]
 
 
 def loi_co_tep(kieu, so_byte):

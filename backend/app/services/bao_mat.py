@@ -61,16 +61,53 @@ def doc_phien(token):
     return username
 
 
-def nguoi_hien_tai(request: Request, db: Session = Depends(get_db)):
+def nguoi_dung_gls(db, tt):
+    """Tài khoản EPL gắn với tài khoản GLS `tt` (kết quả dang_nhap_gls.xac_thuc) — theo users.gls_username, không phân biệt hoa thường."""
+    from sqlalchemy import func
     from models import User
+    ten = (tt.get("username") or "").strip().lower()
+    return db.query(User).filter(func.lower(User.gls_username) == ten).first() if ten else None
+
+
+def nguoi_hien_tai(request: Request, db: Session = Depends(get_db)):
     dau = request.headers.get("Authorization", "")
-    token = dau[7:].strip() if dau.lower().startswith("bearer ") else ""
+    return nguoi_tu_token(db, dau[7:].strip() if dau.lower().startswith("bearer ") else "")
+
+
+def nguoi_tu_token(db, token):
+    """Token EPL cũ (`tên.hết_hạn.chữ_ký`) hoặc token GLS → tài khoản EPL đang dùng; không thì HTTPException 401 / 403.
+    Dùng chung cho header Authorization và cho ?tk=… của thẻ <img> / <a> mở tệp."""
+    from models import User
     username = doc_phien(token) if token else None
-    if not username:
+    if username:
+        user = db.query(User).filter(User.username == username, User.active.is_(True)).first()
+        if not user:
+            raise HTTPException(401, {"ma": "TAI_KHOAN_KHOA", "loi": "Tài khoản không còn hiệu lực."})
+        return user
+    # 08/10 (chuyển sang module Vận tải C#): token GLS — từ màn đăng nhập EPL (EPL_DANG_NHAP_GLS=1) hoặc từ Web GLS (BFF
+    # chuyển tiếp token phiên). Kiểm bằng auth/info của API GLS, rồi lấy tài khoản EPL gắn với tài khoản GLS đó.
+    from services import dang_nhap_gls as GLS
+    tt = GLS.xac_thuc(token) if token else None
+    if not tt:
         raise HTTPException(401, {"ma": "CHUA_DANG_NHAP", "loi": "Vui lòng đăng nhập."})
-    user = db.query(User).filter(User.username == username, User.active.is_(True)).first()
+    user = nguoi_dung_gls(db, tt)
     if not user:
+        raise HTTPException(403, {"ma": "CHUA_GAN_TAI_KHOAN_GLS",
+                                  "loi": "Tài khoản «%s» chưa được cấp quyền dùng module Vận tải — nhờ Admin gắn ở màn Tài khoản." % tt["username"]})
+    if not user.active:
         raise HTTPException(401, {"ma": "TAI_KHOAN_KHOA", "loi": "Tài khoản không còn hiệu lực."})
+    # 08/10 (việc 6): vai theo mã quyền GLS Logistics.Role.* nếu người dùng có; không có thì giữ vai ở màn Tài khoản.
+    # Đổi vai chỉ cho lượt gọi này: tách bản ghi khỏi phiên DB trước khi đổi để không bao giờ ghi ngược vào bảng users.
+    cac_vai = GLS.vai(token)
+    vai_moi = GLS.chon_vai(user.role, cac_vai)
+    user.nguon_vai = "gls" if cac_vai else "epl"          # thuộc tính tạm của lượt gọi (không phải cột) — /api/toi trả ra
+    if vai_moi != user.role:
+        if vai_moi == "driver" and not user.driver_id:
+            raise HTTPException(403, {"ma": "THIEU_TAI_XE", "loi": "Vai tài xế cần gắn tài xế ở màn Tài khoản của module Vận tải."})
+        if vai_moi == "depot" and not user.place_id:
+            raise HTTPException(403, {"ma": "THIEU_KHO", "loi": "Vai thủ kho nhiên liệu cần gắn kho ở màn Tài khoản của module Vận tải."})
+        db.expunge(user)
+        user.role = vai_moi
     return user
 
 

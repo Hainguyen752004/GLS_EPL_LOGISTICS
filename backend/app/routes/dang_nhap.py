@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import VAI, User
-from services.bao_mat import bam_mat_khau, can_vai, khop_mat_khau, ky_phien, nguoi_hien_tai
+from services import dang_nhap_gls as GLS
+from services.bao_mat import bam_mat_khau, can_vai, khop_mat_khau, ky_phien, nguoi_dung_gls, nguoi_hien_tai
 
 router = APIRouter()
 
@@ -13,7 +14,16 @@ router = APIRouter()
 def xuat_user(u):
     return {"id": u.id, "username": u.username, "full_name": u.full_name,
             "role": u.role, "avatar": u.avatar or u.full_name[:2].upper(), "active": u.active,
-            "driver_id": u.driver_id, "place_id": u.place_id}
+            "driver_id": u.driver_id, "place_id": u.place_id, "gls_username": u.gls_username}
+
+
+def _gan_gls(db, u, ten_gls):
+    """Gắn / bỏ gắn tài khoản GLS (08/10). Một tài khoản GLS chỉ gắn với một tài khoản EPL (không phân biệt hoa thường)."""
+    from sqlalchemy import func
+    ten_gls = str(ten_gls or "").strip()
+    if ten_gls and db.query(User).filter(func.lower(User.gls_username) == ten_gls.lower(), User.id != u.id).first():
+        raise HTTPException(409, {"ma": "TRUNG_GLS", "loi": "Tài khoản đăng nhập Web «%s» đã gắn với một tài khoản khác." % ten_gls})
+    u.gls_username = ten_gls or None
 
 
 def _kiem_gan(u):
@@ -31,15 +41,36 @@ def _kiem_gan(u):
 def dang_nhap(data: dict = Body(...), db: Session = Depends(get_db)):
     ten = str(data.get("username") or "").strip()
     mk = str(data.get("password") or "")
+    # 08/10 (chuyển sang module Vận tải C#): EPL_DANG_NHAP_GLS=1 → thử tài khoản GLS trước (API đăng nhập anh Khang), trả
+    # luôn token GLS; GLS từ chối thì thử tài khoản EPL cũ (chạy song song tới khi chuyển xong). GLS mất mạng mà tài khoản
+    # EPL cũng không khớp thì báo GLS không kết nối được.
+    loi_gls = None
+    if GLS.bat() and ten and mk:
+        try:
+            tok = GLS.dang_nhap(ten, mk)
+        except HTTPException as e:
+            tok, loi_gls = None, e
+        if tok:
+            tt = GLS.xac_thuc(tok)
+            u = nguoi_dung_gls(db, tt) if tt else None
+            if not u:
+                raise HTTPException(403, {"ma": "CHUA_GAN_TAI_KHOAN_GLS",
+                                          "loi": "Tài khoản «%s» chưa được cấp quyền dùng module Vận tải — nhờ Admin gắn ở màn Tài khoản." % ten})
+            if not u.active:
+                raise HTTPException(401, {"ma": "TAI_KHOAN_KHOA", "loi": "Tài khoản không còn hiệu lực."})
+            return {"token": tok, "user": xuat_user(u), "nguon": "gls"}
     u = db.query(User).filter(User.username == ten).first()
     if not u or not u.active or not khop_mat_khau(mk, u.password_hash):
+        if loi_gls is not None:
+            raise loi_gls
         raise HTTPException(401, {"ma": "SAI_TAI_KHOAN", "loi": "Sai tên đăng nhập hoặc mật khẩu."})
-    return {"token": ky_phien(u.username), "user": xuat_user(u)}
+    return {"token": ky_phien(u.username), "user": xuat_user(u), "nguon": "epl"}
 
 
 @router.get("/api/toi")
 def toi(user=Depends(nguoi_hien_tai)):
-    return xuat_user(user)
+    # nguon_vai (08/10, việc 6): "gls" = vai lấy theo mã quyền Logistics.Role.* bên GLS; "epl" = vai đặt ở màn Tài khoản
+    return dict(xuat_user(user), nguon_vai=getattr(user, "nguon_vai", "epl"))
 
 
 @router.get("/api/tai-khoan-mau")
@@ -73,6 +104,7 @@ def them_user(data: dict = Body(...), db: Session = Depends(get_db), _=Depends(c
              driver_id=(data.get("driver_id") or None) if data["role"] == "driver" else None,
              place_id=(data.get("place_id") or None) if data["role"] == "depot" else None)
     _kiem_gan(u)
+    _gan_gls(db, u, data.get("gls_username"))
     db.add(u); db.commit(); db.refresh(u)
     return xuat_user(u)
 
@@ -91,6 +123,7 @@ def sua_user(uid: str, data: dict = Body(...), db: Session = Depends(get_db), _=
     if "driver_id" in data: u.driver_id = data["driver_id"] or None
     if "place_id" in data: u.place_id = data["place_id"] or None
     _kiem_gan(u)
+    if "gls_username" in data: _gan_gls(db, u, data["gls_username"])
     if "active" in data: u.active = bool(data["active"])
     if data.get("password"): u.password_hash = bam_mat_khau(str(data["password"]))
     db.commit(); db.refresh(u)

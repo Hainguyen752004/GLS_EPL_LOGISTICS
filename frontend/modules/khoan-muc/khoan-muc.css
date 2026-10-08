@@ -1,0 +1,7 @@
+/* Khoản mục chi phí (08/10) */
+.km-tim input{min-width:240px}
+.km-giai{margin:-4px 0 10px;max-width:110ch}
+.km-tat{opacity:.55}
+.km-nhom td{background:var(--bg-2);font-weight:600;color:var(--ink-2)}
+.km-ma{display:block;font-size:11px;color:var(--ink-3)}
+.km-san{display:inline-block;margin-left:6px;padding:0 6px;border-radius:6px;font-size:11px;background:var(--bg-2);color:var(--ink-2)}

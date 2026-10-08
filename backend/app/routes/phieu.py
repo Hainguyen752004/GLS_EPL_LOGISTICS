@@ -28,8 +28,8 @@ from models import (Contract, Owner, TripAttachment, TripGoods, ma_moi, CHUOI, L
                     CACH_TINH_CUOC, SU_KIEN, TIEN_TE, TRANG_THAI_VAN_CHUYEN,
                     Customer, Driver, ExchangeRate, FuelMove, FuelPlace, Part, Route, RouteStop, Trip,
                     GuiSoTune, TripEvent, TripExpense, TripLog, TripSection, Vehicle)
-from services.bao_mat import doc_phien, nguoi_hien_tai
-from services.phan_quyen import chuyen_muc, duoc_sua_muc, duoc_sua_tien, nhap_gia_chi, thay_gia_kho, thay_tien_ban, thay_tien_chi
+from services.bao_mat import nguoi_hien_tai, nguoi_tu_token
+from services.phan_quyen import chuyen_muc, doi_cach_tra, duoc_sua_muc, duoc_sua_tien, nhap_gia_chi, thay_gia_kho, thay_tien_ban, thay_tien_chi
 from services import kho_ke_toan as KK
 from routes.danh_muc import tim_gia
 from services.tinh_toan import (CACH_TRA, CACH_TRA_MAC_DINH, cach_tra, chuan_tien, la_tien_mat_tai_xe, la_xuat_ban, tien_dong,
@@ -38,26 +38,23 @@ from services import kho_hang as KH
 from services import chung_tu as CT
 from services import chi_tune as CHI
 from services import chi_muc_tune as CMT
+from services import quyen_phieu as QP
 from services import but_toan_cho as BTC
 from services import gui_tune as GT
 from services import so_nhien_lieu as NL
 from services import tai_khoan as TK
 from services import de_nghi_thu as DNT
+from services import khoan_muc as KMC
 from services.tep import loi_co_tep, TEP_DIR, TEP_KIEU, TEP_TOI_DA
 from routes import hop_dong as HD
-from routes.tuyen import gia_goi_y, km_ca_chuyen
+from routes.tuyen import cach_tra_goi_y, gia_goi_y, km_ca_chuyen
 from routes import the_cao_toc as THE
 
 router = APIRouter()
 
-# Khoản mục chuẩn của từng mục chi — chép từ Excel; người dùng vẫn gõ tên tự do được.
-KHOAN_MUC = {
-    "fuel":   ["diesel"],
-    "travel": ["x_water", "x_vn", "x_chip_lao", "x_chip_vn", "x_bridge", "x_toll", "x_trip",
-               "x_phone", "x_food", "x_parking", "x_border"],
-    "repair": ["x_tire", "x_air", "x_oil", "x_brake", "x_tow"],
-    "other":  ["x_misc"],
-}
+# Khoản mục chuẩn của từng mục chi — từ 08/10 là danh mục cấu hình được (bảng cost_items, services/khoan_muc: KHOAN_MUC là từ
+# điển dùng chung, nap() ghi lại tại chỗ). Người dùng vẫn gõ tên tự do được ("Khác — tự gõ").
+KHOAN_MUC = KMC.KHOAN_MUC
 # Các cặp định khoản hay dùng cho dòng chi — luật và tên ở services/tai_khoan.py (rà 30/09).
 # 06/10: thêm biến thể ghi nợ — mục V mua ngoài quỹ trả ngay nay là …/1011, …/4021 chỉ còn khi ghi nợ / theo đợt
 MA_TK = sorted({TK.dinh_khoan_dong(c, m, s, cach=k, ghi_no=g) for c in ("EPL", "joint") for m in MUC_CHI for s in ("kho", "mua", None)
@@ -399,6 +396,9 @@ def xuat_phieu(db, phieu, day_du=True, da_thu=None, vai=None, nap=None):
         if phieu.transport_status == "arrived" and ra["route_stops"]:
             toi = max(toi, len(ra["route_stops"]))
         ra["stop_reached"] = toi
+        if vai is not None:
+            # Việc 11 (màn Web): ô nào sửa được, nút nào hiện ở mục nào, việc mức phiếu — tính trên bản đầy đủ, trước khi bỏ tiền
+            ra["quyen"] = QP.quyen(ra, vai)
     if vai is not None and not thay_tien_chi(vai):
         _bo_tien_chi(ra)
     elif vai is not None and not thay_gia_kho(vai):
@@ -455,8 +455,10 @@ def _bo_gia_kho(ra):
 @router.get("/api/khoan-muc")
 def khoan_muc(db: Session = Depends(get_db)):
     from routes.nha_cung_cap import khoan_muc_ncc
+    KMC.nap(db)          # 08/10: danh mục cấu hình được — tiến trình nào cũng nạp lại khi có người mở phiếu
     # ncc_items (06/10): khoản mục có nhà cung cấp theo dõi nợ — gương JS tkMacDinh tính mục V "theo đợt" (…/4021) như tai_khoan
-    return {"items": KHOAN_MUC, "acct_codes": MA_TK, "pay_channels": list(CACH_TRA), "pay_default": CACH_TRA_MAC_DINH, "chain": {k: list(v) for k, v in CHUOI.items()},
+    # all_items · names (08/10): mọi khoản kể cả đã ngưng (dòng cũ vẫn hiện đúng tên) · tên ba thứ tiếng của khoản thêm mới
+    return {"items": KHOAN_MUC, "all_items": KMC.TAT_CA, "names": KMC.TEN, "acct_codes": MA_TK, "pay_channels": list(CACH_TRA), "pay_default": CACH_TRA_MAC_DINH, "chain": {k: list(v) for k, v in CHUOI.items()},
             "acct_rule": TK.luat_cho_giao_dien(), "ncc_items": sorted(khoan_muc_ncc(db)),
             "event_kinds": list(SU_KIEN), "incident_types": list(LOAI_SU_CO)}
 
@@ -573,6 +575,110 @@ def so_moi(kind: str = "giao", db: Session = Depends(get_db), _=Depends(nguoi_hi
     return {"doc_no": _so_phieu_moi(db, kind)}
 
 
+@router.get("/api/trips-moi")
+def phieu_moi(kind: str = "giao", db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Việc 11 (màn Web): tờ phiếu trắng — số gợi ý theo loại, giá trị mặc định (như lap_phieu), quyền của người gọi trên phiếu mới."""
+    loai = kind if kind in LOAI_DO else "giao"
+    tg = {r.code: r.rate_to_lak for r in db.query(ExchangeRate).all()}
+    return {"doc_no": _so_phieu_moi(db, loai),
+            "mac_dinh": {"kind": loai, "company": "EPL", "doc_date": dt.date.today().isoformat(), "out_date": dt.date.today().isoformat(),
+                         "price_ccy": "USD", "price_mode": "ton",
+                         "goods_type": "iron_ore", "fee_pct": 2, "over_limit_t": 40, "over_price": 1,
+                         "rate_usd": tg.get("USD", 22000), "rate_thb": tg.get("THB", 700), "rate_vnd": tg.get("VND", 1.2),
+                         "rate_cny": tg.get("CNY", 3000)},
+            "quyen": QP.quyen({"kind": loai}, user.role, moi=True)}
+
+
+# ô của tờ phiếu đi vào phép tính thử (tinh_phieu · km · hao hụt · giá hợp đồng gợi ý)
+COT_TINH_THU = ("company", "vehicle_id", "route_id", "customer_id", "goods_type", "doc_date", "odo_out", "odo_back", "weight_origin",
+                "weight_dest", "price", "price_ccy", "price_mode", "hire_price", "hire_ccy", "fee_pct", "over_limit_t", "over_price")
+
+
+@router.post("/api/trips/tinh-thu")
+def tinh_thu(data: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Việc 11 (màn Web): TÍNH THỬ số của tờ phiếu đang nhập — KHÔNG ghi gì. Màn cũ chép phép tính (tinh_toan.tinh_phieu) vào JS
+    để số nhảy khi gõ; Web gọi đường này (chuẩn tài liệu 04 §14.1: không tính số có thẩm quyền trên trình duyệt).
+    Thân: `id` (phiếu đang sửa — ô không gửi lấy theo phiếu) hoặc không (phiếu mới — mặc định như lap_phieu) + các ô COT_TINH_THU
+    + tuỳ chọn `expenses` (dòng chi đang sửa; không gửi thì lấy dòng đã lưu) + tuỳ chọn `goods` (dòng hàng đang sửa: có tấn thì cân
+    đầu = tổng tấn, như KH.dat_dong_hang lúc lưu). Vai không thấy tiền bán: ô giá gửi lên bị bỏ, số tiền bán bị bỏ khỏi kết quả như
+    xuat_phieu. Có khách + tuyến mà phiếu chưa có đơn giá: lấy giá hợp đồng (như _ap_truong lúc lưu) và trả kèm `gia_hop_dong` để màn
+    điền sẵn ô giá. → {"tinh", "odo_km", "odo_est", "hao_t", "weight_origin", "gia_hop_dong"}."""
+    from types import SimpleNamespace
+    goc = db.get(Trip, str(data["id"])) if data.get("id") else None
+    if data.get("id") and goc is None:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
+    p = SimpleNamespace(**{c.name: (getattr(goc, c.name) if goc is not None else None) for c in Trip.__table__.columns})
+    if goc is None:
+        tg = {r.code: r.rate_to_lak for r in db.query(ExchangeRate).all()}
+        p.rate_usd, p.rate_thb, p.rate_vnd, p.rate_cny = tg.get("USD", 22000), tg.get("THB", 700), tg.get("VND", 1.2), tg.get("CNY", 3000)
+        p.company, p.price_ccy, p.price_mode = "EPL", "USD", "ton"
+    tien_ban = thay_tien_ban(user.role)
+    for c in COT_TINH_THU:
+        if c not in data or (c in COT_TIEN and not tien_ban):
+            continue
+        v = data[c]
+        if c in COT_SO:
+            v = _so(v, c) if v not in (None, "") else None
+        elif c in COT_NGAY:
+            v = _ngay(v)
+        elif isinstance(v, str):
+            v = v.strip() or None
+        setattr(p, c, v)
+    if isinstance(data.get("goods"), list):
+        tong = round(sum(_so(g.get("qty_t"), "qty_t") or 0 for g in data["goods"] if (g or {}).get("loai", "hang") == "hang"), 3)
+        if tong:
+            p.weight_origin = tong
+    gia_hd = None
+    if tien_ban and p.customer_id and p.route_id and not p.price:
+        g = tim_gia(db, p.customer_id, p.route_id, p.goods_type or "iron_ore", p.doc_date)
+        if g:
+            p.price, p.price_ccy, p.price_mode = g.price, chuan_tien(g.price_ccy, "USD"), g.price_mode or "ton"
+            gia_hd = {"price": p.price, "price_ccy": p.price_ccy, "price_mode": p.price_mode}
+            if p.hire_price is None and g.hire_price:
+                p.hire_price, p.hire_ccy = g.hire_price, chuan_tien(g.hire_ccy or g.price_ccy, "USD")
+                gia_hd.update(hire_price=p.hire_price, hire_ccy=p.hire_ccy)
+    if p.vehicle_id and (goc is None or "vehicle_id" in data):
+        x = db.get(Vehicle, p.vehicle_id)
+        if x is not None and x.owner_type == "joint":            # như _ap_truong: xe của chủ xe liên kết → phiếu xe liên kết
+            if "company" not in data:
+                p.company = "joint"
+            p.owner_id = x.owner_id or p.owner_id
+    p.company = p.company if p.company in ("EPL", "joint") else "EPL"
+    if p.company == "joint" and p.owner_id:                       # điều khoản chủ xe cho ô còn trống (như lap_phieu)
+        o = db.get(Owner, p.owner_id)
+        if o is not None:
+            p.fee_pct = o.fee_pct if p.fee_pct is None else p.fee_pct
+            p.over_limit_t = o.over_limit_t if p.over_limit_t is None else p.over_limit_t
+            p.over_price = o.over_price if p.over_price is None else p.over_price
+            p.hire_ccy = p.hire_ccy or o.hire_ccy
+    if "expenses" in data:
+        kho = {f.id for f in db.query(FuelPlace).filter(FuelPlace.owner_type == "epl").all()}
+        dong = []
+        for d in data.get("expenses") or []:
+            nguon = d.get("source") or ("kho" if d.get("section") == "fuel" and d.get("place_id") in kho else None)
+            dong.append(SimpleNamespace(section=d.get("section"), qty=_so(d.get("qty"), "qty") or 0,
+                                        unit_price=_so(d.get("unit_price"), "unit_price") or 0, currency=d.get("currency") or "LAK",
+                                        paid_by_epl=d.get("paid_by_epl", True) is not False, source=nguon,
+                                        sale_price=_so(d.get("sale_price"), "sale_price") if d.get("sale_price") not in (None, "") else None))
+    else:
+        dong = _dong_chi(db, goc) if goc is not None else []
+    da_thu = DNT.da_thu_lak(goc, DNT.so_cua(db, goc)) if goc is not None else 0
+    tuyen = db.get(Route, p.route_id) if p.route_id else None
+    ca = km_ca_chuyen(tuyen) if tuyen is not None else 0
+    ra = {"tinh": tinh_phieu(p, dong, da_thu),
+          "odo_km": abs(p.odo_back - p.odo_out) if (p.odo_out is not None and p.odo_back is not None) else None,
+          "odo_est": (p.odo_out + ca) if (p.odo_out and ca) else None,
+          "hao_t": round(p.weight_origin - p.weight_dest, 3) if (p.weight_origin is not None and p.weight_dest is not None) else None,
+          "weight_origin": p.weight_origin, "gia_hop_dong": gia_hd}
+    if not thay_tien_chi(user.role):
+        _bo_tien_chi(ra)
+    elif not thay_gia_kho(user.role):
+        _bo_gia_kho(ra)
+    if not tien_ban:
+        _bo_tien_ban(ra)
+    return ra
+
+
 def _chan_phieu_trang(p):
     """Phiếu xuất xe phải có xe và tài xế — chủ dự án 01/10: "Sếp lưu được phiếu trắng, không xe, không tài xế — CÓ CHẶN".
     Áp cho mọi vai, kể cả Sếp."""
@@ -637,15 +743,17 @@ def _ap_truong(db, p, data, user, muc_tt=None):
         elif isinstance(v, str): v = v.strip() or None
         setattr(p, c, v)
     # Chép tên/biển từ danh mục nếu chỉ gửi mã
-    if p.vehicle_id and not data.get("truck_no"):
+    if p.vehicle_id:
         x = db.get(Vehicle, p.vehicle_id)
-        if x:
+        if x and not data.get("truck_no"):
             p.truck_no, p.brand_model, p.plate_head, p.plate_trailer = x.truck_no, x.brand_model, x.plate_head, x.plate_trailer
-            if x.owner_type == "joint":
-                # Xe của chủ xe liên kết thì phiếu là phiếu xe liên kết — không bắt người lập chọn lại.
-                if "company" not in data: p.company = "joint"
-                if not p.owner_name: p.owner_name = x.owner_name
-                if x.owner_id: p.owner_id = x.owner_id
+        if x and x.owner_type == "joint":
+            # Xe của chủ xe liên kết thì phiếu là phiếu xe liên kết — không bắt người lập chọn lại. Chủ xe theo xe kể cả khi màn
+            # gửi kèm số xe (giữ biển người lập sửa tay): trước 08/10 khối này nằm trong nhánh "không gửi truck_no" → màn phiếu
+            # (luôn gửi truck_no) lập phiếu xe thuê không có owner_id — không tự điền hợp đồng thuê, điều khoản chủ xe.
+            if "company" not in data: p.company = "joint"
+            if not p.owner_name: p.owner_name = x.owner_name
+            if x.owner_id: p.owner_id = x.owner_id
     if p.driver_id and not data.get("driver_name"):
         d = db.get(Driver, p.driver_id)
         if d: p.driver_name = d.name
@@ -810,6 +918,15 @@ def _cach_tra_gui(m, d, company=None):
     return None if c == CACH_TRA_MAC_DINH.get(d.get("item_key") or "", "tien_mat") else c
 
 
+def _cach_tra_mac_dinh(db, p, m, d, cu=None):
+    """Cách trả của một dòng mục IV / VI do vai KHÔNG được đổi cách trả gửi lên (Bãi — 08/10): dòng cũ cùng khoản mục giữ cách trả
+    đang có (KT Chi phí có thể đã đổi); dòng mới / đổi khoản mục → theo bộ gợi ý của tuyến, rồi mặc định khoản mục. Cách trả Bãi gửi
+    lên bị bỏ qua — màn khoá ô này với Bãi."""
+    if cu is not None and (cu.item_key or None) == (d.get("item_key") or None) and (cu.item_name or None) == (d.get("item_name") or None):
+        return cu.pay_channel
+    return _cach_tra_gui(m, {"item_key": d.get("item_key"), "pay_channel": cach_tra_goi_y(db, p.route_id, m, d)}, p.company)
+
+
 def _ai_tra_dong_kho(p, e, d, cac_dong=()):
     """"Ai trả" của một dòng KHO đã có (giữ lại khi lưu, hoặc kế toán gõ giá): xe thuê thì dầu / phụ tùng lấy kho luôn là xuất
     bán — chỉ đổi được VỀ "EPL ứng" (sửa dòng cũ ghi "chủ xe tự trả"); đổi một dòng đang EPL ứng sang "chủ xe tự trả" → 422
@@ -833,6 +950,7 @@ def _ap_dong_chi(db, p, cac_dong, user, muc_tt):
             raise HTTPException(422, {"ma": "MUC_SAI", "loi": "Dòng %d: mục %s không hợp lệ." % (i + 1, m)})
         theo_muc.setdefault(m, []).append(d)
     dat_gia = nhap_gia_chi(user.role)
+    doi_ca = doi_cach_tra(user.role)          # 08/10: Bãi không quyết cách trả — giữ của dòng cũ / mặc định (_cach_tra_mac_dinh)
     # một câu cho mọi mục (02/10: trước đây một câu mỗi mục, rồi xoá và ghi lại MỌI dòng — DB ở xa, mỗi câu 10–35 ms)
     tat_ca = defaultdict(dict)
     for e in db.query(TripExpense).filter(TripExpense.trip_id == p.id).all():
@@ -865,7 +983,8 @@ def _ap_dong_chi(db, p, cac_dong, user, muc_tt):
             e = giu.get(d.get("id"))
             if e:
                 e.line_no = i; e.note = d.get("note")
-                e.pay_channel = _cach_tra_gui(m, d, p.company)
+                if doi_ca:
+                    e.pay_channel = _cach_tra_gui(m, d, p.company)
                 _ai_tra_dong_kho(p, e, d, cu.values())
                 # dòng giữ lại trước đây không đổi "ai trả" — dòng kho xe thuê cũ ghi "chủ xe tự trả" thì bấm "EPL ứng" ở đây
                 if dat_gia and "sale_price" in d and la_xuat_ban(p, e):
@@ -876,6 +995,9 @@ def _ap_dong_chi(db, p, cac_dong, user, muc_tt):
             # và màn Tổng hợp thu chi bên kế toán (line_key exp:<id>) khoá theo mã này; tạo mã mới mỗi lần lưu là đứt các dây đó
             cu_e = cu.get(d.get("id")) if d.get("id") not in da_dung else None
             moi = _dong_tu_du_lieu(p, m, i, d, db, dat_gia=dat_gia, cu=cu_e)
+            if not doi_ca and m in ("travel", "other"):
+                moi.pay_channel = _cach_tra_mac_dinh(db, p, m, d, cu_e)
+                _gan_tk(p, moi, d.get("acct_code"))
             if moi.paid_by_epl is False and la_xuat_ban(p, moi):
                 # dầu / phụ tùng LẤY KHO của xe thuê luôn là xuất bán (chủ dự án 30/09, nhắc lại 02/10): lập mới hay đổi sang
                 # "chủ xe tự trả" → 422. Dòng cũ vốn đã ghi vậy mà gửi nguyên thì để yên — khoá phiếu chặn và chỉ cách sửa.
@@ -920,6 +1042,9 @@ def _ap_gia(db, p, m, cac_dong, user, cu=None):
             e.unit_price = gia
         if d.get("currency"):
             e.currency = _tien_te(d["currency"], "currency")
+        # cách trả mục IV / VI: KT Chi phí VC đổi lúc kiểm (08/10, anh Khampla) — Bãi đã khai dòng với cách trả mặc định
+        if m in ("travel", "other") and "pay_channel" in d and doi_cach_tra(user.role):
+            e.pay_channel = _cach_tra_gui(m, d, p.company)
         _gan_tk(p, e, d.get("acct_code") or e.acct_code)
 
 
@@ -1933,8 +2058,7 @@ def mo_tep(aid: str, request: Request, tk: str = "", db: Session = Depends(get_d
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có tệp này."})
     dau = request.headers.get("Authorization", "")
     token = tk or (dau[7:].strip() if dau.lower().startswith("bearer ") else "")
-    if not token or not doc_phien(token):
-        raise HTTPException(401, {"ma": "CHUA_DANG_NHAP", "loi": "Vui lòng đăng nhập."})
+    nguoi_tu_token(db, token)          # token EPL cũ hoặc token GLS (08/10); không có / sai → 401
     duong = os.path.join(TEP_DIR, a.trip_id, a.stored)
     if not os.path.exists(duong):
         raise HTTPException(404, {"ma": "MAT_TEP", "loi": "Tệp không còn trên máy chủ."})

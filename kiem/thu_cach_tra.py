@@ -7,7 +7,7 @@ Dựng đúng mục IV của tờ ໃບເບີກລົດອອກໄປຂ�
 Việt 1.500.000 · tiền chuyến 1.800.000 · điện thoại 150.000, cột ghi chú nói cách trả. Phải thấy:
   · cách trả mặc định theo khoản mục như Excel (cùng lương · tiền mặt khi xe đi · nợ nhà cung cấp);
   · phiếu tạm ứng CHỈ gồm dòng "chi ngay khi xe đi" = 430.000 + 150.000 = 580.000;
-  · người lập đổi cách trả một dòng thì tạm ứng đổi theo; cách trả bậy bị từ chối;
+  · KT Chi phí VC đổi cách trả một dòng thì tạm ứng đổi theo; Bãi gửi thì không đổi (08/10); cách trả bậy bị từ chối;
   · màn Tiền chuyến & tiền nước chỉ cộng dòng "trả cùng lương".
 Bài tự lập phiếu thử và tự xoá.
 """
@@ -74,22 +74,27 @@ def main():
         assert u == 580000, u
         print("  ✓ %-72s %s" % ("Phiếu tạm ứng chỉ gồm dòng chi ngay khi xe đi: 430.000 + 150.000", u))
 
-        dong = [{"id": e["id"], "section": "travel", "item_key": e["item_key"], "qty": e["qty"],
-                 "pay_channel": ("tien_mat" if e["item_key"] == "x_trip" else e["cach_tra"])} for e in p["expenses"] if e["section"] == "travel"]
-        s, g = goi("/api/trips/%s" % pid, {"expenses": dong}, "thabok", "PUT")
-        phai(s, 200, "Bãi đổi cách trả tiền chuyến thành chi ngay khi xe đi (giữ giá kế toán đã nhập)", g)
+        def dong_iv(doi=None):
+            """Dòng mục IV như màn gửi lại (đọc lại sau mỗi lần lưu); `doi` = {khoản: cách trả muốn đổi}."""
+            s, p = goi("/api/trips/%s" % pid, vai="ketoancp")
+            return [{"id": e["id"], "section": "travel", "item_key": e["item_key"], "qty": e["qty"],
+                     "pay_channel": (doi or {}).get(e["item_key"], e["cach_tra"])} for e in p["expenses"] if e["section"] == "travel"]
+
+        # 08/10 (anh Khampla, chủ dự án chốt): Bãi — người lập phiếu — KHÔNG quyết cách trả; KT Chi phí VC đổi lúc kiểm mục IV
+        s, g = goi("/api/trips/%s" % pid, {"expenses": dong_iv({"x_trip": "tien_mat"})}, "thabok", "PUT")
+        phai(s, 200, "Bãi gửi cách trả khác (tiền chuyến → chi ngay): lưu được, cách trả không đổi", g)
+        u = tam_ung(pid)
+        assert u == 580000, u
+        print("  ✓ %-72s %s" % ("Tạm ứng không đổi (Bãi không quyết cách trả): 580.000", u))
+        s, g = goi("/api/trips/%s" % pid, {"expenses": dong_iv({"x_trip": "tien_mat"})}, "ketoancp", "PUT")
+        phai(s, 200, "KT Chi phí VC đổi cách trả tiền chuyến thành chi ngay khi xe đi (giữ giá kế toán đã nhập)", g)
         u = tam_ung(pid)
         assert u == 580000 + 1800000, u
         print("  ✓ %-72s %s" % ("Tạm ứng đổi theo: 580.000 + 1.800.000", u))
-        # lưu xong máy dựng lại dòng (mã mới) — lấy lại dòng như màn phiếu nạp lại sau mỗi lần lưu
-        s, p = goi("/api/trips/%s" % pid, vai="ketoancp")
-        dong = [{"id": e["id"], "section": "travel", "item_key": e["item_key"], "qty": e["qty"], "pay_channel": e["cach_tra"]}
-                for e in p["expenses"] if e["section"] == "travel"]
-        bay = [dict(d, pay_channel="tuy_y") if d["item_key"] == "x_vn" else d for d in dong]
-        s, g = goi("/api/trips/%s" % pid, {"expenses": bay}, "thabok", "PUT")
+        bay = [dict(d, pay_channel="tuy_y") if d["item_key"] == "x_vn" else d for d in dong_iv()]
+        s, g = goi("/api/trips/%s" % pid, {"expenses": bay}, "ketoancp", "PUT")
         phai(s, 422, "Cách trả không có trong danh sách → bị từ chối", g)
-        ve = [dict(d, pay_channel=MONG[d["item_key"]]) for d in dong]
-        s, g = goi("/api/trips/%s" % pid, {"expenses": ve}, "thabok", "PUT")
+        s, g = goi("/api/trips/%s" % pid, {"expenses": dong_iv(MONG)}, "ketoancp", "PUT")
         phai(s, 200, "Đổi lại đúng như Excel", g)
         assert tam_ung(pid) == 580000
 

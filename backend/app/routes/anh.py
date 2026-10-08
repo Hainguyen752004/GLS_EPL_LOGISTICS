@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import Driver, DriverPhoto, Vehicle, VehiclePhoto, ma_moi
-from services.bao_mat import can_vai, doc_phien, nguoi_hien_tai
+from services.bao_mat import can_vai, nguoi_hien_tai, nguoi_tu_token
 from services.tep import loi_co_tep, ANH_KIEU, TEP_DIR, TEP_TOI_DA
 
 router = APIRouter()
@@ -101,8 +101,7 @@ def _mo(loai, aid, request, tk, db):
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có ảnh này."})
     dau = request.headers.get("Authorization", "")
     token = tk or (dau[7:].strip() if dau.lower().startswith("bearer ") else "")
-    if not token or not doc_phien(token):
-        raise HTTPException(401, {"ma": "CHUA_DANG_NHAP", "loi": "Vui lòng đăng nhập."})
+    nguoi_tu_token(db, token)          # token EPL cũ hoặc token GLS (08/10); không có / sai → 401
     duong = os.path.join(loai.thu_muc, loai.chu_id(a), a.stored)
     if not os.path.exists(duong):
         raise HTTPException(404, {"ma": "MAT_TEP", "loi": "Ảnh không còn trên máy chủ."})
