@@ -85,6 +85,7 @@
     if (lang === 'both' && ct.loi_lo) return (ct.loi || '') + ' / ' + ct.loi_lo;
     return ct.loi || null;
   }
+  EPL.chuLoi = chuLoi;            // 09/10: màn dùng chung cho câu lỗi trả theo đường thường (vd chi_tiet_loi của Gửi hết)
   class LoiAPI extends Error { constructor(status, ma, loi) { super(loi); this.status = status; this.ma = ma; } }
   EPL.LoiAPI = LoiAPI;
   // Bộ huỷ GET của lượt nạp màn hiện tại (xem API.goi, napModule). Khai ở đây vì API.goi dùng trước khi tới phần điều hướng.
@@ -277,20 +278,77 @@
   });
   /** Hộp nhập một/nhiều ô: fields = [{id,label(khoa),type,value,options}] → object hoặc null. */
   /** Lọc một ô chọn theo chữ gõ (08/10, anh Khampla: hơn 500 xe, ô chọn dài không tìm nổi): so không dấu trên chữ của dòng + chữ tìm
-   *  phụ `data-tim` (biển rơ-moóc, chủ xe, mã / điện thoại tài xế…). Dòng trống và dòng đang chọn luôn còn. `chon`: khớp đúng một
-   *  dòng thì chọn luôn dòng đó và báo 'input' (để ô khác tự điền theo). */
-  const boDau = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd').toLowerCase();
-  EPL.locChon = (sel, chu, chon) => {
-    if (!sel) return;
-    const q = boDau(String(chu || '').trim()), khop = [];
-    [...sel.options].forEach(o => {
-      const trung = !q || boDau(o.textContent + ' ' + (o.dataset.tim || '')).includes(q);
-      o.hidden = !(trung || !o.value || o.selected);
-      if (q && trung && o.value) khop.push(o);
-    });
-    if (chon && khop.length === 1 && !sel.disabled && sel.value !== khop[0].value) {
-      sel.value = khop[0].value; sel.dispatchEvent(new Event('input', { bubbles: true }));
+   *  phụ `data-tim` (biển rơ-moóc, chủ xe, mã / điện thoại tài xế…). `chon`: khớp đúng một dòng thì chọn luôn dòng đó và báo 'input' (để ô
+   *  khác tự điền theo). `inp`: ô tìm.
+   *  09/10 (anh Hải: gõ "35" mà ô chọn đóng chỉ hiện "—", tưởng kết quả bị ẩn): có kết quả → dòng báo «Tìm thấy N — vui lòng chọn ở ô
+   *  bên dưới» và ô chọn mở thành danh sách chỉ còn dòng khớp, bấm là chọn (phím ↓ từ ô tìm xuống danh sách); chọn xong thu về ô chọn
+   *  thường, xoá chữ tìm. Không có → báo «Không tìm thấy». Chữ tìm trống → ô chọn như cũ. */
+  const boDau = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[đĐ]/g, 'd').toLowerCase();
+  const DS_TOI_DA = 6;                         // số dòng hiện một lúc khi ô chọn mở thành danh sách
+  const nhacCua = (sel) => {
+    let n = sel.parentNode.querySelector(':scope > .loc-nhac');
+    if (!n) {
+      n = document.createElement('div');
+      n.className = 'loc-nhac'; n.hidden = true;
+      n.setAttribute('role', 'status'); n.setAttribute('aria-live', 'polite');
+      sel.parentNode.insertBefore(n, sel);
     }
+    return n;
+  };
+  const thuGon = (sel) => {                     // về ô chọn thường: hiện mọi dòng
+    sel.size = 0; sel.classList.remove('loc-ds');
+    [...sel.options].forEach(o => { o.hidden = false; });
+  };
+  EPL.locChon = (sel, chu, chon, inp) => {
+    if (!sel) return;
+    const tho = String(chu || '').trim(), q = boDau(tho), khop = [];
+    const nhac = nhacCua(sel);
+    if (!sel._locGan) {                          // gắn một lần: chọn trong danh sách → thu gọn, xoá chữ tìm
+      sel._locGan = true;
+      const xong = () => { thuGon(sel); nhac.hidden = true; if (sel._locInp) sel._locInp.value = ''; };
+      const dangDs = () => sel.classList.contains('loc-ds');
+      // chuột: bấm một dòng là xong. Phím: ↑ ↓ chỉ di chuyển (trình duyệt báo 'change' mỗi phím), Enter / rời ô mới chốt.
+      sel.addEventListener('keydown', (e) => {
+        if (!dangDs()) return;
+        if (e.key === 'Enter') { e.preventDefault(); xong(); } else sel._phim = true;
+      });
+      sel.addEventListener('change', () => {
+        if (!dangDs()) return;
+        if (sel._phim) { sel._phim = false; return; }
+        xong();
+      });
+      sel.addEventListener('blur', () => {
+        const o = sel.options[sel.selectedIndex];
+        if (dangDs() && o && o.value && !o.hidden) xong();          // đã đứng ở một dòng khớp rồi rời ô → chốt dòng đó
+      });
+    }
+    if (inp && !inp._locGan) {
+      inp._locGan = true; sel._locInp = inp;
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown' && sel.classList.contains('loc-ds')) { e.preventDefault(); sel.focus(); }
+      });
+    }
+    if (!q) { thuGon(sel); nhac.hidden = true; return; }
+    [...sel.options].forEach(o => {
+      if (o.value && boDau(o.textContent + ' ' + (o.dataset.tim || '')).includes(q)) khop.push(o);
+    });
+    if (!khop.length) {                          // không có: ô chọn giữ dòng đang chọn, báo đỏ
+      thuGon(sel);
+      [...sel.options].forEach(o => { o.hidden = !(!o.value || o.selected); });
+      nhac.className = 'loc-nhac khong'; nhac.textContent = NN.t('loc_khong', { q: tho }); nhac.hidden = false;
+      return;
+    }
+    if (chon && khop.length === 1 && !sel.disabled) {
+      if (sel.value !== khop[0].value) { sel.value = khop[0].value; sel.dispatchEvent(new Event('input', { bubbles: true })); }
+      thuGon(sel);
+      [...sel.options].forEach(o => { o.hidden = !(!o.value || o === khop[0]); });
+      nhac.className = 'loc-nhac thay'; nhac.textContent = NN.t('loc_mot', { ten: khop[0].textContent.trim() }); nhac.hidden = false;
+      return;
+    }
+    nhac.className = 'loc-nhac thay'; nhac.textContent = NN.t('loc_thay', { n: khop.length }); nhac.hidden = false;
+    if (sel.disabled) { [...sel.options].forEach(o => { o.hidden = !(!o.value || o.selected || khop.includes(o)); }); return; }
+    [...sel.options].forEach(o => { o.hidden = !khop.includes(o); });      // danh sách: chỉ dòng khớp
+    sel.size = Math.max(2, Math.min(khop.length, DS_TOI_DA)); sel.classList.add('loc-ds');
   };
 
   /** Hộp nhập nhiều ô. Ô select có `tim` (khoá chữ gợi ý) thì có thêm ô tìm phía trên (EPL.locChon); dòng chọn có phần tử thứ tư
@@ -304,7 +362,7 @@
       // chỉ nhận số nguyên và chặn nút Đồng ý bằng câu tiếng Anh — Bãi không báo xe tới được, KT không ghi thu được.
       : `<input id="hn-${f.id}" type="${f.type || 'text'}" ${f.type === 'number' ? 'step="any" inputmode="decimal"' : ''} ${f.placeholder ? `placeholder="${esc(f.placeholder)}"` : ''} value="${esc(f.value == null ? '' : f.value)}" ${f.lo ? 'lang="lo"' : ''}>`}</div>`).join('');
     const hoi = EPL.hoi(tieuDe, html, nhanOk);            // hộp hiện ngay khi gọi — gắn ô tìm rồi mới chờ
-    document.querySelectorAll('[data-hn-loc]').forEach(inp => inp.addEventListener('input', () => EPL.locChon(document.getElementById(inp.dataset.hnLoc), inp.value, true)));
+    document.querySelectorAll('[data-hn-loc]').forEach(inp => inp.addEventListener('input', () => EPL.locChon(document.getElementById(inp.dataset.hnLoc), inp.value, true, inp)));
     const ok = await hoi;
     if (!ok) return null;
     const ra = {}; fields.forEach(f => { const el = document.getElementById('hn-' + f.id); ra[f.id] = el ? el.value : undefined; });

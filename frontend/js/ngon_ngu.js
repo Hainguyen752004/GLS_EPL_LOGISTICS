@@ -8187,6 +8187,21 @@ window.EPL_TU_DIEN = {
   "lo": "ຄົ້ນຫາ ຊື່, ລະຫັດໂຊເຟີ…",
   "en": "Search driver name, code…"
  },
+ "loc_thay": {
+  "vi": "Tìm thấy {n} kết quả — vui lòng chọn ở ô bên dưới ▾",
+  "lo": "ພົບ {n} ລາຍການ — ກະລຸນາເລືອກໃນຊ່ອງດ້ານລຸ່ມ ▾",
+  "en": "Found {n} — please pick one in the box below ▾"
+ },
+ "loc_mot": {
+  "vi": "Tìm thấy 1 kết quả — đã chọn: {ten}",
+  "lo": "ພົບ 1 ລາຍການ — ເລືອກແລ້ວ: {ten}",
+  "en": "1 match — selected: {ten}"
+ },
+ "loc_khong": {
+  "vi": "Không tìm thấy kết quả nào cho «{q}» — thử gõ khác",
+  "lo": "ບໍ່ພົບລາຍການໃດສຳລັບ «{q}» — ລອງພິມຄຳອື່ນ",
+  "en": "No match for «{q}» — try different text"
+ },
  "k2_tim": {
   "vi": "Tìm kho, số phiếu, số xe",
   "lo": "ຄົ້ນຫາ ສາງ, ເລກທີ, ລົດ",

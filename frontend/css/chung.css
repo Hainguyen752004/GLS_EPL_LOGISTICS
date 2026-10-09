@@ -429,4 +429,10 @@ body.vai-yard .tien-chi{display:none!important}
 .mod-root.mod-dang-tai>*{opacity:.55;transition:opacity .2s}
 @keyframes mod-tai{from{background-position:200% 0}to{background-position:-200% 0}}
 @media (prefers-reduced-motion:reduce){.mod-root.mod-dang-tai::before{animation:none}}
-
+/* ô tìm trong ô chọn (EPL.locChon, 09/10): dòng báo kết quả + ô chọn mở thành danh sách dòng khớp */
+.loc-nhac{font-size:12px;line-height:1.35;padding:3px 8px;border-radius:var(--r)}
+.loc-nhac[hidden]{display:none}
+.loc-nhac.thay{background:var(--blue-soft);color:var(--blue)}
+.loc-nhac.khong{background:var(--red-soft);color:var(--red)}
+select.loc-ds{height:auto;padding:2px;border-color:var(--blue);box-shadow:0 0 0 2px var(--blue-soft)}
+select.loc-ds option{padding:4px 6px}

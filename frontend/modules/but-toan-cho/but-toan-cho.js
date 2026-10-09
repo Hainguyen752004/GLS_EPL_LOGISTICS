@@ -207,7 +207,7 @@
     try {
       if (v === 'gui-het') {
         const r = await API.post('/api/but-toan-cho/gui-het', {});
-        EPL.toast(`${NN.t('btc_gui_het')}: ${r.da_gui} · ${NN.t('btc_can_dao')} ${r.da_dao}` + (r.loi ? ` · ⚠ ${r.loi}${r.chi_tiet_loi && r.chi_tiet_loi[0] ? ' — ' + r.chi_tiet_loi[0].loi : ''}` : ''),
+        EPL.toast(`${NN.t('btc_gui_het')}: ${r.da_gui} · ${NN.t('btc_can_dao')} ${r.da_dao}` + (r.loi ? ` · ⚠ ${r.loi}${r.chi_tiet_loi && r.chi_tiet_loi[0] ? ' — ' + EPL.chuLoi(r.chi_tiet_loi[0]) : ''}` : ''),
           r.loi ? 'loi' : 'ok');
       } else {
         await API.post(`/api/but-toan-cho/${encodeURIComponent(b.id)}/${v}`, {});

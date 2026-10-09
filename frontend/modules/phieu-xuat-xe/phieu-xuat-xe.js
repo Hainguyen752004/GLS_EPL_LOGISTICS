@@ -137,7 +137,7 @@
   /* Ô tìm trên ô chọn xe / tài xế (anh Khampla 08/10: hơn 500 xe, ô chọn dài không tìm nổi). Gõ số xe, biển, hiệu xe, chủ xe /
    * tên, mã, điện thoại tài xế (không cần dấu) → ô chọn chỉ còn dòng khớp; khớp đúng một dòng thì chọn luôn (`chon`) — EPL.locChon.
    * Ô chọn khoá (mục I đã gửi / đã kiểm) thì giấu ô tìm. */
-  const locChon = (inp, chon) => EPL.locChon(g(inp.dataset.loc), inp.value, chon);
+  const locChon = (inp, chon) => EPL.locChon(g(inp.dataset.loc), inp.value, chon, inp);
   function xoaTim() { root.querySelectorAll('[data-loc]').forEach(inp => { inp.value = ''; }); }
   function doTruong() {
     g('px-doc-no').value = P.doc_no || '';
