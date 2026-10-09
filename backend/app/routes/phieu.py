@@ -31,6 +31,7 @@ from models import (Contract, Owner, TripAttachment, TripGoods, ma_moi, CHUOI, L
 from services.bao_mat import nguoi_hien_tai, nguoi_tu_token
 from services.phan_quyen import chuyen_muc, doi_cach_tra, duoc_sua_muc, duoc_sua_tien, nhap_gia_chi, thay_gia_kho, thay_tien_ban, thay_tien_chi
 from services import kho_ke_toan as KK
+from services import loi_dich as LD
 from routes.danh_muc import tim_gia
 from services.tinh_toan import (CACH_TRA, CACH_TRA_MAC_DINH, cach_tra, chuan_tien, la_tien_mat_tai_xe, la_xuat_ban, tien_dong,
                                 tinh_phieu, ty_gia, hinh_thuc)
@@ -45,9 +46,9 @@ from services import so_nhien_lieu as NL
 from services import tai_khoan as TK
 from services import de_nghi_thu as DNT
 from services import khoan_muc as KMC
-from services.tep import loi_co_tep, TEP_DIR, TEP_KIEU, TEP_TOI_DA
+from services.tep import loi_co_tep, ten_tep, TEP_DIR, TEP_KIEU, TEP_TOI_DA
 from routes import hop_dong as HD
-from routes.tuyen import cach_tra_goi_y, gia_goi_y, km_ca_chuyen
+from routes.tuyen import cach_tra_goi_y, gia_goi_y, goi_y_cua, km_ca_chuyen
 from routes import the_cao_toc as THE
 
 router = APIRouter()
@@ -589,6 +590,37 @@ def phieu_moi(kind: str = "giao", db: Session = Depends(get_db), user=Depends(ng
             "quyen": QP.quyen({"kind": loai}, user.role, moi=True)}
 
 
+@router.get("/api/trips-goi-y")
+def goi_y_chi(route_id: str, company: str = "EPL", db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """11b (màn Web): dòng chi GỢI Ý theo tuyến cho mục III, IV, VI (sếp 30/09: "kê sẵn chi phí kiểu gợi ý, họ thêm bớt chỉnh sửa") —
+    bộ riêng của tuyến, không có thì bộ chung Excel (routes/tuyen.goi_y_cua). Luật mặc định như màn cũ (JS dienGoiY): dầu theo nơi đổ
+    (kho / mua; xe thuê: kho → EPL ứng, mua → chủ xe tự trả); xe thuê thì khoản đi đường mặc định "chủ xe tự trả" (06/10, CA-3).
+    Vai không thấy tiền chi: không có đơn giá (máy chủ đặt giá gợi ý lúc lưu). → {"dong", "nguon": tuyen | chung, "ten"}."""
+    r = db.get(Route, route_id)
+    if r is None:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có tuyến này."})
+    ds, nguon = goi_y_cua(db, r)
+    lien_ket = company == "joint"
+    ra = []
+    for x in ds:
+        m = x.get("section")
+        if m not in ("fuel", "travel", "other"):
+            continue
+        d = {"section": m, "item_key": x.get("item_key") or None, "item_name": x.get("item_name") or None, "qty": x.get("qty"),
+             "unit_price": x.get("unit_price") or 0, "currency": x.get("currency") or "LAK", "place_id": x.get("place_id") or None,
+             "paid_by_epl": True, "pay_channel": x.get("pay_channel") or None}
+        if m == "fuel":
+            d["source"] = _nguon_theo_diem(db, d)
+            if lien_ket:
+                d["paid_by_epl"] = d["source"] == "kho"
+        elif lien_ket:
+            d["paid_by_epl"] = False
+        if not thay_tien_chi(user.role):
+            d.pop("unit_price"); d.pop("currency")
+        ra.append(d)
+    return {"dong": ra, "nguon": nguon, "ten": r.name}
+
+
 # ô của tờ phiếu đi vào phép tính thử (tinh_phieu · km · hao hụt · giá hợp đồng gợi ý)
 COT_TINH_THU = ("company", "vehicle_id", "route_id", "customer_id", "goods_type", "doc_date", "odo_out", "odo_back", "weight_origin",
                 "weight_dest", "price", "price_ccy", "price_mode", "hire_price", "hire_ccy", "fee_pct", "over_limit_t", "over_price")
@@ -652,14 +684,29 @@ def tinh_thu(data: dict = Body(...), db: Session = Depends(get_db), user=Depends
             p.over_price = o.over_price if p.over_price is None else p.over_price
             p.hire_ccy = p.hire_ccy or o.hire_ccy
     if "expenses" in data:
-        kho = {f.id for f in db.query(FuelPlace).filter(FuelPlace.owner_type == "epl").all()}
+        # 11b: dòng đang sửa trên màn Web — dựng đủ ô để tính tiền, định khoản, cách trả và quyền từng dòng (như _dong_tu_du_lieu)
         dong = []
-        for d in data.get("expenses") or []:
-            nguon = d.get("source") or ("kho" if d.get("section") == "fuel" and d.get("place_id") in kho else None)
-            dong.append(SimpleNamespace(section=d.get("section"), qty=_so(d.get("qty"), "qty") or 0,
-                                        unit_price=_so(d.get("unit_price"), "unit_price") or 0, currency=d.get("currency") or "LAK",
-                                        paid_by_epl=d.get("paid_by_epl", True) is not False, source=nguon,
-                                        sale_price=_so(d.get("sale_price"), "sale_price") if d.get("sale_price") not in (None, "") else None))
+        for i, d in enumerate(data.get("expenses") or []):
+            m = d.get("section")
+            if m not in MUC_CHI:
+                raise HTTPException(422, {"ma": "MUC_SAI", "loi": "Dòng %d: mục %s không hợp lệ." % (i + 1, m)})
+            if m == "fuel":
+                nguon = _nguon_theo_diem(db, d)
+            elif m == "repair":
+                nguon = d.get("source") if d.get("source") in ("kho", "mua") else ("kho" if d.get("part_id") else "mua")
+            else:
+                nguon = None
+            ca = str(d.get("pay_channel") or "").strip()
+            dong.append(SimpleNamespace(
+                section=m, item_key=d.get("item_key") or None, item_name=d.get("item_name") or None,
+                qty=_so(d.get("qty"), "qty") or 0, unit_price=_so(d.get("unit_price"), "unit_price") or 0,
+                currency=str(d.get("currency") or "LAK").upper(), paid_by_epl=d.get("paid_by_epl", True) is not False, source=nguon,
+                sale_price=_so(d.get("sale_price"), "sale_price") if d.get("sale_price") not in (None, "") else None,
+                place_id=d.get("place_id") or None, place=d.get("place"), part_id=d.get("part_id") or None,
+                supplier_id=d.get("supplier_id") or (_ncc_theo_diem(db, d) if m == "fuel" else None),
+                ghi_no=bool(d.get("ghi_no")) and nguon != "kho", toll_card_id=(d.get("toll_card_id") or None) if m == "travel" else None,
+                card_move_id=d.get("card_move_id") or None, stock_move_id=d.get("stock_move_id") or None,
+                pay_channel=ca if ca in CACH_TRA else None, acct_code=d.get("acct_code") or None))
     else:
         dong = _dong_chi(db, goc) if goc is not None else []
     da_thu = DNT.da_thu_lak(goc, DNT.so_cua(db, goc)) if goc is not None else 0
@@ -670,6 +717,24 @@ def tinh_thu(data: dict = Body(...), db: Session = Depends(get_db), user=Depends
           "odo_est": (p.odo_out + ca) if (p.odo_out and ca) else None,
           "hao_t": round(p.weight_origin - p.weight_dest, 3) if (p.weight_origin is not None and p.weight_dest is not None) else None,
           "weight_origin": p.weight_origin, "gia_hop_dong": gia_hd}
+    # 11b: từng dòng chi — nguồn (kho / mua), xuất bán, thành tiền LAK, định khoản và cách trả đang hiệu lực, tiền mặt tài xế cầm,
+    # quyền từng ô (QP.quyen_dong). Tiền bỏ với vai không thấy (Bãi: mọi tiền chi; tổ sửa chữa / thủ kho: giá vốn kho).
+    if dong:
+        p_q = {"kind": p.kind, "company": p.company, "locked": bool(getattr(goc, "locked", False)),
+               "transport_status": getattr(goc, "transport_status", None), "expenses": [{"section": d.section} for d in dong],
+               "sections": {s.section: s.status for s in _muc_cua(db, goc).values()} if goc is not None else {}}
+        q = QP.quyen(p_q, user.role, moi=goc is None)
+        thay_chi, thay_kho = thay_tien_chi(user.role), thay_gia_kho(user.role)
+        ra["dong"] = []
+        for d in dong:
+            xb = la_xuat_ban(p, d)
+            ra["dong"].append({
+                "nguon": d.source, "xuat_ban": xb,
+                "tien_lak": round(tien_dong(p, d)) if thay_chi and (thay_kho or d.source != "kho") else None,
+                "tk": TK.tk_dong(p.company, d, db) if thay_chi else None,
+                "cach_tra": cach_tra(d, p.company) if thay_chi and d.section in ("travel", "other") else None,
+                "tien_mat_tx": la_tien_mat_tai_xe(d, p.company),
+                "quyen": QP.quyen_dong(q, d, d.source, xb)})
     if not thay_tien_chi(user.role):
         _bo_tien_chi(ra)
     elif not thay_gia_kho(user.role):
@@ -1849,7 +1914,9 @@ def _canh_bao_khoa(db, p):
     dong = _dong_chi(db, p)
     for m in MUC_CHI:
         if any(d.section == m for d in dong) and tt.get(m) in ("wait", "entered"):
-            cb.append({"ma": "MUC_CHUA_KIEM", "loi": "Mục %s có dòng chi nhưng chưa kiểm." % m})
+            # 09/10: tên mục bằng số La Mã như trên tờ phiếu (trước đây chèn mã nội bộ: "Mục fuel …")
+            from services.ban_giao import MUC as LA_MA
+            cb.append({"ma": "MUC_CHUA_KIEM", "loi": "Mục %s có dòng chi nhưng chưa kiểm." % LA_MA.get(m, m)})
     # G5 (06/10): khai báo của tài xế CHƯA DUYỆT (khai đổ dầu dọc đường, báo sự cố) — khoá phiếu mà chưa duyệt là khoản dầu / sửa
     # chữa tài xế đã trả không vào phiếu, tất toán tài xế thiếu. Liệt kê từng lần; không có số tiền (Bãi cũng gọi kiểm lại — A2).
     cho = db.query(TripEvent).filter(TripEvent.trip_id == p.id, TripEvent.status == "reported").order_by(TripEvent.ts).all()
@@ -1902,7 +1969,8 @@ def kiem_lai(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_ta
             except HTTPException as e:
                 if isinstance(e.detail, dict):
                     chan.append({k: e.detail.get(k) for k in ("ma", "loi", "loi_lo", "loi_en")})
-    return {"canh_bao": _canh_bao_khoa(db, p), "chan": chan, "locked": bool(p.locked)}
+    # 09/10: điểm cần xem / chỗ chặn khoá mang thêm bản tiếng Lào, Anh (services/loi_dich) — hộp Khoá hiện theo tiếng đang xem
+    return LD.them_dich({"canh_bao": _canh_bao_khoa(db, p), "chan": chan, "locked": bool(p.locked)})
 
 
 @router.post("/api/trips/{tid}/khoa")
@@ -1935,7 +2003,7 @@ def khoa_phieu(tid: str, data: dict = Body(default={}), db: Session = Depends(ge
     # cung cấp Nợ 625 · 614 / Có 4021 — thành bút toán chờ gửi (hệ anh Tune chưa có đường nhận bút toán tổng hợp)
     BTC.ghi_khoa_phieu(db, p, user.full_name)
     db.commit()
-    ra = xuat_phieu(db, p, vai=user.role); ra["canh_bao"] = cb
+    ra = xuat_phieu(db, p, vai=user.role); ra["canh_bao"] = LD.them_dich(cb)
     return ra
 
 
@@ -2015,7 +2083,10 @@ def ds_tep(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)
     if not p:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
     _cua_tai_xe(db, p, user)
-    return [_xuat_tep(a) for a in db.query(TripAttachment).filter(TripAttachment.trip_id == p.id).order_by(TripAttachment.ts).all()]
+    # 11c (màn Web): mỗi tệp kèm `xoa` — người đưa lên hoặc KT Thu/Chi / Sếp xoá được, phiếu chưa khoá với vai đó (như xoa_tep)
+    khoa = bool(p.locked) and user.role not in VAI_SAU_KHOA
+    return [dict(_xuat_tep(a), xoa=not khoa and (user.role in ("acct", "admin") or a.by_user == user.full_name))
+            for a in db.query(TripAttachment).filter(TripAttachment.trip_id == p.id).order_by(TripAttachment.ts).all()]
 
 
 @router.post("/api/trips/{tid}/tep")
@@ -2037,7 +2108,7 @@ async def them_tep(tid: str, tep: UploadFile = File(...), kind: str = Form("ore_
     if not du:
         raise HTTPException(422, {"ma": "TEP_RONG", "loi": "Tệp rỗng."})
     a = TripAttachment(trip_id=p.id, kind=kind if kind in ("ore_bill", "pod", "other") else "ore_bill",
-                       filename=re.sub(r"[^\w.\-() ]+", "_", tep.filename or "tep")[:120], content_type=kieu,
+                       filename=ten_tep(tep.filename, "tep"), content_type=kieu,     # giữ chữ Lào (dấu kết hợp) — services/tep
                        size=len(du), note=(note or None), by_user=user.full_name)
     a.id = ma_moi()
     a.stored = a.id + TEP_KIEU[kieu]
@@ -2489,7 +2560,7 @@ def xoa_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_t
     qlsx = sorted({e.stock_move_id[len(BGD.TIEN_TO_MV):] for e in _dong_chi(db, p)
                    if e.section == "fuel" and (e.stock_move_id or "").startswith(BGD.TIEN_TO_MV)})   # phụ tùng mục V: KK.huy_xuat lo
     if qlsx:
-        raise HTTPException(409, {"ma": "DA_CAP_KHO_QLSX", "loi": "Phiếu %s đã cấp dầu ở kho QLSX (phiếu kho %s) — huỷ phiếu xuất kho bên "
+        raise HTTPException(409, {"ma": "DA_CAP_KHO_QLSX", "loi": "Phiếu %s đã cấp dầu ở kho bên kế toán (phiếu kho %s) — huỷ phiếu xuất kho bên "
                                                                   "đó trước." % (p.doc_no, ", ".join(qlsx))})
     # phiếu chi tạm ứng / chi mục V–VI bên hệ kế toán (01/10): chưa ghi sổ thì rút bên đó; đã chi thì chặn kể cả Sếp — tiền
     # đã ra khỏi quỹ

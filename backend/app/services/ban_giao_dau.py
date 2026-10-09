@@ -106,13 +106,13 @@ def _goi(db, v, p, diem, dong, ma_tai_xe, ma_doi_tac):
     if v.status != "cho":
         chan = "Phiếu đã cấp." if v.status == "da_cap" else "Phiếu đã huỷ."
     elif diem is None or diem.owner_type != "epl" or not diem.code:
-        chan = "Điểm đổ của phiếu không phải kho EPL có mã kho — không cấp ở kho QLSX được."
+        chan = "Điểm đổ của phiếu không phải kho EPL có mã kho — không cấp ở kho bên kế toán được."
     elif not dong:
-        chan = "Các dòng dầu kho của phiếu đã xuất hoặc đã bị xoá — lập lại phiếu đề nghị ở trang điều xe."
+        chan = "Các dòng dầu kho của phiếu đã xuất hoặc đã bị xoá — lập lại phiếu đề nghị trên EPL."
     elif thue and not p.owner_id:
         chan = "Xe thuê chưa gắn chủ xe (đối tác) — gắn chủ xe trên phiếu DO trước khi cấp."
     elif p.locked:
-        chan = "Phiếu DO %s đã khoá — mở khoá ở trang điều xe rồi mới cấp." % p.doc_no
+        chan = "Phiếu DO %s đã khoá — mở khoá trên EPL rồi mới cấp." % p.doc_no
     return {
         "voucher_id": v.id, "voucher_no": v.doc_no, "source_ref": source_ref(v), "status": v.status,
         "doc_date": _iso(v.doc_date), "issued_by": v.issued_by, "issued_at": _iso(v.issued_at),
@@ -187,7 +187,7 @@ def ghi_da_cap(db, v_id, d):
         _loi("SAI_SOURCE_REF", "SourceRef không khớp phiếu %s (mong %s)." % (v.doc_no, source_ref(v)), 409)
     so = str(d.get("stock_doc_no") or "").strip()
     if not so or len(so) > SO_PHIEU_TOI_DA or any(ord(c) < 32 for c in so):
-        _loi("THIEU_SO_PHIEU_KHO", "Thiếu số phiếu xuất kho bên QLSX (≤ %d ký tự)." % SO_PHIEU_TOI_DA)
+        _loi("THIEU_SO_PHIEU_KHO", "Thiếu số phiếu xuất kho bên kế toán (≤ %d ký tự)." % SO_PHIEU_TOI_DA)
     mv = TIEN_TO_MV + so
     p = db.get(Trip, v.trip_id)
     if p is None:
@@ -197,7 +197,7 @@ def ghi_da_cap(db, v_id, d):
             return dict(goi(db, v, p), replayed=True)
         _loi("DA_CAP", "Phiếu %s đã cấp theo chứng từ khác — không ghi lần hai." % v.doc_no, 409)
     if v.status != "cho":
-        _loi("DA_HUY", "Phiếu %s đã huỷ ở trang điều xe — huỷ phiếu xuất kho bên QLSX." % v.doc_no, 409)
+        _loi("DA_HUY", "Phiếu %s đã huỷ trên EPL — huỷ phiếu xuất kho bên kế toán." % v.doc_no, 409)
 
     lit = _so(d.get("qty_l"), "Số lít cấp")
     if lit <= 0:
@@ -263,12 +263,12 @@ def ghi_da_huy(db, ref, d):
     if v.status == "huy" and not dong:
         return dict(goi(db, v, p), replayed=True)          # tờ đã huỷ ở đây — không còn gì để mở lại
     if not dong:
-        _loi("KHONG_PHAI_KHO_QLSX", "Phiếu %s không cấp ở kho QLSX (không có dòng qlsx:…) — không mở lại từ kho QLSX." % v.doc_no, 409)
+        _loi("KHONG_PHAI_KHO_QLSX", "Phiếu %s không cấp ở kho bên kế toán — không mở lại từ kho bên kế toán." % v.doc_no, 409)
     if so and any(x.stock_move_id != TIEN_TO_MV + so for x in dong):
         _loi("KHAC_PHIEU_KHO", "Phiếu %s cấp theo phiếu kho %s, không phải %s." % (
             v.doc_no, ", ".join(sorted({x.stock_move_id[len(TIEN_TO_MV):] for x in dong})), so), 409)
     if p.locked:
-        _loi("DA_KHOA", "DO %s đã khoá ở trang điều xe — mở khoá DO trước rồi mới huỷ phiếu kho cấp dầu." % p.doc_no, 409)
+        _loi("DA_KHOA", "DO %s đã khoá trên EPL — mở khoá DO trước rồi mới huỷ phiếu kho cấp dầu." % p.doc_no, 409)
     cu = sorted({x.stock_move_id[len(TIEN_TO_MV):] for x in dong})
     for e in dong:
         e.stock_move_id, e.unit_price = None, 0

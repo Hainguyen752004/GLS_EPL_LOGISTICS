@@ -75,7 +75,7 @@ def _goi(method, duong, body=None, key=None):
     """→ (http, thân dict | None). Mất mạng → 503 KHO_QLSX_KHONG_GOI_DUOC (chưa rõ bên kia ghi chưa — `chua_ro` trong detail)."""
     goc, token = GT.cau_hinh()
     if not token:
-        _loi("CHUA_CO_TOKEN", "Chưa có token hệ kế toán (tài khoản tích hợp QLSX trong .env) — chưa gọi được kho.", 503)
+        _loi("CHUA_CO_TOKEN", "Chưa có token hệ kế toán (tài khoản tích hợp kế toán trong .env) — chưa gọi được kho.", 503)
     dau = {"Authorization": "Bearer " + token, "Accept": "application/json", "User-Agent": "EPL-LAO-Logistics/1.0 (kho)"}
     if body is not None:
         dau["Content-Type"] = "application/json"
@@ -157,7 +157,7 @@ def xuat(db, source_ref, dong, *, muc_dich="INTERNAL", ngay=None, mo_ta=None, ma
 
 def huy(db, source_ref, ly_do):
     """Huỷ phiếu xuất theo SourceRef (trả tồn). Bên kia không thấy (404) = chưa từng ghi / đã huỷ → coi như xong."""
-    ma, than = _goi("POST", DUONG + "/stock-issues/cancel", {"SourceRef": source_ref, "Reason": (ly_do or "Huỷ từ trang điều xe")[:500]})
+    ma, than = _goi("POST", DUONG + "/stock-issues/cancel", {"SourceRef": source_ref, "Reason": (ly_do or "Huỷ từ EPL")[:500]})
     quen_ton(db)
     if ma == 404:
         return None

@@ -38,8 +38,8 @@ _nk = logging.getLogger("epl_lao.kho_ke_toan")
 
 # 05/10 — KHO_NGUON=qlsx (mặc định): các hàm dưới đây rẽ sang kho QLSX anh Tune (services/kho_qlsx.py) — tồn, giá vốn bình quân, xuất /
 # huỷ xuất phụ tùng; kho hàng khách gửi về sổ goods_moves bên này (services/kho_hang_dia.py). KHO_NGUON=kho_tam: đường cũ.
-DONG_KHO_TAM_CU = ("DONG_KHO_TAM_CU", "Dòng này xuất ở KHO TẠM cũ (trước khi kho chuyển sang hệ kế toán anh Tune 05/10) — không trả kho tự "
-                   "động được nữa. Nhờ kế toán lập phiếu nhập điều chỉnh bên kho QLSX, rồi mới xoá phiếu.")
+DONG_KHO_TAM_CU = ("DONG_KHO_TAM_CU", "Dòng này xuất ở KHO TẠM cũ (trước khi kho chuyển sang hệ kế toán 05/10) — không trả kho tự "
+                   "động được nữa. Nhờ kế toán lập phiếu nhập điều chỉnh ở kho bên kế toán, rồi mới xoá phiếu.")
 
 
 def _cu_kho_tam(mv):
@@ -79,7 +79,7 @@ def huy_xuat(db, nguoi, move_id=None, khoa=None):
             _cu_kho_tam(move_id)
         if not khoa:
             raise HTTPException(409, {"ma": "THIEU_KHOA_KHO", "loi": "Không biết phiếu xuất kho nào để huỷ (thiếu khoá dòng)."})
-        return KQ.huy(db, KQ.sr(khoa), "Trang điều xe huỷ dòng / xoá phiếu %s" % (getattr(nguoi, "full_name", None) or ""))
+        return KQ.huy(db, KQ.sr(khoa), "EPL huỷ dòng / xoá phiếu %s" % (getattr(nguoi, "full_name", None) or ""))
     return KT.goi(db, "POST", "/api/lien-thong/phu-tung/huy-xuat", {"move_id": move_id, "khoa": khoa}, nguoi=nguoi)
 
 
@@ -110,7 +110,7 @@ def gia_dau(db, place_id):
 def huy_xuat_dau(db, nguoi, move_id=None, khoa=None):
     if KQ.bat():
         if KQ.la_mv(move_id):           # cấp ở kho QLSX theo phiếu đề nghị: thủ kho huỷ phiếu xuất bên đó (routes/phieu chặn trước)
-            raise HTTPException(409, {"ma": "DA_CAP_KHO_QLSX", "loi": "Dầu đã cấp ở kho QLSX (phiếu kho %s) — huỷ phiếu xuất kho bên đó "
+            raise HTTPException(409, {"ma": "DA_CAP_KHO_QLSX", "loi": "Dầu đã cấp ở kho bên kế toán (phiếu kho %s) — huỷ phiếu xuất kho bên đó "
                                                                        "trước." % move_id[len(KQ.TIEN_TO_MV):]})
         _cu_kho_tam(move_id)
     return KT.goi(db, "POST", "/api/lien-thong/nhien-lieu/huy-xuat", {"move_id": move_id, "khoa": khoa}, nguoi=nguoi)
@@ -231,7 +231,7 @@ class GiaoDichKho:
         `owner_id`: chủ xe của phiếu — chỉ gửi khi xe thuê (doi_tac_xuat_ban)."""
         if KQ.bat():                     # kho QLSX: thủ kho cấp ở màn Quản lý kho bên Web anh Tune (services/ban_giao_dau.py)
             raise HTTPException(409, {"ma": "DA_DOI_SANG_QLSX", "loi": "Cấp dầu theo phiếu đề nghị làm ở màn Quản lý kho bên hệ kế toán "
-                                                                        "(Web anh Tune) — kho tạm đã tắt."})
+                                                                        "— kho tạm đã tắt."})
         r = KT.goi(self.db, "POST", "/api/lien-thong/nhien-lieu/xuat", {
             "khoa": khoa, "place_id": place_id, "qty_l": qty_l, "ngay": ngay.isoformat() if ngay else None, "doc_no": doc_no,
             "truck_no": truck_no, "expense_id": expense_id, "voucher_id": voucher_id, "voucher_doc_no": voucher_doc_no,
@@ -274,7 +274,7 @@ class GiaoDichKho:
         for loai, mv in reversed(self.da_xuat):
             try:
                 if loai == "qlsx":
-                    KQ.huy(self.db, mv, "Trang điều xe lưu hỏng sau khi xuất — trả lại kho")
+                    KQ.huy(self.db, mv, "EPL lưu hỏng sau khi xuất — trả lại kho")
                 elif loai == "hh_nhap":
                     KT.goi(self.db, "POST", "/api/lien-thong/kho-hang/huy-nhap", {"trip_id": mv}, nguoi=self.nguoi)
                 elif loai == "hh_xuat":

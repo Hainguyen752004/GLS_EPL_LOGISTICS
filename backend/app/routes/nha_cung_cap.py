@@ -345,5 +345,8 @@ def de_nghi_tra(sid: str, d: dict = Body(...), db: Session = Depends(get_db), us
 def viec_de_nghi_tra(rid: str, viec: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     """cap-nhat (hỏi lại hệ kế toán) · gui-lai (lần trước hỏng) · huy (bỏ đề nghị chưa chi, rút phiếu chi bên đó)."""
     from services import chi_tat_toan_tune as TTT
-    TTT.chan_vai(user, TTT.XEM_NCC if viec == "cap-nhat" else TTT.DE_NGHI_NCC, "%s đề nghị trả nhà cung cấp" % viec)
+    # 09/10: tên việc bằng chữ (trước chèn mã thô: "Vai … không được huy đề nghị trả nhà cung cấp") — cụm có bản Lào / Anh (loi_dich)
+    TTT.chan_vai(user, TTT.XEM_NCC if viec == "cap-nhat" else TTT.DE_NGHI_NCC, {
+        "cap-nhat": "cập nhật đề nghị trả nhà cung cấp", "gui-lai": "gửi lại đề nghị trả nhà cung cấp",
+        "huy": "huỷ đề nghị trả nhà cung cấp"}.get(viec, "%s đề nghị trả nhà cung cấp" % viec))
     return TTT.xuat(TTT.viec_ncc(db, user, rid, viec))

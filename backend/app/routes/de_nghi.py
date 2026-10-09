@@ -34,6 +34,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import MUC_CHI, ChiMucTune, ChiTune, ChungTu, FuelPlace, GuiSoTune, Trip, TripExpense, TripSection, Voucher
 from services import but_toan_cho as BTC
+from services import loi_dich as LD
 from services import gui_but_toan_tune as GBT
 from services import chi_muc_tune as CMT
 from services import chi_tune as CHI
@@ -293,7 +294,7 @@ def tao_so(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)
         d.update({"trang_thai": kq if loi is None else GT.xuat(DNT.so_cua(db, p)), "da_co_truoc": da_co, "nhien_lieu": nl,
                   "but_toan_doanh_thu": dthu})
         raise HTTPException(e.status_code, d)
-    return {"trang_thai": kq, "da_co_truoc": da_co, "nhien_lieu": nl, "but_toan_doanh_thu": dthu}
+    return LD.them_dich({"trang_thai": kq, "da_co_truoc": da_co, "nhien_lieu": nl, "but_toan_doanh_thu": dthu})
 
 
 def _ghi_doanh_thu(db, p, user):
@@ -331,7 +332,7 @@ def gui_chi_ke_toan(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_
     if user.role not in GUI_CHI:
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ KT Chi phí VC hoặc Sếp gửi phiếu chi tạm ứng sang kế toán."})
     if not CHI.chi_o_ke_toan():
-        raise HTTPException(409, {"ma": "CHI_TAI_CHO", "loi": "Tạm ứng đang chi trên trang điều xe (EPL_CHI_TAM_UNG=tai_cho)."})
+        raise HTTPException(409, {"ma": "CHI_TAI_CHO", "loi": "Tạm ứng đang chi trên EPL (EPL_CHI_TAM_UNG=tai_cho)."})
     p = _phieu(db, tid)
     if _muc_iv(db, p) not in ("booked", "paid"):
         raise HTTPException(409, {"ma": "MUC_IV_CHUA_GHI_SO", "loi": "Mục IV phiếu %s chưa ghi sổ — KT Chi phí ghi sổ trước." % p.doc_no})
@@ -395,7 +396,7 @@ def gui_chi_muc_ke_toan(tid: str, muc: str, db: Session = Depends(get_db), user=
     if muc not in CMT.MUC:
         raise HTTPException(422, {"ma": "MUC_SAI", "loi": "Chi ở hệ kế toán chỉ cho mục V (repair), VI (other)."})
     if not CHI.chi_o_ke_toan():
-        raise HTTPException(409, {"ma": "CHI_TAI_CHO", "loi": "Đang chi trên trang điều xe (EPL_CHI_TAM_UNG=tai_cho)."})
+        raise HTTPException(409, {"ma": "CHI_TAI_CHO", "loi": "Đang chi trên EPL (EPL_CHI_TAM_UNG=tai_cho)."})
     p = _phieu(db, tid)
     if _muc(db, p, muc) not in ("booked", "paid"):
         raise HTTPException(409, {"ma": "MUC_CHUA_GHI_SO", "loi": "Mục %s phiếu %s chưa ghi sổ — KT Chi phí ghi sổ trước."

@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import FuelMove, FuelPlace, Part, SaleLine, Supplier, TripEvent, TripExpense, User, Voucher
 from services import day_ke_toan as DK
+from services import loi_dich as LD
 from services import goi_ke_toan as KT
 from services.bao_mat import can_vai, may_ke_toan_goi, nguoi_hien_tai, token_nhan_ke_toan
 
@@ -37,7 +38,7 @@ def thu(db: Session = Depends(get_db), user=Depends(can_vai("admin"))):
             return {"ok": True, "kho": "qlsx", "ms": int((time.time() - t0) * 1000), "so_dong_ton": n}
         except HTTPException as e:
             d = e.detail if isinstance(e.detail, dict) else {"loi": str(e.detail)}
-            return {"ok": False, "kho": "qlsx", "ma": d.get("ma"), "loi": d.get("loi")}
+            return LD.them_dich({"ok": False, "kho": "qlsx", "ma": d.get("ma"), "loi": d.get("loi")})
     goc, token = KT.cau_hinh(db)
     t0 = time.time()
     ra = {"api": goc, "co_token_nhan": bool(token_nhan_ke_toan(db))}
@@ -46,7 +47,7 @@ def thu(db: Session = Depends(get_db), user=Depends(can_vai("admin"))):
     except HTTPException as e:
         d = e.detail if isinstance(e.detail, dict) else {"loi": str(e.detail)}
         ra.update(ok=False, co_token=bool(token), ma=d.get("ma"), loi=d.get("loi"))
-    return ra
+    return LD.them_dich(ra)
 
 
 @router.post("/api/lien-thong/tao-khoa")
@@ -82,7 +83,7 @@ def ghi_ban_sao_diem(pid: str, d: dict = Body(...), db: Session = Depends(get_db
     if d.get("owner_type") not in ("epl", "ngoai"):
         raise HTTPException(422, {"ma": "LOAI_SAI", "loi": "Loại điểm đổ không hợp lệ."})
     if d.get("supplier_id") and not db.get(Supplier, d["supplier_id"]):
-        raise HTTPException(422, {"ma": "KHONG_THAY_NCC", "loi": "Không có nhà cung cấp này ở trang điều xe."})
+        raise HTTPException(422, {"ma": "KHONG_THAY_NCC", "loi": "Không có nhà cung cấp này trên EPL."})
     x = db.get(FuelPlace, pid)
     if not x:
         x = FuelPlace(id=pid); db.add(x)
@@ -193,7 +194,7 @@ def lt_xe_sua_chua(vid: str, d: dict = Body(...), db: Session = Depends(get_db),
     from models import Trip, Vehicle
     x = db.get(Vehicle, vid)
     if not x:
-        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có xe này bên trang điều xe."})
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có xe này trên EPL."})
     if d.get("vao"):
         if x.status not in ("inactive", "on_trip"):
             x.status = "maintenance"

@@ -150,7 +150,7 @@ def may_qlsx_goi(request: Request, db: Session = Depends(get_db)):
     dau = request.headers.get("Authorization", "")
     tk = dau[7:].strip() if dau.lower().startswith("bearer ") else ""
     if not mong:
-        raise HTTPException(503, {"ma": "CHUA_DAT_TOKEN", "loi": "Trang điều xe chưa tạo khoá cho hệ kế toán gọi sang."})
+        raise HTTPException(503, {"ma": "CHUA_DAT_TOKEN", "loi": "EPL chưa tạo khoá cho hệ kế toán gọi sang."})
     if not tk or not hmac.compare_digest(tk, mong):
         raise HTTPException(401, {"ma": "SAI_TOKEN", "loi": "Khoá đọc bàn giao DO không đúng."})
     return "qlsx"
@@ -166,12 +166,12 @@ def may_ke_toan_goi(request: Request, db: Session = Depends(get_db)):
     dau = request.headers.get("Authorization", "")
     tk = dau[7:].strip() if dau.lower().startswith("bearer ") else ""
     if not mong:
-        raise HTTPException(503, {"ma": "CHUA_DAT_TOKEN", "loi": "Trang điều xe chưa tạo khoá cho trang kế toán gọi sang."})
+        raise HTTPException(503, {"ma": "CHUA_DAT_TOKEN", "loi": "EPL chưa tạo khoá cho kho tạm gọi sang."})
     if not tk or not hmac.compare_digest(tk, mong):
-        raise HTTPException(401, {"ma": "SAI_TOKEN", "loi": "Khoá nối trang điều xe không đúng — kiểm lại Cài đặt bên trang kế toán."})
+        raise HTTPException(401, {"ma": "SAI_TOKEN", "loi": "Khoá nối EPL không đúng — kiểm lại Cài đặt bên kho tạm."})
     ten = (request.headers.get("X-Nguoi-Dung") or "").strip()
     u = db.query(User).filter(User.username == ten, User.active.is_(True)).first() if ten else None
     if not u:
         raise HTTPException(403, {"ma": "KHONG_CO_TAI_KHOAN",
-                                  "loi": "Tài khoản \"%s\" không có ở trang điều xe." % (ten or "?")})
+                                  "loi": "Tài khoản \"%s\" không có trên EPL." % (ten or "?")})
     return u

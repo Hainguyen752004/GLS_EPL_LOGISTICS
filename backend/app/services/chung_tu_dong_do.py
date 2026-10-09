@@ -249,7 +249,7 @@ def _tam_ung_dong(p, v, rec, ct, khop, so_ung, tong_tm):
         return _ket("pending", "advance", "Tạm ứng %s — phiếu chi chưa tạo được bên kế toán (%s); KT Chi phí gửi lại%s." % (
             ten, rec.error_message or rec.error_code or "lỗi", lech), ref_no=v.doc_no, doc_status=rec.status)
     if ct is not None or (v is not None and v.status == "da_cap"):
-        return _ket("pending", "advance", "Tạm ứng %s đã chi tại quỹ trang điều xe%s%s — %s" % (
+        return _ket("pending", "advance", "Tạm ứng %s đã chi tại quỹ EPL%s%s — %s" % (
             ten, (" (%s)" % ct.so) if ct is not None else "", lech, DOI_SOAT),
             ref_no=v.doc_no if v is not None else ct.so, doc_status="chi_tai_quy")
     return _ket("pending", "advance", "Tạm ứng %s — phiếu chi «Chi trước» lập khi KT Chi phí ghi sổ mục IV; không lập tay%s." % (ten, lech),
@@ -339,7 +339,7 @@ def thue(db, p):
         tra = _ket("has_voucher", "owner_payment", "Đã trả chủ xe — phiếu chi %s" % p.owner_payment_id[5:],
                    doc_no=p.owner_payment_id[5:], doc_status="da_chi")
     elif p.owner_paid or p.owner_payment_id:
-        tra = _ket("pending", "owner_payment", "Đã trả chủ xe ở trang kế toán tạm (trước khi chi qua hệ kế toán) — " + DOI_SOAT,
+        tra = _ket("pending", "owner_payment", "Đã trả chủ xe theo cách cũ (trước khi chi qua hệ kế toán) — " + DOI_SOAT,
                    ref_no=p.owner_payment_id, doc_status="owner_paid")
     else:
         tra = _ket("pending", "owner_payment", "Chưa đề nghị trả chủ xe — KT Thu/Chi lập ở màn Xe liên kết; không lập tay.")
@@ -429,7 +429,7 @@ def gan(db, p, goi, dong, so):
         if d.id in mot_lan("quy_chi", quy_chi):
             c = mot_lan("pc_sc:" + d.section, lambda: _to_quy(db, p, "PC_SC", "%s:%s" % (p.id, d.section)))
             if c is not None:
-                return _ket("pending", "pay_now", "Quỹ trả ngay mục %s đã chi tại quỹ trang điều xe (%s) — %s" % (
+                return _ket("pending", "pay_now", "Quỹ trả ngay mục %s đã chi tại quỹ EPL (%s) — %s" % (
                     TEN_MUC.get(d.section, d.section), c.so, DOI_SOAT), ref_no=c.so, doc_status="chi_tai_quy")
             return _ket("pending", "pay_now", "Quỹ trả ngay mục %s — phiếu chi «Chi khác» lập khi KT Chi phí ghi sổ mục; không lập "
                         "tay." % TEN_MUC.get(d.section, d.section))
@@ -448,7 +448,7 @@ def gan(db, p, goi, dong, so):
         c = mot_lan("pc_tu", lambda: _to_quy(db, p, "PC_TU"))
         if c is not None:
             return _ket("pending", "payroll" if cach_tra(d, p.company) == "luong" else None,
-                        "Phiếu có tờ chi tại quỹ trang điều xe (%s) theo luật cũ — dòng này có thể đã chi trong tờ đó; %s" % (c.so, DOI_SOAT),
+                        "Phiếu có tờ chi tại quỹ EPL (%s) theo luật cũ — dòng này có thể đã chi trong tờ đó; %s" % (c.so, DOI_SOAT),
                         ref_no=c.so, doc_status="chi_tai_quy")
         if d.section in ("travel", "other") and cach_tra(d, p.company) == "luong":
             # 06/10: DO khoá từ bản sửa đã ghi chi phí Nợ 625 / Có 4201 (bút toán cung_luong — KHÔNG phải chứng từ chi tiền, dòng
@@ -458,7 +458,7 @@ def gan(db, p, goi, dong, so):
                 return _ket("open", "payroll", "Trả theo chuyến cùng lương — chi phí đã ghi lúc khoá DO (Nợ 625 / Có 4201, bút toán %s); "
                             "kế toán lập phiếu chi lương Nợ 4201 / Có tiền khi trả." % (r.so_ben_ke_toan or r.source_ref),
                             ref_no=r.source_ref, doc_no=r.so_ben_ke_toan, doc_status=r.status)
-            return _ket("open", "payroll", "Trả theo chuyến cùng lương — trang điều xe không lập chứng từ cho khoản này; kế toán lập "
+            return _ket("open", "payroll", "Trả theo chuyến cùng lương — EPL không lập chứng từ cho khoản này; kế toán lập "
                         "phiếu chi khi trả.")
         return _ket("open", None, "Chưa vào chứng từ nào bên kế toán.")
 

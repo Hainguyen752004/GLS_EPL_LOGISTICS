@@ -50,7 +50,7 @@ def _so(v, ten, bat_buoc=False):
 # Sổ dầu từng kho, tồn, giá bình quân, nhập kho, chuyển kho dời sang trang kế toán (Kho → Kho nhiên liệu). Bảng
 # fuel_moves bên này đứng yên từ ngày dời (khoá ngoại của phiếu cũ); phiếu hỏi giá / xuất dầu qua services/kho_ke_toan.py.
 DA_DOI_NL = {"ma": "DA_DOI_SANG_KE_TOAN",
-             "loi": "Kho nhiên liệu nay quản lý ở trang kế toán (Kho → Kho nhiên liệu)."}
+             "loi": "Kho nhiên liệu nay quản lý ở hệ kế toán (Kho → Kho nhiên liệu)."}
 
 
 @router.get("/api/fuel-moves")
@@ -78,7 +78,7 @@ def xoa_nhien_lieu(mid: str, user=Depends(nguoi_hien_tai)):
 # danh mục (khoá ngoại của dòng chi mục V, dòng lệnh sửa, dòng bán). Ô chọn phụ tùng trên phiếu hỏi tồn / giá thẳng
 # bên đó; nhập / xuất / sửa danh mục làm ở trang kế toán (Kho → Kho phụ tùng).
 DA_DOI_PT = {"ma": "DA_DOI_SANG_KE_TOAN",
-             "loi": "Kho phụ tùng nay quản lý ở trang kế toán (Kho → Kho phụ tùng). Ở đây chỉ còn danh mục để chọn trên phiếu."}
+             "loi": "Kho phụ tùng nay quản lý ở hệ kế toán (Kho → Kho phụ tùng). Ở đây chỉ còn danh mục để chọn trên phiếu."}
 
 
 @router.get("/api/parts")

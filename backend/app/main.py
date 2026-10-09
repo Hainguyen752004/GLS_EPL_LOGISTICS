@@ -16,11 +16,14 @@ if APP_DIR not in sys.path:
     sys.path.insert(0, APP_DIR)
 
 from fastapi import FastAPI, Request  # noqa: E402
+from fastapi.exception_handlers import http_exception_handler  # noqa: E402
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse  # noqa: E402
+from starlette.exceptions import HTTPException as StarletteHTTPException  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 
 from database import engine, tao_bang  # noqa: E402
+from services import loi_dich  # noqa: E402
 from routes import (acc_code, anh, ban_hang, bao_cao, chung_tu, dang_nhap, danh_muc, kho, kho_hang,  # noqa: E402
                     nha_cung_cap, phieu,
                     phieu_linh, quy_trinh, sua_chua, tat_toan, the_cao_toc, theo_doi, tuyen, vi_tri, chu_xe, hoa_don, hop_dong, giao_nhan, can_mo, lien_thong, kho_xem, de_nghi, ban_giao)  # noqa: E402
@@ -45,6 +48,15 @@ def khoi_dong():
     # EPL_DONG_BO_NEN_PHUT (mặc định 5, 0 = tắt) — services/dong_bo_nen.py
     from services import dong_bo_nen
     dong_bo_nen.bat_dau()
+
+
+@app.exception_handler(StarletteHTTPException)
+async def loi_nghiep_vu(request: Request, exc: StarletteHTTPException):
+    # 09/10: câu lỗi {ma, loi} mang thêm loi_lo / loi_en theo danh mục services/loi_dich.json (màn cũ + Web chọn theo tiếng đang xem);
+    # còn lại y như xử lý mặc định của FastAPI
+    if isinstance(exc.detail, (dict, list)):
+        loi_dich.them_dich(exc.detail)
+    return await http_exception_handler(request, exc)
 
 
 @app.exception_handler(Exception)

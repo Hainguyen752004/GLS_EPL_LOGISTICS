@@ -62,7 +62,7 @@ def bang(ky: str = "", owner_id: str = "", cap_nhat: int = -1, db: Session = Dep
 def lap_de_nghi(d: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     _lam(user)
     if not CHI.chi_o_ke_toan():
-        raise HTTPException(409, {"ma": "CHI_TAI_CHO", "loi": "Đang để chi trên trang kế toán tạm (EPL_CHI_TAM_UNG=tai_cho)."})
+        raise HTTPException(409, {"ma": "CHI_TAI_CHO", "loi": "Đang để chi tại chỗ (EPL_CHI_TAM_UNG=tai_cho)."})
     if not d.get("owner_id"):
         raise HTTPException(422, {"ma": "THIEU_DOI_TAC", "loi": "Chưa chọn đối tác."})
     r = CHI.de_nghi_tra_chu_xe(db, str(d["owner_id"]), d.get("trip_ids") or [], (d.get("cach_tra") or d.get("phuong_thuc") or "cash").strip(),

@@ -22,7 +22,7 @@ Trạng thái: Chưa làm · Đang làm · Xong – chờ duyệt · Đã duyệ
 | 8 | Chuyển đa ngôn ngữ vi / lo / en | Đã duyệt (08/10) | Web: trang /Logistics/… có 3038 khoá LOG_ (Console); trang khác 0 | [Việc 8](#việc-8--chuyển-đa-ngôn-ngữ-vi--lo--en) |
 | 9 | Khách hàng dùng bảng Đối tượng của anh Khang | Đã duyệt (08/10) — phần 1 (API), 2a (danh sách, bảng giá), 2b (hợp đồng, công nợ, chuyến) | tools/chuyen_csharp/doi_chieu_khach_gls.py (chỉ xem → --ghi); trang điều xe Khách hàng: sửa tên khách đã gắn → báo sửa ở màn Đối tượng GLS; Web /Logistics/khach-hang: chọn khách → chi tiết + bảng giá; tab Hợp đồng / Công nợ / Chuyến & phiếu | [Việc 9](#việc-9--khách-hàng-dùng-bảng-đối-tượng-của-anh-khang) |
 | 10 | Nhà cung cấp, chủ xe liên kết dùng bảng Đối tượng của anh Khang | Đã duyệt (08/10) — phần 1 (API), phần 2 (màn Nhà cung cấp trên Web) | tools/chuyen_csharp/doi_chieu_khach_gls.py --loai tat_ca (chỉ xem → --ghi); trang điều xe: sửa tên NCC / điện thoại chủ xe đã gắn → báo sửa ở danh mục chung; Web /Logistics/nha-cung-cap | [Việc 10](#việc-10--nhà-cung-cấp-chủ-xe-liên-kết-dùng-bảng-đối-tượng-của-anh-khang) |
-| 11 | Màn Phiếu xuất xe (DO) | Đang làm (từ 08/10) | | |
+| 11 | Màn Phiếu xuất xe (DO) | Xong — 11a, 11b, 11c đã duyệt (09/10); in tờ ở Việc 19, nút phiếu đề nghị ở Việc 13 | Web /Logistics/phieu-xuat-xe: mở G4-0007 → mục I–II sửa / lưu; tab IV sửa SL → thành tiền đổi, bấm mã kế toán → hộp Nợ/Có; + Phiếu mới → chọn tuyến → dòng gợi ý → Lưu → Xoá; G4-0010 → ô trạng thái phiếu chi; **G4-0007 thêm / xoá ảnh mục II, Đổi xe, Xe đã tới; G4-0010 Mở khoá + khối phiếu nhập kho hàng; THU-CK-162553 tab IV khối Chi thật** | [Việc 11](#việc-11--màn-phiếu-xuất-xe-do) |
 | 12 | Theo dõi phiếu · Theo dõi tuyến (bản đồ) · Tổng quan | Chưa làm | | |
 | 13 | Đề nghị chi · Đề nghị xuất kho · Đề nghị thu · Đề nghị theo DO · Bút toán chờ gửi | Chưa làm | | |
 | 14 | Tất toán tài xế · Tiền chuyến & nước · Tất toán đối tác · Xe liên kết | Chưa làm | | |
@@ -35,6 +35,181 @@ Trạng thái: Chưa làm · Đang làm · Xong – chờ duyệt · Đã duyệ
 | 21 | Kiểm thử | Chưa làm | | |
 | 22 | Triển khai và cắt chuyển | Chưa làm | | |
 | 23 | Tài liệu | Chưa làm | | |
+
+---
+
+## Việc 11 — Màn Phiếu xuất xe (DO)
+
+- **Thông tin chung:** ngày 08–09/10/2026; repo EPL_LAO_REAL (API Python) + GLS-QLSX-Web (Web C#); phần 11a, 11b, 11c đã duyệt 09/10; in tờ để Việc 19; nút phiếu đề nghị để Việc 13.
+- **Chốt Việc 11a (lập / lưu / xoá phiếu):** từng ô (info, trans, pod, hợp đồng) · từng mục (thay đổi trạng thái, thấy / sửa tiền) · mức phiếu (khoa, xoa) · bảng Hàng · tả tạm ứng + chủ xe gắn theo xe do API — quyền tính ở `services/quyen_phieu.py` gắn vào phiếu (khoá "quyen"). Tờ phiếu trắng (GET trips-moi): số gợi ý + mặc định từ tuyến / khách. Tính thử (POST trips/tinh-thu): nhập dòng hàng (cân, odo, gia) → trả cân đầu · giá hợp đồng gợi ý · thành tiền. Mục xe thuê: chủ xe luôn gắn từ xe, không để màn gửi tự chọn (_ap_truong).
+- **Chốt Việc 11b (dòng chi III–VI):** để dòng chi (khoản / SL / giá / tiền tệ / cách trả / mã kế toán) · chế độ "ai trả" · nhãn ô trạng thái phiếu chi bên kế toán. Gợi ý dòng chi theo tuyến (GET trips-goi-y). Hộp mã kế toán (GET acc-codes) vào sau khi đổi cách trả. Quyen_dong tính quyền từng ô trên từng dòng (sua, gia, gia_ban, epl, chu, the, ghi_no, nguon, cach_tra, tk, xoa, can_gia).
+
+### 11a — Mục I · II, lập / lưu / xoá phiếu
+
+#### Bảng Tệp mới
+
+| Tệp | | Nội dung |
+|---|---|---|
+| `backend/app/services/quyen_phieu.py` | — | `quyen(p, vai, moi)` (38–223) tính quyền từng ô / mục / phiếu / bảng hàng; `quyen_dong(q, d, nguon, xuat_ban)` (230) tính quyền từng ô trên một dòng chi. |
+| `kiem/thu_quyen_phieu.py` | — | Bài kiểm 31 bước (trang điều xe: tìm 2 phiếu mẫu, lập / sửa / xoá, quyen.hang, chủ xe từ xe), trên bản sao _d7, ROLLBACK. Kết quả 31/31. |
+
+#### Bảng Tệp sửa
+
+| Tệp | Dòng | Thay đổi |
+|---|---|---|
+| `backend/app/routes/phieu.py` | 329–453 | `xuat_phieu(db, phieu, day_du, da_thu, vai, nap)` thêm tham số vai, gắn `ra["quyen"]` = quyen(phieu, vai, moi=False). |
+| | 578–590 | Mới `GET /api/trips-moi?kind=`: tờ phiếu trắng, số gợi ý (từ bảng max + 1) + ô mặc định (dùng cờ, xe, khách, tuyến từ tham số query). |
+| | 628–752 | Mới `POST /api/trips/tinh-thu`: nhập dòng hàng (gia_hop_dong gợi ý từ bảng giá) + ô tính (odo_km, odo_est, hao_t, weight_origin) → trả cân đầu (từ dòng hoặc tính từ tỷ lệ), thành tiền theo giá. |
+| | 755–1180 | `_ap_truong(db, p, data, user, muc_tt)`: phiếu xe thuê luôn gắn owner_id từ xe (chỉnh sửa lỗi: màn cũ để gửi owner vào data). |
+| `backend/app/models.py` | — | Không đổi (cột quyen_phieu chưa cần lưu DB). |
+
+#### Cách kiểm (đã làm 09/10)
+
+Bài kiểm API `python kiem/thu_quyen_phieu.py` → 31/31; bộ kiểm C# khớp JSON trả về từ máy thử 8011 (quyền mỗi ô / mục / phiếu, số gợi ý, thành tiền tính thử); bấm thử trình duyệt Web /Logistics/phieu-xuat-xe: G4-0007 mở → mục I–II sửa / lưu được; xoá phiếu.
+
+### 11b — Dòng chi mục III–VI
+
+#### Bảng Tệp mới
+
+| Tệp | | Nội dung |
+|---|---|---|
+| `backend/app/services/quyen_phieu.py` | — | Đã ghi trên (230–259 hàm quyen_dong). |
+| `backend/wwwroot/ViewAssets/scripts/modules/logistics/phieu-xuat-xe-chi.js` | — | Vẽ 4 mục (III–VI), mỗi mục bảng dòng chi, DevExtreme DataGrid; áp quyền từng ô + quyen_dong sau mỗi lần tính thử / lưu; thêm dòng, xoá dòng; gợi ý dòng khi chọn tuyến; hộp mã kế toán Modal; trạng thái phiếu chi từ API gắn vào ô. |
+
+#### Bảng Tệp sửa
+
+| Tệp | Dòng | Thay đổi |
+|---|---|---|
+| `backend/app/services/quyen_phieu.py` | 151–153 | Thêm khoá "gia" · "gui" · "tk" cho từng mục (11b). |
+| `backend/app/routes/phieu.py` | 592–626 | Mới `GET /api/trips-goi-y?route_id=&company=`: dòng chi gợi ý theo tuyến (khoám, giá, nguồn). |
+| | 628–752 | Mở rộng `tinh-thu`: nhận `expenses` (dòng chi từ trình duyệt) → trả `dong` (nguon, xuat_ban, tien_lak, tk, cach_tra, tien_mat_tx, quyen). |
+| `backend/app/Views/Modules/Logistics/PhieuXuatXe.cshtml` | 48, 80–125 | Nạp phieu-xuat-xe-chi.js; hộp pxAcctModal (Modal mã kế toán); form 4 tab mục III–VI kèm bảng dòng chi. |
+| `backend/wwwroot/ViewAssets/scripts/modules/logistics/phieu-xuat-xe.js` | 23–25, 135–155, 560–580 | Nạp Catalogs khi lúc mở màn; gửi expenses khi tính thử / lưu; nút việc cho 6 mục; trạng thái phiếu chi cạnh từng mục. |
+| `backend/wwwroot/ViewAssets/styles/modules/logistics/phieu-xuat-xe.css` | 450–611 | Kiểu bảng dòng chi (4 mục ngang, mỗi ô một cột). |
+| `Backend/Business/ApiClients/Logistics/Contracts/Trips/LogisticsTripContracts.cs` | 175–682 | LogisticsTripLineInfo · LogisticsTripLineRight · LogisticsTripExpenseInput · LogisticsTripCatalogs · LogisticsFuelPlace · LogisticsPart · LogisticsTollCard · LogisticsCostItems · LogisticsTripSuggestion · LogisticsAcctCodeList · LogisticsTripPayChip · LogisticsTripPayActionRequest. |
+| `Backend/Business/ApiClients/Logistics/LogisticsTripClient.cs` | 50–220 | `ExpensesBody` (danh sách ô gửi); `GetCatalogsAsync` · `GetSuggestionsAsync` · `GetAcctCodesAsync` · `PayActionAsync` gọi API. |
+| `Backend/Controllers/Modules/Logistics/LogisticsTripController.cs` | 74–92 | `Catalogs` · `Suggest` · `AcctCodes` · `PayAction` kéo BFF. |
+| `Backend/Business/ApiClients/Logistics/Endpoints/LogisticsEndpoint.cs` | 19–45 | Đường trips-goi-y, fuel-places, parts, the-cao-toc, khoan-muc, acc-codes, chi-ke-toan, chi-muc-ke-toan. |
+| `Backend.Common/PermissionCodes.cs` | 398 | Mã quyền Logistics_PhieuXuatXe. |
+| `Backend/Base/Localization/logistics.*.json` | — | Sinh lại: 3136 khoá, gồm thêm 5 khoá riêng LOG_W_PX_*. |
+| (EPL_LAO_REAL) `tools/chuyen_csharp/khoa_dich_web_rieng.json` | — | Thêm 5 câu màn Phiếu xuất xe (vi / lo / en). |
+
+#### Cách kiểm (đã làm 09/10)
+
+API `python kiem/thu_quyen_phieu.py` → 45/45 (thêm mục 7–9: quyền mục III–VI, tính thử từng dòng, ô trạng thái phiếu chi, dòng gợi ý theo tuyến); bộ kiểm C# 84 trường (contract, gợi ý, mã kế toán, trạng thái phiếu chi); trình duyệt G4-0007 → tab IV sửa SL · thành tiền → bấm mã kế toán → Modal; + Phiếu mới → chọn tuyến → dòng gợi ý → Lưu; G4-0010 (đã khoá) → ô trạng thái phiếu chi.
+
+### 11c — Việc mức phiếu, tệp, chi thật, tờ kho hàng
+
+#### Bảng Tệp mới
+
+| Tệp | | Nội dung |
+|---|---|---|
+| `GLS-QLSX-Web/Backend/Business/ApiClients/Logistics/Contracts/Trips/LogisticsTripActionContracts.cs` | — | Tệp MỚI: LogisticsServerMessage, LogisticsTripStatusRequest, LogisticsTripChangeTruckRequest, LogisticsTripLockCheck, LogisticsTripLockRequest, LogisticsTripFile, LogisticsTripFileUploadRequest, LogisticsTripActual (+Settle, Line, Log, SaveRequest, Input), LogisticsGoodsSheet (+Line). |
+| `GLS-QLSX-Web/Backend/wwwroot/ViewAssets/scripts/modules/logistics/phieu-xuat-xe-viec.js` | — | JS MỚI: nút việc mức phiếu theo Quyen.Phieu (xuất phát, xe đã tới, đổi xe, khoá, mở khoá, xoá) + câu nhắc tạm ứng; hộp Xe đã tới (lỗi THIEU_CAN_BAI hiện trong hộp); hộp Đổi xe (tìm xe, tìm tài xế); khoá phiếu (chỗ chặn báo ngay); tệp đính kèm (ảnh nén trên trình duyệt, PDF quá 2 MB báo); chữ ký nhận POD; chi thật mục IV; tờ kho hàng. |
+
+#### Bảng Tệp sửa
+
+| Tệp | Dòng | Thay đổi |
+|---|---|---|
+| `EPL_LAO_REAL/backend/app/services/quyen_phieu.py` | — | Sửa: hàm `quyen()` (38–236) thêm: `tep` (Bãi, KT Thu/Chi, KT Doanh thu, phiếu chưa khoá với vai đó, không có ở phiếu mới) · `chi_that` (KT Chi phí VC, xe nhà, mục IV đã chi, có dòng tiền mặt tài xế cầm) · `xe_toi` {`hoi_can_mo` (DO gom một mặt hàng), `hoi_pod` (DO giao)} · `nhac_ung` (câu nhắc cạnh nút Xuất phát khi phiếu chi tạm ứng bên kế toán chưa chi / lỗi). Luật câu nhắc trước đây ở JS trang cũ (nhacUngTruocChay) chuyển về máy chủ. |
+| `EPL_LAO_REAL/backend/app/routes/phieu.py` | 2077, 2089 | `ds_tep()` (2077) trả danh sách tệp kèm cờ `xoa` từng tệp (KT Thu/Chi, Sếp hoặc người đưa lên; phiếu đã khoá với vai đó thì không); `them_tep()` (2089) nhận tệp (kind pod / ore_bill), giữ nguyên tên tệp tiếng Lào bằng `ten_tep(tep.filename, "tep")` (services/tep.py). |
+| `EPL_LAO_REAL/kiem/thu_quyen_phieu.py` | 236–276 | Mục 10 (tệp · chi thật · ô hỏi khi xe tới) và mục 11 (câu nhắc tạm ứng): tổng 57/57 đạt. Các bài cũ chạy lại đều đạt. |
+| `GLS-QLSX-Web/Backend/Business/ApiClients/Logistics/Contracts/Trips/LogisticsTripContracts.cs` | — | LogisticsTripRights thêm Tep, ChiThat, XeToi, NhacUng; lớp mới LogisticsTripFileRight, LogisticsTripArrivalRight, LogisticsTripAdvanceHint; LogisticsTripDriver thêm Phone (ô tìm tài xế trong hộp Đổi xe). |
+| `GLS-QLSX-Web/Backend/Business/ApiClients/Logistics/Endpoints/LogisticsEndpoint.cs` | — | Sửa: TripTransportStatus, TripChangeTruck, TripLockCheck, TripLock, TripUnlock, TripFiles, TripFileById, TripActual, TripGoodsSheet. |
+| `GLS-QLSX-Web/Backend/Business/ApiClients/Logistics/LogisticsApiClient.cs` | — | Sửa SendFileAsync nhận thêm ô chữ đi kèm (fields, ví dụ kind của tệp) — gọi cũ ở LogisticsHaulageContractClient.cs đổi thành `ct: ct`. |
+| `GLS-QLSX-Web/Backend/Business/ApiClients/Logistics/LogisticsTripClient.cs` | — | Sửa: ChangeStatusAsync (chỉ nhận transit · arrived), ChangeTruckAsync, GetLockCheckAsync, LockAsync, UnlockAsync, GetFilesAsync, UploadFileAsync (kind pod / ore_bill), DeleteFileAsync, GetFileAsync, GetActualAsync, SaveActualAsync, GetGoodsSheetAsync. |
+| `GLS-QLSX-Web/Backend/Controllers/Modules/Logistics/LogisticsTripController.cs` | — | Sửa: đường BFF Logistics/Trips/Status, ChangeTruck, LockCheck, Lock, Unlock, Files, UploadFile, DeleteFile, File, Actual, SaveActual, GoodsSheet — cùng mã quyền Logistics_PhieuXuatXe. |
+| `GLS-QLSX-Web/Backend/Views/Modules/Logistics/PhieuXuatXe.cshtml` | — | Sửa: khối tệp phiếu quặng và ảnh POD ở mục II, khối chữ ký nhận POD, khối chi thật ở mục IV, khối phiếu kho hàng ở cột bên, ba hộp thoại (Xe đã tới · Đổi xe · Khoá phiếu), nạp thêm script phieu-xuat-xe-viec.js. |
+| `GLS-QLSX-Web/Backend/wwwroot/ViewAssets/scripts/modules/logistics/phieu-xuat-xe.js` | — | Sửa: thêm đường BFF vào PX_URL; pxShowTrip gọi pxLoadTripExtras; renderSlipActions chuyển sang tệp mới; sửa pxDateTime: thêm "Z" cho giờ UTC không kèm múi (trước đó giờ nhật ký phiếu lệch 7 tiếng). |
+| `GLS-QLSX-Web/Backend/wwwroot/ViewAssets/styles/modules/logistics/phieu-xuat-xe.css` | — | Sửa: kiểu khối tệp, chữ ký, chi thật, phiếu kho hàng, câu nhắc tạm ứng, danh sách cảnh báo khoá; nhãn trong hộp thoại cùng cỡ nhãn trên tờ. |
+
+#### Cách kiểm (đã làm 09/10)
+
+Bộ kiểm C# 111/111 đạt (26 bước mới: khớp contract với JSON thật, tải / mở / xoá tệp qua client, vòng một phiếu thử: lập → xuất phát → đổi xe → khoá sớm bị chặn XE_CHUA_VE → xe đã tới → kiểm lại → xoá); bấm thử trình duyệt 23/23 đạt, không lỗi JS; bài trình duyệt 11b chạy lại 14/14. Chưa bấm Khoá thật và Mở khoá thật trên máy thử (khoá thật lập chứng từ kế toán) — chỉ kiểm tới hộp khoá rồi huỷ, và kiểm nút Mở khoá hiện đúng.
+
+### Tô màu màn (09/10)
+
+#### Bảng Tệp sửa
+
+| Tệp | Thay đổi |
+|---|---|
+| `phieu-xuat-xe.css` | Bộ màu riêng của màn (biến --px-*) cho nền sáng và nền tối (body[data-theme="dark"]); loại DO: gom màu cam đất (màu quặng như trang cũ), giao xanh dương — tô ở thẻ chọn loại, thẻ loại DO, đầu cột bên, số phiếu; trạng thái mục: chưa gửi xám · đã nhập xanh lơ · đã kiểm xanh dương · đã ghi sổ vàng · đã chi xanh lá — đầu mục có nền nhạt + vạch màu, số La Mã, chấm và chữ trạng thái ở cột bên cùng màu; mục có việc của người đang xem tô vàng ở cột bên; tiền "Thu – Chi trong chuyến" chữ to xanh lá; đầu bảng dòng chi có nền nhạt; thẻ "Đã khoá" đổi màu đúng theo nền sáng / tối; tên mục ở cột bên đọc được trên nền tối. |
+| `phieu-xuat-xe.js` | Sửa: PX_STATUS_CLASS, PX_ACTION có biểu tượng, data-st trên mục và tab, data-kind trên cột bên, pxSetDirty (hàm gán cờ đang sửa). |
+| `phieu-xuat-xe-chi.js` | Sửa: gán cờ đang sửa qua pxSetDirty. |
+| `phieu-xuat-xe-viec.js` | Sửa: gán cờ đang sửa qua pxSetDirty; PX_SLIP_ACTION màu và thứ tự. |
+| `PhieuXuatXe.cshtml` | Sửa: lớp lg-px__new, lg-px__save trên hai nút đầu trang (Phiếu mới, Lưu); Lưu to hơn, chuyển vàng và nhấp nháy nhẹ khi có phần sửa chưa lưu; Phiếu mới xanh lá đặc; nút việc từng mục là nút đặc có biểu tượng (gửi kiểm xanh dương, kiểm xanh lá, trả lại vàng, ghi sổ xanh dương, chi xanh lá, mở khoá viền đỏ); nút việc mức phiếu ở cột bên to, việc chính cả hàng đứng trước (xuất phát xanh dương, xe đã tới xanh lá, khoá xanh lá, mở khoá vàng), đổi xe và xoá nửa hàng; nút thêm tệp viền xanh. |
+
+#### Cách kiểm (đã làm 09/10)
+
+Chụp màn phiếu mới, phiếu đang chạy, đang sửa chưa lưu, phiếu đã khoá, nền tối; bài trình duyệt 11b 14/14 và 11c 23/23 chạy lại đạt.
+
+---
+
+## Phát sinh 08/10 — Góp ý anh Khampla (trang điều xe đang host)
+
+- **Ngày:** 08/10/2026. **Repo:** EPL_LAO_REAL (commit 6b93265). **Trạng thái:** Đã đẩy (08/10), host đã kéo (08/10).
+- **Nội dung:** Cách trả mục IV / VI · Tìm xe / tài xế · Khoản mục chi cấu hình được · Điểm đổ mở lại · Từ điển trang điều xe cập nhật.
+
+### Cách trả mục IV / VI (routes: phieu.py · tuyen.py; services: phan_quyen.py)
+
+| Tệp | Dòng | Thay đổi |
+|---|---|---|
+| `backend/app/services/phan_quyen.py` | 93, 96 | `DOI_CACH_TRA` danh sách vai, `doi_cach_tra(vai)` kiểm và trả. |
+| `backend/app/routes/phieu.py` | 985–1005, 1007–1082, 1084–1180 | `_cach_tra_mac_dinh` lấy mặc định từ tuyến / khách; `_ap_dong_chi` áp quyền từng dòng; `_ap_gia` gắn giá gợi ý. |
+| `backend/app/routes/tuyen.py` | — | API lấy cách trả gợi ý theo tuyến. |
+| `frontend/modules/phieu-xuat-xe/phieu-xuat-xe.js` | — | Ẩn ô cách trả với Bãi (vai yard). |
+| `frontend/modules/phieu-xuat-xe/phieu-xuat-xe.html` | — | Như trên. |
+
+### Tìm xe / tài xế (frontend: js/chung.js; frontend/modules/phieu-xuat-xe)
+
+| Tệp | Dòng | Thay đổi |
+|---|---|---|
+| `frontend/js/chung.js` | — | `EPL.locChon` ô tìm (tim), `EPL.hopNhap` hộp Đổi xe. |
+| `frontend/modules/phieu-xuat-xe/phieu-xuat-xe.js` | — | Ô tìm, hộp Đổi xe, chọn đúng ô trong Excel. |
+| `frontend/modules/phieu-xuat-xe/phieu-xuat-xe.html` | — | Như trên. |
+
+### Khoản mục chi phí cấu hình được (backend: app/services · app/routes; frontend/modules/khoan-muc)
+
+| Tệp | Dòng | Thay đổi |
+|---|---|---|
+| `backend/app/services/khoan_muc.py` | — | Mới (lấy, sửa khoản mục). |
+| `backend/app/routes/khoan_muc.py` | — | API GET · POST · PUT · DELETE khoản mục. |
+| `backend/app/models.py` | — | CostItem (tên, mã, màu…). |
+| `backend/app/main.py` | — | Nạp router + nạp dữ liệu lúc khởi động. |
+| `backend/app/services/ban_giao.py` | — | Lấy tên khoản mục (_ten). |
+| `frontend/js/chung.js` | — | `EPL.themTu` (thêm từ menu) · `EPL.napTenKhoanMuc` (nạp tên) · 2 mục menu. |
+| `frontend/modules/khoan-muc/*` | — | Màn quản lý khoản mục. |
+
+### Điểm đổ mở lại — kho dầu từ danh mục Web, trạm ngoài thêm / sửa (backend: app/services · app/routes; frontend/modules/diem-do)
+
+| Tệp | Dòng | Thay đổi |
+|---|---|---|
+| `backend/app/services/diem_do_web.py` | — | Mới (lấy kho từ Web, sửa trạm). |
+| `backend/app/models.py` | — | FuelPlace.wh_id, wh_synced_at. |
+| `backend/app/routes/phieu_linh.py` | — | API quyen / POST / PUT / kho-web / dong-bo-kho. |
+| `backend/app/services/dong_bo_nen.py` | — | `_kho_web` chạy mỗi giờ. |
+| `frontend/modules/diem-do/*` | — | Màn Điểm đổ. |
+
+### Ngôn ngữ (frontend/js/ngon_ngu.js)
+
+| Tệp | Dòng | Thay đổi |
+|---|---|---|
+| `frontend/js/ngon_ngu.js` | — | Thêm khoá dd_*, km_*, nav_diem_do, nav_khoan_muc, title_khoan_muc, px_tim_xe, px_tim_tai_xe, px_ca_kt. Sửa THẲNG tệp (tools/sinh_ngon_ngu.py đã cũ). |
+
+### Bài kiểm
+
+| Tệp | | Thay đổi |
+|---|---|---|
+| `kiem/thu_khoan_muc_diem_do.py` | — | Mới: 38 bước (38/38). |
+| `kiem/thu_cach_tra_kt_chi_phi.py` | — | Mới: 12 bước (12/12). |
+| `kiem/thu_cach_tra.py` | — | Luật mới cách trả theo vai. |
+| `kiem/thu_chi_luong_tune.py` | — | Câu kiểm thứ tự bước nền. |
+
+### GLS (GLS-QLSX-APIs: Backend.API/Database/Scripts)
+
+| Tệp | Dòng | Thay đổi |
+|---|---|---|
+| `20261007_menu_khai_bao_kho.sql` | — | Chạy trên DB demo 08/10 (menu Quản lý kho → Khai báo kho). |
 
 ---
 

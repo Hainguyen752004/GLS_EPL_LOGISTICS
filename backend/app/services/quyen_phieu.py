@@ -108,6 +108,20 @@ def quyen(p, vai, moi=False):
         return (m in q["edit"] and s in ("wait", "entered")) or (m in q["verify"] and s == "entered") \
             or (m in q["book"] and s == "verified") or (m in q["pay"] and s == "booked" and not (m == "travel" and iv_khong_tm))
 
+    thay_chi = PQ.thay_tien_chi(vai)
+
+    def gia(m):                                                                                   # JS 374 giaDuoc (mức mục)
+        """Nhập đơn giá dòng chi mua ngoài: người sửa mục, hoặc người KIỂM mục III–VI khi mục còn chờ / đã nhập. Bãi không thấy tiền."""
+        if not thay_chi:
+            return False
+        if moi:
+            return True
+        return sua(m) or (m in MUC_CHI and not bi_khoa and m in q["verify"] and st(m) in ("wait", "entered"))
+
+    def gui(m):                                                                                   # JS 386 guiMuc
+        """Lưu phiếu có gửi dòng chi của mục này không (mục khoá gửi lên là API từ chối cả phiếu)."""
+        return sua(m) or (not moi and gia(m))
+
     muc = {}
     tra_duoc = not p.get("locked") or admin                                                       # JS 417
     for m in MUC:
@@ -133,7 +147,37 @@ def quyen(p, vai, moi=False):
             if admin and s not in ("wait", "entered"):
                 viec.append("unlock")
         muc[m] = {"trang_thai": s, "nhan": "stt_na" if tuy_chon else nhan(m, s), "sua": sua(m),
-                  "sua_tien": sua_tien(m), "tuy_chon": tuy_chon, "viec": viec, "co_viec": co_viec(m, s)}
+                  "sua_tien": sua_tien(m), "tuy_chon": tuy_chon, "viec": viec, "co_viec": co_viec(m, s),
+                  # 11b — dòng chi III–VI: nhập giá · gửi dòng khi lưu · đổi mã kế toán (JS 273: acct · fuel · rev, khi gửi được dòng)
+                  "gia": m in MUC_CHI and gia(m), "gui": m in MUC_CHI and gui(m),
+                  "tk": m in MUC_CHI and thay_chi and _la(vai, "acct", "fuel", "rev") and gui(m)}
+
+    # ô trạng thái phiếu chi bên hệ kế toán cạnh nút mục (JS 944 oChiKeToan · 955 oChiMuc): tạm ứng mục IV · "Chi khác" mục V, VI —
+    # từ lúc ghi sổ; lần gần nhất chưa huỷ. nut: cap-nhat (chờ thủ quỹ) · gui (lỗi / phiếu bị xoá bên đó — KT Chi phí VC)
+    def chip(ban, nhan_cho, la_muc):
+        if not ban or not ban.get("status"):
+            return None
+        tt = ban["status"]
+        if tt == "da_chi":
+            nhan_ = "ck_da_chi"
+        elif tt == "da_gui":
+            nhan_ = nhan_cho
+        else:
+            nhan_ = "ck_phieu_mat" if la_muc and ban.get("error_code") == "PHIEU_CHI_MAT" else "ck_loi_ngan"
+        nut = ["cap-nhat"] if tt == "da_gui" else (["gui"] if tt != "da_chi" and _la(vai, "expacct") else [])
+        return {"trang_thai": tt, "nhan": nhan_, "so": ban.get("document_no"), "luc": ban.get("post_at"), "nguoi": ban.get("post_by"),
+                "loi": ban.get("error_message"), "nut": nut}
+
+    chi_kt = {}
+    if not moi:
+        ctu = p.get("chi_tam_ung") or {}
+        if ctu.get("o_ke_toan") and st("travel") in ("booked", "paid"):
+            chi_kt["travel"] = chip(ctu, "ck_cho_chi", False)
+        for m in ("repair", "other"):
+            c = (p.get("chi_muc_ke_toan") or {}).get(m) or {}
+            lan = [r for r in (c.get("lan") or []) if r.get("status") != "huy"]
+            if c.get("o_ke_toan") and st(m) in ("booked", "paid") and lan:
+                chi_kt[m] = chip(lan[-1], "cmt_cho_chi", True)
 
     phieu = []                                                                                    # JS 441–455
     if not moi:
@@ -149,6 +193,9 @@ def quyen(p, vai, moi=False):
             phieu.append("arrived")
         if _la(vai, "yard") and not khoa and all(st(m) in ("wait", "entered") for m in MUC):
             phieu.append("xoa")
+    ctu = p.get("chi_tam_ung") or {}
+    nhac_ung = ({"nhan": "px_nhac_ung_loi" if ctu["status"] == "loi" else "px_nhac_ung_cho", "so": ctu.get("document_no") or ""}
+                if "transit" in phieu and ctu.get("o_ke_toan") and ctu.get("status") and ctu["status"] != "da_chi" else None)
 
     # bảng "Hàng trên phiếu" (JS 204–223 · 921): DO gom một mặt hàng không có bảng (máy ghi dòng từ Loại hàng + Cân tại mỏ); cột "Lấy
     # từ lô" chỉ DO giao; gom đã về bãi là hàng đã vào kho — bảng và hai ô cân đóng; câu nhắc dưới bảng theo đúng ca
@@ -172,6 +219,53 @@ def quyen(p, vai, moi=False):
             "thay_gia_kho": PQ.thay_gia_kho(vai), "o": o, "muc": muc, "phieu": phieu, "tab_mac_dinh": tab, "hang": hang,
             # ô Cách trả dòng mục IV / VI (08/10): chỉ KT Chi phí VC lúc kiểm mục (cùng lúc nhập đơn giá) và Sếp — Bãi không chọn
             "cach_tra": {m: PQ.doi_cach_tra(vai) and sua_tien(m) for m in ("travel", "other")},
+            # nút "Gửi lại" phiếu chi tạm ứng (mục IV) / "Chi khác" (mục V, VI) bên kế toán khi lỗi (JS 951 · 964)
+            "gui_lai_chi": _la(vai, "expacct"),
+            "chi_ke_toan": chi_kt,                                                                # {mục: ô trạng thái phiếu chi bên kế toán}
+            # 11c — tệp đính kèm (phiếu quặng · ảnh POD; JS 1155: Bãi, KT Thu/Chi, KT Doanh thu, phiếu chưa khoá với vai đó) · khối
+            # "chi thật" mục IV (JS 767: KT Chi phí VC, xe nhà, mục IV đã chi, có dòng tiền mặt tài xế cầm) · ô hỏi khi "Xe đã tới"
+            # (JS 1016: DO gom một mặt hàng hỏi cân tại mỏ; DO giao hỏi số / người nhận POD)
+            "tep": {"them": (not moi) and _la(vai, "yard", "acct", "rev") and not bi_khoa},
+            "chi_that": (not moi) and p.get("company") != "joint" and _la(vai, "expacct") and st("travel") == "paid"
+            and any(d.get("section") == "travel" and d.get("tien_mat_tx") for d in dong),
+            "xe_toi": {"hoi_can_mo": gom_mot_dong, "hoi_pod": not gom},
+            # câu nhắc cạnh nút "Xuất phát" (JS 953 nhacUngTruocChay): phiếu chi tạm ứng bên kế toán chưa chi / lỗi
+            "nhac_ung": nhac_ung,
             # nút mở tờ đề nghị (11c): vai máy chủ cho lập tờ tạm ứng / xuất nhiên liệu · vai xem phiếu đề nghị thu (JS 1254–1257)
             "lap_de_nghi": _la(vai, "yard", "acct", "expacct", "fuel", "cash", "treasury"),
             "xem_de_nghi_thu": _la(vai, "acct", "expacct", "rev", "treasury", "cash", "fuel")}
+
+
+TOLL = ("x_toll", "x_bridge")                                                                     # khoản trả bằng THẺ cao tốc
+
+
+def quyen_dong(q, d, nguon, xuat_ban):
+    """Quyền trên MỘT dòng chi (11b — màn Web): `q` = quyen(...) của phiếu, `d` = dòng (section, item_key, qty, unit_price,
+    paid_by_epl, stock_move_id, card_move_id), `nguon` kho | mua | None, `xuat_ban` = dòng kho của xe thuê. Chép luật veChi của màn cũ
+    (JS 236–301) — mỗi ô một cờ để Web chỉ việc mở / khoá:
+      dong (khoản, SL, nơi đổ, ghi chú) · gia (đơn giá, tiền tệ — không với dòng kho) · gia_ban / hien_gia_ban (giá bán cho chủ xe) ·
+      epl / chu (hai nút "ai trả" của xe thuê) · the (thẻ cao tốc) · ghi_no (trạm ghi nợ) · nguon (lấy kho / mua, phụ tùng — chưa
+      xuất) · cach_tra / hien_cach_tra (mục IV, VI — Bãi không thấy) · tk (mã kế toán) · xoa · can_gia (dòng EPL ứng chưa có giá)."""
+    m = d.section
+    mq = (q.get("muc") or {}).get(m) or {}
+    sua = bool(mq.get("sua"))
+    epl = d.paid_by_epl is not False
+    toll = (d.item_key or "") in TOLL
+    thay_chi = bool(q.get("thay_tien_chi"))
+    gia_ban = thay_chi and xuat_ban and epl and bool(mq.get("sua_tien"))
+    gia = bool(mq.get("gia")) and nguon != "kho"
+    return {"dong": sua,
+            "gia": gia,
+            "gia_ban": gia_ban,
+            "hien_gia_ban": xuat_ban and epl and (gia_ban or bool(q.get("thay_tien_ban"))),
+            "epl": sua or (xuat_ban and not epl and bool(mq.get("sua_tien"))),
+            "chu": sua and not xuat_ban,
+            "the": sua and m == "travel" and toll and not getattr(d, "card_move_id", None),
+            "hien_the": m == "travel" and toll,
+            "ghi_no": sua and m == "fuel" and nguon != "kho",
+            "nguon": sua and m == "repair" and not getattr(d, "stock_move_id", None),
+            "hien_cach_tra": thay_chi and m in ("travel", "other") and not toll,
+            "cach_tra": bool((q.get("cach_tra") or {}).get(m)) and m in ("travel", "other") and not toll,
+            "tk": bool(mq.get("tk")),
+            "xoa": sua and not getattr(d, "stock_move_id", None) and not getattr(d, "card_move_id", None),
+            "can_gia": gia and epl and (d.qty or 0) > 0 and not (d.unit_price or 0)}

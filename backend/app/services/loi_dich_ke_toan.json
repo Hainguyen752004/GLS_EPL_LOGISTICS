@@ -1,0 +1,3262 @@
+{
+ "(và {1} cặp kho × hàng khác)": {
+  "en": "(and {1} other warehouse × item pairs)",
+  "lo": "(ແລະ ອີກ {1} ຄູ່ ສາງ × ສິນຄ້າ)",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:443"
+ },
+ "({1}) — xoá phiếu đó trên Danh sách chứng từ rồi lập lại.": {
+  "en": "({1}) — delete that note in the Document list, then create it again.",
+  "lo": "({1}) — ລຶບໃບນັ້ນຢູ່ ລາຍການເອກະສານ ແລ້ວສ້າງໃໝ່.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:155"
+ },
+ "(đang dùng) ở chi nhánh.": {
+  "en": "(active) in the branch.",
+  "lo": "(ກຳລັງໃຊ້ງານ) ຢູ່ສາຂາ.",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ ") khác tiền của SO (": {
+  "en": ") differs from the SO currency (",
+  "lo": ") ຕ່າງຈາກສະກຸນເງິນຂອງ SO (",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_Create)"
+ },
+ "); không có gì để gỡ.": {
+  "en": "); nothing to unpost.",
+  "lo": "); ບໍ່ມີຫຍັງໃຫ້ຖອນ.",
+  "o": "Database/Scripts/20261002_cm_unpost_cash_voucher.sql (proc_CM_UnpostCashVoucher)"
+ },
+ "); đã rollback, cần đối soát.": {
+  "en": "); rolled back, reconciliation is needed.",
+  "lo": "); ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ, ຕ້ອງກວດທຽບ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "); đã rollback.": {
+  "en": "); rolled back.",
+  "lo": "); ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ ")} trong danh mục tiền tệ": {
+  "en": ")} in the currency list",
+  "lo": ")} ໃນລາຍການສະກຸນເງິນ",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:680"
+ },
+ ")} {sourceRef} ở trang điều xe ({e.Message}) — chưa huỷ phiếu kho; thử lại sau.": {
+  "en": ")} {sourceRef} in EPL ({e.Message}) — the stock note has not been cancelled; try again later.",
+  "lo": ")} {sourceRef} ຢູ່ EPL ບໍ່ໄດ້ ({e.Message}) — ຍັງບໍ່ໄດ້ຍົກເລີກໃບສາງ; ລອງໃໝ່ພາຍຫຼັງ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockCancelService.cs:113"
+ },
+ ")}, tối đa 5 số lẻ.": {
+  "en": ")}, with at most 5 decimal places.",
+  "lo": ")}, ບໍ່ເກີນ 5 ຕຳແໜ່ງທົດສະນິຍົມ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:838"
+ },
+ ". Không lưu tham chiếu bằng cách đoán thứ tự.": {
+  "en": ". References are not saved by guessing the order.",
+  "lo": ". ບໍ່ບັນທຶກການອ້າງອີງໂດຍການເດົາລຳດັບ.",
+  "o": "Modules/Finance/Accounting/Infrastructure/CMPaymentReceiptRepository.cs:704"
+ },
+ "20261005_logistics_stock_issue.sql (đọc đầu phiếu không đối tượng) rồi mở phiếu lưu lại.": {
+  "en": "20261005_logistics_stock_issue.sql (reads note headers without a party), then open the note and save it again.",
+  "lo": "20261005_logistics_stock_issue.sql (ອ່ານຫົວໃບທີ່ບໍ່ມີຄູ່ບັນຊີ) ແລ້ວເປີດໃບ ບັນທຶກອີກຄັ້ງ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/WarehouseService.cs:189"
+ },
+ ": nguồn xác nhận delivered; bỏ qua sản xuất/kho QLSX.": {
+  "en": ": delivered confirmed by the source; production/the accounting system's warehouse skipped.",
+  "lo": ": ແຫຼ່ງທີ່ມາຢືນຢັນ delivered; ຂ້າມການຜະລິດ/ສາງຂອງລະບົບບັນຊີ.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ ": xuất kho ở trang điều xe; bỏ qua sản xuất / kho QLSX.": {
+  "en": ": stock issued in EPL; production / the accounting system's warehouse skipped.",
+  "lo": ": ເບີກອອກສາງຢູ່ EPL; ຂ້າມການຜະລິດ / ສາງຂອງລະບົບບັນຊີ.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Amount phải > 0, tối đa 5 số lẻ.": {
+  "en": "Amount must be > 0, with at most 5 decimal places.",
+  "lo": "Amount ຕ້ອງ > 0, ບໍ່ເກີນ 5 ຕຳແໜ່ງທົດສະນິຍົມ.",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:73"
+ },
+ "Body phải là JSON object.": {
+  "en": "The body must be a JSON object.",
+  "lo": "Body ຕ້ອງເປັນ JSON object.",
+  "o": "Modules/Sales/Sales/Application/LogisticsFuelSalesOrderService.cs:122"
+ },
+ "Bút toán chưa hợp lệ:": {
+  "en": "Invalid journal entry:",
+  "lo": "ບັນທຶກບັນຊີບໍ່ຖືກຕ້ອງ:",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:98"
+ },
+ "Bút toán phải có ít nhất một dòng.": {
+  "en": "A journal entry must have at least one line.",
+  "lo": "ບັນທຶກບັນຊີຕ້ອງມີຢ່າງໜ້ອຍໜຶ່ງແຖວ.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "Bút toán {1} của phiếu kho đã {(existing.IsLocked ?": {
+  "en": "Journal entry {1} of the stock note is already {(existing.IsLocked ?",
+  "lo": "ບັນທຶກບັນຊີ {1} ຂອງໃບສາງ ຢູ່ໃນສະຖານະ {(existing.IsLocked ?",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:297"
+ },
+ "Bấm \"Cấp dầu\" lại để gửi lại (không lập phiếu kho thứ hai).": {
+  "en": "Press \"Issue fuel\" again to resend (no second stock note is created).",
+  "lo": "ກົດ \"ຈ່າຍນໍ້າມັນ\" ອີກຄັ້ງເພື່ອສົ່ງໃໝ່ (ບໍ່ສ້າງໃບສາງໃບທີສອງ).",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsFuelVoucherService.cs:170"
+ },
+ "Bắt buộc truyền TRY_AUTOID hợp lệ.": {
+  "en": "A valid TRY_AUTOID is required.",
+  "lo": "ຕ້ອງສົ່ງ TRY_AUTOID ທີ່ຖືກຕ້ອງ.",
+  "o": "Database/Scripts/20260909_country_account.sql (proc_PUBAccountCountry_GetList)"
+ },
+ "Bộ phận (Cost Center) không tồn tại hoặc không thuộc chi nhánh của phiếu.": {
+  "en": "The Cost Center does not exist or does not belong to the voucher's branch.",
+  "lo": "ພະແນກ (Cost Center) ບໍ່ມີ ຫຼື ບໍ່ຂຶ້ນກັບສາຂາຂອງໃບ.",
+  "o": "Database/Scripts/20260908_cash_voucher_cost_assignment.sql (proc_PP_CashVoucherCostAssignment_Save)"
+ },
+ "CCCD/CMND phải gồm 9 hoặc 12 chữ số.": {
+  "en": "The CCCD/CMND ID number must have 9 or 12 digits.",
+  "lo": "CCCD/CMND ຕ້ອງມີ 9 ຫຼື 12 ຕົວເລກ.",
+  "o": "Modules/Shared/MasterData/Api/V1/CommonController.cs:332"
+ },
+ "CashVoucher lỗi tại bước {1}: {2}": {
+  "en": "CashVoucher failed at step {1}: {2}",
+  "lo": "CashVoucher ຜິດພາດຢູ່ຂັ້ນຕອນ {1}: {2}",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:444"
+ },
+ "CashVoucher thiếu kỳ tài chính hợp lệ (FiciAutoId).": {
+  "en": "CashVoucher is missing a valid fiscal period (FiciAutoId).",
+  "lo": "CashVoucher ຂາດງວດບັນຊີທີ່ຖືກຕ້ອງ (FiciAutoId).",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:594"
+ },
+ "CashVoucher thiếu loại chứng từ hợp lệ (DotyAutoId).": {
+  "en": "CashVoucher is missing a valid document type (DotyAutoId).",
+  "lo": "CashVoucher ຂາດປະເພດເອກະສານທີ່ຖືກຕ້ອງ (DotyAutoId).",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:600"
+ },
+ "CashVoucher thiếu loại tiền hợp lệ (CurrencyId).": {
+  "en": "CashVoucher is missing a valid currency (CurrencyId).",
+  "lo": "CashVoucher ຂາດສະກຸນເງິນທີ່ຖືກຕ້ອງ (CurrencyId).",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:597"
+ },
+ "CashVoucher thiếu đơn vị/chi nhánh hợp lệ (OrgId).": {
+  "en": "CashVoucher is missing a valid unit/branch (OrgId).",
+  "lo": "CashVoucher ຂາດຫົວໜ່ວຍ/ສາຂາທີ່ຖືກຕ້ອງ (OrgId).",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:591"
+ },
+ "CashVoucher thiếu đối tượng hợp lệ (OBJ_AUTOID).": {
+  "en": "CashVoucher is missing a valid party (OBJ_AUTOID).",
+  "lo": "CashVoucher ຂາດຄູ່ບັນຊີທີ່ຖືກຕ້ອງ (OBJ_AUTOID).",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:603"
+ },
+ "Cha phải đang hoạt động, là tài khoản tổng hợp và không phải chính nó.": {
+  "en": "The parent must be active, be a summary account, and not be the account itself.",
+  "lo": "ບັນຊີແມ່ຕ້ອງກຳລັງໃຊ້ງານ, ເປັນບັນຊີສັງລວມ ແລະ ບໍ່ແມ່ນບັນຊີຕົວມັນເອງ.",
+  "o": "Database/Scripts/20260913_lao_accounts_crud.sql (proc_LaoAccounts_CRUD)"
+ },
+ "Chi nhánh / người tạo nghiệp vụ (cấu hình LogisticsFuelSalesOrder) không tồn tại hoặc ngừng hoạt động.": {
+  "en": "The branch / transaction creator (LogisticsFuelSalesOrder configuration) does not exist or is inactive.",
+  "lo": "ສາຂາ / ຜູ້ສ້າງທຸລະກຳ (ການຕັ້ງຄ່າ LogisticsFuelSalesOrder) ບໍ່ມີ ຫຼື ຢຸດໃຊ້ງານແລ້ວ.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Chi nhánh EPL không dùng \"Thanh toán ngay\" khi nhập kho (lõi sẽ tự lập phiếu chi theo tài khoản Việt Nam).": {
+  "en": "The EPL branch does not use \"Pay now\" on stock receipts (the core would create a payment voucher on the Vietnamese chart of accounts).",
+  "lo": "ສາຂາ EPL ບໍ່ໃຊ້ \"ຈ່າຍທັນທີ\" ຕອນຮັບເຂົ້າສາງ (ລະບົບຫຼັກຈະສ້າງໃບຈ່າຍເອງຕາມຜັງບັນຊີຫວຽດນາມ).",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:255"
+ },
+ "Chi nhánh EPL không dùng «Xuất nội bộ» (65) — phiếu 65 không có bút toán tài khoản Lào và không theo giá vốn": {
+  "en": "The EPL branch does not use «Internal issue» (65) — type 65 notes have no Lao-account journal entry and do not follow the average",
+  "lo": "ສາຂາ EPL ບໍ່ໃຊ້ «ເບີກພາຍໃນ» (65) — ໃບ 65 ບໍ່ມີບັນທຶກບັນຊີຕາມຜັງບັນຊີລາວ ແລະ ບໍ່ໃຊ້ລາຄາຕົ້ນທຶນ",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:489"
+ },
+ "Chi nhánh EPL: phiếu xuất bán (44) chỉ lập từ đơn hàng bán (xuất kho của SO — giá bán, giá vốn bình quân và": {
+  "en": "EPL branch: sales issue notes (44) are created only from sales orders (the SO's stock issue — sale price, average cost and",
+  "lo": "ສາຂາ EPL: ໃບເບີກຂາຍ (44) ສ້າງໄດ້ສະເພາະຈາກໃບສັ່ງຂາຍ (ການເບີກສາງຂອງ SO — ລາຄາຂາຍ, ລາຄາຕົ້ນທຶນສະເລ່ຍ ແລະ",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:505"
+ },
+ "Chưa bật cấu hình LogisticsFuelSalesOrder / LogisticsSalesPush.": {
+  "en": "The LogisticsFuelSalesOrder / LogisticsSalesPush configuration is not enabled.",
+  "lo": "ຍັງບໍ່ໄດ້ເປີດການຕັ້ງຄ່າ LogisticsFuelSalesOrder / LogisticsSalesPush.",
+  "o": "Modules/Sales/Sales/Application/LogisticsFuelSalesOrderService.cs:104"
+ },
+ "Chưa bật cấu hình LogisticsJournalEntry.": {
+  "en": "The LogisticsJournalEntry configuration is not enabled.",
+  "lo": "ຍັງບໍ່ໄດ້ເປີດການຕັ້ງຄ່າ LogisticsJournalEntry.",
+  "o": "Modules/Finance/Accounting/Api/V1/LogisticsJournalEntryController.cs:214"
+ },
+ "Chưa bật cấu hình LogisticsSalesPush.": {
+  "en": "The LogisticsSalesPush configuration is not enabled.",
+  "lo": "ຍັງບໍ່ໄດ້ເປີດການຕັ້ງຄ່າ LogisticsSalesPush.",
+  "o": "Modules/Sales/Sales/Api/V1/LogisticsPushController.cs:33"
+ },
+ "Chưa bật cấu hình LogisticsStock (kho EPL) — chưa đọc được phiếu xuất kho.": {
+  "en": "The LogisticsStock configuration (EPL warehouse) is not enabled — stock-out notes cannot be read.",
+  "lo": "ຍັງບໍ່ໄດ້ເປີດການຕັ້ງຄ່າ LogisticsStock (ສາງ EPL) — ຍັງອ່ານໃບເບີກອອກສາງບໍ່ໄດ້.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:474"
+ },
+ "Chưa bật cấu hình LogisticsStock (kho EPL).": {
+  "en": "The LogisticsStock configuration (EPL warehouse) is not enabled.",
+  "lo": "ຍັງບໍ່ໄດ້ເປີດການຕັ້ງຄ່າ LogisticsStock (ສາງ EPL).",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsFuelVoucherService.cs:277"
+ },
+ "Chưa bật cấu hình LogisticsStock.": {
+  "en": "The LogisticsStock configuration is not enabled.",
+  "lo": "ຍັງບໍ່ໄດ້ເປີດການຕັ້ງຄ່າ LogisticsStock.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockCancelService.cs:134"
+ },
+ "Chưa bật cấu hình SalesDebtCollectionOffset.": {
+  "en": "The SalesDebtCollectionOffset configuration is not enabled.",
+  "lo": "ຍັງບໍ່ໄດ້ເປີດການຕັ້ງຄ່າ SalesDebtCollectionOffset.",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:231"
+ },
+ "Chưa có kỳ kế toán (FICI) cho ngày chứng từ.": {
+  "en": "There is no accounting period (FICI) for the document date yet.",
+  "lo": "ຍັງບໍ່ມີງວດບັນຊີ (FICI) ສຳລັບວັນທີເອກະສານ.",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Chưa cấu hình CenterConnectionStrings.": {
+  "en": "CenterConnectionStrings is not configured.",
+  "lo": "ຍັງບໍ່ໄດ້ຕັ້ງຄ່າ CenterConnectionStrings.",
+  "o": "Modules/Finance/Accounting/Infrastructure/CashVoucherCombinedRepository.cs:29"
+ },
+ "Chưa cấu hình LogisticsStock.CurrencyId (tiền của kho EPL).": {
+  "en": "LogisticsStock.CurrencyId (EPL warehouse currency) is not configured.",
+  "lo": "ຍັງບໍ່ໄດ້ຕັ້ງຄ່າ LogisticsStock.CurrencyId (ສະກຸນເງິນຂອງສາງ EPL).",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:303"
+ },
+ "Chưa cấu hình OrgId / CountryId cho LogisticsJournalEntry.": {
+  "en": "OrgId / CountryId is not configured for LogisticsJournalEntry.",
+  "lo": "ຍັງບໍ່ໄດ້ຕັ້ງຄ່າ OrgId / CountryId ສຳລັບ LogisticsJournalEntry.",
+  "o": "Modules/Finance/Accounting/Api/V1/LogisticsJournalEntryController.cs:242"
+ },
+ "Chưa cấu hình SalesDebtCollectionOffset (CountryId, PayableAccountRole, ReceivableAccountRole).": {
+  "en": "SalesDebtCollectionOffset is not configured (CountryId, PayableAccountRole, ReceivableAccountRole).",
+  "lo": "ຍັງບໍ່ໄດ້ຕັ້ງຄ່າ SalesDebtCollectionOffset (CountryId, PayableAccountRole, ReceivableAccountRole).",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:241"
+ },
+ "Chưa cấu hình nguồn Logistics (LogisticsSource:BaseUrl). Liên hệ quản trị để đặt địa chỉ trang điều xe.": {
+  "en": "The Logistics source is not configured (LogisticsSource:BaseUrl). Contact the administrator to set the EPL address.",
+  "lo": "ຍັງບໍ່ໄດ້ຕັ້ງຄ່າແຫຼ່ງ Logistics (LogisticsSource:BaseUrl). ຕິດຕໍ່ຜູ້ດູແລລະບົບ ເພື່ອຕັ້ງທີ່ຢູ່ຂອງ EPL.",
+  "o": "Modules/SupplyChain/Warehouse/Infrastructure/LogisticsFuelVoucherClient.cs:246"
+ },
+ "Chưa cấu hình đủ LogisticsFuelSalesOrder (BranchId, CreatedByObjectId) / LogisticsSalesPush (quầy / POS / bàn / khu vực / loại hình).": {
+  "en": "LogisticsFuelSalesOrder (BranchId, CreatedByObjectId) / LogisticsSalesPush (counter / POS / table / area / type) are not fully configured.",
+  "lo": "ຍັງຕັ້ງຄ່າ LogisticsFuelSalesOrder (BranchId, CreatedByObjectId) / LogisticsSalesPush (ເຄົາເຕີ / POS / ໂຕະ / ເຂດ / ປະເພດ) ບໍ່ຄົບ.",
+  "o": "Modules/Sales/Sales/Application/LogisticsFuelSalesOrderService.cs:113"
+ },
+ "Chưa cấu hình đủ LogisticsStock (BranchId, CurrencyId, AmountDecimals ≤ 5).": {
+  "en": "LogisticsStock is not fully configured (BranchId, CurrencyId, AmountDecimals ≤ 5).",
+  "lo": "ຍັງຕັ້ງຄ່າ LogisticsStock ບໍ່ຄົບ (BranchId, CurrencyId, AmountDecimals ≤ 5).",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:803"
+ },
+ "Chưa cấu hình đủ LogisticsStock (CurrencyId tiền kho EPL, AmountDecimals ≤ 5).": {
+  "en": "LogisticsStock is not fully configured (CurrencyId for the EPL warehouse currency, AmountDecimals ≤ 5).",
+  "lo": "ຍັງຕັ້ງຄ່າ LogisticsStock ບໍ່ຄົບ (CurrencyId ສະກຸນເງິນສາງ EPL, AmountDecimals ≤ 5).",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:512"
+ },
+ "Chưa cấu hình đủ quầy/POS/bàn/khu vực/loại hình kinh doanh.": {
+  "en": "Counter/POS/table/area/business type are not fully configured.",
+  "lo": "ຍັງຕັ້ງຄ່າ ເຄົາເຕີ/POS/ໂຕະ/ເຂດ/ປະເພດທຸລະກິດ ບໍ່ຄົບ.",
+  "o": "Modules/Sales/Sales/Api/V1/LogisticsPushController.cs:37"
+ },
+ "Chưa gỡ được bút toán cấn trừ {1} ({2});": {
+  "en": "The offset journal entry {1} could not be reversed ({2});",
+  "lo": "ຍັງຖອນບັນທຶກບັນຊີຫັກລົບ {1} ບໍ່ໄດ້ ({2});",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:161"
+ },
+ "Chưa gỡ được bút toán {1} của phiếu kho: {2} ({3}) — chưa xoá phiếu.": {
+  "en": "Journal entry {1} of the stock note could not be reversed: {2} ({3}) — the note has not been deleted.",
+  "lo": "ຍັງຖອນບັນທຶກບັນຊີ {1} ຂອງໃບສາງບໍ່ໄດ້: {2} ({3}) — ຍັງບໍ່ໄດ້ລຶບໃບ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:178"
+ },
+ "Chưa hoàn tất (lỗi DB). Kiểm tra DB / thủ tục rồi gọi lại cùng Idempotency-Key.": {
+  "en": "Not completed (database error). Check the database / procedure, then call again with the same Idempotency-Key.",
+  "lo": "ຍັງບໍ່ສຳເລັດ (ຖານຂໍ້ມູນຜິດພາດ). ກວດຖານຂໍ້ມູນ / procedure ແລ້ວເອີ້ນໃໝ່ດ້ວຍ Idempotency-Key ເດີມ.",
+  "o": "Modules/Sales/Sales/Api/V1/DebtCollectionOffsetController.cs:133"
+ },
+ "Chưa hoàn tất (lỗi DB, đã rollback). Kiểm tra DB / thủ tục rồi gọi lại.": {
+  "en": "Not completed (DB error, rolled back). Check the DB / procedure and call again.",
+  "lo": "ຍັງບໍ່ສຳເລັດ (DB ຜິດພາດ, ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ). ກວດ DB / ຂັ້ນຕອນ ແລ້ວເອີ້ນໃໝ່.",
+  "o": "Modules/Finance/Accounting/Api/V1/CMPaymentReceiptController.cs:467"
+ },
+ "Chưa hoàn tất xử lý (lỗi DB, đã rollback). Kiểm tra DB / thủ tục rồi gửi lại cùng Idempotency-Key.": {
+  "en": "Processing did not complete (database error, rolled back). Check the database / procedure, then resend with the same Idempotency-Key.",
+  "lo": "ຍັງດຳເນີນການບໍ່ສຳເລັດ (ຖານຂໍ້ມູນຜິດພາດ, rollback ແລ້ວ). ກວດຖານຂໍ້ມູນ / procedure ແລ້ວສົ່ງໃໝ່ດ້ວຍ Idempotency-Key ເດີມ.",
+  "o": "Modules/Sales/Sales/Api/V1/LogisticsFuelSalesOrderController.cs:127"
+ },
+ "Chưa hoàn tất xử lý (lỗi DB, đã rollback). Kiểm tra DB / thủ tục rồi gửi lại cùng SourceRef.": {
+  "en": "Processing did not complete (database error, rolled back). Check the database / procedure, then resend with the same SourceRef.",
+  "lo": "ຍັງດຳເນີນການບໍ່ສຳເລັດ (ຖານຂໍ້ມູນຜິດພາດ, rollback ແລ້ວ). ກວດຖານຂໍ້ມູນ / procedure ແລ້ວສົ່ງໃໝ່ດ້ວຍ SourceRef ເດີມ.",
+  "o": "Modules/SupplyChain/Warehouse/Api/V1/LogisticsStockController.cs:189"
+ },
+ "Chưa hoàn tất xử lý. Kiểm tra DB / thủ tục rồi gửi lại cùng SourceRef.": {
+  "en": "Processing did not complete. Check the DB / procedure, then resend with the same SourceRef.",
+  "lo": "ຍັງດຳເນີນການບໍ່ສຳເລັດ. ກວດ DB / ຂັ້ນຕອນ ແລ້ວສົ່ງໃໝ່ດ້ວຍ SourceRef ເດີມ.",
+  "o": "Modules/Finance/Accounting/Api/V1/LogisticsJournalEntryController.cs:271"
+ },
+ "Chưa hoàn tất xử lý. Kiểm tra DB/procedure và retry cùng Idempotency-Key.": {
+  "en": "Processing did not complete. Check the database/procedure and retry with the same Idempotency-Key.",
+  "lo": "ຍັງດຳເນີນການບໍ່ສຳເລັດ. ກວດຖານຂໍ້ມູນ/procedure ແລ້ວລອງໃໝ່ດ້ວຍ Idempotency-Key ເດີມ.",
+  "o": "Modules/Sales/Sales/Api/V1/LogisticsPushController.cs:56"
+ },
+ "Chưa huỷ được phiếu thu nợ (lỗi DB, đã rollback). Kiểm tra DB / thủ tục rồi gọi lại.": {
+  "en": "The debt collection receipt could not be cancelled (database error, rolled back). Check the database / procedure, then call again.",
+  "lo": "ຍັງຍົກເລີກໃບຮັບຊຳລະໜີ້ບໍ່ໄດ້ (ຖານຂໍ້ມູນຜິດພາດ, rollback ແລ້ວ). ກວດຖານຂໍ້ມູນ / procedure ແລ້ວເອີ້ນໃໝ່.",
+  "o": "Modules/Sales/Sales/Api/V1/DebtCollectionController.cs:182"
+ },
+ "Chưa kiểm được {(fuel ?": {
+  "en": "Could not check {(fuel ?",
+  "lo": "ຍັງກວດ {(fuel ?",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockCancelService.cs:113"
+ },
+ "Chưa lưu phiếu.": {
+  "en": "The note has not been saved.",
+  "lo": "ຍັງບໍ່ໄດ້ບັນທຶກໃບ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:445"
+ },
+ "Chưa lập được bút toán cho phiếu kho {1}: {2} Gỡ phiếu kho vừa lưu cũng hỏng": {
+  "en": "The journal entry for stock note {1} could not be created: {2} Removing the just-saved stock note also failed",
+  "lo": "ຍັງສ້າງບັນທຶກບັນຊີໃຫ້ໃບສາງ {1} ບໍ່ໄດ້: {2} ການຖອນໃບສາງທີ່ຫາກໍ່ບັນທຶກກໍ່ລົ້ມເຫຼວ",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:154"
+ },
+ "Chưa lập được bút toán cho phiếu kho: {1} Phiếu kho chưa lưu (đã gỡ) — sửa nguyên nhân rồi lưu lại.": {
+  "en": "The journal entry for the stock note could not be created: {1} The stock note was not saved (removed) — fix the cause, then save again.",
+  "lo": "ຍັງສ້າງບັນທຶກບັນຊີໃຫ້ໃບສາງບໍ່ໄດ້: {1} ໃບສາງຍັງບໍ່ໄດ້ບັນທຶກ (ຖອນແລ້ວ) — ແກ້ສາເຫດ ແລ້ວບັນທຶກອີກຄັ້ງ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:153"
+ },
+ "Chưa lập được phiếu xuất kho (lỗi DB, đã rollback). Kiểm tra DB / thủ tục rồi bấm Cấp dầu lại.": {
+  "en": "The stock-out note could not be created (database error, rolled back). Check the database / procedure, then press Issue fuel again.",
+  "lo": "ຍັງສ້າງໃບເບີກອອກສາງບໍ່ໄດ້ (ຖານຂໍ້ມູນຜິດພາດ, rollback ແລ້ວ). ກວດຖານຂໍ້ມູນ / procedure ແລ້ວກົດ ຈ່າຍນໍ້າມັນ ອີກຄັ້ງ.",
+  "o": "Modules/SupplyChain/Warehouse/Api/V1/LogisticsFuelVoucherController.cs:113"
+ },
+ "Chưa triển khai migration Vụ việc/Bộ phận. Không thể lưu lựa chọn nguồn.": {
+  "en": "The Job/Department migration has not been deployed. The source selection cannot be saved.",
+  "lo": "ຍັງບໍ່ໄດ້ຕິດຕັ້ງ migration ວຽກງານ/ພະແນກ. ບັນທຶກການເລືອກແຫຼ່ງບໍ່ໄດ້.",
+  "o": "Modules/Finance/Accounting/Infrastructure/CMPaymentReceiptRepository.cs:532"
+ },
+ "Chưa áp được giá vốn bình quân di động cho phiếu xuất bán: {1}": {
+  "en": "The moving average cost could not be applied to the sales issue note: {1}",
+  "lo": "ຍັງນຳໃຊ້ລາຄາຕົ້ນທຶນສະເລ່ຍເຄື່ອນທີ່ໃຫ້ໃບເບີກຂາຍບໍ່ໄດ້: {1}",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:568"
+ },
+ "Chưa đọc được loại phiếu xuất kho (lỗi DB). Thử lại sau.": {
+  "en": "Could not read the stock-out note types (database error). Try again later.",
+  "lo": "ຍັງອ່ານປະເພດໃບເບີກອອກສາງບໍ່ໄດ້ (ຖານຂໍ້ມູນຜິດພາດ). ລອງໃໝ່ພາຍຫຼັງ.",
+  "o": "Modules/SupplyChain/Warehouse/Api/V1/LogisticsStockDocumentController.cs:61"
+ },
+ "Chưa đọc được phiếu theo khoá dòng. Thử lại sau.": {
+  "en": "Could not read the vouchers by line key yet. Try again later.",
+  "lo": "ຍັງອ່ານໃບຕາມກະແຈແຖວບໍ່ໄດ້. ກະລຸນາລອງໃໝ່ພາຍຫຼັງ.",
+  "o": "Modules/Finance/Accounting/Api/V1/LogisticsLineVoucherController.cs:72"
+ },
+ "Chỉ Nhà sản xuất được phép gán nhóm và mặt hàng có thể sản xuất.": {
+  "en": "Only a Manufacturer can be assigned producible groups and items.",
+  "lo": "ສະເພາະ ຜູ້ຜະລິດ ຈຶ່ງກຳນົດກຸ່ມ ແລະ ສິນຄ້າທີ່ສາມາດຜະລິດໄດ້.",
+  "o": "Modules/Shared/ObjectManagement/Application/ObjectService.cs:160"
+ },
+ "Chỉ gửi schemaVersion, header, details.": {
+  "en": "Send only schemaVersion, header and details.",
+  "lo": "ສົ່ງໄດ້ສະເພາະ schemaVersion, header, details.",
+  "o": "Modules/Sales/Sales/Application/LogisticsFuelSalesOrderService.cs:125"
+ },
+ "Chỉ huỷ được phiếu xuất qua API; phiếu nhập điều chỉnh trên màn kho.": {
+  "en": "Only stock-out notes can be cancelled via the API; stock-in notes are adjusted on the warehouse screen.",
+  "lo": "ຍົກເລີກຜ່ານ API ໄດ້ສະເພາະໃບເບີກອອກສາງ; ໃບຮັບເຂົ້າສາງ ໃຫ້ປັບປຸງຢູ່ໜ້າສາງ.",
+  "o": "Database/Scripts/20261005_logistics_stock_issue.sql (proc_Logistics_StockIssue_Cancel)"
+ },
+ "Chứng từ tổng hợp đã khoá; không gỡ từ tích hợp.": {
+  "en": "The general journal document is locked; it cannot be removed through the integration.",
+  "lo": "ເອກະສານບັນຊີລວມຖືກລັອກແລ້ວ; ຖອນຜ່ານການເຊື່ອມຕໍ່ບໍ່ໄດ້.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Reverse)"
+ },
+ "Chứng từ đã ghi sổ chính thức; kế toán gỡ trong QLSX.": {
+  "en": "The document is officially posted; accounting must unpost it in the accounting system.",
+  "lo": "ເອກະສານບັນທຶກບັນຊີເປັນທາງການແລ້ວ; ບັນຊີຕ້ອງຖອນຢູ່ໃນລະບົບບັນຊີ.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Reverse)"
+ },
+ "CloseBill chưa hoàn thành đúng SO / phiếu bán nhiên liệu.": {
+  "en": "CloseBill did not complete the correct SO / fuel sales slip.",
+  "lo": "CloseBill ຍັງບໍ່ໄດ້ປິດ SO / ໃບຂາຍນ້ຳມັນທີ່ຖືກຕ້ອງ.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "CloseBill chưa hoàn thành đúng SO/phiếu bán liên kết.": {
+  "en": "CloseBill did not complete the correct linked SO/sales slip.",
+  "lo": "CloseBill ຍັງບໍ່ໄດ້ປິດ SO/ໃບຂາຍທີ່ເຊື່ອມໂຍງຢ່າງຖືກຕ້ອງ.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "CloseBill không hoàn tất; toàn bộ yêu cầu phải rollback.": {
+  "en": "CloseBill did not complete; the whole request must be rolled back.",
+  "lo": "CloseBill ບໍ່ສຳເລັດ; ຄຳຂໍທັງໝົດຕ້ອງຍົກເລີກຄືນ (rollback).",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "CloseBill không hoàn tất; toàn bộ yêu cầu đã rollback.": {
+  "en": "CloseBill did not complete; the whole request was rolled back.",
+  "lo": "CloseBill ບໍ່ສຳເລັດ; ຄຳຂໍທັງໝົດໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Có dòng đã nằm trong phiếu thu / chi khác còn hiệu lực; không lập trùng.": {
+  "en": "Some lines are already on another valid receipt / payment voucher; no duplicate is created.",
+  "lo": "ມີແຖວທີ່ຢູ່ໃນໃບຮັບເງິນ / ໃບຈ່າຍອື່ນທີ່ຍັງມີຜົນຢູ່ແລ້ວ; ບໍ່ສ້າງຊ້ຳ.",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CombinedVoucher_Insert)"
+ },
+ "Công nợ do InvoiceDebt tạo chưa khớp Tổng bán chưa thanh toán.": {
+  "en": "The receivable created by InvoiceDebt does not match the unpaid sales total.",
+  "lo": "ໜີ້ທີ່ InvoiceDebt ສ້າງ ບໍ່ກົງກັບຍອດຂາຍທີ່ຍັງບໍ່ໄດ້ຊຳລະ.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "Công nợ do InvoiceDebt tạo chưa khớp tổng SO nhiên liệu chưa thanh toán.": {
+  "en": "The receivable created by InvoiceDebt does not match the unpaid fuel SO total.",
+  "lo": "ໜີ້ທີ່ InvoiceDebt ສ້າງ ບໍ່ກົງກັບຍອດລວມ SO ນ້ຳມັນທີ່ຍັງບໍ່ໄດ້ຊຳລະ.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Cấn trừ công nợ": {
+  "en": "Debt offset",
+  "lo": "ຫັກລົບໜີ້",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_Create)"
+ },
+ "Cấn trừ công nợ đối tác ·": {
+  "en": "Partner debt offset ·",
+  "lo": "ຫັກລົບໜີ້ຄູ່ຮ່ວມ ·",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_Create)"
+ },
+ "Cấn trừ công nợ đối tác · {1} · SO {2}": {
+  "en": "Partner debt offset · {1} · SO {2}",
+  "lo": "ຫັກລົບໜີ້ຄູ່ຮ່ວມ · {1} · SO {2}",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:194"
+ },
+ "Cấn trừ cần khoá, số SO, số tiền > 0, mã tiền, tỷ giá > 0, số đề nghị (RefNo), ngày, quốc gia, người lập, vai tài khoản.": {
+  "en": "An offset requires a key, SO number, amount > 0, currency code, exchange rate > 0, request number (RefNo), date, country, creator and account role.",
+  "lo": "ການຫັກລົບຕ້ອງມີ ກະແຈ, ເລກ SO, ຈຳນວນເງິນ > 0, ລະຫັດສະກຸນເງິນ, ອັດຕາແລກປ່ຽນ > 0, ເລກໃບສະເໜີ (RefNo), ວັນທີ, ປະເທດ, ຜູ້ສ້າງ, ບົດບາດບັນຊີ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_Create)"
+ },
+ "Cấn trừ đã gỡ từ trước; không đổi gì.": {
+  "en": "The offset was already reversed; nothing changed.",
+  "lo": "ການຫັກລົບຖືກຖອນກ່ອນໜ້ານີ້ແລ້ວ; ບໍ່ມີຫຍັງປ່ຽນແປງ.",
+  "o": "Modules/Sales/Sales/Api/V1/DebtCollectionOffsetController.cs:85"
+ },
+ "Cấp dầu theo": {
+  "en": "Fuel issued per",
+  "lo": "ຈ່າຍນໍ້າມັນຕາມ",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsFuelVoucherService.cs:212"
+ },
+ "Cấp số tổng hợp cần OrgId và ngày chứng từ.": {
+  "en": "Assigning a combined number requires OrgId and the document date.",
+  "lo": "ການອອກເລກລວມ ຕ້ອງມີ OrgId ແລະ ວັນທີເອກະສານ.",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CombinedVoucher_NextNo)"
+ },
+ "Cấp {1} lít vượt số đề nghị {2} lít.": {
+  "en": "Issuing {1} litres exceeds the requested {2} litres.",
+  "lo": "ຈ່າຍ {1} ລິດ ເກີນຈຳນວນສະເໜີ {2} ລິດ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsFuelVoucherService.cs:186"
+ },
+ "Cấp {1} lít ít hơn số đề nghị {2} lít — ghi lý do.": {
+  "en": "Issuing {1} litres is less than the requested {2} litres — give a reason.",
+  "lo": "ຈ່າຍ {1} ລິດ ໜ້ອຍກວ່າຈຳນວນສະເໜີ {2} ລິດ — ຂຽນເຫດຜົນ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsFuelVoucherService.cs:192"
+ },
+ "Cấu hình loại hình kinh doanh / khu vực / quầy / POS (LogisticsSalesPush) chưa hợp lệ.": {
+  "en": "The business type / area / counter / POS configuration (LogisticsSalesPush) is invalid.",
+  "lo": "ການຕັ້ງຄ່າ ປະເພດທຸລະກິດ / ເຂດ / ເຄົາເຕີ / POS (LogisticsSalesPush) ບໍ່ຖືກຕ້ອງ.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Cấu hình loại hình kinh doanh/khu vực/quầy/POS chưa hợp lệ.": {
+  "en": "The business type/area/counter/POS configuration is invalid.",
+  "lo": "ການຕັ້ງຄ່າ ປະເພດທຸລະກິດ/ເຂດ/ເຄົາເຕີ/POS ບໍ່ຖືກຕ້ອງ.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "Cần CurrencyCode (tiền của SO).": {
+  "en": "CurrencyCode is required (the SO currency).",
+  "lo": "ຕ້ອງມີ CurrencyCode (ສະກຸນເງິນຂອງ SO).",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:75"
+ },
+ "Cần Date (ngày cấn trừ).": {
+  "en": "Date is required (offset date).",
+  "lo": "ຕ້ອງມີ Date (ວັນທີຫັກລົບ).",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:82"
+ },
+ "Cần DoId.": {
+  "en": "DoId is required.",
+  "lo": "ຕ້ອງມີ DoId.",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CashVoucher_LinesByDo)"
+ },
+ "Cần DocumentDate (ngày chứng từ).": {
+  "en": "DocumentDate is required (document date).",
+  "lo": "ຕ້ອງມີ DocumentDate (ວັນທີເອກະສານ).",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:714"
+ },
+ "Cần DocumentId của phiếu cần {1}.": {
+  "en": "The DocumentId of the voucher to {1} is required.",
+  "lo": "ຕ້ອງມີ DocumentId ຂອງໃບທີ່ຕ້ອງການ {1}.",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:373"
+ },
+ "Cần DocumentId của phiếu thu / phiếu chi.": {
+  "en": "The DocumentId of the receipt / payment voucher is required.",
+  "lo": "ຕ້ອງມີ DocumentId ຂອງໃບຮັບເງິນ / ໃບຈ່າຍ.",
+  "o": "Database/Scripts/20261002_cm_unpost_cash_voucher.sql (proc_CM_UnpostCashVoucher)"
+ },
+ "Cần DocumentId hoặc số chứng từ thu nợ (TKN).": {
+  "en": "A DocumentId or debt collection document number (TKN) is required.",
+  "lo": "ຕ້ອງມີ DocumentId ຫຼື ເລກທີເອກະສານເກັບໜີ້ (TKN).",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Cần DocumentNo (số TKN cấn trừ).": {
+  "en": "DocumentNo is required (the offset TKN number).",
+  "lo": "ຕ້ອງມີ DocumentNo (ເລກ TKN ຂອງການຫັກລົບ).",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:126"
+ },
+ "Cần OrderCode (số SO nhiên liệu).": {
+  "en": "OrderCode is required (fuel SO number).",
+  "lo": "ຕ້ອງມີ OrderCode (ເລກ SO ນ້ຳມັນ).",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:72"
+ },
+ "Cần Reason (≤ {1} ký tự).": {
+  "en": "Reason is required (≤ {1} characters).",
+  "lo": "ຕ້ອງມີ Reason (≤ {1} ຕົວອັກສອນ).",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:128"
+ },
+ "Cần RefNo (số đề nghị trả đối tác, TCX-…).": {
+  "en": "RefNo is required (partner payout request number, TCX-…).",
+  "lo": "ຕ້ອງມີ RefNo (ເລກໃບສະເໜີຈ່າຍຄູ່ຮ່ວມ, TCX-…).",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:79"
+ },
+ "Cần do_id.": {
+  "en": "do_id is required.",
+  "lo": "ຕ້ອງມີ do_id.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (proc_Logistics_FuelSalesOrder_Get)"
+ },
+ "Cần lý do huỷ và người huỷ.": {
+  "en": "A cancellation reason and the person cancelling are required.",
+  "lo": "ຕ້ອງມີເຫດຜົນການຍົກເລີກ ແລະ ຜູ້ຍົກເລີກ.",
+  "o": "Database/Scripts/20261005_logistics_stock_issue.sql (proc_Logistics_StockIssue_Cancel)"
+ },
+ "Cần đúng một dòng công nợ (RESCUSTOMERSDEBT) cho phiếu bán; cần đối soát.": {
+  "en": "The sales slip must have exactly one receivable row (RESCUSTOMERSDEBT); reconciliation is needed.",
+  "lo": "ໃບຂາຍຕ້ອງມີແຖວໜີ້ (RESCUSTOMERSDEBT) ພຽງໜຶ່ງແຖວ; ຕ້ອງກວດທຽບ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Cần đúng một dòng công nợ cho SO.": {
+  "en": "The SO must have exactly one receivable row.",
+  "lo": "SO ຕ້ອງມີແຖວໜີ້ພຽງໜຶ່ງແຖວ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_Create)"
+ },
+ "Cần đúng một dòng công nợ cho SO; cần đối soát.": {
+  "en": "The SO must have exactly one receivable row; reconciliation is needed.",
+  "lo": "SO ຕ້ອງມີແຖວໜີ້ພຽງໜຶ່ງແຖວ; ຕ້ອງກວດທຽບ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_Cancel)"
+ },
+ "Cần đúng một ĐVT Cái và một nhóm hàng \"Hàng bán\" đang sử dụng.": {
+  "en": "Exactly one active unit \"Piece\" and one active item group \"Goods for sale\" are required.",
+  "lo": "ຕ້ອງມີຫົວໜ່ວຍ \"ອັນ\" ໜຶ່ງດຽວ ແລະ ກຸ່ມສິນຄ້າ \"ສິນຄ້າຂາຍ\" ໜຶ່ງດຽວ ທີ່ກຳລັງໃຊ້ງານ.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Cần đúng một ĐVT Cái và nhóm Thành phẩm đang sử dụng.": {
+  "en": "Exactly one active unit \"Piece\" and item group \"Finished goods\" are required.",
+  "lo": "ຕ້ອງມີຫົວໜ່ວຍ \"ອັນ\" ໜຶ່ງດຽວ ແລະ ກຸ່ມ \"ສິນຄ້າສຳເລັດຮູບ\" ທີ່ກຳລັງໃຊ້ງານ.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "Cập nhật đơn giá vốn không hoàn tất; đã rollback.": {
+  "en": "Updating the unit cost did not complete; rolled back.",
+  "lo": "ການອັບເດດລາຄາທຶນຕໍ່ໜ່ວຍບໍ່ສຳເລັດ; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "CỘNG HÒA DÂN CHỦ NHÂN DÂN LÀO": {
+  "en": "LAO PEOPLE'S DEMOCRATIC REPUBLIC",
+  "lo": "ສາທາລະນະລັດ ປະຊາທິປະໄຕ ປະຊາຊົນລາວ",
+  "o": "Database/Scripts/20260913_lao_accounts_crud.sql (proc_LaoAccounts_CRUD)"
+ },
+ "DO chưa có SO nhiên liệu.": {
+  "en": "The DO has no fuel SO yet.",
+  "lo": "DO ຍັງບໍ່ມີ SO ນ້ຳມັນ.",
+  "o": "Modules/Sales/Sales/Application/LogisticsFuelSalesOrderService.cs:87"
+ },
+ "DO hoặc Idempotency-Key đã có SO nhiên liệu với nội dung khác. Không tạo lại.": {
+  "en": "This DO or Idempotency-Key already has a fuel SO with different content. Not recreated.",
+  "lo": "DO ຫຼື Idempotency-Key ນີ້ມີ SO ນ້ຳມັນທີ່ມີເນື້ອໃນຕ່າງກັນແລ້ວ. ບໍ່ສ້າງຄືນ.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "DO hoặc Idempotency-Key đã được dùng với nội dung khác. Không tạo lại.": {
+  "en": "This DO or Idempotency-Key has already been used with different content. Not recreated.",
+  "lo": "DO ຫຼື Idempotency-Key ນີ້ຖືກໃຊ້ກັບເນື້ອໃນອື່ນແລ້ວ. ບໍ່ສ້າງຄືນ.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "DO này đang được lập tổng hợp thu chi ở phiên khác; chờ xong rồi tải lại DO.": {
+  "en": "Combined receipts & payments are being created for this DO in another session; wait until it finishes, then reload the DO.",
+  "lo": "DO ນີ້ກຳລັງຖືກສ້າງໃບລວມຮັບ-ຈ່າຍຢູ່ອີກເຊສຊັນໜຶ່ງ; ລໍຖ້າໃຫ້ແລ້ວ ຈຶ່ງໂຫຼດ DO ຄືນ.",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CombinedVoucher_DoLock)"
+ },
+ "DO phải delivered; tiền VND/LAK/USD đồng nhất; Tổng bán > 0.01 và khớp giá bán + phụ thu.": {
+  "en": "The DO must be delivered; the currency (VND/LAK/USD) must be uniform; the sales total must be > 0.01 and match the sale price + surcharges.",
+  "lo": "DO ຕ້ອງເປັນ delivered; ສະກຸນເງິນ VND/LAK/USD ຕ້ອງເປັນອັນດຽວກັນ; ຍອດຂາຍ > 0.01 ແລະ ກົງກັບລາຄາຂາຍ + ຄ່າເພີ່ມ.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "DO {1} đã khoá ở trang điều xe — mở khoá DO trước rồi mới huỷ {2}.": {
+  "en": "DO {1} is locked in EPL — unlock the DO first, then cancel {2}.",
+  "lo": "DO {1} ຖືກລັອກຢູ່ EPL ແລ້ວ — ປົດລັອກ DO ກ່ອນ ແລ້ວຈຶ່ງຍົກເລີກ {2}.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockCancelService.cs:118"
+ },
+ "Danh mục đang được cập nhật, vui lòng thử lại.": {
+  "en": "The list is being updated, please try again.",
+  "lo": "ລາຍການກຳລັງຖືກອັບເດດ, ກະລຸນາລອງໃໝ່.",
+  "o": "Database/Scripts/20260913_lao_accounts_crud.sql (proc_LaoAccounts_CRUD)"
+ },
+ "Danh sách phiếu tổng hợp cần OrgId.": {
+  "en": "The combined voucher list requires OrgId.",
+  "lo": "ລາຍການໃບລວມ ຕ້ອງມີ OrgId.",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CombinedVoucher_List)"
+ },
+ "Description tối đa {1} ký tự.": {
+  "en": "Description: at most {1} characters.",
+  "lo": "Description ບໍ່ເກີນ {1} ຕົວອັກສອນ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:720"
+ },
+ "Description: bắt buộc.": {
+  "en": "Description: required.",
+  "lo": "Description: ຕ້ອງໃສ່.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:76"
+ },
+ "Description: tối đa {1} ký tự.": {
+  "en": "Description: at most {1} characters.",
+  "lo": "Description: ບໍ່ເກີນ {1} ຕົວອັກສອນ.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:78"
+ },
+ "Diễn giải hoặc ghi chú dòng vượt sức chứa cột DOC_DESCRIPTION / GLB_NOTE / ET_NOTE; không cắt ngầm.": {
+  "en": "The description or a line note exceeds the size of column DOC_DESCRIPTION / GLB_NOTE / ET_NOTE; text is not silently truncated.",
+  "lo": "ຄຳອະທິບາຍ ຫຼື ໝາຍເຫດແຖວ ຍາວເກີນຂະໜາດຖັນ DOC_DESCRIPTION / GLB_NOTE / ET_NOTE; ລະບົບບໍ່ຕັດຂໍ້ຄວາມໃຫ້ເອງ.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "Doanh thu bán hàng — SO {1}": {
+  "en": "Sales revenue — SO {1}",
+  "lo": "ລາຍຮັບຂາຍສິນຄ້າ — SO {1}",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:251"
+ },
+ "DocTypeId phiếu nhập: 53 (mặc định) hoặc 40.": {
+  "en": "Stock-in DocTypeId: 53 (default) or 40.",
+  "lo": "DocTypeId ຂອງໃບຮັບເຂົ້າສາງ: 53 (ຄ່າເລີ່ມຕົ້ນ) ຫຼື 40.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:381"
+ },
+ "DocumentDate: bắt buộc.": {
+  "en": "DocumentDate: required.",
+  "lo": "DocumentDate: ຕ້ອງໃສ່.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:70"
+ },
+ "DocumentDate: ngoài khoảng 2000–2100.": {
+  "en": "DocumentDate: outside the range 2000–2100.",
+  "lo": "DocumentDate: ຢູ່ນອກຊ່ວງ 2000–2100.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:72"
+ },
+ "DocumentId và số chứng từ không cùng một phiếu thu nợ.": {
+  "en": "The DocumentId and the document number do not belong to the same debt collection voucher.",
+  "lo": "DocumentId ແລະ ເລກທີເອກະສານ ບໍ່ແມ່ນໃບເກັບໜີ້ດຽວກັນ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "DocumentIds: tối đa {1} phiếu mỗi lần (lọc hẹp danh sách chứng từ rồi tải lại).": {
+  "en": "DocumentIds: at most {1} notes per request (narrow the document list filter, then reload).",
+  "lo": "DocumentIds: ສູງສຸດ {1} ໃບຕໍ່ຄັ້ງ (ກັ່ນຕອງລາຍການເອກະສານໃຫ້ແຄບລົງ ແລ້ວໂຫຼດຄືນ).",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:458"
+ },
+ "DocumentNos phải là mảng JSON các số phiếu kho.": {
+  "en": "DocumentNos must be a JSON array of stock note numbers.",
+  "lo": "DocumentNos ຕ້ອງເປັນ JSON array ຂອງເລກທີໃບສາງ.",
+  "o": "Database/Scripts/20261005_logistics_stock_issue_3.sql (proc_Logistics_StockDocument_SalesIssues)"
+ },
+ "Dòng SO và dòng phiếu bán nhiên liệu không khớp nhau; đã rollback.": {
+  "en": "The SO lines and the fuel sales slip lines do not match; rolled back.",
+  "lo": "ແຖວ SO ແລະ ແຖວໃບຂາຍນ້ຳມັນບໍ່ກົງກັນ; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Dòng công nợ không có entry thật hoặc bị gán trùng:": {
+  "en": "Debt line has no real entry or is assigned twice:",
+  "lo": "ແຖວໜີ້ບໍ່ມີ entry ຕົວຈິງ ຫຼື ຖືກກຳນົດຊ້ຳ:",
+  "o": "Modules/Finance/Accounting/Infrastructure/CMPaymentReceiptRepository.cs:717"
+ },
+ "Dòng nhiên liệu sai: cần item_name (≤ 100 ký tự), item_key / item_code, qty > 0, unit_price ≥ 0, amount > 0, cùng loại tiền.": {
+  "en": "Invalid fuel line: requires item_name (≤ 100 characters), item_key / item_code, qty > 0, unit_price ≥ 0, amount > 0, and the same currency.",
+  "lo": "ແຖວນ້ຳມັນບໍ່ຖືກຕ້ອງ: ຕ້ອງມີ item_name (≤ 100 ຕົວອັກສອນ), item_key / item_code, qty > 0, unit_price ≥ 0, amount > 0, ສະກຸນເງິນດຽວກັນ.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Dòng {1} trống.": {
+  "en": "Line {1} is empty.",
+  "lo": "ແຖວ {1} ຫວ່າງ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:750"
+ },
+ "Dòng {1}: ItemCode": {
+  "en": "Line {1}: ItemCode",
+  "lo": "ແຖວ {1}: ItemCode",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:751"
+ },
+ "Dòng {1}: Note tối đa {2} ký tự.": {
+  "en": "Line {1}: Note can be at most {2} characters.",
+  "lo": "ແຖວ {1}: Note ບໍ່ເກີນ {2} ຕົວອັກສອນ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:759"
+ },
+ "Dòng {1}: Qty": {
+  "en": "Line {1}: Qty",
+  "lo": "ແຖວ {1}: Qty",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:753"
+ },
+ "Dòng {1}: UnitCost": {
+  "en": "Line {1}: UnitCost",
+  "lo": "ແຖວ {1}: UnitCost",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:756"
+ },
+ "Dòng {1}: WarehouseCode": {
+  "en": "Line {1}: WarehouseCode",
+  "lo": "ແຖວ {1}: WarehouseCode",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:752"
+ },
+ "Dòng {1}: không tìm thấy tham chiếu đã lưu tương ứng. Vui lòng chọn lại.": {
+  "en": "Line {1}: no matching saved reference was found. Please select again.",
+  "lo": "ແຖວ {1}: ບໍ່ພົບການອ້າງອີງທີ່ບັນທຶກໄວ້ທີ່ກົງກັນ. ກະລຸນາເລືອກໃໝ່.",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:534"
+ },
+ "Dòng {1}: không được có đồng thời nguồn hệ thống và nhập tay.": {
+  "en": "Line {1}: cannot have both a system source and a manual entry.",
+  "lo": "ແຖວ {1}: ບໍ່ສາມາດມີທັງແຫຼ່ງຈາກລະບົບ ແລະ ການປ້ອນເອງພ້ອມກັນ.",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:510"
+ },
+ "Dòng {1}: phiếu nhập cần UnitCost.": {
+  "en": "Line {1}: stock-in notes require UnitCost.",
+  "lo": "ແຖວ {1}: ໃບຮັບເຂົ້າສາງຕ້ອງມີ UnitCost.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:756"
+ },
+ "Dòng {1}: token không khớp với nguồn đã chọn. Vui lòng chọn lại.": {
+  "en": "Line {1}: the token does not match the selected source. Please select again.",
+  "lo": "ແຖວ {1}: token ບໍ່ກົງກັບແຫຼ່ງທີ່ເລືອກ. ກະລຸນາເລືອກໃໝ່.",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:550"
+ },
+ "Dòng định khoản chưa đủ tài khoản nợ/có, không thể ghi sổ.": {
+  "en": "An entry line is missing its debit/credit account, so it cannot be posted.",
+  "lo": "ແຖວລົງບັນຊີຍັງມີບັນຊີໜີ້/ມີ ບໍ່ຄົບ, ບັນທຶກບັນຊີບໍ່ໄດ້.",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:480"
+ },
+ "Dầu xuất dùng — {1}": {
+  "en": "Fuel issued for use — {1}",
+  "lo": "ນໍ້າມັນເບີກໃຊ້ — {1}",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:274"
+ },
+ "Dịch vụ tra cứu thông tin định danh phản hồi quá thời gian.": {
+  "en": "The identity lookup service timed out.",
+  "lo": "ບໍລິການຄົ້ນຫາຂໍ້ມູນຕົວຕົນ ຕອບກັບເກີນເວລາ.",
+  "o": "Modules/Shared/MasterData/Infrastructure/CommonRepository.cs:570"
+ },
+ "Dịch vụ tra cứu thông tin định danh đang tạm thời không khả dụng.": {
+  "en": "The identity lookup service is temporarily unavailable.",
+  "lo": "ບໍລິການຄົ້ນຫາຂໍ້ມູນຕົວຕົນ ບໍ່ສາມາດໃຊ້ໄດ້ຊົ່ວຄາວ.",
+  "o": "Modules/Shared/MasterData/Infrastructure/CommonRepository.cs:506"
+ },
+ "Dữ liệu JSON assignment không hợp lệ.": {
+  "en": "Invalid JSON assignment data.",
+  "lo": "ຂໍ້ມູນ JSON assignment ບໍ່ຖືກຕ້ອງ.",
+  "o": "Database/Scripts/20260908_cash_voucher_cost_assignment.sql (proc_PP_CashVoucherCostAssignment_Save)"
+ },
+ "Dữ liệu đã thay đổi hoặc không tồn tại. Hãy tải lại trước khi sửa/xóa.": {
+  "en": "The data has changed or no longer exists. Reload before editing/deleting.",
+  "lo": "ຂໍ້ມູນມີການປ່ຽນແປງ ຫຼື ບໍ່ມີແລ້ວ. ກະລຸນາໂຫຼດຄືນກ່ອນແກ້ໄຂ/ລຶບ.",
+  "o": "Database/Scripts/20260913_lao_accounts_crud.sql (proc_LaoAccounts_CRUD)"
+ },
+ "Entries: phải có ít nhất một dòng.": {
+  "en": "Entries: at least one line is required.",
+  "lo": "Entries: ຕ້ອງມີຢ່າງໜ້ອຍໜຶ່ງແຖວ.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:85"
+ },
+ "Entries: tối đa {1} dòng.": {
+  "en": "Entries: at most {1} lines.",
+  "lo": "Entries: ບໍ່ເກີນ {1} ແຖວ.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:87"
+ },
+ "EntriesJson phải là mảng JSON.": {
+  "en": "EntriesJson must be a JSON array.",
+  "lo": "EntriesJson ຕ້ອງເປັນ JSON array.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "Entry tham chiếu không thuộc phiếu hoặc không hoạt động.": {
+  "en": "The referenced entry does not belong to the voucher or is inactive.",
+  "lo": "Entry ທີ່ອ້າງອີງ ບໍ່ຂຶ້ນກັບໃບນີ້ ຫຼື ບໍ່ໄດ້ໃຊ້ງານ.",
+  "o": "Database/Scripts/20260912_cash_voucher_source_reference.sql (proc_PP_CashVoucherSourceReference_Save)"
+ },
+ "ExchangeRate phải > 0, tối đa 5 số lẻ.": {
+  "en": "ExchangeRate must be > 0, with at most 5 decimal places.",
+  "lo": "ExchangeRate ຕ້ອງ > 0, ບໍ່ເກີນ 5 ຕຳແໜ່ງທົດສະນິຍົມ.",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:77"
+ },
+ "FiciAutoId: phải lớn hơn 0 hoặc bỏ trống để lấy theo ngày chứng từ.": {
+  "en": "FiciAutoId: must be greater than 0, or left blank to use the period of the document date.",
+  "lo": "FiciAutoId: ຕ້ອງຫຼາຍກວ່າ 0 ຫຼື ປ່ອຍຫວ່າງ ເພື່ອໃຊ້ງວດຕາມວັນທີເອກະສານ.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:81"
+ },
+ "FromDate: ngoài khoảng 2000–2100.": {
+  "en": "FromDate: outside the range 2000–2100.",
+  "lo": "FromDate: ຢູ່ນອກຊ່ວງ 2000–2100.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:160"
+ },
+ "FromDate: phải trước hoặc bằng ToDate.": {
+  "en": "FromDate: must be on or before ToDate.",
+  "lo": "FromDate: ຕ້ອງກ່ອນ ຫຼື ເທົ່າກັບ ToDate.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:164"
+ },
+ "Ghi bút toán cấn trừ cần Id và JournalDocumentId.": {
+  "en": "Recording the offset journal entry requires Id and JournalDocumentId.",
+  "lo": "ການບັນທຶກບັນຊີຫັກລົບ ຕ້ອງມີ Id ແລະ JournalDocumentId.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_AttachJournal)"
+ },
+ "Ghi sổ tạm không hoàn tất; toàn bộ yêu cầu đã rollback.": {
+  "en": "Provisional posting did not complete; the whole request was rolled back.",
+  "lo": "ການບັນທຶກປຶ້ມຊົ່ວຄາວບໍ່ສຳເລັດ; ຄຳຂໍທັງໝົດໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "Giá bán SO {1} không khớp số dòng phiếu xuất ({2}/{3}).": {
+  "en": "The SO {1} sale prices do not match the number of stock-out lines ({2}/{3}).",
+  "lo": "ລາຄາຂາຍຂອງ SO {1} ບໍ່ກົງກັບຈຳນວນແຖວຂອງໃບເບີກອອກ ({2}/{3}).",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:516"
+ },
+ "Giá vốn hàng bán — {1}": {
+  "en": "Cost of goods sold — {1}",
+  "lo": "ຕົ້ນທຶນສິນຄ້າຂາຍ — {1}",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:247"
+ },
+ "Gói SO nhiên liệu sai: schemaVersion 1, do_id (chữ / số / - _ .), partner_code, currency, total > 0.01.": {
+  "en": "Invalid fuel SO package: schemaVersion 1, do_id (letters / digits / - _ .), partner_code, currency, total > 0.01.",
+  "lo": "ຊຸດຂໍ້ມູນ SO ນ້ຳມັນບໍ່ຖືກຕ້ອງ: schemaVersion 1, do_id (ຕົວອັກສອນ / ຕົວເລກ / - _ .), partner_code, currency, total > 0.01.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Gọi procedure ngoài transaction của caller.": {
+  "en": "The procedure was called outside the caller's transaction.",
+  "lo": "ເອີ້ນ procedure ນອກ transaction ຂອງຜູ້ເອີ້ນ.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "Gọi thủ tục SO nhiên liệu ngoài transaction của caller.": {
+  "en": "The fuel SO procedure was called outside the caller's transaction.",
+  "lo": "ເອີ້ນຂັ້ນຕອນ SO ນ້ຳມັນ ນອກ transaction ຂອງຜູ້ເອີ້ນ.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Gọi thủ tục cấn trừ ngoài transaction của caller.": {
+  "en": "The offset procedure was called outside the caller's transaction.",
+  "lo": "ເອີ້ນຂັ້ນຕອນຫັກລົບ ນອກ transaction ຂອງຜູ້ເອີ້ນ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_Create)"
+ },
+ "Gọi thủ tục ghi phiếu tổng hợp ngoài transaction của caller.": {
+  "en": "The combined voucher save procedure was called outside the caller's transaction.",
+  "lo": "ເອີ້ນຂັ້ນຕອນບັນທຶກໃບລວມ ນອກ transaction ຂອງຜູ້ເອີ້ນ.",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CombinedVoucher_Insert)"
+ },
+ "Gọi thủ tục gỡ cấn trừ ngoài transaction của caller.": {
+  "en": "The offset removal procedure was called outside the caller's transaction.",
+  "lo": "ເອີ້ນຂັ້ນຕອນຖອນການຫັກລົບ ນອກ transaction ຂອງຜູ້ເອີ້ນ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_Cancel)"
+ },
+ "Gọi thủ tục huỷ phiếu kho ngoài transaction của caller.": {
+  "en": "The stock note cancellation procedure was called outside the caller's transaction.",
+  "lo": "ເອີ້ນຂັ້ນຕອນຍົກເລີກໃບສາງ ນອກ transaction ຂອງຜູ້ເອີ້ນ.",
+  "o": "Database/Scripts/20261005_logistics_stock_issue.sql (proc_Logistics_StockIssue_Cancel)"
+ },
+ "Gọi thủ tục ngoài transaction của caller.": {
+  "en": "The procedure was called outside the caller's transaction.",
+  "lo": "ເອີ້ນຂັ້ນຕອນ ນອກ transaction ຂອງຜູ້ເອີ້ນ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Gọi thủ tục phiếu kho Logistics ngoài transaction của caller.": {
+  "en": "The Logistics stock note procedure was called outside the caller's transaction.",
+  "lo": "ເອີ້ນຂັ້ນຕອນໃບສາງ Logistics ນອກ transaction ຂອງຜູ້ເອີ້ນ.",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Gỡ cấn trừ cần Id, người gỡ và lý do.": {
+  "en": "Removing an offset requires Id, the person removing it and a reason.",
+  "lo": "ການຖອນການຫັກລົບ ຕ້ອງມີ Id, ຜູ້ຖອນ ແລະ ເຫດຜົນ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_Cancel)"
+ },
+ "Gỡ ghi sổ (sp_GL_Delete_GENERALLEDGER) không hoàn tất; đã rollback.": {
+  "en": "Unposting (sp_GL_Delete_GENERALLEDGER) did not complete; rolled back.",
+  "lo": "ການຖອນການບັນທຶກບັນຊີ (sp_GL_Delete_GENERALLEDGER) ບໍ່ສຳເລັດ; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261002_cm_unpost_cash_voucher.sql (proc_CM_UnpostCashVoucher)"
+ },
+ "Gỡ ghi sổ không hoàn tất; toàn bộ yêu cầu đã rollback.": {
+  "en": "Unposting did not complete; the whole request was rolled back.",
+  "lo": "ການຖອນການບັນທຶກບັນຊີບໍ່ສຳເລັດ; ຄຳຂໍທັງໝົດໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Reverse)"
+ },
+ "Gỡ ghi sổ phiếu thu không hoàn tất; toàn bộ yêu cầu đã rollback.": {
+  "en": "Unposting the receipt did not complete; the whole request was rolled back.",
+  "lo": "ການຖອນການບັນທຶກບັນຊີຂອງໃບຮັບເງິນບໍ່ສຳເລັດ; ຄຳຂໍທັງໝົດໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Gỡ xong chứng từ tổng hợp nhưng chứng từ ghi sổ cùng SourceRef vẫn đang hoạt động; đã rollback, cần đối soát.": {
+  "en": "The general journal document was removed but a posted document with the same SourceRef is still active; rolled back, reconciliation is needed.",
+  "lo": "ຖອນເອກະສານບັນຊີລວມແລ້ວ ແຕ່ເອກະສານບັນທຶກບັນຊີທີ່ມີ SourceRef ດຽວກັນຍັງໃຊ້ງານຢູ່; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ, ຕ້ອງກວດທຽບ.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Reverse)"
+ },
+ "Gửi Idempotency-Key ổn định (tối đa 100 ký tự ASCII: chữ, số, _ . : -).": {
+  "en": "Send a stable Idempotency-Key (up to 100 ASCII characters: letters, digits, _ . : -).",
+  "lo": "ສົ່ງ Idempotency-Key ທີ່ຄົງທີ່ (ບໍ່ເກີນ 100 ຕົວອັກສອນ ASCII: ຕົວອັກສອນ, ຕົວເລກ, _ . : -).",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:69"
+ },
+ "Gửi Idempotency-Key ổn định (ví dụ logistics-fuel:EPLLAO-<trip_id>), tối đa 100 ký tự ASCII.": {
+  "en": "Send a stable Idempotency-Key (e.g. logistics-fuel:EPLLAO-<trip_id>), up to 100 ASCII characters.",
+  "lo": "ສົ່ງ Idempotency-Key ທີ່ຄົງທີ່ (ຕົວຢ່າງ logistics-fuel:EPLLAO-<trip_id>), ບໍ່ເກີນ 100 ຕົວອັກສອນ ASCII.",
+  "o": "Modules/Sales/Sales/Application/LogisticsFuelSalesOrderService.cs:72"
+ },
+ "Gửi Idempotency-Key ổn định, tối đa 100 ký tự ASCII.": {
+  "en": "Send a stable Idempotency-Key, up to 100 ASCII characters.",
+  "lo": "ສົ່ງ Idempotency-Key ທີ່ຄົງທີ່, ບໍ່ເກີນ 100 ຕົວອັກສອນ ASCII.",
+  "o": "Modules/Sales/Sales/Application/LogisticsPushService.cs:30"
+ },
+ "Gửi header Idempotency-Key ổn định (SourceRef), tối đa 100 ký tự ASCII: chữ, số, _ . : -": {
+  "en": "Send a stable Idempotency-Key header (SourceRef), up to 100 ASCII characters: letters, digits, _ . : -",
+  "lo": "ສົ່ງ header Idempotency-Key ທີ່ຄົງທີ່ (SourceRef), ບໍ່ເກີນ 100 ຕົວອັກສອນ ASCII: ຕົວອັກສອນ, ຕົວເລກ, _ . : -",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:63"
+ },
+ "Gửi lại: POST logistics-fuel-vouchers/{1}/cancel-notice.": {
+  "en": "Resend: POST logistics-fuel-vouchers/{1}/cancel-notice.",
+  "lo": "ສົ່ງໃໝ່: POST logistics-fuel-vouchers/{1}/cancel-notice.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockCancelService.cs:159"
+ },
+ "Gửi {1} = SourceRef ổn định (chữ, số, _ . : -, tối đa 100 ký tự), ví dụ voucher-123 hoặc trip-8fc2:V:1.": {
+  "en": "Send {1} = a stable SourceRef (letters, digits, _ . : -, up to 100 characters), e.g. voucher-123 or trip-8fc2:V:1.",
+  "lo": "ສົ່ງ {1} = SourceRef ທີ່ຄົງທີ່ (ຕົວອັກສອນ, ຕົວເລກ, _ . : -, ບໍ່ເກີນ 100 ຕົວອັກສອນ), ຕົວຢ່າງ voucher-123 ຫຼື trip-8fc2:V:1.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:812"
+ },
+ "Huỷ trên màn kho Web": {
+  "en": "Cancelled on the accounting system warehouse screen",
+  "lo": "ຍົກເລີກຢູ່ໜ້າສາງຂອງລະບົບບັນຊີ",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:341"
+ },
+ "Hàng bán": {
+  "en": "Goods for sale",
+  "lo": "ສິນຄ້າຂາຍ",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Hậu kiểm: còn phiếu thu CMR hoạt động của phiếu thu nợ; đã rollback.": {
+  "en": "Post-check: the debt collection voucher still has an active CMR receipt; rolled back.",
+  "lo": "ກວດຫຼັງດຳເນີນການ: ຍັງມີໃບຮັບເງິນ CMR ທີ່ໃຊ້ງານຢູ່ຂອງໃບເກັບໜີ້; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Hậu kiểm: dư nợ sau huỷ khác dư nợ trước + số đã trừ; đã rollback.": {
+  "en": "Post-check: the balance after cancelling differs from the previous balance + the amount deducted; rolled back.",
+  "lo": "ກວດຫຼັງດຳເນີນການ: ຍອດໜີ້ຫຼັງຍົກເລີກ ຕ່າງຈາກຍອດໜີ້ກ່ອນ + ຈຳນວນທີ່ຫັກໄປ; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Hậu kiểm: phiếu thu nợ chưa bị vô hiệu; đã rollback.": {
+  "en": "Post-check: the debt collection voucher has not been voided; rolled back.",
+  "lo": "ກວດຫຼັງດຳເນີນການ: ໃບເກັບໜີ້ຍັງບໍ່ຖືກປິດໃຊ້ງານ; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Hậu kiểm: trạng thái phiếu sau gỡ ghi sổ không về 1 (chưa ghi sổ); đã rollback.": {
+  "en": "Post-check: the voucher status after unposting did not return to 1 (not posted); rolled back.",
+  "lo": "ກວດຫຼັງດຳເນີນການ: ສະຖານະໃບຫຼັງຖອນການບັນທຶກບັນຊີ ບໍ່ກັບເປັນ 1 (ຍັງບໍ່ບັນທຶກ); ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261002_cm_unpost_cash_voucher.sql (proc_CM_UnpostCashVoucher)"
+ },
+ "Hết số tổng hợp trong ngày (9999) của đơn vị.": {
+  "en": "The unit has used up its combined numbers for the day (9999).",
+  "lo": "ເລກລວມຂອງໜ່ວຍງານໃນມື້ນີ້ໝົດແລ້ວ (9999).",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CombinedVoucher_NextNo)"
+ },
+ "Idempotency-Key đã dùng cho lần cấn trừ khác nội dung; không cấn trừ lại.": {
+  "en": "This Idempotency-Key was already used for an offset with different content; not offset again.",
+  "lo": "Idempotency-Key ນີ້ໃຊ້ກັບການຫັກລົບທີ່ມີເນື້ອໃນຕ່າງກັນແລ້ວ; ບໍ່ຫັກລົບຊ້ຳ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_Create)"
+ },
+ "InvoiceDebt chưa chuyển SO nhiên liệu sang trạng thái công nợ.": {
+  "en": "InvoiceDebt did not move the fuel SO to receivable status.",
+  "lo": "InvoiceDebt ຍັງບໍ່ໄດ້ປ່ຽນ SO ນ້ຳມັນເປັນສະຖານະໜີ້.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "InvoiceDebt chưa chuyển SO sang trạng thái công nợ.": {
+  "en": "InvoiceDebt did not move the SO to receivable status.",
+  "lo": "InvoiceDebt ຍັງບໍ່ໄດ້ປ່ຽນ SO ເປັນສະຖານະໜີ້.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "InvoiceDebt không hoàn tất; toàn bộ yêu cầu phải rollback. Kiểm tra procedure/note type hiện có.": {
+  "en": "InvoiceDebt did not complete; the whole request must be rolled back. Check the existing procedure/note type.",
+  "lo": "InvoiceDebt ບໍ່ສຳເລັດ; ຄຳຂໍທັງໝົດຕ້ອງຍົກເລີກຄືນ (rollback). ກວດ procedure/note type ທີ່ມີຢູ່.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "InvoiceDebt không hoàn tất; toàn bộ yêu cầu đã rollback.": {
+  "en": "InvoiceDebt did not complete; the whole request was rolled back.",
+  "lo": "InvoiceDebt ບໍ່ສຳເລັດ; ຄຳຂໍທັງໝົດໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "KHÔNG gỡ được phiếu thu nợ {1} ({2}) — gỡ bằng collection-offset/cancel.": {
+  "en": "Debt collection receipt {1} could NOT be reversed ({2}) — reverse it with collection-offset/cancel.",
+  "lo": "ຖອນໃບຮັບຊຳລະໜີ້ {1} ບໍ່ໄດ້ ({2}) — ຖອນດ້ວຍ collection-offset/cancel.",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:209"
+ },
+ "Keys rỗng — gửi ít nhất một khoá dòng DO.": {
+  "en": "Keys is empty — send at least one DO line key.",
+  "lo": "Keys ຫວ່າງ — ສົ່ງກະແຈແຖວ DO ຢ່າງໜ້ອຍໜຶ່ງອັນ.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsLineVoucherService.cs:74"
+ },
+ "Keyword: tối đa {1} ký tự.": {
+  "en": "Keyword: at most {1} characters.",
+  "lo": "Keyword: ບໍ່ເກີນ {1} ຕົວອັກສອນ.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:171"
+ },
+ "Kho đang bận lập / huỷ phiếu khác; gửi lại sau.": {
+  "en": "The warehouse is busy creating / cancelling another note; resend later.",
+  "lo": "ສາງກຳລັງຫຍຸ້ງກັບການສ້າງ / ຍົກເລີກໃບອື່ນ; ສົ່ງໃໝ່ພາຍຫຼັງ.",
+  "o": "Database/Scripts/20261005_logistics_stock_issue.sql (proc_Logistics_StockIssue_Cancel)"
+ },
+ "Kho đang bận lập phiếu khác; gửi lại sau.": {
+  "en": "The warehouse is busy creating another note; resend later.",
+  "lo": "ສາງກຳລັງຫຍຸ້ງກັບການສ້າງໃບອື່ນ; ສົ່ງໃໝ່ພາຍຫຼັງ.",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Khoá DO cần DoId.": {
+  "en": "Locking a DO requires DoId.",
+  "lo": "ການລັອກ DO ຕ້ອງມີ DoId.",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CombinedVoucher_DoLock)"
+ },
+ "Khoá DO giữ theo phiên: gọi ngoài transaction.": {
+  "en": "The DO lock is held per session: call it outside a transaction.",
+  "lo": "ການລັອກ DO ຖືຕາມເຊສຊັນ: ເອີ້ນນອກ transaction.",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CombinedVoucher_DoLock)"
+ },
+ "Khoá dòng phải bắt đầu \"{1}\" và dài tối đa {2} ký tự.": {
+  "en": "Line keys must start with \"{1}\" and be at most {2} characters long.",
+  "lo": "ກະແຈແຖວຕ້ອງເລີ່ມດ້ວຍ \"{1}\" ແລະ ຍາວບໍ່ເກີນ {2} ຕົວອັກສອນ.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsLineVoucherService.cs:80"
+ },
+ "Khoá idempotent hoặc số tổng hợp đã có phiếu tổng hợp; đọc lại phiếu cũ.": {
+  "en": "The idempotency key or combined number already has a combined voucher; read back the existing one.",
+  "lo": "ກະແຈ idempotent ຫຼື ເລກລວມນີ້ມີໃບລວມແລ້ວ; ອ່ານໃບເກົ່າຄືນ.",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CombinedVoucher_Insert)"
+ },
+ "Khoản DO": {
+  "en": "DO charge",
+  "lo": "ລາຍການ DO",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "Khách ngừng hoạt động, thiếu tên hoặc tên vượt giới hạn 100 ký tự của phiếu bán.": {
+  "en": "The customer is inactive, has no name, or the name exceeds the sales slip's 100-character limit.",
+  "lo": "ລູກຄ້າຢຸດໃຊ້ງານ, ບໍ່ມີຊື່ ຫຼື ຊື່ຍາວເກີນຂີດຈຳກັດ 100 ຕົວອັກສອນຂອງໃບຂາຍ.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "Khóa dòng Costing bị trùng trong cùng một phiếu.": {
+  "en": "Duplicate Costing line key within the same voucher.",
+  "lo": "ກະແຈແຖວ Costing ຊ້ຳກັນໃນໃບດຽວກັນ.",
+  "o": "Database/Scripts/20260908_cash_voucher_cost_assignment.sql (proc_PP_CashVoucherCostAssignment_Save)"
+ },
+ "Khóa dòng tham chiếu thiếu, quá dài hoặc bị trùng.": {
+  "en": "A reference line key is missing, too long or duplicated.",
+  "lo": "ກະແຈແຖວອ້າງອີງ ຂາດ, ຍາວເກີນ ຫຼື ຊ້ຳກັນ.",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:493"
+ },
+ "Khóa nguồn phải thuộc đúng một dòng của phiếu:": {
+  "en": "Each source key must belong to exactly one line of the voucher:",
+  "lo": "ກະແຈແຫຼ່ງຕ້ອງເປັນຂອງແຖວດຽວໃນໃບເທົ່ານັ້ນ:",
+  "o": "Modules/Finance/Accounting/Infrastructure/CMPaymentReceiptRepository.cs:546"
+ },
+ "Không có (hoặc trùng) mã hàng đang dùng": {
+  "en": "Missing (or duplicate) active item code",
+  "lo": "ບໍ່ມີ (ຫຼື ຊ້ຳ) ລະຫັດສິນຄ້າທີ່ກຳລັງໃຊ້ງານ",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Không có (hoặc trùng) đối tượng": {
+  "en": "Missing (or duplicate) party",
+  "lo": "ບໍ່ມີ (ຫຼື ຊ້ຳ) ຄູ່ບັນຊີ",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Không có bút toán tổng hợp đang hoạt động với SourceRef {1}.": {
+  "en": "There is no active general journal entry with SourceRef {1}.",
+  "lo": "ບໍ່ມີບັນທຶກບັນຊີລວມທີ່ກຳລັງໃຊ້ງານ ກັບ SourceRef {1}.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:137"
+ },
+ "Không có bút toán đang hoạt động cùng SourceRef; không cần gỡ.": {
+  "en": "There is no active journal entry with this SourceRef; nothing to remove.",
+  "lo": "ບໍ່ມີບັນທຶກບັນຊີທີ່ໃຊ້ງານຢູ່ ທີ່ມີ SourceRef ດຽວກັນ; ບໍ່ຈຳເປັນຕ້ອງຖອນ.",
+  "o": "Modules/Finance/Accounting/Api/V1/LogisticsJournalEntryController.cs:112"
+ },
+ "Không có kho": {
+  "en": "No warehouse",
+  "lo": "ບໍ່ມີສາງ",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Không có kỳ kế toán cho ngày chứng từ.": {
+  "en": "There is no accounting period for the document date.",
+  "lo": "ບໍ່ມີງວດບັນຊີສຳລັບວັນທີເອກະສານ.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "Không có mã hàng": {
+  "en": "No item with code",
+  "lo": "ບໍ່ມີລະຫັດສິນຄ້າ",
+  "o": "Database/Scripts/20261005_logistics_stock_issue.sql (proc_Logistics_Stock_Balance)"
+ },
+ "Không có phiếu kho Logistics theo SourceRef này.": {
+  "en": "There is no Logistics stock note for this SourceRef.",
+  "lo": "ບໍ່ມີໃບສາງ Logistics ຕາມ SourceRef ນີ້.",
+  "o": "Database/Scripts/20261005_logistics_stock_issue.sql (proc_Logistics_StockIssue_Cancel)"
+ },
+ "Không có phiếu xuất 48 này của chi nhánh EPL.": {
+  "en": "This stock-out note (type 48) does not exist in the EPL branch.",
+  "lo": "ບໍ່ມີໃບເບີກອອກສາງ 48 ນີ້ ຂອງສາຂາ EPL.",
+  "o": "Database/Scripts/20261005_logistics_stock_issue_2.sql (proc_Logistics_StockDocument_ApplyMovingCost)"
+ },
+ "Không có phiếu xuất bán 44 này của chi nhánh EPL.": {
+  "en": "This sales stock-out note (type 44) does not exist in the EPL branch.",
+  "lo": "ບໍ່ມີໃບເບີກຂາຍອອກສາງ 44 ນີ້ ຂອງສາຂາ EPL.",
+  "o": "Database/Scripts/20261006_logistics_stock_sales_issue.sql (proc_Logistics_StockDocument_ApplySalesMovingCost)"
+ },
+ "Không cấp được số chứng từ tổng hợp (spGetconfigID 6).": {
+  "en": "Could not assign a general journal document number (spGetconfigID 6).",
+  "lo": "ອອກເລກທີເອກະສານບັນຊີລວມບໍ່ໄດ້ (spGetconfigID 6).",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "Không kết nối được trang điều xe (LogisticsSource). Thử lại sau.": {
+  "en": "Cannot connect to EPL (LogisticsSource). Try again later.",
+  "lo": "ເຊື່ອມຕໍ່ EPL ບໍ່ໄດ້ (LogisticsSource). ລອງໃໝ່ພາຍຫຼັງ.",
+  "o": "Modules/SupplyChain/Warehouse/Infrastructure/LogisticsFuelVoucherClient.cs:190"
+ },
+ "Không lập được bút toán cấn trừ ({1}).{2}": {
+  "en": "The offset journal entry could not be created ({1}).{2}",
+  "lo": "ສ້າງບັນທຶກບັນຊີຫັກລົບບໍ່ໄດ້ ({1}).{2}",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:102"
+ },
+ "Không thấy lần cấn trừ đang hiệu lực để ghi số bút toán.": {
+  "en": "No active offset found to record the journal entry number against.",
+  "lo": "ບໍ່ພົບການຫັກລົບທີ່ຍັງມີຜົນ ເພື່ອບັນທຶກເລກບັນທຶກບັນຊີ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_AttachJournal)"
+ },
+ "Không thấy lần cấn trừ.": {
+  "en": "Offset not found.",
+  "lo": "ບໍ່ພົບການຫັກລົບນີ້.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_Cancel)"
+ },
+ "Không thấy phiếu chi của nhánh chi (đúng đơn vị, đang hoạt động).": {
+  "en": "No payment voucher found for the payment leg (matching unit, active).",
+  "lo": "ບໍ່ພົບໃບຈ່າຍຂອງສ່ວນຈ່າຍ (ຖືກໜ່ວຍງານ, ກຳລັງໃຊ້ງານ).",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CombinedVoucher_Insert)"
+ },
+ "Không thấy phiếu thu nợ cấn trừ theo số này.": {
+  "en": "No offset debt collection receipt was found with this number.",
+  "lo": "ບໍ່ພົບໃບຮັບຊຳລະໜີ້ແບບຫັກລົບ ຕາມເລກນີ້.",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:131"
+ },
+ "Không thấy đúng một SO đang hoạt động theo số SO.": {
+  "en": "Could not find exactly one active SO with this SO number.",
+  "lo": "ບໍ່ພົບ SO ທີ່ໃຊ້ງານຢູ່ພຽງໜຶ່ງໃບຕາມເລກ SO.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_Create)"
+ },
+ "Không thể kết nối dịch vụ tra cứu thông tin định danh.": {
+  "en": "Cannot connect to the identity lookup service.",
+  "lo": "ບໍ່ສາມາດເຊື່ອມຕໍ່ບໍລິການຄົ້ນຫາຂໍ້ມູນຕົວຕົນໄດ້.",
+  "o": "Modules/Shared/MasterData/Infrastructure/CommonRepository.cs:577"
+ },
+ "Không thể tự động sinh mã {1}.": {
+  "en": "Could not auto-generate the {1} code.",
+  "lo": "ບໍ່ສາມາດສ້າງລະຫັດ {1} ອັດຕະໂນມັດໄດ້.",
+  "o": "Modules/Shared/ObjectManagement/Application/ObjectService.cs:253"
+ },
+ "Không thể xóa chứng từ, thử lại sau": {
+  "en": "Cannot delete the document, please try again later",
+  "lo": "ລຶບເອກະສານບໍ່ໄດ້, ກະລຸນາລອງໃໝ່ພາຍຫຼັງ",
+  "o": "Modules/SupplyChain/Warehouse/Infrastructure/WarehouseRepository.cs:666"
+ },
+ "Không tìm thấy chứng từ thật hoặc chứng từ chưa có DocumentNo.": {
+  "en": "The final document was not found, or it has no DocumentNo yet.",
+  "lo": "ບໍ່ພົບເອກະສານຕົວຈິງ ຫຼື ເອກະສານຍັງບໍ່ມີ DocumentNo.",
+  "o": "Database/Scripts/20260908_cash_voucher_cost_assignment.sql (proc_PP_CashVoucherCostAssignment_Save)"
+ },
+ "Không tìm thấy cá nhân theo CCCD/CMND đã nhập.": {
+  "en": "No individual was found for the CCCD/CMND entered.",
+  "lo": "ບໍ່ພົບບຸກຄົນຕາມ CCCD/CMND ທີ່ປ້ອນ.",
+  "o": "Modules/Shared/MasterData/Api/V1/CommonController.cs:340"
+ },
+ "Không tìm thấy dữ liệu": {
+  "en": "No data found",
+  "lo": "ບໍ່ພົບຂໍ້ມູນ",
+  "o": "Modules/Shared/MasterData/Api/V1/CommonController.cs:92"
+ },
+ "Không tìm thấy id phiếu sau khi lưu.": {
+  "en": "The voucher id was not found after saving.",
+  "lo": "ບໍ່ພົບ id ຂອງໃບ ຫຼັງຈາກບັນທຶກ.",
+  "o": "Modules/Finance/Accounting/Infrastructure/CMPaymentReceiptRepository.cs:502"
+ },
+ "Không tìm thấy phiếu thu CMR đang hoạt động của phiếu thu nợ (DOC_REFDOCUMENTNO = số TKN); cần đối soát.": {
+  "en": "No active CMR receipt found for the debt collection voucher (DOC_REFDOCUMENTNO = TKN number); reconciliation is needed.",
+  "lo": "ບໍ່ພົບໃບຮັບເງິນ CMR ທີ່ໃຊ້ງານຢູ່ຂອງໃບເກັບໜີ້ (DOC_REFDOCUMENTNO = ເລກ TKN); ຕ້ອງກວດທຽບ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Không tìm thấy phiếu thu nợ.": {
+  "en": "Debt collection voucher not found.",
+  "lo": "ບໍ່ພົບໃບເກັບໜີ້.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Không tìm thấy phiếu đang hoạt động đúng loại (DocumentId + VoucherType).": {
+  "en": "No active voucher of the right type was found (DocumentId + VoucherType).",
+  "lo": "ບໍ່ພົບໃບທີ່ໃຊ້ງານຢູ່ ແລະ ຖືກປະເພດ (DocumentId + VoucherType).",
+  "o": "Database/Scripts/20261002_cm_unpost_cash_voucher.sql (proc_CM_UnpostCashVoucher)"
+ },
+ "Không tìm thấy quốc gia theo TRY_AUTOID.": {
+  "en": "No country found for this TRY_AUTOID.",
+  "lo": "ບໍ່ພົບປະເທດຕາມ TRY_AUTOID.",
+  "o": "Database/Scripts/20260909_country_account.sql (proc_PUBAccountCountry_GetList)"
+ },
+ "Không tìm thấy tổ chức theo mã số thuế đã nhập.": {
+  "en": "No organization was found for the tax ID entered.",
+  "lo": "ບໍ່ພົບອົງກອນຕາມເລກປະຈຳຕົວຜູ້ເສຍອາກອນທີ່ປ້ອນ.",
+  "o": "Modules/Shared/MasterData/Api/V1/CommonController.cs:307"
+ },
+ "Không tìm được dòng lưu nguồn:": {
+  "en": "Could not find the line that stores the source:",
+  "lo": "ບໍ່ພົບແຖວທີ່ບັນທຶກແຫຼ່ງ:",
+  "o": "Modules/Finance/Accounting/Infrastructure/CMPaymentReceiptRepository.cs:725"
+ },
+ "Không tạo được SO nhiên liệu.": {
+  "en": "Could not create the fuel SO.",
+  "lo": "ສ້າງ SO ນ້ຳມັນບໍ່ໄດ້.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Không tạo được SO.": {
+  "en": "Could not create the SO.",
+  "lo": "ສ້າງ SO ບໍ່ໄດ້.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "Không tạo được phiếu bán ghi công nợ nhiên liệu.": {
+  "en": "Could not create the fuel sales slip recorded as a receivable.",
+  "lo": "ສ້າງໃບຂາຍນ້ຳມັນທີ່ບັນທຶກເປັນໜີ້ບໍ່ໄດ້.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Không tạo được phiếu bán ghi công nợ.": {
+  "en": "Could not create the sales slip recorded as a receivable.",
+  "lo": "ສ້າງໃບຂາຍທີ່ບັນທຶກເປັນໜີ້ບໍ່ໄດ້.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "Không xác minh được Vụ việc JOB vừa tạo. Kiểm tra kết quả proc_PP_CostObject_Upsert; phiếu chưa được commit.": {
+  "en": "Could not verify the newly created JOB. Check the result of proc_PP_CostObject_Upsert; the voucher has not been committed.",
+  "lo": "ກວດຢືນຢັນວຽກງານ JOB ທີ່ຫາກໍ່ສ້າງບໍ່ໄດ້. ກວດຜົນຂອງ proc_PP_CostObject_Upsert; ໃບຍັງບໍ່ໄດ້ commit.",
+  "o": "Modules/Finance/Accounting/Infrastructure/CMPaymentReceiptRepository.cs:623"
+ },
+ "Không xác định duy nhất entry thật cho dòng": {
+  "en": "Could not identify a unique real entry for line",
+  "lo": "ບໍ່ສາມາດລະບຸ entry ຕົວຈິງອັນດຽວສຳລັບແຖວ",
+  "o": "Modules/Finance/Accounting/Infrastructure/CMPaymentReceiptRepository.cs:703"
+ },
+ "Không xác định được chứng từ chính để ghi sổ.": {
+  "en": "Could not determine the main voucher to post.",
+  "lo": "ບໍ່ສາມາດລະບຸເອກະສານຫຼັກເພື່ອບັນທຶກບັນຊີໄດ້.",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:471"
+ },
+ "Không xác định được chứng từ thật sau khi commit.": {
+  "en": "Could not identify the real voucher after commit.",
+  "lo": "ບໍ່ສາມາດລະບຸເອກະສານຕົວຈິງຫຼັງ commit ໄດ້.",
+  "o": "Modules/Finance/Accounting/Infrastructure/CMPaymentReceiptRepository.cs:669"
+ },
+ "Không xác định được dòng định khoản công nợ thật để lưu Vụ việc/Bộ phận.": {
+  "en": "Could not identify the actual receivable/payable entry line to save the Cost Object/Cost Center.",
+  "lo": "ບໍ່ສາມາດລະບຸແຖວບັນທຶກບັນຊີໜີ້ຕົວຈິງ ເພື່ອບັນທຶກ ວຽກງານ/ພະແນກ.",
+  "o": "Database/Scripts/20260908_cash_voucher_cost_assignment.sql (proc_PP_CashVoucherCostAssignment_Save)"
+ },
+ "Không xác định được dòng định khoản thật để lưu Vụ việc/Bộ phận.": {
+  "en": "Could not identify the actual entry line to save the Cost Object/Cost Center.",
+  "lo": "ບໍ່ສາມາດລະບຸແຖວບັນທຶກບັນຊີຕົວຈິງ ເພື່ອບັນທຶກ ວຽກງານ/ພະແນກ.",
+  "o": "Database/Scripts/20260908_cash_voucher_cost_assignment.sql (proc_PP_CashVoucherCostAssignment_Save)"
+ },
+ "Không xác định được đối tượng người thao tác để lưu chứng từ.": {
+  "en": "Could not determine the operator's party record to save the document.",
+  "lo": "ບໍ່ສາມາດລະບຸຄູ່ບັນຊີຂອງຜູ້ດຳເນີນການ ເພື່ອບັນທຶກເອກະສານ.",
+  "o": "Modules/Finance/Accounting/Api/V1/CMPaymentReceiptController.cs:564"
+ },
+ "Không được tạo vòng lặp trong cây tài khoản.": {
+  "en": "A loop cannot be created in the account tree.",
+  "lo": "ບໍ່ສາມາດສ້າງວົງວຽນໃນໂຄງສ້າງບັນຊີ.",
+  "o": "Database/Scripts/20260913_lao_accounts_crud.sql (proc_LaoAccounts_CRUD)"
+ },
+ "Không được xóa tài khoản có con.": {
+  "en": "An account that has child accounts cannot be deleted.",
+  "lo": "ບໍ່ສາມາດລຶບບັນຊີທີ່ມີບັນຊີຍ່ອຍ.",
+  "o": "Database/Scripts/20260913_lao_accounts_crud.sql (proc_LaoAccounts_CRUD)"
+ },
+ "Không đọc lại được lần cấn trừ vừa lập.": {
+  "en": "Could not read back the offset just created.",
+  "lo": "ອ່ານການຫັກລົບທີ່ຫາກໍ່ສ້າງຄືນບໍ່ໄດ້.",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:215"
+ },
+ "Không đọc lại được đúng một phiếu kho vừa chốt theo SourceRef; đã rollback.": {
+  "en": "Could not read back exactly one just-finalised stock note by SourceRef; rolled back.",
+  "lo": "ອ່ານຄືນໃບສາງທີ່ຫາກໍ່ປິດຕາມ SourceRef ໃຫ້ໄດ້ພຽງໜຶ່ງໃບບໍ່ໄດ້; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Không đọc lại được đầu phiếu kho.": {
+  "en": "Could not read back the stock note header.",
+  "lo": "ອ່ານຫົວໃບສາງຄືນບໍ່ໄດ້.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:222"
+ },
+ "Kind phải là ISSUE hoặc RECEIPT.": {
+  "en": "Kind must be ISSUE or RECEIPT.",
+  "lo": "Kind ຕ້ອງເປັນ ISSUE ຫຼື RECEIPT.",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Kỳ kế toán": {
+  "en": "Accounting period",
+  "lo": "ງວດບັນຊີ",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "Kỳ kế toán của phiếu thu đã khoá; mở kỳ trước khi huỷ phiếu thu nợ.": {
+  "en": "The receipt's accounting period is closed; reopen the period before cancelling the debt collection voucher.",
+  "lo": "ງວດບັນຊີຂອງໃບຮັບເງິນຖືກລັອກແລ້ວ; ເປີດງວດກ່ອນ ຈຶ່ງຍົກເລີກໃບເກັບໜີ້.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Kỳ kế toán của phiếu đã khoá; mở kỳ trước khi gỡ ghi sổ.": {
+  "en": "The voucher's accounting period is closed; reopen the period before unposting.",
+  "lo": "ງວດບັນຊີຂອງໃບຖືກລັອກແລ້ວ; ເປີດງວດກ່ອນ ຈຶ່ງຖອນການບັນທຶກບັນຊີ.",
+  "o": "Database/Scripts/20261002_cm_unpost_cash_voucher.sql (proc_CM_UnpostCashVoucher)"
+ },
+ "LineKey nhánh chi phải là chuỗi khác rỗng, tối đa 100 ký tự.": {
+  "en": "A payment-leg LineKey must be a non-empty string of up to 100 characters.",
+  "lo": "LineKey ຂອງສ່ວນຈ່າຍ ຕ້ອງເປັນຂໍ້ຄວາມບໍ່ຫວ່າງ, ສູງສຸດ 100 ຕົວອັກສອນ.",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CombinedVoucher_Insert)"
+ },
+ "Lines phải có 1–200 dòng.": {
+  "en": "Lines must contain 1–200 lines.",
+  "lo": "Lines ຕ້ອງມີ 1–200 ແຖວ.",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Lines phải có 1–{1} dòng.": {
+  "en": "Lines must have 1–{1} lines.",
+  "lo": "Lines ຕ້ອງມີ 1–{1} ແຖວ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:721"
+ },
+ "LinesJson không phải JSON.": {
+  "en": "LinesJson is not JSON.",
+  "lo": "LinesJson ບໍ່ແມ່ນ JSON.",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CombinedVoucher_Insert)"
+ },
+ "Liên kết DO cũ bị thay đổi/xóa; cần đối soát, không tự tạo lại.": {
+  "en": "The earlier DO link was changed/deleted; reconciliation is needed, it is not recreated automatically.",
+  "lo": "ການເຊື່ອມໂຍງ DO ເກົ່າຖືກປ່ຽນ/ລຶບ; ຕ້ອງກວດທຽບ, ບໍ່ສ້າງຄືນໃຫ້ເອງ.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "LogisticsStock:Journal:Enabled nếu kế toán tự ghi tay.": {
+  "en": "LogisticsStock:Journal:Enabled if accounting records the entries manually.",
+  "lo": "LogisticsStock:Journal:Enabled ຖ້າບັນຊີບັນທຶກດ້ວຍມືເອງ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:333"
+ },
+ "Loại phiếu không hợp lệ.": {
+  "en": "Invalid voucher type.",
+  "lo": "ປະເພດໃບບໍ່ຖືກຕ້ອງ.",
+  "o": "Database/Scripts/20260912_cash_voucher_source_reference.sql (proc_PP_CashVoucherSourceReference_Get)"
+ },
+ "Luồng Logistics đang bận; gửi lại cùng Idempotency-Key.": {
+  "en": "The Logistics flow is busy; resend with the same Idempotency-Key.",
+  "lo": "ລະບົບ Logistics ກຳລັງຫຍຸ້ງ; ສົ່ງໃໝ່ດ້ວຍ Idempotency-Key ເດີມ.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Luồng Logistics đang bận; retry cùng Idempotency-Key.": {
+  "en": "The Logistics flow is busy; retry with the same Idempotency-Key.",
+  "lo": "ລະບົບ Logistics ກຳລັງຫຍຸ້ງ; ລອງໃໝ່ດ້ວຍ Idempotency-Key ເດີມ.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "Lý do tối đa {1} ký tự.": {
+  "en": "The reason can be at most {1} characters.",
+  "lo": "ເຫດຜົນບໍ່ເກີນ {1} ຕົວອັກສອນ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsFuelVoucherService.cs:190"
+ },
+ "Lưu dữ liệu thất bại.": {
+  "en": "Failed to save data.",
+  "lo": "ບັນທຶກຂໍ້ມູນບໍ່ສຳເລັດ.",
+  "o": "Modules/Shared/ObjectManagement/Api/V1/ObjectManagementController.cs:176"
+ },
+ "Lưu phiếu công nợ rồi lập phiếu chi ở Danh sách phiếu chi.": {
+  "en": "Save it as a payable, then create the payment voucher in the Payment voucher list.",
+  "lo": "ບັນທຶກເປັນໃບໜີ້ ແລ້ວສ້າງໃບຈ່າຍຢູ່ ລາຍການໃບຈ່າຍ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:256"
+ },
+ "Lưu quan hệ thất bại.": {
+  "en": "Failed to save the relationship.",
+  "lo": "ບັນທຶກຄວາມສຳພັນບໍ່ສຳເລັດ.",
+  "o": "Modules/Shared/ObjectManagement/Api/V1/ObjectManagementController.cs:226"
+ },
+ "Lưu tham chiếu phải nằm trong transaction lưu phiếu.": {
+  "en": "References must be saved within the voucher-saving transaction.",
+  "lo": "ການບັນທຶກການອ້າງອີງ ຕ້ອງຢູ່ໃນ transaction ດຽວກັບການບັນທຶກໃບ.",
+  "o": "Database/Scripts/20260912_cash_voucher_source_reference.sql (proc_PP_CashVoucherSourceReference_Save)"
+ },
+ "Lập lại bút toán {1} hỏng: {2} ({3}) — mở phiếu kho, xoá lại hoặc báo kế toán": {
+  "en": "Re-creating journal entry {1} failed: {2} ({3}) — open the stock note and delete it again, or ask accounting to",
+  "lo": "ສ້າງບັນທຶກບັນຊີ {1} ຄືນໃໝ່ບໍ່ສຳເລັດ: {2} ({3}) — ເປີດໃບສາງ, ລຶບອີກຄັ້ງ ຫຼື ແຈ້ງໃຫ້ບັນຊີ",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:199"
+ },
+ "Lỗi Server {1}.": {
+  "en": "Server error {1}.",
+  "lo": "ເຊີບເວີຜິດພາດ {1}.",
+  "o": "Modules/Shared/ObjectManagement/Api/V1/ObjectManagementController.cs:183"
+ },
+ "Lỗi server, không thể mặt hàng khỏi chứng từ được": {
+  "en": "Server error, the item cannot be removed from the document",
+  "lo": "ເຊີບເວີຜິດພາດ, ລຶບລາຍການສິນຄ້າອອກຈາກເອກະສານບໍ່ໄດ້",
+  "o": "Modules/SupplyChain/Warehouse/Infrastructure/WarehouseRepository.cs:722"
+ },
+ "Lỗi server, không thể xóa chứng từ được, vui lòng thử lại sau": {
+  "en": "Server error, the document cannot be deleted, please try again later",
+  "lo": "ເຊີບເວີຜິດພາດ, ລຶບເອກະສານບໍ່ໄດ້, ກະລຸນາລອງໃໝ່ພາຍຫຼັງ",
+  "o": "Modules/SupplyChain/Warehouse/Infrastructure/WarehouseRepository.cs:691"
+ },
+ "Lỗi, không kiểm tra được chứng từ trước khi xóa": {
+  "en": "Error: the document could not be checked before deletion",
+  "lo": "ຜິດພາດ, ກວດເອກະສານກ່ອນລຶບບໍ່ໄດ້",
+  "o": "Modules/SupplyChain/Warehouse/Infrastructure/WarehouseRepository.cs:683"
+ },
+ "Mã DO/khách/tuyến không hợp lệ hoặc mã mặt hàng vượt 50 ký tự.": {
+  "en": "The DO/customer/route code is invalid or the item code exceeds 50 characters.",
+  "lo": "ລະຫັດ DO/ລູກຄ້າ/ເສັ້ນທາງ ບໍ່ຖືກຕ້ອງ ຫຼື ລະຫັດສິນຄ້າເກີນ 50 ຕົວອັກສອນ.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "Mã ghép mặt hàng xung đột với cặp khách-tuyến khác.": {
+  "en": "The combined item code conflicts with another customer-route pair.",
+  "lo": "ລະຫັດສິນຄ້າທີ່ປະກອບ ຂັດກັບຄູ່ ລູກຄ້າ-ເສັ້ນທາງ ອື່ນ.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "Mã kho sai định dạng.": {
+  "en": "The warehouse code has an invalid format.",
+  "lo": "ລະຫັດສາງຮູບແບບບໍ່ຖືກຕ້ອງ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsFuelVoucherService.cs:73"
+ },
+ "Mã khách không tồn tại hoặc bị trùng trong PUBOBJECT.OBJ_OBJECTNO.": {
+  "en": "The customer code does not exist or is duplicated in PUBOBJECT.OBJ_OBJECTNO.",
+  "lo": "ລະຫັດລູກຄ້າບໍ່ມີ ຫຼື ຊ້ຳກັນໃນ PUBOBJECT.OBJ_OBJECTNO.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "Mã mặt hàng (item_code / item_key) chỉ gồm chữ / số / - _ . và tối đa 50 ký tự.": {
+  "en": "The item code (item_code / item_key) may only contain letters / digits / - _ . and be up to 50 characters.",
+  "lo": "ລະຫັດສິນຄ້າ (item_code / item_key) ມີໄດ້ສະເພາະຕົວອັກສອນ / ຕົວເລກ / - _ . ແລະ ສູງສຸດ 50 ຕົວອັກສອນ.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Mã mặt hàng khách-tuyến bị trùng; cần đối soát danh mục.": {
+  "en": "The customer-route item code is duplicated; the item list needs reconciling.",
+  "lo": "ລະຫັດສິນຄ້າ ລູກຄ້າ-ເສັ້ນທາງ ຊ້ຳກັນ; ຕ້ອງກວດທຽບລາຍການ.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "Mã mặt hàng nhiên liệu bị trùng trong PUBITEMS; cần đối soát danh mục.": {
+  "en": "The fuel item code is duplicated in PUBITEMS; the item list needs reconciling.",
+  "lo": "ລະຫັດສິນຄ້ານ້ຳມັນຊ້ຳກັນໃນ PUBITEMS; ຕ້ອງກວດທຽບລາຍການ.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Mã phiếu bán mới vẫn trùng phiếu khác; đã rollback.": {
+  "en": "The new sales slip code still duplicates another slip; rolled back.",
+  "lo": "ລະຫັດໃບຂາຍໃໝ່ຍັງຊ້ຳກັບໃບອື່ນ; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261002_logistics_retk_code_unique_proc.sql (proc_Logistics_SalesOrder_UniqueRetkCode)"
+ },
+ "Mã phiếu đề nghị / SourceRef không hợp lệ.": {
+  "en": "Invalid request code / SourceRef.",
+  "lo": "ລະຫັດໃບສະເໜີ / SourceRef ບໍ່ຖືກຕ້ອງ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsFuelVoucherService.cs:110"
+ },
+ "Mã phiếu đề nghị không hợp lệ.": {
+  "en": "Invalid request code.",
+  "lo": "ລະຫັດໃບສະເໜີບໍ່ຖືກຕ້ອງ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsFuelVoucherService.cs:290"
+ },
+ "Mã số thuế phải gồm 10 chữ số hoặc mã chi nhánh 13 chữ số.": {
+  "en": "The tax ID must have 10 digits, or 13 digits for a branch code.",
+  "lo": "ເລກປະຈຳຕົວຜູ້ເສຍອາກອນ ຕ້ອງມີ 10 ຕົວເລກ ຫຼື ລະຫັດສາຂາ 13 ຕົວເລກ.",
+  "o": "Modules/Shared/MasterData/Api/V1/CommonController.cs:298"
+ },
+ "Mã thẻ đã tồn tại hoặc truyền sai dữ liệu.": {
+  "en": "The card code already exists or invalid data was sent.",
+  "lo": "ລະຫັດບັດມີຢູ່ແລ້ວ ຫຼື ສົ່ງຂໍ້ມູນຜິດ.",
+  "o": "Modules/Shared/ObjectManagement/Api/V1/ObjectManagementController.cs:293"
+ },
+ "Mã tiền DO không tồn tại hoặc bị trùng trong PUBCURRENCY.CUR_NAME.": {
+  "en": "The DO currency code does not exist or is duplicated in PUBCURRENCY.CUR_NAME.",
+  "lo": "ລະຫັດສະກຸນເງິນຂອງ DO ບໍ່ມີ ຫຼື ຊ້ຳກັນໃນ PUBCURRENCY.CUR_NAME.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "Mã tiền cấn trừ (": {
+  "en": "The offset currency (",
+  "lo": "ສະກຸນເງິນຫັກລົບ (",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_Create)"
+ },
+ "Mã tiền cấu hình (LogisticsStock.CurrencyId) không có trong PUBCURRENCY.": {
+  "en": "The configured currency code (LogisticsStock.CurrencyId) is not in PUBCURRENCY.",
+  "lo": "ລະຫັດສະກຸນເງິນທີ່ຕັ້ງຄ່າ (LogisticsStock.CurrencyId) ບໍ່ມີໃນ PUBCURRENCY.",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Mã tiền không tồn tại hoặc bị trùng trong PUBCURRENCY.CUR_NAME.": {
+  "en": "The currency code does not exist or is duplicated in PUBCURRENCY.CUR_NAME.",
+  "lo": "ລະຫັດສະກຸນເງິນບໍ່ມີ ຫຼື ຊ້ຳກັນໃນ PUBCURRENCY.CUR_NAME.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Mã tiền {1} của SO {2} {(rows.Count == 0 ?": {
+  "en": "Currency code {1} of SO {2} is {(rows.Count == 0 ?",
+  "lo": "ລະຫັດສະກຸນເງິນ {1} ຂອງ SO {2} {(rows.Count == 0 ?",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:680"
+ },
+ "Mã tài khoản tối đa 20 ký tự: chữ, số, dấu chấm, gạch ngang/gạch dưới.": {
+  "en": "The account code can be up to 20 characters: letters, digits, dots, hyphens/underscores.",
+  "lo": "ເລກບັນຊີຍາວໄດ້ສູງສຸດ 20 ຕົວອັກສອນ: ຕົວອັກສອນ, ຕົວເລກ, ຈຸດ, ຂີດກາງ/ຂີດລຸ່ມ.",
+  "o": "Database/Scripts/20260913_lao_accounts_crud.sql (proc_LaoAccounts_CRUD)"
+ },
+ "Mã tài khoản đã tồn tại.": {
+  "en": "The account code already exists.",
+  "lo": "ເລກບັນຊີນີ້ມີແລ້ວ.",
+  "o": "Database/Scripts/20260913_lao_accounts_crud.sql (proc_LaoAccounts_CRUD)"
+ },
+ "Mô tả thu/chi vượt sức chứa PIT_DESCRIPTION hoặc Notes. Cần mở rộng schema được duyệt; không cắt mất dòng.": {
+  "en": "The receipt/payment description exceeds the size of PIT_DESCRIPTION or Notes. An approved schema extension is needed; lines are not cut off.",
+  "lo": "ຄຳອະທິບາຍ ຮັບ/ຈ່າຍ ຍາວເກີນຂະໜາດ PIT_DESCRIPTION ຫຼື Notes. ຕ້ອງຂະຫຍາຍ schema ທີ່ໄດ້ຮັບອະນຸມັດ; ບໍ່ຕັດແຖວອອກ.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "Mặt hàng có sẵn không khớp mã/tên/ĐVT/nhóm hoặc đã ngừng sử dụng. Không tự ghi đè.": {
+  "en": "The existing item does not match the code/name/unit/group or is no longer in use. It is not overwritten automatically.",
+  "lo": "ລາຍການສິນຄ້າທີ່ມີຢູ່ ບໍ່ກົງກັບ ລະຫັດ/ຊື່/ຫົວໜ່ວຍ/ກຸ່ມ ຫຼື ຢຸດໃຊ້ແລ້ວ. ບໍ່ຂຽນທັບໃຫ້ເອງ.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "Mặt hàng nhiên liệu đã ngừng sử dụng / bị xoá; không tự ghi đè.": {
+  "en": "The fuel item is inactive / deleted; it is not overwritten automatically.",
+  "lo": "ລາຍການສິນຄ້ານ້ຳມັນຢຸດໃຊ້ / ຖືກລຶບແລ້ວ; ບໍ່ຂຽນທັບໃຫ້ເອງ.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Mặt hàng thiếu đơn vị tính hoặc nhóm hàng; cần bổ sung danh mục.": {
+  "en": "The item is missing a unit of measure or item group; the item list needs completing.",
+  "lo": "ລາຍການສິນຄ້າຂາດຫົວໜ່ວຍ ຫຼື ກຸ່ມສິນຄ້າ; ຕ້ອງເພີ່ມໃນລາຍການ.",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Mặt hàng đã gắn với mã nhiên liệu khác; cần đối soát danh mục.": {
+  "en": "The item is already linked to another fuel code; the item list needs reconciling.",
+  "lo": "ລາຍການສິນຄ້ານີ້ຜູກກັບລະຫັດນ້ຳມັນອື່ນແລ້ວ; ຕ້ອງກວດທຽບລາຍການ.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Mỗi dòng cần ItemCode, WarehouseCode và Qty > 0.": {
+  "en": "Each line needs ItemCode, WarehouseCode and Qty > 0.",
+  "lo": "ແຕ່ລະແຖວຕ້ອງມີ ItemCode, WarehouseCode ແລະ Qty > 0.",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Mỗi dòng details phải là object.": {
+  "en": "Each details line must be an object.",
+  "lo": "ແຕ່ລະແຖວຂອງ details ຕ້ອງເປັນ object.",
+  "o": "Modules/Sales/Sales/Application/LogisticsFuelSalesOrderService.cs:140"
+ },
+ "Mỗi dòng phải là object có line_no dương.": {
+  "en": "Each line must be an object with a positive line_no.",
+  "lo": "ແຕ່ລະແຖວຕ້ອງເປັນ object ທີ່ມີ line_no ເປັນຄ່າບວກ.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Mỗi tham chiếu phải là JSON object.": {
+  "en": "Each reference must be a JSON object.",
+  "lo": "ແຕ່ລະການອ້າງອີງຕ້ອງເປັນ JSON object.",
+  "o": "Database/Scripts/20260912_cash_voucher_source_reference.sql (proc_PP_CashVoucherSourceReference_Save)"
+ },
+ "Một dòng chỉ được chọn nguồn hoặc Vụ việc.": {
+  "en": "A line can have either a source or a Job, not both.",
+  "lo": "ແຖວໜຶ່ງເລືອກໄດ້ແຕ່ແຫຼ່ງ ຫຼື ວຽກງານ ຢ່າງໃດຢ່າງໜຶ່ງ.",
+  "o": "Modules/Finance/Accounting/Infrastructure/CMPaymentReceiptRepository.cs:548"
+ },
+ "Một dòng không được có đồng thời nguồn và Cost Object.": {
+  "en": "A line cannot have both a source and a Cost Object.",
+  "lo": "ແຖວໜຶ່ງບໍ່ສາມາດມີທັງແຫຼ່ງທີ່ມາ ແລະ Cost Object ພ້ອມກັນ.",
+  "o": "Database/Scripts/20260912_cash_voucher_source_reference.sql (proc_PP_CashVoucherSourceReference_Save)"
+ },
+ "Một entry chỉ có một tham chiếu.": {
+  "en": "Each entry can have only one reference.",
+  "lo": "ແຕ່ລະ entry ມີການອ້າງອີງໄດ້ພຽງອັນດຽວ.",
+  "o": "Database/Scripts/20260912_cash_voucher_source_reference.sql (proc_PP_CashVoucherSourceReference_Save)"
+ },
+ "Người gỡ (ActionBy) không tồn tại hoặc ngừng hoạt động.": {
+  "en": "The person removing it (ActionBy) does not exist or is inactive.",
+  "lo": "ຜູ້ຖອນ (ActionBy) ບໍ່ມີ ຫຼື ຢຸດໃຊ້ງານແລ້ວ.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Reverse)"
+ },
+ "Người huỷ (ActionBy) không tồn tại hoặc ngừng hoạt động.": {
+  "en": "The person cancelling (ActionBy) does not exist or is inactive.",
+  "lo": "ຜູ້ຍົກເລີກ (ActionBy) ບໍ່ມີ ຫຼື ຢຸດໃຊ້ງານແລ້ວ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Người lập (ActionBy) không tồn tại hoặc ngừng hoạt động.": {
+  "en": "The creator (ActionBy) does not exist or is inactive.",
+  "lo": "ຜູ້ສ້າງ (ActionBy) ບໍ່ມີ ຫຼື ຢຸດໃຊ້ງານແລ້ວ.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "Ngữ cảnh DO cần DoId.": {
+  "en": "The DO context requires DoId.",
+  "lo": "ບໍລິບົດ DO ຕ້ອງມີ DoId.",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CombinedVoucher_DoContext)"
+ },
+ "Nhiên liệu / phụ tùng bán cho đối tác (Logistics)": {
+  "en": "Fuel / spare parts sold to partners (Logistics)",
+  "lo": "ນ້ຳມັນ / ອາໄຫຼ່ ຂາຍໃຫ້ຄູ່ຮ່ວມ (Logistics)",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Nhiên liệu đối tác · DO": {
+  "en": "Partner fuel · DO",
+  "lo": "ນ້ຳມັນຄູ່ຮ່ວມ · DO",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Nhánh chi cần mảng JSON các LineKey đã lập.": {
+  "en": "The payment leg needs a JSON array of the LineKeys created.",
+  "lo": "ສ່ວນຈ່າຍຕ້ອງມີ JSON array ຂອງ LineKey ທີ່ສ້າງແລ້ວ.",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CombinedVoucher_Insert)"
+ },
+ "Nhánh chi không có LineKey hoặc LineKey bị trùng.": {
+  "en": "The payment leg has no LineKey or has duplicate LineKeys.",
+  "lo": "ສ່ວນຈ່າຍບໍ່ມີ LineKey ຫຼື LineKey ຊ້ຳກັນ.",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CombinedVoucher_Insert)"
+ },
+ "Nhánh thu cần LineKey, snapshot DO (JSON object) và giờ chụp snapshot.": {
+  "en": "The receipt leg needs a LineKey, a DO snapshot (JSON object) and the snapshot time.",
+  "lo": "ສ່ວນຮັບຕ້ອງມີ LineKey, snapshot DO (JSON object) ແລະ ເວລາຖ່າຍ snapshot.",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CombinedVoucher_Insert)"
+ },
+ "Nhóm tài khoản không tồn tại.": {
+  "en": "The account group does not exist.",
+  "lo": "ບໍ່ມີກຸ່ມບັນຊີນີ້.",
+  "o": "Database/Scripts/20260913_lao_accounts_crud.sql (proc_LaoAccounts_CRUD)"
+ },
+ "Nhóm đối tượng không hợp lệ.": {
+  "en": "Invalid party group.",
+  "lo": "ກຸ່ມຄູ່ບັນຊີບໍ່ຖືກຕ້ອງ.",
+  "o": "Modules/Shared/ObjectManagement/Application/ObjectService.cs:293"
+ },
+ "Nhập mua kho EPL — chứng từ kho {1}": {
+  "en": "EPL warehouse purchase receipt — stock document {1}",
+  "lo": "ຮັບຊື້ເຂົ້າສາງ EPL — ເອກະສານສາງ {1}",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:266"
+ },
+ "Nội dung đánh giá không hợp lệ.": {
+  "en": "Invalid evaluation content.",
+  "lo": "ເນື້ອໃນການປະເມີນບໍ່ຖືກຕ້ອງ.",
+  "o": "Modules/Shared/ObjectManagement/Application/ObjectService.cs:172"
+ },
+ "ObjectCode sai định dạng mã hoặc vượt {1} ký tự.": {
+  "en": "ObjectCode has an invalid code format or exceeds {1} characters.",
+  "lo": "ObjectCode ຮູບແບບລະຫັດບໍ່ຖືກຕ້ອງ ຫຼື ເກີນ {1} ຕົວອັກສອນ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:718"
+ },
+ "ObjectId không hợp lệ": {
+  "en": "invalid ObjectId",
+  "lo": "ObjectId ບໍ່ຖືກຕ້ອງ",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "OrderId không hợp lệ.": {
+  "en": "Invalid OrderId.",
+  "lo": "OrderId ບໍ່ຖືກຕ້ອງ.",
+  "o": "Modules/Sales/Sales/Application/LogisticsFuelSalesOrderService.cs:176"
+ },
+ "PageIndex: từ 1 đến {1}.": {
+  "en": "PageIndex: from 1 to {1}.",
+  "lo": "PageIndex: ແຕ່ 1 ຫາ {1}.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:152"
+ },
+ "PageSize: từ 1 đến {1}.": {
+  "en": "PageSize: from 1 to {1}.",
+  "lo": "PageSize: ແຕ່ 1 ຫາ {1}.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:155"
+ },
+ "Payload / PayloadHash không hợp lệ.": {
+  "en": "Invalid Payload / PayloadHash.",
+  "lo": "Payload / PayloadHash ບໍ່ຖືກຕ້ອງ.",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Payload hoặc Idempotency-Key không hợp lệ.": {
+  "en": "Invalid payload or Idempotency-Key.",
+  "lo": "Payload ຫຼື Idempotency-Key ບໍ່ຖືກຕ້ອງ.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "Payload không hợp lệ.": {
+  "en": "Invalid payload.",
+  "lo": "Payload ບໍ່ຖືກຕ້ອງ.",
+  "o": "Database/Scripts/20260913_lao_accounts_crud.sql (proc_LaoAccounts_CRUD)"
+ },
+ "Phiếu bán chưa có loại hình kinh doanh (RBT_AUTOID).": {
+  "en": "The sales slip has no business type (RBT_AUTOID).",
+  "lo": "ໃບຂາຍຍັງບໍ່ມີປະເພດທຸລະກິດ (RBT_AUTOID).",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_Create)"
+ },
+ "Phiếu chi chưa gắn vụ việc DO cho đủ các dòng đã chọn.": {
+  "en": "The payment voucher does not yet have the DO cost object on all selected lines.",
+  "lo": "ໃບຈ່າຍຍັງບໍ່ໄດ້ຜູກວຽກງານ DO ໃຫ້ຄົບທຸກແຖວທີ່ເລືອກ.",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CombinedVoucher_Insert)"
+ },
+ "Phiếu chi «Chi trước» (tạm ứng chuyến) không đổi được sang loại phiếu khác — lưu giữ nguyên loại «Chi trước».": {
+  "en": "An «Advance payment» voucher (trip advance) cannot be changed to another voucher type — save it with the «Advance payment» type unchanged.",
+  "lo": "ໃບຈ່າຍ «ຈ່າຍລ່ວງໜ້າ» (ເງິນລ່ວງໜ້າຖ້ຽວ) ປ່ຽນເປັນປະເພດໃບອື່ນບໍ່ໄດ້ — ບັນທຶກໂດຍຮັກສາປະເພດ «ຈ່າຍລ່ວງໜ້າ» ໄວ້ຄືເກົ່າ.",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:616"
+ },
+ "Phiếu chưa ghi sổ (trạng thái": {
+  "en": "The voucher is not posted (status",
+  "lo": "ໃບຍັງບໍ່ໄດ້ບັນທຶກບັນຊີ (ສະຖານະ",
+  "o": "Database/Scripts/20261002_cm_unpost_cash_voucher.sql (proc_CM_UnpostCashVoucher)"
+ },
+ "Phiếu có tham chiếu nguồn. Cần tải lại và gửi SourceReferences khi sửa để tránh mất dữ liệu.": {
+  "en": "The voucher has source references. Reload it and send SourceReferences when editing to avoid data loss.",
+  "lo": "ໃບນີ້ມີການອ້າງອີງແຫຼ່ງ. ຕ້ອງໂຫຼດຄືນ ແລະ ສົ່ງ SourceReferences ເມື່ອແກ້ໄຂ ເພື່ອບໍ່ໃຫ້ຂໍ້ມູນເສຍ.",
+  "o": "Modules/Finance/Accounting/Infrastructure/CMPaymentReceiptRepository.cs:540"
+ },
+ "Phiếu kho chi nhánh EPL (nhập mua 42, xuất dùng 48, xuất bán 44) cần bút toán tự động theo tài khoản Lào nhưng API bút toán": {
+  "en": "EPL branch stock notes (purchase receipt 42, issue for use 48, sales issue 44) need automatic journal entries on the Lao chart of accounts, but the journal entry API",
+  "lo": "ໃບສາງຂອງສາຂາ EPL (ຮັບຊື້ 42, ເບີກໃຊ້ 48, ເບີກຂາຍ 44) ຕ້ອງມີບັນທຶກບັນຊີອັດຕະໂນມັດຕາມຜັງບັນຊີລາວ ແຕ່ API ບັນທຶກບັນຊີ",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:331"
+ },
+ "Phiếu kho chi nhánh EPL không ghi sổ chính — bút toán kho theo hệ tài khoản Lào đi từ trang điều xe (hàng theo chuyến)": {
+  "en": "EPL branch stock notes are not posted to the main ledger — stock journal entries on the Lao chart of accounts come from EPL (per-trip goods)",
+  "lo": "ໃບສາງຂອງສາຂາ EPL ບໍ່ບັນທຶກເຂົ້າປຶ້ມບັນຊີຫຼັກ — ບັນທຶກບັນຊີສາງຕາມຜັງບັນຊີລາວ ມາຈາກ EPL (ສິນຄ້າຕາມຖ້ຽວ)",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:291"
+ },
+ "Phiếu kho chưa có loại tiền.": {
+  "en": "The stock note has no currency.",
+  "lo": "ໃບສາງຍັງບໍ່ມີສະກຸນເງິນ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:225"
+ },
+ "Phiếu kho chưa xoá được; đã rollback.": {
+  "en": "The stock note could not be deleted; rolled back.",
+  "lo": "ຍັງລຶບໃບສາງບໍ່ໄດ້; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261005_logistics_stock_issue.sql (proc_Logistics_StockIssue_Cancel)"
+ },
+ "Phiếu kho vừa chốt không có dòng vào sổ kho; đã rollback.": {
+  "en": "The just-finalised stock note has no stock ledger lines; rolled back.",
+  "lo": "ໃບສາງທີ່ຫາກໍ່ປິດ ບໍ່ມີແຖວເຂົ້າປຶ້ມສາງ; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Phiếu kho {1} đã có từ lần bấm trước; đã ghi nhận về trang điều xe.": {
+  "en": "Stock note {1} already exists from the previous click; EPL has been notified.",
+  "lo": "ໃບສາງ {1} ມີແລ້ວຈາກການກົດຄັ້ງກ່ອນ; ແຈ້ງໄປ EPL ແລ້ວ.",
+  "o": "Modules/SupplyChain/Warehouse/Api/V1/LogisticsFuelVoucherController.cs:95"
+ },
+ "Phiếu kho đã lưu nhưng bút toán {1} chưa cập nhật: {2} Sửa xong nguyên nhân thì mở phiếu và lưu lại.": {
+  "en": "The stock note was saved but journal entry {1} was not updated: {2} Once the cause is fixed, open the note and save it again.",
+  "lo": "ໃບສາງບັນທຶກແລ້ວ ແຕ່ບັນທຶກບັນຊີ {1} ຍັງບໍ່ໄດ້ອັບເດດ: {2} ແກ້ສາເຫດແລ້ວ ໃຫ້ເປີດໃບ ແລະ ບັນທຶກອີກຄັ້ງ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:149"
+ },
+ "Phiếu không tồn tại hoặc không đúng loại.": {
+  "en": "The voucher does not exist or is of the wrong type.",
+  "lo": "ໃບບໍ່ມີ ຫຼື ບໍ່ຖືກປະເພດ.",
+  "o": "Database/Scripts/20260912_cash_voucher_source_reference.sql (proc_PP_CashVoucherSourceReference_Save)"
+ },
+ "Phiếu nhập: mỗi dòng cần UnitCost ≥ 0.": {
+  "en": "Stock-in note: each line needs UnitCost ≥ 0.",
+  "lo": "ໃບຮັບເຂົ້າສາງ: ແຕ່ລະແຖວຕ້ອງມີ UnitCost ≥ 0.",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Phiếu này đang được gỡ ghi sổ ở phiên khác; gọi lại sau.": {
+  "en": "This voucher is being unposted in another session; call again later.",
+  "lo": "ໃບນີ້ກຳລັງຖືກຖອນການບັນທຶກບັນຊີຢູ່ອີກເຊສຊັນໜຶ່ງ; ກະລຸນາເອີ້ນໃໝ່ພາຍຫຼັງ.",
+  "o": "Database/Scripts/20261002_cm_unpost_cash_voucher.sql (proc_CM_UnpostCashVoucher)"
+ },
+ "Phiếu thu CMR gửi kèm không phải phiếu của phiếu thu nợ này; không huỷ.": {
+  "en": "The CMR receipt sent does not belong to this debt collection voucher; nothing cancelled.",
+  "lo": "ໃບຮັບເງິນ CMR ທີ່ສົ່ງມາ ບໍ່ແມ່ນໃບຂອງໃບເກັບໜີ້ນີ້; ບໍ່ຍົກເລີກ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Phiếu thu của nhánh thu không có dòng định khoản.": {
+  "en": "The receipt in the receipt leg has no entry lines.",
+  "lo": "ໃບຮັບເງິນຂອງສ່ວນຮັບ ບໍ່ມີແຖວບັນທຶກບັນຊີ.",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CombinedVoucher_Insert)"
+ },
+ "Phiếu thu nợ cấn trừ không còn; cần đối soát.": {
+  "en": "The offset debt collection voucher no longer exists; reconciliation is needed.",
+  "lo": "ໃບເກັບໜີ້ຫັກລົບບໍ່ມີແລ້ວ; ຕ້ອງກວດທຽບ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_Cancel)"
+ },
+ "Phiếu thu nợ cấn trừ đã bị vô hiệu bằng đường khác; cần đối soát.": {
+  "en": "The offset debt collection voucher was voided by another route; reconciliation is needed.",
+  "lo": "ໃບເກັບໜີ້ຫັກລົບຖືກປິດໃຊ້ງານດ້ວຍວິທີອື່ນແລ້ວ; ຕ້ອງກວດທຽບ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_Cancel)"
+ },
+ "Phiếu thu nợ không có số nguyên tệ (RDO_AMOUNTCUR); không xác định được số đã trừ.": {
+  "en": "The debt collection voucher has no original-currency amount (RDO_AMOUNTCUR); the amount deducted cannot be determined.",
+  "lo": "ໃບເກັບໜີ້ບໍ່ມີຈຳນວນເງິນຕາມສະກຸນເດີມ (RDO_AMOUNTCUR); ບໍ່ສາມາດລະບຸຈຳນວນທີ່ຫັກໄປ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Phiếu thu nợ không có đúng một phiếu thu CMR đang hoạt động.": {
+  "en": "The debt collection voucher does not have exactly one active CMR receipt.",
+  "lo": "ໃບເກັບໜີ້ບໍ່ມີໃບຮັບເງິນ CMR ທີ່ໃຊ້ງານຢູ່ ພຽງໜຶ່ງໃບ.",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CombinedVoucher_Insert)"
+ },
+ "Phiếu thu nợ này đang được huỷ ở phiên khác; gọi lại sau.": {
+  "en": "This debt collection voucher is being cancelled in another session; call again later.",
+  "lo": "ໃບເກັບໜີ້ນີ້ກຳລັງຖືກຍົກເລີກຢູ່ອີກເຊສຊັນໜຶ່ງ; ກະລຸນາເອີ້ນໃໝ່ພາຍຫຼັງ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Phiếu thu nợ phải gắn đúng một phiếu bán (RESDOCUMENT_TICKET); cần đối soát.": {
+  "en": "The debt collection voucher must be linked to exactly one sales slip (RESDOCUMENT_TICKET); reconciliation is needed.",
+  "lo": "ໃບເກັບໜີ້ຕ້ອງຜູກກັບໃບຂາຍພຽງໜຶ່ງໃບ (RESDOCUMENT_TICKET); ຕ້ອງກວດທຽບ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Phiếu thu nợ đã bị vô hiệu nhưng phiếu thu CMR vẫn hoạt động; cần đối soát, không huỷ tiếp.": {
+  "en": "The debt collection voucher is voided but its CMR receipt is still active; reconciliation is needed, cancellation stops here.",
+  "lo": "ໃບເກັບໜີ້ຖືກປິດໃຊ້ງານແລ້ວ ແຕ່ໃບຮັບເງິນ CMR ຍັງໃຊ້ງານຢູ່; ຕ້ອງກວດທຽບ, ບໍ່ຍົກເລີກຕໍ່.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Phiếu thu nợ đã huỷ từ trước; không đổi gì.": {
+  "en": "The debt collection receipt was already cancelled; nothing changed.",
+  "lo": "ໃບຮັບຊຳລະໜີ້ຖືກຍົກເລີກກ່ອນໜ້ານີ້ແລ້ວ; ບໍ່ມີຫຍັງປ່ຽນແປງ.",
+  "o": "Modules/Sales/Sales/Api/V1/DebtCollectionController.cs:143"
+ },
+ "Phiếu thu tỷ giá khác 1 có thể đã trừ dư nợ theo số quy đổi (thủ tục tạo bản cũ); không đoán số, cần đối soát tay.": {
+  "en": "A receipt with an exchange rate other than 1 may have reduced the balance by the converted amount (old version of the create procedure); the figure is not guessed, manual reconciliation is needed.",
+  "lo": "ໃບຮັບເງິນທີ່ອັດຕາແລກປ່ຽນບໍ່ແມ່ນ 1 ອາດຫັກຍອດໜີ້ຕາມຈຳນວນຫຼັງແລກປ່ຽນ (ຂັ້ນຕອນສ້າງລຸ້ນເກົ່າ); ບໍ່ຄາດເດົາຕົວເລກ, ຕ້ອງກວດທຽບດ້ວຍມື.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Phiếu tổng hợp phải có ít nhất một nhánh (chi hoặc thu).": {
+  "en": "A combined voucher must have at least one leg (payment or receipt).",
+  "lo": "ໃບລວມຕ້ອງມີຢ່າງໜ້ອຍໜຶ່ງສ່ວນ (ຈ່າຍ ຫຼື ຮັບ).",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CombinedVoucher_Insert)"
+ },
+ "Phiếu xuất bán (44) của chi nhánh EPL không sửa trên màn Tạo phiếu xuất — xoá phiếu (gỡ bút toán tự động) rồi": {
+  "en": "EPL branch sales issue notes (44) cannot be edited on the Create stock-out screen — delete the note (which reverses the automatic journal entry), then",
+  "lo": "ໃບເບີກຂາຍ (44) ຂອງສາຂາ EPL ແກ້ຢູ່ໜ້າ ສ້າງໃບເບີກອອກ ບໍ່ໄດ້ — ລຶບໃບ (ຖອນບັນທຶກບັນຊີອັດຕະໂນມັດ) ແລ້ວ",
+  "o": "Modules/SupplyChain/Warehouse/Application/WarehouseService.cs:286"
+ },
+ "Phiếu xuất bán (44) của chi nhánh EPL không sửa được — xoá phiếu (gỡ bút toán tự động) rồi xuất lại từ đơn hàng bán.": {
+  "en": "EPL branch sales issue notes (44) cannot be edited — delete the note (which reverses the automatic journal entry), then issue again from the sales order.",
+  "lo": "ໃບເບີກຂາຍ (44) ຂອງສາຂາ EPL ແກ້ບໍ່ໄດ້ — ລຶບໃບ (ຖອນບັນທຶກບັນຊີອັດຕະໂນມັດ) ແລ້ວເບີກໃໝ່ຈາກໃບສັ່ງຂາຍ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:509"
+ },
+ "Phiếu xuất kho {1} chưa huỷ — không có gì để báo về trang điều xe.": {
+  "en": "Stock-out note {1} has not been cancelled — there is nothing to report to EPL.",
+  "lo": "ໃບເບີກອອກສາງ {1} ຍັງບໍ່ໄດ້ຍົກເລີກ — ບໍ່ມີຫຍັງຈະແຈ້ງໄປ EPL.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockCancelService.cs:79"
+ },
+ "Phiếu xuất kho {1} của {2} đã huỷ bên kho — không cấp lại tự động.": {
+  "en": "Stock-out note {1} for {2} was cancelled in the warehouse — it is not reissued automatically.",
+  "lo": "ໃບເບີກອອກສາງ {1} ຂອງ {2} ຖືກຍົກເລີກຢູ່ຝ່າຍສາງແລ້ວ — ບໍ່ຈ່າຍຄືນອັດຕະໂນມັດ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsFuelVoucherService.cs:156"
+ },
+ "Phiếu xuất đã có phiếu kho con (nhập nội bộ / trả lại); không huỷ được.": {
+  "en": "The stock-out note already has child stock notes (internal receipt / return); it cannot be cancelled.",
+  "lo": "ໃບເບີກອອກສາງມີໃບສາງຍ່ອຍແລ້ວ (ຮັບເຂົ້າພາຍໃນ / ສົ່ງຄືນ); ຍົກເລີກບໍ່ໄດ້.",
+  "o": "Database/Scripts/20261005_logistics_stock_issue.sql (proc_Logistics_StockIssue_Cancel)"
+ },
+ "Phiếu xuất đã ghi sổ chính; kế toán gỡ ghi sổ trước, API không huỷ.": {
+  "en": "The stock-out note is posted to the main ledger; accounting must unpost it first, the API does not cancel it.",
+  "lo": "ໃບເບີກອອກສາງບັນທຶກເຂົ້າປຶ້ມຫຼັກແລ້ວ; ບັນຊີຕ້ອງຖອນການບັນທຶກກ່ອນ, API ບໍ່ຍົກເລີກ.",
+  "o": "Database/Scripts/20261005_logistics_stock_issue.sql (proc_Logistics_StockIssue_Cancel)"
+ },
+ "Phiếu xuất đã huỷ từ trước; không đổi gì.": {
+  "en": "The stock-out note was already cancelled; nothing changed.",
+  "lo": "ໃບເບີກອອກຖືກຍົກເລີກກ່ອນໜ້ານີ້ແລ້ວ; ບໍ່ມີຫຍັງປ່ຽນແປງ.",
+  "o": "Modules/SupplyChain/Warehouse/Api/V1/LogisticsStockController.cs:108"
+ },
+ "Phiếu xuất: DocTypeId 48 + Purpose INTERNAL (xe nhà) / PARTNER_SALE (xe thuê); phiếu nhập: 53 / 40.": {
+  "en": "Stock-out note: DocTypeId 48 + Purpose INTERNAL (company truck) / PARTNER_SALE (hired truck); stock-in note: 53 / 40.",
+  "lo": "ໃບເບີກອອກສາງ: DocTypeId 48 + Purpose INTERNAL (ລົດບໍລິສັດ) / PARTNER_SALE (ລົດເຊົ່າ); ໃບຮັບເຂົ້າສາງ: 53 / 40.",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Phiếu {1} gồm nhiều dòng dầu — chỉ cấp đủ số đề nghị.": {
+  "en": "Request {1} has several fuel lines — it can only be issued in full as requested.",
+  "lo": "ໃບ {1} ມີຫຼາຍແຖວນໍ້າມັນ — ຈ່າຍໄດ້ສະເພາະຄົບຕາມຈຳນວນສະເໜີ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsFuelVoucherService.cs:194"
+ },
+ "Phiếu {1} thiếu SourceRef / mã kho / dòng dầu từ trang điều xe.": {
+  "en": "Request {1} is missing the SourceRef / warehouse code / fuel lines from EPL.",
+  "lo": "ໃບ {1} ຂາດ SourceRef / ລະຫັດສາງ / ແຖວນໍ້າມັນ ຈາກ EPL.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsFuelVoucherService.cs:140"
+ },
+ "Phiếu {1} đã cấp từ trước (phiếu kho {result.Voucher?.StockDocumentNo ??": {
+  "en": "Request {1} was already issued (stock note {result.Voucher?.StockDocumentNo ??",
+  "lo": "ໃບ {1} ຈ່າຍໄປກ່ອນໜ້ານີ້ແລ້ວ (ໃບສາງ {result.Voucher?.StockDocumentNo ??",
+  "o": "Modules/SupplyChain/Warehouse/Api/V1/LogisticsFuelVoucherController.cs:93"
+ },
+ "Phiếu {1} đã huỷ ở trang điều xe — không cấp.": {
+  "en": "Request {1} has been cancelled in EPL — not issued.",
+  "lo": "ໃບ {1} ຖືກຍົກເລີກຢູ່ EPL ແລ້ວ — ບໍ່ຈ່າຍ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsFuelVoucherService.cs:134"
+ },
+ "Phụ tùng, vật tư xuất dùng / sửa chữa — {1}": {
+  "en": "Spare parts and supplies issued for use / repair — {1}",
+  "lo": "ອາໄຫຼ່, ວັດສະດຸ ເບີກໃຊ້ / ສ້ອມແປງ — {1}",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:275"
+ },
+ "Procedure không trả thông báo lỗi.": {
+  "en": "The procedure returned no error message.",
+  "lo": "Procedure ບໍ່ສົ່ງຂໍ້ຄວາມຜິດພາດຄືນ.",
+  "o": "Modules/Finance/Accounting/Infrastructure/CMPaymentReceiptRepository.cs:600"
+ },
+ "Procedure tạo Vụ việc trả ID không hợp lệ hoặc không nhất quán.": {
+  "en": "The Job creation procedure returned an invalid or inconsistent ID.",
+  "lo": "Procedure ສ້າງວຽກງານ ສົ່ງ ID ຄືນທີ່ບໍ່ຖືກຕ້ອງ ຫຼື ບໍ່ສອດຄ່ອງກັນ.",
+  "o": "Modules/Finance/Accounting/Infrastructure/CMPaymentReceiptRepository.cs:609"
+ },
+ "Procedure {1} không trả về cột RESULT.": {
+  "en": "Procedure {1} did not return the RESULT column.",
+  "lo": "Procedure {1} ບໍ່ສົ່ງຖັນ RESULT ຄືນ.",
+  "o": "Modules/Shared/ObjectManagement/Infrastructure/ObjectManagementRepo.cs:322"
+ },
+ "Purpose phiếu xuất: INTERNAL (xe nhà dùng dầu / phụ tùng) hoặc PARTNER_SALE (xe thuê).": {
+  "en": "Stock-out Purpose: INTERNAL (company truck uses fuel / parts) or PARTNER_SALE (hired truck).",
+  "lo": "Purpose ຂອງໃບເບີກອອກ: INTERNAL (ລົດບໍລິສັດໃຊ້ນໍ້າມັນ / ອາໄຫຼ່) ຫຼື PARTNER_SALE (ລົດເຊົ່າ).",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:358"
+ },
+ "Quốc gia 11 không phải Lào. Cần kiểm tra cấu hình DB, không tiếp tục.": {
+  "en": "Country 11 is not Laos. Check the DB configuration; processing stopped.",
+  "lo": "ປະເທດ 11 ບໍ່ແມ່ນລາວ. ຕ້ອງກວດການຕັ້ງຄ່າ DB, ບໍ່ດຳເນີນການຕໍ່.",
+  "o": "Database/Scripts/20260913_lao_accounts_crud.sql (proc_LaoAccounts_CRUD)"
+ },
+ "Quốc gia kế toán (CountryId) không tồn tại hoặc ngừng hoạt động.": {
+  "en": "The accounting country (CountryId) does not exist or is inactive.",
+  "lo": "ປະເທດບັນຊີ (CountryId) ບໍ່ມີ ຫຼື ຢຸດໃຊ້ງານແລ້ວ.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "Reason tối đa {1} ký tự.": {
+  "en": "Reason: at most {1} characters.",
+  "lo": "Reason ບໍ່ເກີນ {1} ຕົວອັກສອນ.",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:81"
+ },
+ "ResultJson phiếu kho rỗng.": {
+  "en": "The stock note ResultJson is empty.",
+  "lo": "ResultJson ຂອງໃບສາງຫວ່າງເປົ່າ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:776"
+ },
+ "RetkAutoId không hợp lệ.": {
+  "en": "Invalid RetkAutoId.",
+  "lo": "RetkAutoId ບໍ່ຖືກຕ້ອງ.",
+  "o": "Database/Scripts/20261002_logistics_retk_code_unique_proc.sql (proc_Logistics_SalesOrder_UniqueRetkCode)"
+ },
+ "SO chưa có phiếu bán / khách; không cấn trừ được.": {
+  "en": "The SO has no sales slip / customer yet; it cannot be offset.",
+  "lo": "SO ຍັງບໍ່ມີໃບຂາຍ / ລູກຄ້າ; ຫັກລົບບໍ່ໄດ້.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_Create)"
+ },
+ "SO nhiên liệu cũ của DO bị thay đổi / xoá; cần đối soát, không tự tạo lại.": {
+  "en": "The DO's earlier fuel SO was changed / deleted; reconciliation is needed, it is not recreated automatically.",
+  "lo": "SO ນ້ຳມັນເກົ່າຂອງ DO ຖືກປ່ຽນ / ລຶບ; ຕ້ອງກວດທຽບ, ບໍ່ສ້າງຄືນໃຫ້ເອງ.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "SO này đang được cấn trừ / thu nợ ở phiên khác; gọi lại sau.": {
+  "en": "This SO is being offset / collected in another session; call again later.",
+  "lo": "SO ນີ້ກຳລັງຖືກຫັກລົບ / ເກັບໜີ້ຢູ່ອີກເຊສຊັນໜຶ່ງ; ກະລຸນາເອີ້ນໃໝ່ພາຍຫຼັງ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_Cancel)"
+ },
+ "SO {1} chưa có mã tiền — không ghi được doanh thu.": {
+  "en": "SO {1} has no currency code — revenue cannot be recorded.",
+  "lo": "SO {1} ຍັງບໍ່ມີລະຫັດສະກຸນເງິນ — ບັນທຶກລາຍຮັບບໍ່ໄດ້.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:668"
+ },
+ "SO {1} tiền {2} khác tiền kho EPL — gửi ExchangeRate (tỷ giá": {
+  "en": "SO {1} is in {2}, which differs from the EPL warehouse currency — send ExchangeRate (the rate",
+  "lo": "SO {1} ສະກຸນເງິນ {2} ຕ່າງຈາກສະກຸນເງິນສາງ EPL — ສົ່ງ ExchangeRate (ອັດຕາແລກປ່ຽນ",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:525"
+ },
+ "SP_CMR_DELETEMCMR_CMRECEIPT chạy xong nhưng phiếu thu vẫn hoạt động (thủ tục legacy có thể từ chối bằng result set); đã rollback.": {
+  "en": "SP_CMR_DELETEMCMR_CMRECEIPT finished but the receipt is still active (the legacy procedure may refuse via a result set); rolled back.",
+  "lo": "SP_CMR_DELETEMCMR_CMRECEIPT ເຮັດວຽກແລ້ວ ແຕ່ໃບຮັບເງິນຍັງໃຊ້ງານຢູ່ (ຂັ້ນຕອນເກົ່າ (legacy) ອາດປະຕິເສດຜ່ານ result set); ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "SP_CMR_DELETEMCMR_CMRECEIPT từ chối xoá phiếu thu (mã": {
+  "en": "SP_CMR_DELETEMCMR_CMRECEIPT refused to delete the receipt (code",
+  "lo": "SP_CMR_DELETEMCMR_CMRECEIPT ປະຕິເສດການລຶບໃບຮັບເງິນ (ລະຫັດ",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "SalesOrderCode (số SO nhiên liệu, TK-…) sai định dạng mã hoặc vượt 50 ký tự.": {
+  "en": "SalesOrderCode (fuel SO number, TK-…) has an invalid code format or exceeds 50 characters.",
+  "lo": "SalesOrderCode (ເລກ SO ນ້ຳມັນ, TK-…) ຮູບແບບລະຫັດບໍ່ຖືກຕ້ອງ ຫຼື ເກີນ 50 ຕົວອັກສອນ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:369"
+ },
+ "SnapshotJson không phải JSON.": {
+  "en": "SnapshotJson is not JSON.",
+  "lo": "SnapshotJson ບໍ່ແມ່ນ JSON.",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CombinedVoucher_Insert)"
+ },
+ "SourceLineKey bắt buộc cho dòng có tham chiếu nguồn.": {
+  "en": "SourceLineKey is required for lines with a source reference.",
+  "lo": "ແຖວທີ່ມີການອ້າງອີງແຫຼ່ງ ຕ້ອງມີ SourceLineKey.",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:508"
+ },
+ "SourceRef (Idempotency-Key) chỉ gồm chữ, số, _ . : - (≤ 100 ký tự).": {
+  "en": "SourceRef (Idempotency-Key) may only contain letters, digits, _ . : - (≤ 100 characters).",
+  "lo": "SourceRef (Idempotency-Key) ມີໄດ້ສະເພາະຕົວອັກສອນ, ຕົວເລກ, _ . : - (≤ 100 ຕົວອັກສອນ).",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "SourceRef bắt buộc, tối đa 100 ký tự.": {
+  "en": "SourceRef is required, up to 100 characters.",
+  "lo": "ຕ້ອງມີ SourceRef, ສູງສຸດ 100 ຕົວອັກສອນ.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Get)"
+ },
+ "SourceRef bắt buộc, đúng giá trị Idempotency-Key đã gửi khi tạo.": {
+  "en": "SourceRef is required and must equal the Idempotency-Key sent at creation.",
+  "lo": "ຕ້ອງມີ SourceRef, ເປັນຄ່າດຽວກັບ Idempotency-Key ທີ່ສົ່ງຕອນສ້າງ.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:122"
+ },
+ "SourceRef sai định dạng.": {
+  "en": "SourceRef has an invalid format.",
+  "lo": "SourceRef ຮູບແບບບໍ່ຖືກຕ້ອງ.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:132"
+ },
+ "SourceRef trùng nhiều chứng từ tổng hợp đang hoạt động; cần đối soát, không gỡ.": {
+  "en": "SourceRef matches several active general journal documents; reconciliation is needed, nothing removed.",
+  "lo": "SourceRef ຊ້ຳກັບເອກະສານບັນຊີລວມທີ່ໃຊ້ງານຢູ່ຫຼາຍໃບ; ຕ້ອງກວດທຽບ, ບໍ່ຖອນ.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Reverse)"
+ },
+ "SourceRef trùng nhiều chứng từ tổng hợp đang hoạt động; cần đối soát, không tạo thêm.": {
+  "en": "SourceRef matches several active general journal documents; reconciliation is needed, nothing more is created.",
+  "lo": "SourceRef ຊ້ຳກັບເອກະສານບັນຊີລວມທີ່ໃຊ້ງານຢູ່ຫຼາຍໃບ; ຕ້ອງກວດທຽບ, ບໍ່ສ້າງເພີ່ມ.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "SourceRef trùng nhiều chứng từ tổng hợp đang hoạt động; cần đối soát.": {
+  "en": "SourceRef matches several active general journal documents; reconciliation is needed.",
+  "lo": "SourceRef ຊ້ຳກັບເອກະສານບັນຊີລວມທີ່ໃຊ້ງານຢູ່ຫຼາຍໃບ; ຕ້ອງກວດທຽບ.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Get)"
+ },
+ "SourceRef trỏ tới chứng từ không phải bút toán tổng hợp; không gỡ.": {
+  "en": "SourceRef points to a document that is not a general journal entry; nothing removed.",
+  "lo": "SourceRef ຊີ້ໄປຫາເອກະສານທີ່ບໍ່ແມ່ນບັນທຶກບັນຊີລວມ; ບໍ່ຖອນ.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Reverse)"
+ },
+ "SourceRef đã dùng cho bút toán khác nội dung. Gỡ (reverse) rồi gửi lại, hoặc dùng SourceRef mới.": {
+  "en": "This SourceRef is already used for a journal entry with different content. Remove it (reverse) and resend, or use a new SourceRef.",
+  "lo": "SourceRef ນີ້ໃຊ້ກັບບັນທຶກບັນຊີທີ່ມີເນື້ອໃນຕ່າງກັນແລ້ວ. ຖອນ (reverse) ແລ້ວສົ່ງໃໝ່, ຫຼື ໃຊ້ SourceRef ໃໝ່.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "SourceRef đã dùng cho phiếu kho khác nội dung; không lập lại.": {
+  "en": "This SourceRef was already used for a stock note with different content; not created again.",
+  "lo": "SourceRef ນີ້ໃຊ້ກັບໃບສາງທີ່ມີເນື້ອໃນຕ່າງກັນແລ້ວ; ບໍ່ສ້າງຄືນ.",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "SourceRef đã gắn với chứng từ không phải bút toán tổng hợp; cần đối soát.": {
+  "en": "SourceRef is already linked to a document that is not a general journal entry; reconciliation is needed.",
+  "lo": "SourceRef ຜູກກັບເອກະສານທີ່ບໍ່ແມ່ນບັນທຶກບັນຊີລວມແລ້ວ; ຕ້ອງກວດທຽບ.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "SourceType '{1}' không được hỗ trợ cho {2}.": {
+  "en": "SourceType '{1}' is not supported for {2}.",
+  "lo": "SourceType '{1}' ບໍ່ຮອງຮັບສຳລັບ {2}.",
+  "o": "Modules/Finance/Accounting/Infrastructure/CMPaymentReceiptRepository.cs:409"
+ },
+ "StatusId: phải lớn hơn 0 hoặc bỏ trống.": {
+  "en": "StatusId: must be greater than 0 or left blank.",
+  "lo": "StatusId: ຕ້ອງຫຼາຍກວ່າ 0 ຫຼື ປ່ອຍຫວ່າງ.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:167"
+ },
+ "Stored chốt phiếu không trả DOC_DOCUMENTID hợp lệ ở result set cuối.": {
+  "en": "The note-finalizing stored procedure did not return a valid DOC_DOCUMENTID in the last result set.",
+  "lo": "Stored procedure ປິດໃບ ບໍ່ສົ່ງ DOC_DOCUMENTID ທີ່ຖືກຕ້ອງຄືນ ໃນ result set ສຸດທ້າຍ.",
+  "o": "Modules/SupplyChain/Warehouse/Infrastructure/WarehouseRepository.cs:1024"
+ },
+ "Số TKN gắn nhiều phiếu thu CMR đang hoạt động; cần đối soát, không huỷ.": {
+  "en": "The TKN number is linked to several active CMR receipts; reconciliation is needed, nothing cancelled.",
+  "lo": "ເລກ TKN ຜູກກັບໃບຮັບເງິນ CMR ທີ່ໃຊ້ງານຢູ່ຫຼາຍໃບ; ຕ້ອງກວດທຽບ, ບໍ່ຍົກເລີກ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Số chứng từ trùng nhiều phiếu thu nợ; gửi DocumentId.": {
+  "en": "The document number matches several debt collection vouchers; send the DocumentId.",
+  "lo": "ເລກທີເອກະສານຊ້ຳກັບໃບເກັບໜີ້ຫຼາຍໃບ; ສົ່ງ DocumentId ມາແທນ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Số cấn trừ vượt dư nợ SO (": {
+  "en": "The offset amount exceeds the SO's outstanding balance (",
+  "lo": "ຈຳນວນຫັກລົບເກີນຍອດໜີ້ຂອງ SO (",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_Create)"
+ },
+ "Số lít cấp phải > 0, tối đa 3 số lẻ.": {
+  "en": "Litres issued must be > 0, with at most 3 decimal places.",
+  "lo": "ຈຳນວນລິດທີ່ຈ່າຍຕ້ອງ > 0, ບໍ່ເກີນ 3 ຕຳແໜ່ງທົດສະນິຍົມ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsFuelVoucherService.cs:184"
+ },
+ "Số phiếu kho: tối đa {1} số, mỗi số ≤ {2} ký tự.": {
+  "en": "Stock note numbers: at most {1} numbers, each ≤ {2} characters.",
+  "lo": "ເລກໃບສາງ: ສູງສຸດ {1} ເລກ, ແຕ່ລະເລກ ≤ {2} ຕົວອັກສອນ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:478"
+ },
+ "Tham chiếu phải là mảng JSON đầy đủ; mảng rỗng là xóa tất cả tham chiếu của phiếu.": {
+  "en": "References must be a complete JSON array; an empty array deletes all of the voucher's references.",
+  "lo": "ການອ້າງອີງຕ້ອງເປັນ JSON array ຄົບຖ້ວນ; array ຫວ່າງ ໝາຍເຖິງລຶບການອ້າງອີງທັງໝົດຂອງໃບ.",
+  "o": "Database/Scripts/20260912_cash_voucher_source_reference.sql (proc_PP_CashVoucherSourceReference_Save)"
+ },
+ "Tham chiếu thiếu trường, sai nguồn hoặc vượt giới hạn độ dài.": {
+  "en": "A reference is missing fields, has the wrong source, or exceeds the length limit.",
+  "lo": "ການອ້າງອີງຂາດຊ່ອງຂໍ້ມູນ, ແຫຼ່ງທີ່ມາບໍ່ຖືກ ຫຼື ຍາວເກີນກຳນົດ.",
+  "o": "Database/Scripts/20260912_cash_voucher_source_reference.sql (proc_PP_CashVoucherSourceReference_Save)"
+ },
+ "Thao tác hoặc danh tính không hợp lệ.": {
+  "en": "Invalid operation or identity.",
+  "lo": "ການດຳເນີນການ ຫຼື ຕົວຕົນບໍ່ຖືກຕ້ອງ.",
+  "o": "Database/Scripts/20260913_lao_accounts_crud.sql (proc_LaoAccounts_CRUD)"
+ },
+ "Thi?u danh sách khách hàng c?n xóa.": {
+  "en": "The list of customers to delete is missing.",
+  "lo": "ຂາດລາຍຊື່ລູກຄ້າທີ່ຕ້ອງການລຶບ.",
+  "o": "Modules/Shared/ObjectManagement/Api/V1/CustomerController.cs:81"
+ },
+ "Thi?u danh sách nhà cung c?p c?n xóa.": {
+  "en": "The list of suppliers to delete is missing.",
+  "lo": "ຂາດລາຍຊື່ຜູ້ສະໜອງທີ່ຕ້ອງການລຶບ.",
+  "o": "Modules/Shared/ObjectManagement/Api/V1/SupplierController.cs:81"
+ },
+ "Thi?u danh sách nhân viên c?n xóa.": {
+  "en": "The list of employees to delete is missing.",
+  "lo": "ຂາດລາຍຊື່ພະນັກງານທີ່ຕ້ອງການລຶບ.",
+  "o": "Modules/Shared/ObjectManagement/Api/V1/StaffController.cs:81"
+ },
+ "Thiếu (hoặc trùng) hình thức thanh toán \"Cấn trừ công nợ\"; áp lại script.": {
+  "en": "The \"Debt offset\" payment method is missing (or duplicated); re-apply the script.",
+  "lo": "ຂາດ (ຫຼື ຊ້ຳ) ຮູບແບບການຊຳລະ \"ຫັກລົບໜີ້\"; ໃຫ້ນຳໃຊ້ script ຄືນໃໝ່.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_Create)"
+ },
+ "Thiếu DocumentDate.": {
+  "en": "DocumentDate is missing.",
+  "lo": "ຂາດ DocumentDate.",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Thiếu bảng / thủ tục cấn trừ trên DB: chưa áp script 20261002_sales_debt_collection_offset.sql.": {
+  "en": "The offset table / procedure is missing from the database: script 20261002_sales_debt_collection_offset.sql has not been applied.",
+  "lo": "ຂາດຕາຕະລາງ / procedure ຫັກລົບ ໃນຖານຂໍ້ມູນ: ຍັງບໍ່ໄດ້ແລ່ນ script 20261002_sales_debt_collection_offset.sql.",
+  "o": "Modules/Sales/Sales/Infrastructure/DebtCollectionOffsetRepository.cs:141"
+ },
+ "Thiếu bảng / thủ tục tổng hợp thu chi trên DB kế toán: chưa áp script 20261002_cash_voucher_combined.sql.": {
+  "en": "The combined receipts/payments table or procedure is missing from the accounting database: script 20261002_cash_voucher_combined.sql has not been applied.",
+  "lo": "ຂາດຕາຕະລາງ / procedure ສັງລວມຮັບ-ຈ່າຍ ໃນຖານຂໍ້ມູນບັນຊີ: ຍັງບໍ່ໄດ້ແລ່ນ script 20261002_cash_voucher_combined.sql.",
+  "o": "Modules/Finance/Accounting/Infrastructure/CashVoucherCombinedRepository.cs:287"
+ },
+ "Thiếu chi nhánh (OrgId).": {
+  "en": "The branch (OrgId) is missing.",
+  "lo": "ຂາດສາຂາ (OrgId).",
+  "o": "Database/Scripts/20261005_logistics_stock_issue.sql (proc_Logistics_Stock_Balance)"
+ },
+ "Thiếu chi nhánh / ngày chứng từ / dòng kiểm tồn.": {
+  "en": "The branch / document date / stock check lines are missing.",
+  "lo": "ຂາດສາຂາ / ວັນທີເອກະສານ / ແຖວກວດຍອດຄົງເຫຼືອ.",
+  "o": "Database/Scripts/20261005_logistics_stock_issue.sql (proc_Logistics_Stock_CheckIssue)"
+ },
+ "Thiếu chi nhánh / người gọi.": {
+  "en": "The branch / caller is missing.",
+  "lo": "ຂາດສາຂາ / ຜູ້ເອີ້ນ.",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Thiếu chi nhánh 1368, người tạo OBJ_AUTOID=4 hoặc quốc gia 11 đang hoạt động.": {
+  "en": "Active branch 1368, creator OBJ_AUTOID=4 or country 11 is missing.",
+  "lo": "ຂາດສາຂາ 1368, ຜູ້ສ້າງ OBJ_AUTOID=4 ຫຼື ປະເທດ 11 ທີ່ກຳລັງໃຊ້ງານ.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "Thiếu danh tính caller phục vụ audit.": {
+  "en": "The caller's identity for the audit trail is missing.",
+  "lo": "ຂາດຕົວຕົນຂອງຜູ້ເອີ້ນ (caller) ສຳລັບການກວດສອບ (audit).",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "Thiếu danh tính người gọi phục vụ audit.": {
+  "en": "The caller's identity for the audit trail is missing.",
+  "lo": "ຂາດຕົວຕົນຂອງຜູ້ເອີ້ນ ສຳລັບການກວດສອບ (audit).",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Thiếu danh tính người lưu.": {
+  "en": "The identity of the person saving is missing.",
+  "lo": "ຂາດຕົວຕົນຂອງຜູ້ບັນທຶກ.",
+  "o": "Database/Scripts/20260912_cash_voucher_source_reference.sql (proc_PP_CashVoucherSourceReference_Save)"
+ },
+ "Thiếu diễn giải chứng từ.": {
+  "en": "The document description is missing.",
+  "lo": "ຂາດຄຳອະທິບາຍເອກະສານ.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "Thiếu ngày chứng từ.": {
+  "en": "The document date is missing.",
+  "lo": "ຂາດວັນທີເອກະສານ.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "Thiếu người gỡ (ActionBy).": {
+  "en": "The person removing it (ActionBy) is missing.",
+  "lo": "ຂາດຜູ້ຖອນ (ActionBy).",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Reverse)"
+ },
+ "Thiếu người huỷ (ActionBy).": {
+  "en": "The person cancelling (ActionBy) is missing.",
+  "lo": "ຂາດຜູ້ຍົກເລີກ (ActionBy).",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Thiếu nội dung bút toán.": {
+  "en": "The journal entry body is missing.",
+  "lo": "ຂາດເນື້ອໃນບັນທຶກບັນຊີ.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:65"
+ },
+ "Thiếu nội dung phiếu nhập.": {
+  "en": "The stock-in note body is missing.",
+  "lo": "ຂາດເນື້ອໃນໃບຮັບເຂົ້າສາງ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:379"
+ },
+ "Thiếu nội dung phiếu xuất.": {
+  "en": "The stock-out note body is missing.",
+  "lo": "ຂາດເນື້ອໃນໃບເບີກອອກ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:355"
+ },
+ "Thiếu nội dung yêu cầu.": {
+  "en": "The request body is missing.",
+  "lo": "ຂາດເນື້ອໃນຄຳຮ້ອງຂໍ.",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:70"
+ },
+ "Thiếu object header.": {
+  "en": "The header object is missing.",
+  "lo": "ຂາດ object header.",
+  "o": "Modules/Sales/Sales/Application/LogisticsFuelSalesOrderService.cs:129"
+ },
+ "Thiếu thủ tục / bảng SO nhiên liệu trên DB: chưa áp script {1}.": {
+  "en": "The fuel SO procedure / table is missing from the database: script {1} has not been applied.",
+  "lo": "ຂາດ procedure / ຕາຕະລາງ SO ນ້ຳມັນ ໃນຖານຂໍ້ມູນ: ຍັງບໍ່ໄດ້ແລ່ນ script {1}.",
+  "o": "Modules/Sales/Sales/Infrastructure/LogisticsFuelSalesOrderRepository.cs:126"
+ },
+ "Thiếu thủ tục / bảng kho Logistics trên DB: chưa áp script {1}.": {
+  "en": "The Logistics warehouse procedure / table is missing from the database: script {1} has not been applied.",
+  "lo": "ຂາດ procedure / ຕາຕະລາງສາງ Logistics ໃນຖານຂໍ້ມູນ: ຍັງບໍ່ໄດ້ແລ່ນ script {1}.",
+  "o": "Modules/SupplyChain/Warehouse/Infrastructure/LogisticsStockRepository.cs:430"
+ },
+ "Thiếu thủ tục danh sách trên DB kế toán: chưa áp script 20261002_logistics_journal_entry_list.sql.": {
+  "en": "The list procedure is missing from the accounting database: script 20261002_logistics_journal_entry_list.sql has not been applied.",
+  "lo": "ຂາດ procedure ລາຍການ ໃນຖານຂໍ້ມູນບັນຊີ: ຍັງບໍ່ໄດ້ແລ່ນ script 20261002_logistics_journal_entry_list.sql.",
+  "o": "Modules/Finance/Accounting/Infrastructure/LogisticsJournalEntryRepository.cs:145"
+ },
+ "Thiếu thủ tục gỡ ghi sổ trên DB kế toán: chưa áp script 20261002_cm_unpost_cash_voucher.sql. Chưa gỡ gì.": {
+  "en": "The unpost procedure is missing from the accounting database: script 20261002_cm_unpost_cash_voucher.sql has not been applied. Nothing has been unposted.",
+  "lo": "ຂາດ procedure ຍົກເລີກການບັນທຶກບັນຊີ ໃນຖານຂໍ້ມູນບັນຊີ: ຍັງບໍ່ໄດ້ແລ່ນ script 20261002_cm_unpost_cash_voucher.sql. ຍັງບໍ່ໄດ້ຍົກເລີກຫຍັງ.",
+  "o": "Modules/Finance/Accounting/Infrastructure/CMPaymentReceiptRepository.cs:1197"
+ },
+ "Thiếu thủ tục nền sp_GL_Delete_GENERALLEDGER / SP_CMR_DELETEMCMR_CMRECEIPT trên DB.": {
+  "en": "The base procedure sp_GL_Delete_GENERALLEDGER / SP_CMR_DELETEMCMR_CMRECEIPT is missing from the DB.",
+  "lo": "ຂາດຂັ້ນຕອນພື້ນຖານ sp_GL_Delete_GENERALLEDGER / SP_CMR_DELETEMCMR_CMRECEIPT ໃນ DB.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Thiếu thủ tục nền sp_GL_Delete_GENERALLEDGER trên DB.": {
+  "en": "The base procedure sp_GL_Delete_GENERALLEDGER is missing from the DB.",
+  "lo": "ຂາດຂັ້ນຕອນພື້ນຖານ sp_GL_Delete_GENERALLEDGER ໃນ DB.",
+  "o": "Database/Scripts/20261002_cm_unpost_cash_voucher.sql (proc_CM_UnpostCashVoucher)"
+ },
+ "Thiếu thủ tục trên DB kế toán: chưa áp script 20261001_logistics_journal_entry.sql hoặc thiếu thủ tục nền.": {
+  "en": "A procedure is missing from the accounting database: script 20261001_logistics_journal_entry.sql has not been applied or a base procedure is missing.",
+  "lo": "ຂາດ procedure ໃນຖານຂໍ້ມູນບັນຊີ: ຍັງບໍ່ໄດ້ແລ່ນ script 20261001_logistics_journal_entry.sql ຫຼື ຂາດ procedure ພື້ນຖານ.",
+  "o": "Modules/Finance/Accounting/Infrastructure/LogisticsJournalEntryRepository.cs:195"
+ },
+ "Thiếu tiền tố SourceRef (tối thiểu 3 ký tự).": {
+  "en": "The SourceRef prefix is missing (at least 3 characters).",
+  "lo": "ຂາດຄຳນຳໜ້າ SourceRef (ຢ່າງໜ້ອຍ 3 ຕົວອັກສອນ).",
+  "o": "Database/Scripts/20261002_logistics_journal_entry_list.sql (proc_Logistics_JournalEntry_List)"
+ },
+ "Thiếu trường bắt buộc của phiếu tổng hợp (số, đơn vị, quốc gia, ngày, kỳ, DO, khoá, người lập).": {
+  "en": "Required fields of the combined voucher are missing (number, unit, country, date, period, DO, key, creator).",
+  "lo": "ຂາດຊ່ອງບັງຄັບຂອງໃບລວມ (ເລກທີ, ໜ່ວຍງານ, ປະເທດ, ວັນທີ, ງວດ, DO, ກະແຈ, ຜູ້ສ້າງ).",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CombinedVoucher_Insert)"
+ },
+ "Thiếu vai tài khoản phải trả đối tác / phải thu khách theo quốc gia (CMACCOUNTCONFIGCOUNTRY).": {
+  "en": "The partner payable / customer receivable account roles for the country are missing (CMACCOUNTCONFIGCOUNTRY).",
+  "lo": "ຂາດບົດບາດບັນຊີ ໜີ້ຕ້ອງຈ່າຍຄູ່ຮ່ວມ / ໜີ້ຕ້ອງຮັບລູກຄ້າ ຕາມປະເທດ (CMACCOUNTCONFIGCOUNTRY).",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_Create)"
+ },
+ "Thiếu đơn vị (OrgId), người lập (ActionBy) hoặc quốc gia kế toán (CountryId).": {
+  "en": "The unit (OrgId), creator (ActionBy) or accounting country (CountryId) is missing.",
+  "lo": "ຂາດໜ່ວຍງານ (OrgId), ຜູ້ສ້າງ (ActionBy) ຫຼື ປະເທດບັນຊີ (CountryId).",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "Thiếu đơn vị nhận bút toán (OrgId).": {
+  "en": "The unit receiving the journal entries (OrgId) is missing.",
+  "lo": "ຂາດໜ່ວຍງານຮັບບັນທຶກບັນຊີ (OrgId).",
+  "o": "Database/Scripts/20261002_logistics_journal_entry_list.sql (proc_Logistics_JournalEntry_List)"
+ },
+ "Thuế GTGT đầu ra — SO {1}": {
+  "en": "Output VAT — SO {1}",
+  "lo": "ອາກອນມູນຄ່າເພີ່ມຂາອອກ — SO {1}",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:253"
+ },
+ "Thuế GTGT đầu vào — chứng từ kho {1}": {
+  "en": "Input VAT — stock document {1}",
+  "lo": "ອາກອນມູນຄ່າເພີ່ມຂາເຂົ້າ — ເອກະສານສາງ {1}",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:265"
+ },
+ "Thành phẩm": {
+  "en": "Finished goods",
+  "lo": "ສິນຄ້າສຳເລັດຮູບ",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "Thủ tục gỡ ghi sổ không trả trạng thái chưa ghi sổ (trạng thái sau: {result.StatusAfter?.ToString() ??": {
+  "en": "The unpost procedure did not return the unposted status (status after: {result.StatusAfter?.ToString() ??",
+  "lo": "procedure ຍົກເລີກການບັນທຶກບັນຊີ ບໍ່ສົ່ງຄືນສະຖານະ ຍັງບໍ່ບັນທຶກບັນຊີ (ສະຖານະຫຼັງ: {result.StatusAfter?.ToString() ??",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:323"
+ },
+ "Thủ tục legacy đã tự đổi dư nợ RES khi xoá phiếu thu; đã rollback, cần đọc thân thủ tục.": {
+  "en": "The legacy procedure changed the RES balance by itself when deleting the receipt; rolled back, the procedure body needs to be reviewed.",
+  "lo": "ຂັ້ນຕອນເກົ່າ (legacy) ໄດ້ປ່ຽນຍອດໜີ້ RES ເອງ ຕອນລຶບໃບຮັບເງິນ; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ, ຕ້ອງອ່ານເນື້ອໃນຂອງຂັ້ນຕອນ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Thủ tục lõi chốt phiếu không hoàn tất; đã rollback.": {
+  "en": "The core note-finalising procedure did not complete; rolled back.",
+  "lo": "ຂັ້ນຕອນຫຼັກປິດໃບບໍ່ສຳເລັດ; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Thủ tục lõi không lưu được dòng": {
+  "en": "The core procedure could not save line",
+  "lo": "ຂັ້ນຕອນຫຼັກບໍ່ສາມາດບັນທຶກແຖວ",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Thủ tục lõi không tạo phiếu tạm; đã rollback.": {
+  "en": "The core procedure did not create the draft note; rolled back.",
+  "lo": "ຂັ້ນຕອນຫຼັກບໍ່ໄດ້ສ້າງໃບຊົ່ວຄາວ; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Thủ tục lõi lập phiếu (bản tạm) không hoàn tất; đã rollback.": {
+  "en": "The core note-creation procedure (draft) did not complete; rolled back.",
+  "lo": "ຂັ້ນຕອນຫຼັກສ້າງໃບ (ສະບັບຊົ່ວຄາວ) ບໍ່ສຳເລັດ; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Thủ tục xoá phiếu kho lõi không hoàn tất; đã rollback.": {
+  "en": "The core stock note deletion procedure did not complete; rolled back.",
+  "lo": "ຂັ້ນຕອນຫຼັກລຶບໃບສາງບໍ່ສຳເລັດ; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261005_logistics_stock_issue.sql (proc_Logistics_StockIssue_Cancel)"
+ },
+ "Thủ tục xoá từ chối (mã {result.LegacyResultCode ??": {
+  "en": "The delete procedure refused (code {result.LegacyResultCode ??",
+  "lo": "procedure ລຶບ ປະຕິເສດ (ລະຫັດ {result.LegacyResultCode ??",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:363"
+ },
+ "Tiền hàng nhập kho — {1}": {
+  "en": "Value of goods received — {1}",
+  "lo": "ມູນຄ່າສິນຄ້າຮັບເຂົ້າສາງ — {1}",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:264"
+ },
+ "ToDate: ngoài khoảng 2000–2100.": {
+  "en": "ToDate: outside the range 2000–2100.",
+  "lo": "ToDate: ຢູ່ນອກຊ່ວງ 2000–2100.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:162"
+ },
+ "Token thiếu ObjectId người gọi.": {
+  "en": "The token is missing the caller's ObjectId.",
+  "lo": "Token ຂາດ ObjectId ຂອງຜູ້ເອີ້ນ.",
+  "o": "Modules/Sales/Sales/Application/LogisticsFuelSalesOrderService.cs:69"
+ },
+ "Token thiếu ObjectId người gỡ.": {
+  "en": "The token is missing the ObjectId of the person reversing.",
+  "lo": "Token ຂາດ ObjectId ຂອງຜູ້ຖອນ.",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:147"
+ },
+ "Token thiếu UserId / ObjectId người gọi.": {
+  "en": "The token lacks the caller's UserId / ObjectId.",
+  "lo": "Token ຂາດ UserId / ObjectId ຂອງຜູ້ເອີ້ນ.",
+  "o": "Modules/Finance/Accounting/Api/V1/LogisticsJournalEntryController.cs:231"
+ },
+ "Token thiếu UserId người gọi.": {
+  "en": "The token is missing the caller's UserId.",
+  "lo": "Token ຂາດ UserId ຂອງຜູ້ເອີ້ນ.",
+  "o": "Modules/Sales/Sales/Api/V1/DebtCollectionController.cs:136"
+ },
+ "Trang bắt đầu từ 1; mỗi trang 1–200 dòng.": {
+  "en": "Pages start at 1; each page holds 1–200 rows.",
+  "lo": "ໜ້າເລີ່ມຈາກ 1; ແຕ່ລະໜ້າ 1–200 ແຖວ.",
+  "o": "Database/Scripts/20261002_logistics_journal_entry_list.sql (proc_Logistics_JournalEntry_List)"
+ },
+ "Trang điều xe chưa cho cấp phiếu {1}.": {
+  "en": "EPL has not yet released request {1} for issue.",
+  "lo": "EPL ຍັງບໍ່ອະນຸຍາດໃຫ້ຈ່າຍໃບ {1}.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsFuelVoucherService.cs:137"
+ },
+ "Trang điều xe chưa ghi nhận.": {
+  "en": "EPL has not acknowledged it yet.",
+  "lo": "EPL ຍັງບໍ່ໄດ້ຮັບຮູ້.",
+  "o": "Modules/SupplyChain/Warehouse/Api/V1/LogisticsFuelVoucherController.cs:126"
+ },
+ "Trang điều xe trả dữ liệu rỗng.": {
+  "en": "EPL returned empty data.",
+  "lo": "EPL ສົ່ງຂໍ້ມູນຫວ່າງເປົ່າຄືນ.",
+  "o": "Modules/SupplyChain/Warehouse/Infrastructure/LogisticsFuelVoucherClient.cs:209"
+ },
+ "Trang điều xe trả phản hồi không phải JSON (HTTP {1}).": {
+  "en": "EPL returned a non-JSON response (HTTP {1}).",
+  "lo": "EPL ຕອບກັບມາບໍ່ແມ່ນ JSON (HTTP {1}).",
+  "o": "Modules/SupplyChain/Warehouse/Infrastructure/LogisticsFuelVoucherClient.cs:203"
+ },
+ "Trang điều xe từ chối (HTTP {1}). Kiểm tra cấu hình LogisticsSource / khoá bàn giao.": {
+  "en": "EPL refused the request (HTTP {1}). Check the LogisticsSource configuration / handover key.",
+  "lo": "EPL ປະຕິເສດ (HTTP {1}). ກວດການຕັ້ງຄ່າ LogisticsSource / ກະແຈສົ່ງມອບ.",
+  "o": "Modules/SupplyChain/Warehouse/Infrastructure/LogisticsFuelVoucherClient.cs:235"
+ },
+ "Trang điều xe đã gỡ phiếu kho khỏi dòng phụ tùng mục V ({1}, DO {2}).": {
+  "en": "EPL has removed the stock note from the section V spare-part line ({1}, DO {2}).",
+  "lo": "EPL ຖອນໃບສາງອອກຈາກແຖວອາໄຫຼ່ ໝວດ V ແລ້ວ ({1}, DO {2}).",
+  "o": "Modules/SupplyChain/Warehouse/Api/V1/LogisticsFuelVoucherController.cs:128"
+ },
+ "Trang điều xe đã gỡ phiếu kho khỏi dòng phụ tùng mục V của DO {1} (dòng về «lấy kho, chưa xuất»).": {
+  "en": "EPL has removed the stock note from the section V spare-part line of DO {1} (the line is back to «from stock, not issued»).",
+  "lo": "EPL ຖອນໃບສາງອອກຈາກແຖວອາໄຫຼ່ ໝວດ V ຂອງ DO {1} ແລ້ວ (ແຖວກັບເປັນ «ເອົາຈາກສາງ, ຍັງບໍ່ເບີກ»).",
+  "o": "Modules/SupplyChain/Warehouse/Application/WarehouseService.cs:123"
+ },
+ "Trang điều xe đã mở lại phiếu đề nghị {1}.": {
+  "en": "EPL has reopened request {1}.",
+  "lo": "EPL ເປີດໃບສະເໜີ {1} ຄືນແລ້ວ.",
+  "o": "Modules/SupplyChain/Warehouse/Api/V1/LogisticsFuelVoucherController.cs:129"
+ },
+ "Trang điều xe đã mở lại phiếu đề nghị.": {
+  "en": "EPL has reopened the request.",
+  "lo": "EPL ເປີດໃບສະເໜີຄືນແລ້ວ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/WarehouseService.cs:120"
+ },
+ "Trạng thái phải lớn hơn 0 hoặc bỏ trống.": {
+  "en": "Status must be greater than 0 or left empty.",
+  "lo": "ສະຖານະຕ້ອງຫຼາຍກວ່າ 0 ຫຼື ປ່ອຍຫວ່າງ.",
+  "o": "Database/Scripts/20261002_logistics_journal_entry_list.sql (proc_Logistics_JournalEntry_List)"
+ },
+ "Trả lại dư nợ không đúng một dòng công nợ; đã rollback.": {
+  "en": "Restoring the balance did not affect exactly one receivable row; rolled back.",
+  "lo": "ການຄືນຍອດໜີ້ ບໍ່ກະທົບແຖວໜີ້ພຽງໜຶ່ງແຖວ; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_Cancel)"
+ },
+ "Tài khoản có con: không được ngừng dùng hoặc chuyển thành tài khoản hạch toán.": {
+  "en": "The account has child accounts: it cannot be deactivated or turned into a posting account.",
+  "lo": "ບັນຊີມີບັນຊີຍ່ອຍ: ບໍ່ສາມາດຢຸດໃຊ້ ຫຼື ປ່ຽນເປັນບັນຊີລາຍລະອຽດ.",
+  "o": "Database/Scripts/20260913_lao_accounts_crud.sql (proc_LaoAccounts_CRUD)"
+ },
+ "Tài khoản không có trong danh mục quốc gia {1} (đang dùng, cho hạch toán): {string.Join(": {
+  "en": "Accounts not in the chart of accounts of country {1} (active, postable): {string.Join(",
+  "lo": "ບັນຊີທີ່ບໍ່ມີໃນຜັງບັນຊີຂອງປະເທດ {1} (ກຳລັງໃຊ້, ລົງບັນຊີໄດ້): {string.Join(",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:303"
+ },
+ "Tài khoản không có trong danh mục quốc gia:": {
+  "en": "Accounts not in the country's chart of accounts:",
+  "lo": "ບັນຊີທີ່ບໍ່ມີໃນຜັງບັນຊີຂອງປະເທດ:",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "Tài khoản không thuộc đơn vị nhận bút toán từ Logistics.": {
+  "en": "The account does not belong to the unit that receives journal entries from Logistics.",
+  "lo": "ບັນຊີຜູ້ໃຊ້ນີ້ບໍ່ຂຶ້ນກັບໜ່ວຍງານທີ່ຮັບບັນທຶກບັນຊີຈາກ Logistics.",
+  "o": "Modules/Finance/Accounting/Api/V1/LogisticsJournalEntryController.cs:200"
+ },
+ "Tài khoản này chưa được cấp dầu theo phiếu đề nghị (LogisticsStock.FuelIssueUserIds).": {
+  "en": "This account is not yet allowed to issue fuel per request (LogisticsStock.FuelIssueUserIds).",
+  "lo": "ບັນຊີນີ້ຍັງບໍ່ມີສິດຈ່າຍນໍ້າມັນຕາມໃບສະເໜີ (LogisticsStock.FuelIssueUserIds).",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsFuelVoucherService.cs:283"
+ },
+ "Tài khoản này không được cấn trừ công nợ (SalesDebtCollectionOffset.AllowedUserIds).": {
+  "en": "This account is not allowed to offset debts (SalesDebtCollectionOffset.AllowedUserIds).",
+  "lo": "ບັນຊີນີ້ບໍ່ມີສິດຫັກລົບໜີ້ (SalesDebtCollectionOffset.AllowedUserIds).",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:237"
+ },
+ "Tài khoản này không được gọi tích hợp SO (LogisticsSalesPush.AllowedUserIds).": {
+  "en": "This account is not allowed to call the SO integration (LogisticsSalesPush.AllowedUserIds).",
+  "lo": "ບັນຊີນີ້ບໍ່ມີສິດເອີ້ນການເຊື່ອມຕໍ່ SO (LogisticsSalesPush.AllowedUserIds).",
+  "o": "Modules/Sales/Sales/Application/LogisticsFuelSalesOrderService.cs:109"
+ },
+ "Tài khoản này không được gọi tích hợp bút toán.": {
+  "en": "This account is not allowed to call the journal entry integration.",
+  "lo": "ບັນຊີຜູ້ໃຊ້ນີ້ບໍ່ມີສິດເອີ້ນການເຊື່ອມຕໍ່ບັນທຶກບັນຊີ.",
+  "o": "Modules/Finance/Accounting/Api/V1/LogisticsJournalEntryController.cs:178"
+ },
+ "Tài khoản này không được gọi tích hợp kho (LogisticsStock.AllowedUserIds).": {
+  "en": "This account is not allowed to call the warehouse integration (LogisticsStock.AllowedUserIds).",
+  "lo": "ບັນຊີນີ້ບໍ່ມີສິດເອີ້ນການເຊື່ອມຕໍ່ສາງ (LogisticsStock.AllowedUserIds).",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:800"
+ },
+ "Tài khoản này không được gọi tích hợp đọc phiếu theo dòng DO.": {
+  "en": "This account is not allowed to call the integration that reads vouchers by DO line.",
+  "lo": "ບັນຊີຜູ້ໃຊ້ນີ້ບໍ່ມີສິດເອີ້ນການເຊື່ອມຕໍ່ອ່ານໃບຕາມແຖວ DO.",
+  "o": "Modules/Finance/Accounting/Api/V1/LogisticsLineVoucherController.cs:109"
+ },
+ "Tài khoản được tham chiếu trong danh mục/chứng từ/mapping. Chỉ được sửa tên/mô tả; không xóa hoặc thay thuộc tính.": {
+  "en": "The account is referenced in lists/documents/mappings. Only its name/description can be edited; it cannot be deleted and its attributes cannot be changed.",
+  "lo": "ບັນຊີນີ້ຖືກອ້າງອີງໃນລາຍການ/ເອກະສານ/mapping. ແກ້ໄດ້ສະເພາະຊື່/ຄຳອະທິບາຍ; ບໍ່ສາມາດລຶບ ຫຼື ປ່ຽນຄຸນສົມບັດ.",
+  "o": "Database/Scripts/20260913_lao_accounts_crud.sql (proc_LaoAccounts_CRUD)"
+ },
+ "Tên Vụ việc nhập tay bắt buộc.": {
+  "en": "A manually entered Job needs a name.",
+  "lo": "ຕ້ອງໃສ່ຊື່ວຽກງານທີ່ປ້ອນເອງ.",
+  "o": "Modules/Finance/Accounting/Infrastructure/CMPaymentReceiptRepository.cs:550"
+ },
+ "Tên tối đa 150, mô tả 200 ký tự; tính chất số dư phải từ 1 đến 4.": {
+  "en": "Name up to 150 and description up to 200 characters; the balance type must be from 1 to 4.",
+  "lo": "ຊື່ສູງສຸດ 150, ຄຳອະທິບາຍ 200 ຕົວອັກສອນ; ລັກສະນະຍອດເຫຼືອຕ້ອງຢູ່ລະຫວ່າງ 1 ຫາ 4.",
+  "o": "Database/Scripts/20260913_lao_accounts_crud.sql (proc_LaoAccounts_CRUD)"
+ },
+ "Tên đối tượng không được để trống.": {
+  "en": "The party name cannot be empty.",
+  "lo": "ຊື່ຄູ່ບັນຊີຕ້ອງບໍ່ຫວ່າງ.",
+  "o": "Modules/Shared/ObjectManagement/Application/ObjectService.cs:288"
+ },
+ "Tạo Vụ việc nhập tay thất bại (proc_PP_CostObject_Upsert, Code={1}):": {
+  "en": "Failed to create the manual Job (proc_PP_CostObject_Upsert, Code={1}):",
+  "lo": "ສ້າງວຽກງານທີ່ປ້ອນເອງບໍ່ສຳເລັດ (proc_PP_CostObject_Upsert, Code={1}):",
+  "o": "Modules/Finance/Accounting/Infrastructure/CMPaymentReceiptRepository.cs:599"
+ },
+ "Tối đa {1} khoá mỗi lần, đang gửi {2}.": {
+  "en": "At most {1} keys per request; {2} were sent.",
+  "lo": "ສູງສຸດ {1} ກະແຈຕໍ່ຄັ້ງ, ກຳລັງສົ່ງ {2}.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsLineVoucherService.cs:84"
+ },
+ "Tổng SO nhiên liệu khác total của gói; đã rollback.": {
+  "en": "The fuel SO total differs from the package total; rolled back.",
+  "lo": "ຍອດລວມ SO ນ້ຳມັນຕ່າງຈາກ total ຂອງຊຸດຂໍ້ມູນ; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Tổng dòng thu hoặc loại tiền không khớp Tổng bán.": {
+  "en": "The receipt line total or currency does not match the sales total.",
+  "lo": "ຍອດລວມແຖວຮັບ ຫຼື ສະກຸນເງິນ ບໍ່ກົງກັບຍອດຂາຍ.",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "Tổng thành tiền các dòng (Σ amount) không khớp total.": {
+  "en": "The sum of the line amounts (Σ amount) does not match total.",
+  "lo": "ຍອດລວມເງິນຂອງແຖວ (Σ amount) ບໍ່ກົງກັບ total.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Từ khoá tìm tối đa {1} ký tự.": {
+  "en": "Search text can be at most {1} characters.",
+  "lo": "ຄຳຄົ້ນຫາຍາວໄດ້ສູງສຸດ {1} ຕົວອັກສອນ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsFuelVoucherService.cs:71"
+ },
+ "Từ khoá tối đa 100 ký tự.": {
+  "en": "Search text can be at most 100 characters.",
+  "lo": "ຄຳຄົ້ນຫາຍາວໄດ້ສູງສຸດ 100 ຕົວອັກສອນ.",
+  "o": "Database/Scripts/20261002_logistics_journal_entry_list.sql (proc_Logistics_JournalEntry_List)"
+ },
+ "Từ ngày phải trước hoặc bằng đến ngày.": {
+  "en": "The from date must be on or before the to date.",
+  "lo": "ວັນທີເລີ່ມຕ້ອງກ່ອນ ຫຼື ເທົ່າກັບວັນທີສິ້ນສຸດ.",
+  "o": "Database/Scripts/20261002_logistics_journal_entry_list.sql (proc_Logistics_JournalEntry_List)"
+ },
+ "Tự gỡ: bút toán cấn trừ không lập được.": {
+  "en": "Auto-reversed: the offset journal entry could not be created.",
+  "lo": "ຖອນອັດຕະໂນມັດ: ສ້າງບັນທຶກບັນຊີຫັກລົບບໍ່ໄດ້.",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:203"
+ },
+ "Vai trò đối tượng không hợp lệ.": {
+  "en": "Invalid party role.",
+  "lo": "ບົດບາດຄູ່ບັນຊີບໍ່ຖືກຕ້ອງ.",
+  "o": "Modules/Shared/ObjectManagement/Application/ObjectService.cs:148"
+ },
+ "VoucherType chỉ hỗ trợ CMP hoặc CMR.": {
+  "en": "VoucherType only supports CMP or CMR.",
+  "lo": "VoucherType ຮອງຮັບສະເພາະ CMP ຫຼື CMR.",
+  "o": "Database/Scripts/20260908_cash_voucher_cost_assignment.sql (proc_PP_CashVoucherCostAssignment_Delete)"
+ },
+ "VoucherType chỉ hỗ trợ CMP, CMR hoặc ALL.": {
+  "en": "VoucherType only supports CMP, CMR or ALL.",
+  "lo": "VoucherType ຮອງຮັບສະເພາະ CMP, CMR ຫຼື ALL.",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:56"
+ },
+ "VoucherType chỉ nhận CMR (phiếu thu) hoặc CMP (phiếu chi).": {
+  "en": "VoucherType only accepts CMR (receipt) or CMP (payment voucher).",
+  "lo": "VoucherType ຮັບສະເພາະ CMR (ໃບຮັບເງິນ) ຫຼື CMP (ໃບຈ່າຍ).",
+  "o": "Database/Scripts/20261002_cm_unpost_cash_voucher.sql (proc_CM_UnpostCashVoucher)"
+ },
+ "Vui lòng chọn quốc gia kế toán.": {
+  "en": "Please select the accounting country.",
+  "lo": "ກະລຸນາເລືອກປະເທດບັນຊີ.",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:589"
+ },
+ "Vô hiệu phiếu thu nợ cấn trừ không đúng một dòng; đã rollback.": {
+  "en": "Voiding the offset debt collection voucher did not affect exactly one row; rolled back.",
+  "lo": "ການປິດໃຊ້ງານໃບເກັບໜີ້ຫັກລົບ ບໍ່ກະທົບພຽງໜຶ່ງແຖວ; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_Cancel)"
+ },
+ "Vô hiệu phiếu thu nợ không đúng một dòng; đã rollback.": {
+  "en": "Voiding the debt collection voucher did not affect exactly one row; rolled back.",
+  "lo": "ການປິດໃຊ້ງານໃບເກັບໜີ້ ບໍ່ກະທົບພຽງໜຶ່ງແຖວ; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Vượt tồn: kho": {
+  "en": "Insufficient stock: warehouse",
+  "lo": "ເກີນຍອດຄົງເຫຼືອ: ສາງ",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Vượt tồn: kho {1} mặt hàng {2} tồn {3}, xuất {4}{5}.": {
+  "en": "Exceeds stock: warehouse {1}, item {2} has {3} on hand, issuing {4}{5}.",
+  "lo": "ເກີນຍອດຄົງເຫຼືອ: ສາງ {1} ສິນຄ້າ {2} ຄົງເຫຼືອ {3}, ເບີກ {4}{5}.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:444"
+ },
+ "Vụ việc (Cost Object) không tồn tại hoặc đã ngừng sử dụng.": {
+  "en": "The Cost Object does not exist or is no longer in use.",
+  "lo": "ວຽກງານ (Cost Object) ບໍ່ມີ ຫຼື ຢຸດໃຊ້ແລ້ວ.",
+  "o": "Database/Scripts/20260908_cash_voucher_cost_assignment.sql (proc_PP_CashVoucherCostAssignment_Save)"
+ },
+ "Xoá chứng từ tổng hợp không hoàn tất; toàn bộ yêu cầu đã rollback.": {
+  "en": "Deleting the general journal document did not complete; the whole request was rolled back.",
+  "lo": "ການລຶບເອກະສານບັນຊີລວມບໍ່ສຳເລັດ; ຄຳຂໍທັງໝົດໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Reverse)"
+ },
+ "Xoá phiếu thu không hoàn tất; toàn bộ yêu cầu đã rollback.": {
+  "en": "Deleting the receipt did not complete; the whole request was rolled back.",
+  "lo": "ການລຶບໃບຮັບເງິນບໍ່ສຳເລັດ; ຄຳຂໍທັງໝົດໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Xoá phiếu trên màn kho Web": {
+  "en": "Note deleted on the accounting system warehouse screen",
+  "lo": "ລຶບໃບຢູ່ໜ້າສາງຂອງລະບົບບັນຊີ",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockCancelService.cs:42"
+ },
+ "Xoá phân bổ chi phí của phiếu thu không hoàn tất; toàn bộ yêu cầu đã rollback.": {
+  "en": "Deleting the receipt's cost allocation did not complete; the whole request was rolled back.",
+  "lo": "ການລຶບການແບ່ງປັນຄ່າໃຊ້ຈ່າຍຂອງໃບຮັບເງິນບໍ່ສຳເລັດ; ຄຳຂໍທັງໝົດໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Xoá xong phiếu thu nhưng chứng từ cùng số tham chiếu (TKN) vẫn hoạt động; đã rollback, cần đối soát.": {
+  "en": "The receipt was deleted but a document with the same reference number (TKN) is still active; rolled back, reconciliation is needed.",
+  "lo": "ລຶບໃບຮັບເງິນແລ້ວ ແຕ່ເອກະສານທີ່ມີເລກອ້າງອີງ (TKN) ດຽວກັນຍັງໃຊ້ງານຢູ່; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ, ຕ້ອງກວດທຽບ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "Xuất bán cho xe thuê bắt buộc đối tượng = đối tác (ObjectCode).": {
+  "en": "Sales issues for hired trucks require the party = partner (ObjectCode).",
+  "lo": "ການເບີກຂາຍໃຫ້ລົດເຊົ່າ ຕ້ອງມີຄູ່ບັນຊີ = ຄູ່ຮ່ວມ (ObjectCode).",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Xuất bán cho đối tác": {
+  "en": "Sold to partner",
+  "lo": "ເບີກຂາຍໃຫ້ຄູ່ຮ່ວມ",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "Xuất bán kho EPL — chứng từ kho {1}": {
+  "en": "EPL warehouse sales issue — stock document {1}",
+  "lo": "ເບີກຂາຍສາງ EPL — ເອກະສານສາງ {1}",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:255"
+ },
+ "Xuất cho xe thuê bắt buộc ObjectCode = đối tác (EPLCX-…).": {
+  "en": "Issues to a hired truck require ObjectCode = the partner (EPLCX-…).",
+  "lo": "ເບີກໃຫ້ລົດເຊົ່າ ຕ້ອງມີ ObjectCode = ຄູ່ຮ່ວມ (EPLCX-…).",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:364"
+ },
+ "Xuất dùng / sửa chữa kho EPL — chứng từ kho {1}": {
+  "en": "EPL warehouse issue for use / repair — stock document {1}",
+  "lo": "ເບີກໃຊ້ / ສ້ອມແປງ ສາງ EPL — ເອກະສານສາງ {1}",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:276"
+ },
+ "Xóa chứng từ thành công": {
+  "en": "Document deleted successfully",
+  "lo": "ລຶບເອກະສານສຳເລັດ",
+  "o": "Modules/SupplyChain/Warehouse/Infrastructure/WarehouseRepository.cs:676"
+ },
+ "Xóa dữ liệu thất bại.": {
+  "en": "Failed to delete data.",
+  "lo": "ລຶບຂໍ້ມູນບໍ່ສຳເລັດ.",
+  "o": "Modules/Shared/ObjectManagement/Api/V1/ObjectManagementController.cs:201"
+ },
+ "Xóa mặt hàng thành công": {
+  "en": "Item deleted successfully",
+  "lo": "ລຶບລາຍການສິນຄ້າສຳເລັດ",
+  "o": "Modules/SupplyChain/Warehouse/Infrastructure/WarehouseRepository.cs:717"
+ },
+ "asOfDate không hợp lệ.": {
+  "en": "Invalid asOfDate.",
+  "lo": "asOfDate ບໍ່ຖືກຕ້ອງ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:202"
+ },
+ "bình quân. Chi nhánh EPL dùng 'Xuất dùng / sửa chữa (nội bộ)' (48) hoặc 'Xuất chuyển kho' (33). Chưa lưu phiếu.": {
+  "en": "cost. The EPL branch uses 'Issue for use / repair (internal)' (48) or 'Transfer issue' (33). The note has not been saved.",
+  "lo": "ສະເລ່ຍ. ສາຂາ EPL ໃຊ້ 'ເບີກໃຊ້ / ສ້ອມແປງ (ພາຍໃນ)' (48) ຫຼື 'ເບີກໂອນສາງ' (33). ຍັງບໍ່ໄດ້ບັນທຶກໃບ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:490"
+ },
+ "bút toán theo SO), không lập / sửa trực tiếp trên API kho.": {
+  "en": "journal entries per SO), not created / edited directly through the warehouse API.",
+  "lo": "ບັນທຶກບັນຊີຕາມ SO), ບໍ່ສ້າງ / ແກ້ໂດຍກົງຜ່ານ API ສາງ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:506"
+ },
+ "chưa bật (LogisticsJournalEntry: Enabled, OrgId, CountryId). Bật cấu hình đó, hoặc tắt": {
+  "en": "is not enabled (LogisticsJournalEntry: Enabled, OrgId, CountryId). Enable that configuration, or disable",
+  "lo": "ຍັງບໍ່ໄດ້ເປີດ (LogisticsJournalEntry: Enabled, OrgId, CountryId). ເປີດການຕັ້ງຄ່ານັ້ນ, ຫຼື ປິດ",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:332"
+ },
+ "chứng từ rồi xuất lại.": {
+  "en": "list, then issue again.",
+  "lo": "ເອກະສານ ແລ້ວເບີກໃໝ່.",
+  "o": "Modules/SupplyChain/Warehouse/Application/WarehouseService.cs:245"
+ },
+ "details phải có 1–200 dòng.": {
+  "en": "details must have 1–200 lines.",
+  "lo": "details ຕ້ອງມີ 1–200 ແຖວ.",
+  "o": "Modules/Sales/Sales/Application/LogisticsFuelSalesOrderService.cs:136"
+ },
+ "details phải có ít nhất một dòng.": {
+  "en": "details must have at least one line.",
+  "lo": "details ຕ້ອງມີຢ່າງໜ້ອຍໜຶ່ງແຖວ.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "details phải là mảng có ít nhất một dòng.": {
+  "en": "details must be an array with at least one line.",
+  "lo": "details ຕ້ອງເປັນ array ທີ່ມີຢ່າງໜ້ອຍໜຶ່ງແຖວ.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "do_id không hợp lệ.": {
+  "en": "Invalid do_id.",
+  "lo": "do_id ບໍ່ຖືກຕ້ອງ.",
+  "o": "Modules/Sales/Sales/Application/LogisticsFuelSalesOrderService.cs:85"
+ },
+ "dòng phải là object": {
+  "en": "the line must be an object",
+  "lo": "ແຖວຕ້ອງເປັນ object",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "gỡ ghi sổ": {
+  "en": "unpost",
+  "lo": "ຍົກເລີກການບັນທຶກບັນຊີ",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:319"
+ },
+ "gỡ ghi sổ trước rồi xoá lại. Chưa xoá gì.": {
+  "en": "unpost it first, then delete again. Nothing has been deleted.",
+  "lo": "ຍົກເລີກການບັນທຶກບັນຊີກ່ອນ ແລ້ວຈຶ່ງລຶບໃໝ່. ຍັງບໍ່ໄດ້ລຶບຫຍັງ.",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:364"
+ },
+ "hoặc lập tự động lúc lưu phiếu nhập mua / xuất dùng / xuất bán từ đơn hàng (màn \"Bút toán từ Logistics\") ({1}).": {
+  "en": "or are created automatically when saving purchase receipts / issues for use / sales issues from orders (the \"Journal entries from Logistics\" screen) ({1}).",
+  "lo": "ຫຼື ສ້າງອັດຕະໂນມັດຕອນບັນທຶກໃບຮັບຊື້ / ເບີກໃຊ້ / ເບີກຂາຍຈາກໃບສັ່ງຂາຍ (ໜ້າ \"ບັນທຶກບັນຊີຈາກ Logistics\") ({1}).",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:292"
+ },
+ "khi khoá phiếu": {
+  "en": "at slip lock",
+  "lo": "ຕອນລັອກໃບ",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "khách hàng": {
+  "en": "customer",
+  "lo": "ລູກຄ້າ",
+  "o": "Modules/Shared/ObjectManagement/Application/ObjectService.cs:212"
+ },
+ "không khớp ngày chứng từ (kỳ theo ngày:": {
+  "en": "does not match the document date (period for that date:",
+  "lo": "ບໍ່ກົງກັບວັນທີເອກະສານ (ງວດຕາມວັນທີ:",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "kế toán gỡ ghi sổ chính thức trước. Chưa đổi gì ở công nợ.": {
+  "en": "accounting must unpost the official posting first. Nothing has changed in the debts.",
+  "lo": "ບັນຊີຕ້ອງຍົກເລີກການບັນທຶກບັນຊີທາງການກ່ອນ. ຍັງບໍ່ໄດ້ປ່ຽນຫຍັງໃນໜີ້.",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:162"
+ },
+ "kế toán gỡ khoá / gỡ ghi sổ bút toán đó trước rồi mới {1} phiếu.": {
+  "en": "accounting must unlock / unpost that entry first, then you can {1} the note.",
+  "lo": "ບັນຊີຕ້ອງປົດລັອກ / ຍົກເລີກການບັນທຶກບັນຊີນັ້ນກ່ອນ ແລ້ວຈຶ່ງ {1} ໃບໄດ້.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:298"
+ },
+ "line_no bị trùng.": {
+  "en": "Duplicate line_no.",
+  "lo": "line_no ຊ້ຳກັນ.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "loại tiền (CurrencyId) không tồn tại": {
+  "en": "the currency (CurrencyId) does not exist",
+  "lo": "ສະກຸນເງິນ (CurrencyId) ບໍ່ມີ",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "lập tay theo bút toán cũ.": {
+  "en": "enter it manually from the old journal entry.",
+  "lo": "ສ້າງດ້ວຍມືຕາມບັນທຶກບັນຊີເກົ່າ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:200"
+ },
+ "lỗi DB (SQL {1})": {
+  "en": "database error (SQL {1})",
+  "lo": "ຖານຂໍ້ມູນຜິດພາດ (SQL {1})",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:247"
+ },
+ "mặt hàng": {
+  "en": "item",
+  "lo": "ລາຍການສິນຄ້າ",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ },
+ "nhà cung cấp": {
+  "en": "supplier",
+  "lo": "ຜູ້ສະໜອງ",
+  "o": "Modules/Shared/ObjectManagement/Application/ObjectService.cs:221"
+ },
+ "nhân viên": {
+  "en": "employee",
+  "lo": "ພະນັກງານ",
+  "o": "Modules/Shared/ObjectManagement/Application/ObjectService.cs:230"
+ },
+ "phiếu xuất kho cấp dầu {1}": {
+  "en": "the fuel stock-out note {1}",
+  "lo": "ໃບເບີກນໍ້າມັນອອກສາງ {1}",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockCancelService.cs:98"
+ },
+ "phiếu xuất phụ tùng ({1})": {
+  "en": "the spare-part stock-out note ({1})",
+  "lo": "ໃບເບີກອາໄຫຼ່ ({1})",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockCancelService.cs:103"
+ },
+ "proc_CM_CombinedVoucher_Insert không trả Id.": {
+  "en": "proc_CM_CombinedVoucher_Insert did not return an Id.",
+  "lo": "proc_CM_CombinedVoucher_Insert ບໍ່ສົ່ງ Id ຄືນ.",
+  "o": "Modules/Finance/Accounting/Infrastructure/CashVoucherCombinedRepository.cs:130"
+ },
+ "proc_CM_CombinedVoucher_NextNo không trả số tổng hợp.": {
+  "en": "proc_CM_CombinedVoucher_NextNo did not return a combined number.",
+  "lo": "proc_CM_CombinedVoucher_NextNo ບໍ່ສົ່ງເລກສັງລວມຄືນ.",
+  "o": "Modules/Finance/Accounting/Infrastructure/CashVoucherCombinedRepository.cs:94"
+ },
+ "proc_Logistics_JournalEntry_Save không trả DocumentId.": {
+  "en": "proc_Logistics_JournalEntry_Save did not return a DocumentId.",
+  "lo": "proc_Logistics_JournalEntry_Save ບໍ່ສົ່ງ DocumentId ຄືນ.",
+  "o": "Modules/Finance/Accounting/Infrastructure/LogisticsJournalEntryRepository.cs:56"
+ },
+ "proc_RES_DebtOffset_Create không trả Id.": {
+  "en": "proc_RES_DebtOffset_Create did not return an Id.",
+  "lo": "proc_RES_DebtOffset_Create ບໍ່ສົ່ງ Id ຄືນ.",
+  "o": "Modules/Sales/Sales/Infrastructure/DebtCollectionOffsetRepository.cs:57"
+ },
+ "schemaVersion phải bằng 1.": {
+  "en": "schemaVersion must be 1.",
+  "lo": "schemaVersion ຕ້ອງເທົ່າກັບ 1.",
+  "o": "Modules/Sales/Sales/Application/LogisticsFuelSalesOrderService.cs:127"
+ },
+ "spGetconfigID không hoàn tất; toàn bộ yêu cầu đã rollback.": {
+  "en": "spGetconfigID did not complete; the whole request was rolled back.",
+  "lo": "spGetconfigID ບໍ່ສຳເລັດ; ຄຳຂໍທັງໝົດໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "sp_GL_Delete_GENERALLEDGER chạy xong nhưng chứng từ ghi sổ của phiếu thu vẫn còn; đã rollback, cần đối soát.": {
+  "en": "sp_GL_Delete_GENERALLEDGER finished but the receipt's posted document still exists; rolled back, reconciliation is needed.",
+  "lo": "sp_GL_Delete_GENERALLEDGER ເຮັດວຽກແລ້ວ ແຕ່ເອກະສານບັນທຶກບັນຊີຂອງໃບຮັບເງິນຍັງຢູ່; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ, ຕ້ອງກວດທຽບ.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_cancel.sql (sp_RES_CancelDebtCollection_COUNTRY)"
+ },
+ "sp_GL_Delete_GENERALLEDGER chạy xong nhưng chứng từ ghi sổ của phiếu vẫn còn; đã rollback, cần đối soát.": {
+  "en": "sp_GL_Delete_GENERALLEDGER finished but the voucher's posted document still exists; rolled back, reconciliation is needed.",
+  "lo": "sp_GL_Delete_GENERALLEDGER ເຮັດວຽກແລ້ວ ແຕ່ເອກະສານບັນທຶກບັນຊີຂອງໃບຍັງຢູ່; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ, ຕ້ອງກວດທຽບ.",
+  "o": "Database/Scripts/20261002_cm_unpost_cash_voucher.sql (proc_CM_UnpostCashVoucher)"
+ },
+ "sp_GL_Delete_GENERALLEDGER đã xoá / vô hiệu chính phiếu; đã rollback, cần đọc thân thủ tục.": {
+  "en": "sp_GL_Delete_GENERALLEDGER deleted / voided the voucher itself; rolled back, the procedure body needs to be reviewed.",
+  "lo": "sp_GL_Delete_GENERALLEDGER ໄດ້ລຶບ / ປິດໃຊ້ງານຕົວໃບເອງ; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ, ຕ້ອງອ່ານເນື້ອໃນຂອງຂັ້ນຕອນ.",
+  "o": "Database/Scripts/20261002_cm_unpost_cash_voucher.sql (proc_CM_UnpostCashVoucher)"
+ },
+ "sp_GL_Delete_GLBusiness chạy xong nhưng chứng từ vẫn đang hoạt động; đã rollback, cần đối soát.": {
+  "en": "sp_GL_Delete_GLBusiness finished but the document is still active; rolled back, reconciliation is needed.",
+  "lo": "sp_GL_Delete_GLBusiness ເຮັດວຽກແລ້ວ ແຕ່ເອກະສານຍັງໃຊ້ງານຢູ່; ໄດ້ຍົກເລີກຄືນ (rollback) ແລ້ວ, ຕ້ອງກວດທຽບ.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Reverse)"
+ },
+ "sp_Logistics_CreateFuelSalesOrder không trả ResultJson.": {
+  "en": "sp_Logistics_CreateFuelSalesOrder did not return ResultJson.",
+  "lo": "sp_Logistics_CreateFuelSalesOrder ບໍ່ສົ່ງ ResultJson ຄືນ.",
+  "o": "Modules/Sales/Sales/Infrastructure/LogisticsFuelSalesOrderRepository.cs:68"
+ },
+ "status: cho (chờ cấp) · da_cap · huy · để trống = tất cả.": {
+  "en": "status: cho (awaiting issue) · da_cap (issued) · huy (cancelled) · blank = all.",
+  "lo": "status: cho (ລໍຖ້າຈ່າຍ) · da_cap (ຈ່າຍແລ້ວ) · huy (ຍົກເລີກ) · ປ່ອຍຫວ່າງ = ທັງໝົດ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsFuelVoucherService.cs:68"
+ },
+ "stock_doc_no (số phiếu xuất kho) phải là mã chữ / số / - _ . / không khoảng trắng, tối đa {1} ký tự.": {
+  "en": "stock_doc_no (stock-out note number) must be a code of letters / digits / - _ . / with no spaces, up to {1} characters.",
+  "lo": "stock_doc_no (ເລກໃບເບີກອອກສາງ) ຕ້ອງເປັນລະຫັດ ຕົວອັກສອນ / ຕົວເລກ / - _ . / ບໍ່ມີຍະຫວ່າງ, ບໍ່ເກີນ {1} ຕົວອັກສອນ.",
+  "o": "Modules/Sales/Sales/Application/LogisticsFuelSalesOrderService.cs:170"
+ },
+ "số tiền nguyên tệ phải lớn hơn 0": {
+  "en": "the original-currency amount must be greater than 0",
+  "lo": "ຈຳນວນເງິນຕາມສະກຸນເດີມຕ້ອງຫຼາຍກວ່າ 0",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "số tiền quy đổi phải lớn hơn 0": {
+  "en": "the converted amount must be greater than 0",
+  "lo": "ຈຳນວນເງິນຫຼັງແລກປ່ຽນຕ້ອງຫຼາຍກວ່າ 0",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "thiếu ObjectId (PUBENTRY.OBJ_AUTOID bắt buộc)": {
+  "en": "missing ObjectId (PUBENTRY.OBJ_AUTOID is required)",
+  "lo": "ຂາດ ObjectId (PUBENTRY.OBJ_AUTOID ບັງຄັບ)",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "thiếu loại tiền (CurrencyId)": {
+  "en": "missing currency (CurrencyId)",
+  "lo": "ຂາດສະກຸນເງິນ (CurrencyId)",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "thiếu tài khoản Nợ hoặc Có": {
+  "en": "missing debit or credit account",
+  "lo": "ຂາດບັນຊີໜີ້ ຫຼື ບັນຊີມີ",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "total phải lớn hơn 0.01.": {
+  "en": "total must be greater than 0.01.",
+  "lo": "total ຕ້ອງຫຼາຍກວ່າ 0.01.",
+  "o": "Modules/Sales/Sales/Application/LogisticsFuelSalesOrderService.cs:133"
+ },
+ "tài khoản Nợ trùng tài khoản Có": {
+  "en": "the debit account is the same as the credit account",
+  "lo": "ບັນຊີໜີ້ຊ້ຳກັບບັນຊີມີ",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "tỷ giá phải lớn hơn 0": {
+  "en": "the exchange rate must be greater than 0",
+  "lo": "ອັດຕາແລກປ່ຽນຕ້ອງຫຼາຍກວ່າ 0",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "và ghi doanh thu. Chưa lưu phiếu.": {
+  "en": "and record the revenue. The note has not been saved.",
+  "lo": "ແລະ ບັນທຶກລາຍຮັບ. ຍັງບໍ່ໄດ້ບັນທຶກໃບ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:527"
+ },
+ "xoá phiếu vừa lập rồi xuất lại từ đơn hàng.": {
+  "en": "delete the note just created, then issue again from the order.",
+  "lo": "ລຶບໃບທີ່ຫາກໍ່ສ້າງ ແລ້ວເບີກໃໝ່ຈາກໃບສັ່ງຂາຍ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/WarehouseService.cs:232"
+ },
+ "xuất lại từ đơn hàng bán.": {
+  "en": "issue again from the sales order.",
+  "lo": "ເບີກໃໝ່ຈາກໃບສັ່ງຂາຍ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/WarehouseService.cs:287"
+ },
+ "{1} Bút toán tự động đã gỡ nhưng lập lại hỏng: {2}": {
+  "en": "{1} The automatic journal entry was reversed but re-creating it failed: {2}",
+  "lo": "{1} ຖອນບັນທຶກບັນຊີອັດຕະໂນມັດແລ້ວ ແຕ່ສ້າງຄືນໃໝ່ບໍ່ສຳເລັດ: {2}",
+  "o": "Modules/SupplyChain/Warehouse/Application/WarehouseService.cs:156"
+ },
+ "{1} Gỡ phiếu {2} cũng hỏng ({3}) — xoá phiếu đó trên Danh sách": {
+  "en": "{1} Removing note {2} also failed ({3}) — delete that note in the Document",
+  "lo": "{1} ການຖອນໃບ {2} ກໍ່ລົ້ມເຫຼວ ({3}) — ລຶບໃບນັ້ນຢູ່ ລາຍການ",
+  "o": "Modules/SupplyChain/Warehouse/Application/WarehouseService.cs:244"
+ },
+ "{1} Gửi lại bằng nút \"Báo huỷ về trang điều xe\" (Cấp dầu theo phiếu đề nghị).": {
+  "en": "{1} Resend with the \"Notify EPL of cancellation\" button (Issue fuel per request).",
+  "lo": "{1} ສົ່ງໃໝ່ດ້ວຍປຸ່ມ \"ແຈ້ງຍົກເລີກໄປ EPL\" (ຈ່າຍນໍ້າມັນຕາມໃບສະເໜີ).",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockCancelService.cs:157"
+ },
+ "{1} Phiếu xuất bán chưa lưu (đã gỡ) — sửa nguyên nhân rồi xuất lại từ đơn hàng.": {
+  "en": "{1} The sales issue note was not saved (removed) — fix the cause, then issue again from the order.",
+  "lo": "{1} ໃບເບີກຂາຍຍັງບໍ່ໄດ້ບັນທຶກ (ຖອນແລ້ວ) — ແກ້ສາເຫດ ແລ້ວເບີກໃໝ່ຈາກໃບສັ່ງຂາຍ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/WarehouseService.cs:243"
+ },
+ "{1} không trả ResultJson.": {
+  "en": "{1} did not return ResultJson.",
+  "lo": "{1} ບໍ່ສົ່ງ ResultJson ຄືນ.",
+  "o": "Modules/SupplyChain/Warehouse/Infrastructure/LogisticsStockRepository.cs:160"
+ },
+ "{1} phải là số không âm trong decimal(18,5).": {
+  "en": "{1} must be a non-negative number within decimal(18,5).",
+  "lo": "{1} ຕ້ອງເປັນຕົວເລກບໍ່ຕິດລົບ ໃນ decimal(18,5).",
+  "o": "Modules/Sales/Sales/Application/LogisticsFuelSalesOrderService.cs:261"
+ },
+ "{1} phải {(positive ?": {
+  "en": "{1} must be {(positive ?",
+  "lo": "{1} ຕ້ອງ {(positive ?",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:838"
+ },
+ "{1} thiếu, có dấu phẩy / ký tự điều khiển hoặc vượt {2} ký tự.": {
+  "en": "{1} is missing, contains a comma / control character or exceeds {2} characters.",
+  "lo": "{1} ຂາດ, ມີເຄື່ອງໝາຍຈຸດ / ຕົວອັກສອນຄວບຄຸມ ຫຼື ເກີນ {2} ຕົວອັກສອນ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:831"
+ },
+ "{1} thiếu, sai định dạng mã hoặc vượt {2} ký tự.": {
+  "en": "{1} is missing, has an invalid code format or exceeds {2} characters.",
+  "lo": "{1} ຂາດ, ຮູບແບບລະຫັດບໍ່ຖືກຕ້ອງ ຫຼື ເກີນ {2} ຕົວອັກສອນ.",
+  "o": "Modules/Sales/Sales/Application/LogisticsFuelSalesOrderService.cs:160"
+ },
+ "{1} → tiền kho, > 0, tối đa {2} số lẻ) để quy giá bán về tiền kho": {
+  "en": "{1} → warehouse currency, > 0, at most {2} decimal places) to convert the sale price to the warehouse currency",
+  "lo": "{1} → ສະກຸນເງິນສາງ, > 0, ບໍ່ເກີນ {2} ຕຳແໜ່ງທົດສະນິຍົມ) ເພື່ອແປງລາຄາຂາຍເປັນສະກຸນເງິນສາງ",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:526"
+ },
+ "{1}.Amount: phải lớn hơn 0.": {
+  "en": "{1}.Amount: must be greater than 0.",
+  "lo": "{1}.Amount: ຕ້ອງຫຼາຍກວ່າ 0.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:248"
+ },
+ "{1}.Amount: vượt decimal(18,5) hoặc quá {2} số lẻ.": {
+  "en": "{1}.Amount: exceeds decimal(18,5) or has more than {2} decimal places.",
+  "lo": "{1}.Amount: ເກີນ decimal(18,5) ຫຼື ເກີນ {2} ຕຳແໜ່ງທົດສະນິຍົມ.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:250"
+ },
+ "{1}.CreditAccount: bắt buộc.": {
+  "en": "{1}.CreditAccount: required.",
+  "lo": "{1}.CreditAccount: ຕ້ອງໃສ່.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:242"
+ },
+ "{1}.CreditAccount: tối đa {2} ký tự.": {
+  "en": "{1}.CreditAccount: at most {2} characters.",
+  "lo": "{1}.CreditAccount: ບໍ່ເກີນ {2} ຕົວອັກສອນ.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:243"
+ },
+ "{1}.CurrencyId: bắt buộc (PUBCURRENCY.CUR_AUTOID).": {
+  "en": "{1}.CurrencyId: required (PUBCURRENCY.CUR_AUTOID).",
+  "lo": "{1}.CurrencyId: ຕ້ອງໃສ່ (PUBCURRENCY.CUR_AUTOID).",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:257"
+ },
+ "{1}.DebitAccount: bắt buộc.": {
+  "en": "{1}.DebitAccount: required.",
+  "lo": "{1}.DebitAccount: ຕ້ອງໃສ່.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:240"
+ },
+ "{1}.DebitAccount: tối đa {2} ký tự.": {
+  "en": "{1}.DebitAccount: at most {2} characters.",
+  "lo": "{1}.DebitAccount: ບໍ່ເກີນ {2} ຕົວອັກສອນ.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:241"
+ },
+ "{1}.ExchangeRate: phải lớn hơn 0 (dòng nội tệ gửi 1).": {
+  "en": "{1}.ExchangeRate: must be greater than 0 (send 1 for local-currency lines).",
+  "lo": "{1}.ExchangeRate: ຕ້ອງຫຼາຍກວ່າ 0 (ແຖວສະກຸນເງິນທ້ອງຖິ່ນ ສົ່ງ 1).",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:253"
+ },
+ "{1}.ExchangeRate: vượt giới hạn hoặc quá {2} số lẻ.": {
+  "en": "{1}.ExchangeRate: exceeds the limit or has more than {2} decimal places.",
+  "lo": "{1}.ExchangeRate: ເກີນຂອບເຂດ ຫຼື ເກີນ {2} ຕຳແໜ່ງທົດສະນິຍົມ.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:255"
+ },
+ "{1}.Note: tối đa {2} ký tự.": {
+  "en": "{1}.Note: at most {2} characters.",
+  "lo": "{1}.Note: ບໍ່ເກີນ {2} ຕົວອັກສອນ.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:261"
+ },
+ "{1}.ObjectId: phải lớn hơn 0 hoặc bỏ trống.": {
+  "en": "{1}.ObjectId: must be greater than 0 or left blank.",
+  "lo": "{1}.ObjectId: ຕ້ອງຫຼາຍກວ່າ 0 ຫຼື ປ່ອຍຫວ່າງ.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:258"
+ },
+ "{1}: dòng rỗng.": {
+  "en": "{1}: empty line.",
+  "lo": "{1}: ແຖວຫວ່າງ.",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:233"
+ },
+ "{1}: mã \"{2}\" sai hoặc vượt {3} ký tự.": {
+  "en": "{1}: code \"{2}\" is invalid or exceeds {3} characters.",
+  "lo": "{1}: ລະຫັດ \"{2}\" ບໍ່ຖືກຕ້ອງ ຫຼື ເກີນ {3} ຕົວອັກສອນ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:823"
+ },
+ "{1}: quy đổi {2} (Amount × ExchangeRate, 5 số lẻ) phải lớn hơn 0 và trong decimal(18,5).": {
+  "en": "{1}: the converted amount {2} (Amount × ExchangeRate, 5 decimal places) must be greater than 0 and within decimal(18,5).",
+  "lo": "{1}: ຍອດແລກປ່ຽນ {2} (Amount × ExchangeRate, 5 ຕຳແໜ່ງທົດສະນິຍົມ) ຕ້ອງຫຼາຍກວ່າ 0 ແລະ ຢູ່ໃນ decimal(18,5).",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:268"
+ },
+ "{1}: tài khoản Nợ trùng tài khoản Có ({2}).": {
+  "en": "{1}: the debit account is the same as the credit account ({2}).",
+  "lo": "{1}: ບັນຊີໜີ້ຊ້ຳກັບບັນຊີມີ ({2}).",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:245"
+ },
+ "{1}: tối đa {2} mã.": {
+  "en": "{1}: at most {2} codes.",
+  "lo": "{1}: ບໍ່ເກີນ {2} ລະຫັດ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:821"
+ },
+ "}): phiếu đang ghi sổ hoặc không xoá được —": {
+  "en": "}): the voucher is posted or cannot be deleted —",
+  "lo": "}): ໃບກຳລັງບັນທຶກບັນຊີຢູ່ ຫຼື ລຶບບໍ່ໄດ້ —",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:363"
+ },
+ "}); cần đối soát.": {
+  "en": "}); reconciliation is needed.",
+  "lo": "}); ຕ້ອງກວດທຽບ.",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:323"
+ },
+ "Đang cấp số tổng hợp ở phiên khác; gọi lại sau.": {
+  "en": "A combined number is being assigned in another session; call again later.",
+  "lo": "ກຳລັງອອກເລກລວມຢູ່ອີກເຊສຊັນໜຶ່ງ; ກະລຸນາເອີ້ນໃໝ່ພາຍຫຼັງ.",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CombinedVoucher_NextNo)"
+ },
+ "Đang xử lý bút toán cùng SourceRef; gửi lại sau với cùng SourceRef.": {
+  "en": "A journal entry with the same SourceRef is being processed; resend later with the same SourceRef.",
+  "lo": "ກຳລັງດຳເນີນການບັນທຶກບັນຊີທີ່ມີ SourceRef ດຽວກັນ; ສົ່ງໃໝ່ພາຍຫຼັງດ້ວຍ SourceRef ເດີມ.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "Đang xử lý bút toán cùng SourceRef; gửi lại sau.": {
+  "en": "A journal entry with the same SourceRef is being processed; resend later.",
+  "lo": "ກຳລັງດຳເນີນການບັນທຶກບັນຊີທີ່ມີ SourceRef ດຽວກັນ; ສົ່ງໃໝ່ພາຍຫຼັງ.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Reverse)"
+ },
+ "Đang xử lý cùng phiếu bán; gọi lại sau.": {
+  "en": "The same sales slip is being processed; call again later.",
+  "lo": "ກຳລັງດຳເນີນການໃບຂາຍດຽວກັນນີ້; ກະລຸນາເອີ້ນໃໝ່ພາຍຫຼັງ.",
+  "o": "Database/Scripts/20261002_logistics_retk_code_unique_proc.sql (proc_Logistics_SalesOrder_UniqueRetkCode)"
+ },
+ "Điều kiện lọc chưa hợp lệ:": {
+  "en": "Invalid filter conditions:",
+  "lo": "ເງື່ອນໄຂການກັ່ນຕອງບໍ່ຖືກຕ້ອງ:",
+  "o": "Modules/Finance/Accounting/Application/LogisticsJournalEntryService.cs:175"
+ },
+ "Đã chuyển chứng từ tạm sang chứng từ chính.": {
+  "en": "The draft document was converted into the final document.",
+  "lo": "ໂອນເອກະສານຊົ່ວຄາວເປັນເອກະສານຫຼັກແລ້ວ.",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:251"
+ },
+ "Đã có SO nhiên liệu cùng Idempotency-Key, DO và nội dung; trả lại SO cũ.": {
+  "en": "A fuel SO with the same Idempotency-Key, DO and content already exists; returning the existing SO.",
+  "lo": "ມີ SO ນ້ຳມັນທີ່ມີ Idempotency-Key, DO ແລະ ເນື້ອໃນດຽວກັນແລ້ວ; ສົ່ງ SO ເກົ່າຄືນ.",
+  "o": "Modules/Sales/Sales/Api/V1/LogisticsFuelSalesOrderController.cs:62"
+ },
+ "Đã có bút toán cùng SourceRef và cùng nội dung; trả lại chứng từ cũ.": {
+  "en": "A journal entry with the same SourceRef and content already exists; returning the existing document.",
+  "lo": "ມີບັນທຶກບັນຊີທີ່ມີ SourceRef ແລະ ເນື້ອໃນດຽວກັນແລ້ວ; ສົ່ງເອກະສານເດີມຄືນ.",
+  "o": "Modules/Finance/Accounting/Api/V1/LogisticsJournalEntryController.cs:82"
+ },
+ "Đã có phiếu kho cùng SourceRef và nội dung; trả lại phiếu cũ.": {
+  "en": "A stock note with the same SourceRef and content already exists; returning the existing note.",
+  "lo": "ມີໃບສາງທີ່ມີ SourceRef ແລະ ເນື້ອໃນດຽວກັນແລ້ວ; ສົ່ງໃບເກົ່າຄືນ.",
+  "o": "Modules/SupplyChain/Warehouse/Api/V1/LogisticsStockController.cs:140"
+ },
+ "Đã cấn trừ công nợ đối tác.": {
+  "en": "The partner debt has been offset.",
+  "lo": "ຫັກລົບໜີ້ຄູ່ຮ່ວມແລ້ວ.",
+  "o": "Modules/Sales/Sales/Api/V1/DebtCollectionOffsetController.cs:64"
+ },
+ "Đã cấn trừ với Idempotency-Key này; trả lại kết quả cũ.": {
+  "en": "Already offset with this Idempotency-Key; returning the previous result.",
+  "lo": "ຫັກລົບດ້ວຍ Idempotency-Key ນີ້ແລ້ວ; ສົ່ງຜົນເກົ່າຄືນ.",
+  "o": "Modules/Sales/Sales/Api/V1/DebtCollectionOffsetController.cs:64"
+ },
+ "Đã cấp dầu theo {1}: phiếu xuất kho {2}.": {
+  "en": "Fuel issued per {1}: stock-out note {2}.",
+  "lo": "ຈ່າຍນໍ້າມັນຕາມ {1} ແລ້ວ: ໃບເບີກອອກສາງ {2}.",
+  "o": "Modules/SupplyChain/Warehouse/Api/V1/LogisticsFuelVoucherController.cs:96"
+ },
+ "Đã dọn dữ liệu tạm.": {
+  "en": "Temporary data has been cleared.",
+  "lo": "ລ້າງຂໍ້ມູນຊົ່ວຄາວແລ້ວ.",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:348"
+ },
+ "Đã ghi sổ chứng từ.": {
+  "en": "The voucher has been posted.",
+  "lo": "ບັນທຶກບັນຊີເອກະສານແລ້ວ.",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:309"
+ },
+ "Đã giao nhiên liệu theo DO Logistics": {
+  "en": "Fuel delivered per Logistics DO",
+  "lo": "ສົ່ງນ້ຳມັນຕາມ DO Logistics ແລ້ວ",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Đã giao theo DO Logistics": {
+  "en": "Delivered per Logistics DO",
+  "lo": "ສົ່ງຕາມ DO Logistics ແລ້ວ",
+  "o": "Database/Scripts/20261002_logistics_sales_order_line_unit.sql (sp_Logistics_CreateSalesOrder)"
+ },
+ "Đã gỡ bút toán tự động của phiếu.": {
+  "en": "The note's automatic journal entry has been reversed.",
+  "lo": "ຖອນບັນທຶກບັນຊີອັດຕະໂນມັດຂອງໃບແລ້ວ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/WarehouseService.cs:147"
+ },
+ "Đã gỡ cấn trừ, trả lại dư nợ.": {
+  "en": "The offset has been reversed and the outstanding balance restored.",
+  "lo": "ຖອນການຫັກລົບແລ້ວ, ຄືນຍອດໜີ້ຄ້າງ.",
+  "o": "Modules/Sales/Sales/Api/V1/DebtCollectionOffsetController.cs:85"
+ },
+ "Đã gỡ ghi sổ chứng từ {1}: trạng thái {2} → {3} (chưa ghi sổ).": {
+  "en": "Voucher {1} has been unposted: status {2} → {3} (not posted).",
+  "lo": "ຍົກເລີກການບັນທຶກບັນຊີເອກະສານ {1} ແລ້ວ: ສະຖານະ {2} → {3} (ຍັງບໍ່ບັນທຶກບັນຊີ).",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:330"
+ },
+ "Đã gỡ ghi sổ và xoá bút toán tổng hợp.": {
+  "en": "The general journal entry was unposted and deleted.",
+  "lo": "ຖອນການບັນທຶກບັນຊີ ແລະ ລຶບບັນທຶກບັນຊີລວມແລ້ວ.",
+  "o": "Modules/Finance/Accounting/Api/V1/LogisticsJournalEntryController.cs:111"
+ },
+ "Đã gỡ ghi sổ và xoá phiếu thu, trả lại dư nợ, vô hiệu phiếu thu nợ.": {
+  "en": "The receipt voucher has been unposted and deleted, the outstanding balance restored and the debt collection receipt voided.",
+  "lo": "ຍົກເລີກການບັນທຶກບັນຊີ ແລະ ລຶບໃບຮັບເງິນແລ້ວ, ຄືນຍອດໜີ້ຄ້າງ, ຍົກເລີກໃບຮັບຊຳລະໜີ້.",
+  "o": "Modules/Sales/Sales/Api/V1/DebtCollectionController.cs:144"
+ },
+ "Đã gỡ phiếu thu nợ {1} và trả lại dư nợ.": {
+  "en": "Debt collection receipt {1} has been reversed and the outstanding balance restored.",
+  "lo": "ຖອນໃບຮັບຊຳລະໜີ້ {1} ແລະ ຄືນຍອດໜີ້ຄ້າງແລ້ວ.",
+  "o": "Modules/Sales/Sales/Application/DebtCollectionOffsetService.cs:204"
+ },
+ "Đã huỷ phiếu xuất kho {1} (phiếu do trang điều xe lập — huỷ qua tích hợp, không xoá thẳng).": {
+  "en": "Stock-out note {1} has been cancelled (it was created by EPL — cancelled through the integration, not deleted directly).",
+  "lo": "ຍົກເລີກໃບເບີກອອກສາງ {1} ແລ້ວ (ໃບນີ້ EPL ເປັນຜູ້ສ້າງ — ຍົກເລີກຜ່ານການເຊື່ອມຕໍ່, ບໍ່ລຶບໂດຍກົງ).",
+  "o": "Modules/SupplyChain/Warehouse/Application/WarehouseService.cs:118"
+ },
+ "Đã huỷ phiếu xuất kho {1} nhưng trang điều xe chưa mở lại phiếu đề nghị {2}:": {
+  "en": "Stock-out note {1} has been cancelled but EPL has not reopened request {2}:",
+  "lo": "ຍົກເລີກໃບເບີກອອກສາງ {1} ແລ້ວ ແຕ່ EPL ຍັງບໍ່ໄດ້ເປີດໃບສະເໜີ {2} ຄືນ:",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockCancelService.cs:156"
+ },
+ "Đã huỷ phiếu xuất kho.": {
+  "en": "The stock-out note has been cancelled.",
+  "lo": "ຍົກເລີກໃບເບີກອອກສາງແລ້ວ.",
+  "o": "Modules/SupplyChain/Warehouse/Api/V1/LogisticsStockController.cs:108"
+ },
+ "Đã huỷ phiếu xuất phụ tùng {1} nhưng trang điều xe chưa gỡ phiếu kho khỏi dòng mục V: {2}": {
+  "en": "Spare-part stock-out note {1} has been cancelled but EPL has not removed the stock note from the section V line: {2}",
+  "lo": "ຍົກເລີກໃບເບີກອາໄຫຼ່ {1} ແລ້ວ ແຕ່ EPL ຍັງບໍ່ໄດ້ຖອນໃບສາງອອກຈາກແຖວ ໝວດ V: {2}",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockCancelService.cs:158"
+ },
+ "Đã lưu dữ liệu vào bảng tạm.": {
+  "en": "Data saved to the temporary table.",
+  "lo": "ບັນທຶກຂໍ້ມູນເຂົ້າຕາຕະລາງຊົ່ວຄາວແລ້ວ.",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:226"
+ },
+ "Đã lưu phiếu 48 nhưng không đọc lại được phiếu để áp giá vốn bình quân — áp script": {
+  "en": "Note 48 was saved but could not be read back to apply the average cost — apply script",
+  "lo": "ບັນທຶກໃບ 48 ແລ້ວ ແຕ່ອ່ານໃບຄືນບໍ່ໄດ້ ເພື່ອນຳໃຊ້ລາຄາຕົ້ນທຶນສະເລ່ຍ — ແລ່ນ script",
+  "o": "Modules/SupplyChain/Warehouse/Application/WarehouseService.cs:188"
+ },
+ "Đã lưu phiếu kho nhưng không đọc lại được số phiếu để lập bút toán — mở phiếu và lưu lại.": {
+  "en": "The stock note was saved but its number could not be read back to create the journal entry — open the note and save it again.",
+  "lo": "ບັນທຶກໃບສາງແລ້ວ ແຕ່ອ່ານເລກໃບຄືນບໍ່ໄດ້ ເພື່ອສ້າງບັນທຶກບັນຊີ — ເປີດໃບ ແລ້ວບັນທຶກອີກຄັ້ງ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockJournalService.cs:120"
+ },
+ "Đã lưu phiếu xuất bán 44 nhưng không đọc lại được phiếu để áp giá vốn bình quân — mở Danh sách chứng từ,": {
+  "en": "Sales issue note 44 was saved but could not be read back to apply the average cost — open the Document list,",
+  "lo": "ບັນທຶກໃບເບີກຂາຍ 44 ແລ້ວ ແຕ່ອ່ານໃບຄືນບໍ່ໄດ້ ເພື່ອນຳໃຊ້ລາຄາຕົ້ນທຶນສະເລ່ຍ — ເປີດ ລາຍການເອກະສານ,",
+  "o": "Modules/SupplyChain/Warehouse/Application/WarehouseService.cs:231"
+ },
+ "Đã lưu phiếu xuất nhưng chưa áp được giá vốn bình quân di động: {1} Mở phiếu và lưu lại.": {
+  "en": "The stock-out note was saved but the moving average cost could not be applied: {1} Open the note and save it again.",
+  "lo": "ບັນທຶກໃບເບີກອອກແລ້ວ ແຕ່ຍັງນຳໃຊ້ລາຄາຕົ້ນທຶນສະເລ່ຍເຄື່ອນທີ່ບໍ່ໄດ້: {1} ເປີດໃບ ແລ້ວບັນທຶກອີກຄັ້ງ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsStockService.cs:325"
+ },
+ "Đã lưu và chuyển chứng từ sang chính.": {
+  "en": "The voucher has been saved and moved to the main records.",
+  "lo": "ບັນທຶກ ແລະ ຍ້າຍເອກະສານໄປເປັນເອກະສານຫຼັກແລ້ວ.",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:293"
+ },
+ "Đã lập phiếu nhập kho.": {
+  "en": "The stock-in note has been created.",
+  "lo": "ສ້າງໃບຮັບເຂົ້າສາງແລ້ວ.",
+  "o": "Modules/SupplyChain/Warehouse/Api/V1/LogisticsStockController.cs:131"
+ },
+ "Đã lập phiếu xuất kho {1} nhưng trang điều xe chưa ghi nhận: {2}": {
+  "en": "Stock-out note {1} was created but EPL has not acknowledged it: {2}",
+  "lo": "ສ້າງໃບເບີກອອກສາງ {1} ແລ້ວ ແຕ່ EPL ຍັງບໍ່ໄດ້ຮັບຮູ້: {2}",
+  "o": "Modules/SupplyChain/Warehouse/Application/LogisticsFuelVoucherService.cs:169"
+ },
+ "Đã lập phiếu xuất kho.": {
+  "en": "The stock-out note has been created.",
+  "lo": "ສ້າງໃບເບີກອອກສາງແລ້ວ.",
+  "o": "Modules/SupplyChain/Warehouse/Api/V1/LogisticsStockController.cs:79"
+ },
+ "Đã mở phiên tạm để sửa chứng từ.": {
+  "en": "A draft session was opened to edit the document.",
+  "lo": "ເປີດເຊສຊັນຊົ່ວຄາວເພື່ອແກ້ໄຂເອກະສານແລ້ວ.",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:204"
+ },
+ "Đã tạo SO nhiên liệu cho đối tác và ghi công nợ.": {
+  "en": "The fuel SO has been created for the partner and the receivable recorded.",
+  "lo": "ສ້າງ SO ນ້ຳມັນໃຫ້ຄູ່ຮ່ວມ ແລະ ບັນທຶກໜີ້ແລ້ວ.",
+  "o": "Modules/Sales/Sales/Api/V1/LogisticsFuelSalesOrderController.cs:63"
+ },
+ "Đã tạo phiên tạm phiếu thu/chi.": {
+  "en": "A draft session for the receipt/payment voucher was created.",
+  "lo": "ສ້າງເຊສຊັນຊົ່ວຄາວຂອງໃບຮັບ/ຈ່າຍເງິນແລ້ວ.",
+  "o": "Modules/Finance/Accounting/Application/CMPaymentReceiptService.cs:187"
+ },
+ "Đã tạo phiếu, không thể cập nhật": {
+  "en": "The note has already been created and cannot be updated",
+  "lo": "ສ້າງໃບແລ້ວ, ອັບເດດບໍ່ໄດ້",
+  "o": "Modules/SupplyChain/Warehouse/Infrastructure/WarehouseRepository.cs:447"
+ },
+ "Đã tạo và ghi sổ tạm bút toán tổng hợp.": {
+  "en": "The general journal entry was created and provisionally posted.",
+  "lo": "ສ້າງບັນທຶກບັນຊີລວມ ແລະ ບັນທຶກປຶ້ມຊົ່ວຄາວແລ້ວ.",
+  "o": "Modules/Finance/Accounting/Api/V1/LogisticsJournalEntryController.cs:83"
+ },
+ "Đã xoá phiếu và gỡ bút toán tự động của phiếu.": {
+  "en": "The note has been deleted and its automatic journal entry reversed.",
+  "lo": "ລຶບໃບ ແລະ ຖອນບັນທຶກບັນຊີອັດຕະໂນມັດຂອງໃບແລ້ວ.",
+  "o": "Modules/SupplyChain/Warehouse/Application/WarehouseService.cs:147"
+ },
+ "Đã xảy ra lỗi, thử lại sau": {
+  "en": "An error occurred, please try again later",
+  "lo": "ເກີດຂໍ້ຜິດພາດ, ກະລຸນາລອງໃໝ່ພາຍຫຼັງ",
+  "o": "Modules/SupplyChain/Warehouse/Infrastructure/WarehouseRepository.cs:649"
+ },
+ "Đơn vị (OrgId) không tồn tại hoặc ngừng hoạt động.": {
+  "en": "The unit (OrgId) does not exist or is inactive.",
+  "lo": "ໜ່ວຍງານ (OrgId) ບໍ່ມີ ຫຼື ຢຸດໃຊ້ງານແລ້ວ.",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "Địa chỉ nguồn Logistics (LogisticsSource:BaseUrl) không hợp lệ. Liên hệ quản trị.": {
+  "en": "The Logistics source address (LogisticsSource:BaseUrl) is invalid. Contact the administrator.",
+  "lo": "ທີ່ຢູ່ແຫຼ່ງ Logistics (LogisticsSource:BaseUrl) ບໍ່ຖືກຕ້ອງ. ຕິດຕໍ່ຜູ້ດູແລລະບົບ.",
+  "o": "Modules/SupplyChain/Warehouse/Infrastructure/LogisticsFuelVoucherClient.cs:250"
+ },
+ "Đọc cấn trừ cần Id, IdempotencyKey, số TKN hoặc RDO_DOCUMENTID.": {
+  "en": "Reading an offset requires Id, IdempotencyKey, the TKN number or RDO_DOCUMENTID.",
+  "lo": "ການອ່ານການຫັກລົບ ຕ້ອງມີ Id, IdempotencyKey, ເລກ TKN ຫຼື RDO_DOCUMENTID.",
+  "o": "Database/Scripts/20261002_sales_debt_collection_offset.sql (proc_RES_DebtOffset_Get)"
+ },
+ "Đọc phiếu tổng hợp cần Id hoặc IdempotencyKey.": {
+  "en": "Reading a combined voucher requires Id or IdempotencyKey.",
+  "lo": "ການອ່ານໃບລວມ ຕ້ອງມີ Id ຫຼື IdempotencyKey.",
+  "o": "Database/Scripts/20261002_cash_voucher_combined.sql (proc_CM_CombinedVoucher_Get)"
+ },
+ "Đối tác (partner_code) chưa có hoặc bị trùng trong danh mục đối tượng; trang điều xe tạo đối tác (master-data/suppliers/upsert) rồi gửi lại.": {
+  "en": "The partner (partner_code) is missing or duplicated in the party list; EPL creates the partner (master-data/suppliers/upsert) and then resends.",
+  "lo": "ຄູ່ຮ່ວມ (partner_code) ຍັງບໍ່ມີ ຫຼື ຊ້ຳກັນໃນລາຍການຄູ່ບັນຊີ; EPL ສ້າງຄູ່ຮ່ວມ (master-data/suppliers/upsert) ແລ້ວສົ່ງໃໝ່.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "Đối tác ngừng hoạt động, thiếu tên hoặc tên vượt 100 ký tự của phiếu bán.": {
+  "en": "The partner is inactive, has no name, or the name exceeds the sales slip's 100-character limit.",
+  "lo": "ຄູ່ຮ່ວມຢຸດໃຊ້ງານ, ບໍ່ມີຊື່ ຫຼື ຊື່ຍາວເກີນ 100 ຕົວອັກສອນຂອງໃບຂາຍ.",
+  "o": "Database/Scripts/20261002_logistics_fuel_sales_order.sql (sp_Logistics_CreateFuelSalesOrder)"
+ },
+ "đối tượng (ObjectId) không tồn tại hoặc ngừng hoạt động": {
+  "en": "the party (ObjectId) does not exist or is inactive",
+  "lo": "ຄູ່ບັນຊີ (ObjectId) ບໍ່ມີ ຫຼື ຢຸດໃຊ້ງານແລ້ວ",
+  "o": "Database/Scripts/20261001_logistics_journal_entry.sql (proc_Logistics_JournalEntry_Save)"
+ },
+ "Σ amount các dòng không khớp total.": {
+  "en": "Σ amount of the lines does not match total.",
+  "lo": "Σ amount ຂອງແຖວທັງໝົດ ບໍ່ກົງກັບ total.",
+  "o": "Modules/Sales/Sales/Application/LogisticsFuelSalesOrderService.cs:146"
+ },
+ "ở chi nhánh.": {
+  "en": "in the branch.",
+  "lo": "ຢູ່ສາຂາ.",
+  "o": "Database/Scripts/20261005_logistics_stock_issue.sql (proc_Logistics_Stock_Balance)"
+ },
+ "— tiền bán theo SO nhiên liệu": {
+  "en": "— sale amount per fuel SO",
+  "lo": "— ເງິນຂາຍຕາມ SO ນ້ຳມັນ",
+  "o": "Database/Scripts/20261006_logistics_stock_dien_giai_unicode.sql (proc_Logistics_StockDocument_Create)"
+ }
+}

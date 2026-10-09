@@ -42,7 +42,7 @@ def _xem(user):
     if user.role == "driver":
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Tài xế không xem kho hàng."})
     if not KQ.bat():
-        raise HTTPException(409, {"ma": "SO_O_KHO_TAM", "loi": "Đang chạy KHO_NGUON=kho_tam — sổ kho hàng ở kho tạm, không ở trang điều xe."})
+        raise HTTPException(409, {"ma": "SO_O_KHO_TAM", "loi": "Đang chạy KHO_NGUON=kho_tam — sổ kho hàng ở kho tạm, không ở EPL."})
     return user
 
 

@@ -62,7 +62,7 @@ def goi(db, phuong_thuc, duong, body=None, nguoi=None, het_gio=HET_GIO):
     goc, token = cau_hinh(db)
     if not goc or not token:
         raise HTTPException(503, {"ma": "CHUA_NOI_KE_TOAN",
-                                  "loi": "Chưa đặt địa chỉ hoặc khoá nối trang kế toán — Sếp vào cấu hình kết nối kế toán."})
+                                  "loi": "Chưa đặt địa chỉ hoặc khoá nối kho tạm — Sếp vào cấu hình kết nối kế toán."})
     du = json.dumps(body).encode("utf-8") if body is not None else None
     dau = {"Content-Type": "application/json", "Authorization": "Bearer " + token}
     if nguoi is not None:
@@ -79,11 +79,11 @@ def goi(db, phuong_thuc, duong, body=None, nguoi=None, het_gio=HET_GIO):
             g = {}
         chi = g.get("detail") if isinstance(g.get("detail"), dict) else g
         ct = {"ma": (chi or {}).get("ma") or "LOI_KE_TOAN",
-              "loi": (chi or {}).get("loi") or (chi or {}).get("message") or "Trang kế toán báo lỗi HTTP %d." % e.code}
+              "loi": (chi or {}).get("loi") or (chi or {}).get("message") or "Kho tạm báo lỗi HTTP %d." % e.code}
         # 01/10: kho tạm chặn vượt tồn — 409 VUOT_TON kèm `tham` (kho, tồn còn, số định lấy, đơn vị, việc; không có giá).
         # Giữ nguyên `tham` để màn Cấp phát bên kho tạm (gọi lồng kho → đây → kho) dịch được câu; màn bên này hiện `loi`.
         if isinstance((chi or {}).get("tham"), dict):
             ct["tham"] = chi["tham"]
         raise HTTPException(e.code, ct)
     except (urllib.error.URLError, OSError, ValueError):
-        raise HTTPException(503, {"ma": "CHUA_NOI_KE_TOAN", "loi": "Chưa nối được trang kế toán — thử lại sau."})
+        raise HTTPException(503, {"ma": "CHUA_NOI_KE_TOAN", "loi": "Chưa nối được kho tạm — thử lại sau."})

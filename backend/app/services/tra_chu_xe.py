@@ -120,7 +120,7 @@ def cho_tra(db, owner_id):
     from routes.chu_xe import _phieu_cho_tra
     o = db.get(Owner, owner_id)
     if not o:
-        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có chủ xe này bên trang điều xe."})
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có chủ xe này trên EPL."})
     return [dong_phieu(db, p) for p in _phieu_cho_tra(db, o)]
 
 
@@ -140,11 +140,11 @@ def danh_dau_tra(db, user, owner_payment_id, cac_dong):
     if not owner_payment_id or not theo:
         raise HTTPException(422, {"ma": "THIEU", "loi": "Thiếu đợt trả hoặc phiếu."})
     if not str(owner_payment_id).startswith(TIEN_TO_TUNE):
-        raise HTTPException(409, {"ma": "TRA_QUA_KE_TOAN", "loi": "Trả chủ xe chỉ qua đề nghị trả sang hệ kế toán anh Tune (cắt sổ "
+        raise HTTPException(409, {"ma": "TRA_QUA_KE_TOAN", "loi": "Trả chủ xe chỉ qua đề nghị trả sang hệ kế toán (cắt sổ "
                                                                  "01/10) — không ghi \"đã trả\" từ nơi khác."})
     ds = db.query(Trip).filter(Trip.id.in_(list(theo))).with_for_update().all()
     if len(ds) != len(theo):
-        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Có phiếu không còn bên trang điều xe."})
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Có phiếu không còn trên EPL."})
     for p in ds:
         if p.company != "joint":
             _chan(p, "KHONG_PHAI_LIEN_KET", "Phiếu %s là xe nhà, không có chủ xe để trả." % p.doc_no)
@@ -166,8 +166,8 @@ def danh_dau_tra(db, user, owner_payment_id, cac_dong):
 def _kho(db, method, duong, body=None, user=None):
     from services import kho_qlsx as KQ
     if KQ.bat():                                    # 05/10: bỏ kho tạm — bán hàng quầy chuyển sang Web anh Tune
-        raise HTTPException(409, {"ma": "QUAY_DA_TAT", "loi": "Bán hàng quầy cho chủ xe đã chuyển sang hệ kế toán (Web anh Tune) — "
-                                                              "trang điều xe không giữ / trừ phiếu bán nữa."})
+        raise HTTPException(409, {"ma": "QUAY_DA_TAT", "loi": "Bán hàng quầy cho chủ xe đã chuyển sang hệ kế toán — "
+                                                              "EPL không giữ / trừ phiếu bán nữa."})
     from services import goi_ke_toan as KT          # kho tạm tắt → 503 CHUA_NOI_KE_TOAN: chặn, không trả dư cho chủ xe
     return KT.goi(db, method, duong, body, nguoi=user)
 
@@ -207,7 +207,7 @@ def so_quay(db, owner_id, kq=None):
     from services.gia_von import ty_gia_lak
     o = db.get(Owner, owner_id)
     if o is None:
-        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có chủ xe này bên trang điều xe."})
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có chủ xe này trên EPL."})
     if kq is None:
         kq = CHI.cong_no_doi_tac(db, o)
     no = [x for x in (kq or {}).get("no") or [] if (x.get("so") or "").strip()]

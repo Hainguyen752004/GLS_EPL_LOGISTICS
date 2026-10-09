@@ -66,5 +66,18 @@
   "LOG_W_PX_BO_SUA": {"vi": "Bỏ phần đang sửa?", "lo": "ຍົກເລີກສ່ວນທີ່ກຳລັງແກ້ໄຂ?", "en": "Discard your changes?"},
   "LOG_W_PX_BO_SUA_OK": {"vi": "Bỏ, mở phiếu khác", "lo": "ຍົກເລີກ, ເປີດໃບອື່ນ", "en": "Discard and open another"},
   "LOG_W_PX_BO_SUA_HOI": {"vi": "Phiếu đang sửa chưa lưu — mở phiếu khác là mất phần vừa nhập.", "lo": "ໃບທີ່ກຳລັງແກ້ໄຂຍັງບໍ່ໄດ້ບັນທຶກ — ເປີດໃບອື່ນຈະເສຍຂໍ້ມູນທີ່ຫາກໍປ້ອນ.", "en": "This order has unsaved changes — opening another one discards them."},
-  "LOG_W_PX_XOA_HOI": {"vi": "Xoá phiếu {so}? Phiếu xoá rồi không lấy lại được.", "lo": "ລຶບໃບ {so}? ລຶບແລ້ວເອົາຄືນບໍ່ໄດ້.", "en": "Delete order {so}? A deleted order cannot be restored."}
+  "LOG_W_PX_XOA_HOI": {"vi": "Xoá phiếu {so}? Phiếu xoá rồi không lấy lại được.", "lo": "ລຶບໃບ {so}? ລຶບແລ້ວເອົາຄືນບໍ່ໄດ້.", "en": "Delete order {so}? A deleted order cannot be restored."},
+  "LOG_W_API_TU_CHOI": {"vi": "Máy chủ Vận tải từ chối yêu cầu (HTTP {0}).", "lo": "ເຊີບເວີຂົນສົ່ງປະຕິເສດຄຳຮ້ອງ (HTTP {0}).", "en": "The transport server rejected the request (HTTP {0})."},
+  "LOG_W_API_QUA_GIO": {"vi": "Máy chủ Vận tải không trả lời kịp. Thử lại sau.", "lo": "ເຊີບເວີຂົນສົ່ງບໍ່ຕອບທັນເວລາ. ກະລຸນາລອງໃໝ່ພາຍຫຼັງ.", "en": "The transport server did not respond in time. Please try again later."},
+  "LOG_W_API_KHONG_GOI_DUOC": {"vi": "Không kết nối được máy chủ Vận tải. Thử lại sau.", "lo": "ເຊື່ອມຕໍ່ເຊີບເວີຂົນສົ່ງບໍ່ໄດ້. ກະລຸນາລອງໃໝ່ພາຍຫຼັງ.", "en": "Cannot connect to the transport server. Please try again later."},
+  "LOG_W_API_SAI_DANG": {"vi": "Máy chủ Vận tải trả dữ liệu không đúng dạng.", "lo": "ເຊີບເວີຂົນສົ່ງສົ່ງຂໍ້ມູນກັບມາຜິດຮູບແບບ.", "en": "The transport server returned data in an unexpected format."},
+  "LOG_W_API_CHUYEN_HUONG": {"vi": "Địa chỉ Logistics:BaseUrl đang bị chuyển hướng — đặt đúng địa chỉ cuối (http/https).", "lo": "ທີ່ຢູ່ Logistics:BaseUrl ຖືກປ່ຽນເສັ້ນທາງ — ກະລຸນາຕັ້ງທີ່ຢູ່ປາຍທາງໃຫ້ຖືກ (http/https).", "en": "The Logistics:BaseUrl address is being redirected — set the final address (http/https)."},
+  "LOG_W_API_CHUA_CAU_HINH": {"vi": "Chưa cấu hình địa chỉ máy chủ Vận tải (Logistics:BaseUrl trong appsettings).", "lo": "ຍັງບໍ່ໄດ້ຕັ້ງທີ່ຢູ່ເຊີບເວີຂົນສົ່ງ (Logistics:BaseUrl ໃນ appsettings).", "en": "The transport server address is not configured (Logistics:BaseUrl in appsettings)."},
+  "LOG_W_VIEC_SAI_MUC": {"vi": "Việc không hợp lệ trên mục này.", "lo": "ການດຳເນີນການນີ້ບໍ່ຖືກຕ້ອງສຳລັບໝວດນີ້.", "en": "This action is not valid for this section."},
+  "LOG_W_VIEC_SAI_CHI": {"vi": "Việc không hợp lệ trên phiếu chi của mục này.", "lo": "ການດຳເນີນການນີ້ບໍ່ຖືກຕ້ອງສຳລັບໃບຈ່າຍເງິນຂອງໝວດນີ້.", "en": "This action is not valid for this section's payment voucher."},
+  "LOG_W_VIEC_SAI": {"vi": "Việc không hợp lệ.", "lo": "ການດຳເນີນການບໍ່ຖືກຕ້ອງ.", "en": "Invalid action."},
+  "LOG_W_TRANG_THAI_XE_SAI": {"vi": "Trạng thái xe không hợp lệ.", "lo": "ສະຖານະລົດບໍ່ຖືກຕ້ອງ.", "en": "Invalid truck status."},
+  "LOG_W_LOAI_HD_SAI": {"vi": "Loại hợp đồng không hợp lệ.", "lo": "ປະເພດສັນຍາບໍ່ຖືກຕ້ອງ.", "en": "Invalid contract type."},
+  "LOG_W_CHUA_CHON_TEP": {"vi": "Chưa chọn tệp.", "lo": "ຍັງບໍ່ໄດ້ເລືອກໄຟລ໌.", "en": "No file selected."},
+  "LOG_W_TEP_QUA_10MB": {"vi": "Tệp quá 10 MB.", "lo": "ໄຟລ໌ໃຫຍ່ເກີນ 10 MB.", "en": "The file exceeds 10 MB."}
 }

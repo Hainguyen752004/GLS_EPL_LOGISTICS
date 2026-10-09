@@ -34,6 +34,7 @@ from urllib.parse import quote, urlsplit
 from fastapi import HTTPException
 
 from services import gui_tune as GT
+from services import loi_dich as LD
 
 DUONG = "/api/v1/integrations/logistics/journal-entries"
 CHO_GIAY = 30
@@ -330,4 +331,4 @@ def gui_het(db, gioi_han=100):
             if d.get("ma") in ("KHONG_GOI_DUOC", "QLSX_TOKEN_HET_HAN", "CHUA_CO_TOKEN", "KHONG_CO_DUONG", "KHONG_DUOC_PHEP",
                                "BEN_DO_CHUA_BAT"):
                 break
-    return ra
+    return LD.them_dich(ra)                   # chi_tiet_loi: câu lỗi kèm bản Lào / Anh (services/loi_dich)

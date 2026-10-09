@@ -238,8 +238,8 @@ def dung_goi(db, p, ma_tam=None):
              % (ma_khach, ma_tuyen, len(ma_khach) + 1 + len(ma_tuyen)))
     tien = str(h0.get("currency") or "").upper()
     if tien not in TIEN_NHAN:
-        _loi("TIEN_TE_CHUA_NHAN", "Bên kế toán mới nhận cước VND, LAK, USD — cước phiếu %s bằng %s. Chờ anh Tune mở thêm tiền "
-                                  "này (câu hỏi 10.3)." % (p.doc_no, tien or "?"))
+        _loi("TIEN_TE_CHUA_NHAN", "Bên kế toán mới nhận cước VND, LAK, USD — cước phiếu %s bằng %s. Chờ bên kế toán mở thêm loại tiền "
+                                  "này." % (p.doc_no, tien or "?"))
     gia = _tien(h0.get("final_selling_price"), "Cước (final_selling_price)")
     if gia <= Decimal("0.01"):
         _loi("CUOC_BANG_KHONG", "Cước phiếu %s là %s %s — bên kế toán đòi lớn hơn 0.01." % (p.doc_no, _so_json(gia), tien))
@@ -296,7 +296,7 @@ def doc_ket_qua(ma, than, tho):
         return "failed", None, "QLSX_TOKEN_HET_HAN", ("Token hệ kế toán sai hoặc đã hết hạn (401) — xin token mới, đặt vào "
                                                       "QLSX_ACCESS_TOKEN trong .env rồi khởi động lại.")
     if ma == 403:
-        return "failed", None, "QLSX_CHUA_CHO_PHEP", ("Bên kế toán chưa cho tài khoản của token gọi tạo SO (403): anh Tune thêm "
+        return "failed", None, "QLSX_CHUA_CHO_PHEP", ("Bên kế toán chưa cho tài khoản của token gọi tạo SO (403): bên kế toán thêm "
                                                       "UserId vào LogisticsSalesPush.AllowedUserIds, và tài khoản phải gắn nhân viên.")
     return "failed", None, "QLSX_HTTP_%s" % ma, "Bên kế toán trả HTTP %s: %s" % (ma, (tho or "")[:300])
 

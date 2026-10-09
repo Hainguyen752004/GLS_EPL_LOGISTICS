@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from services.bao_mat import nguoi_hien_tai
 
 router = APIRouter()
-DA_DOI = {"ma": "DA_DOI_SANG_KE_TOAN", "loi": "Bán hàng không làm trên trang điều xe: phiếu bán, xuất kho bán ở kho (Kho → Bán hàng); "
+DA_DOI = {"ma": "DA_DOI_SANG_KE_TOAN", "loi": "Bán hàng không làm trên EPL: phiếu bán, xuất kho bán ở kho (Kho → Bán hàng); "
                                              "hoá đơn, thu tiền bán ở hệ kế toán."}
 
 

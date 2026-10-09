@@ -317,7 +317,9 @@ def chot_ky(d: dict = Body(...), db: Session = Depends(get_db), user=Depends(ngu
 def viec_tat_toan(driver_id: str, viec: str, ky: str = "", db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     """cap-nhat (hỏi lại hệ kế toán — mọi vai xem được) · gui-lai (lần gửi phiếu chênh trước hỏng — KT Chi phí, Sếp)."""
     from services import chi_tat_toan_tune as TTT
-    TTT.chan_vai(user, TTT.CHOT_TT if viec == "gui-lai" else TTT.XEM_TT, "%s tất toán" % viec)
+    # 09/10: tên việc bằng chữ (trước chèn mã thô "gui-lai tất toán") — cụm có bản Lào / Anh (loi_dich)
+    TTT.chan_vai(user, TTT.CHOT_TT if viec == "gui-lai" else TTT.XEM_TT,
+                 {"cap-nhat": "cập nhật tất toán", "gui-lai": "gửi lại phiếu tất toán"}.get(viec, "%s tất toán" % viec))
     return TTT.viec_tt(db, user, driver_id, _ky_hop_le(ky), viec)
 
 

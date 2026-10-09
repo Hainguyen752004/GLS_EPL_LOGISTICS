@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from services.bao_mat import nguoi_hien_tai
 
 router = APIRouter()
-DA_DOI = {"ma": "DA_DOI_SANG_KE_TOAN", "loi": "Lệnh sửa chữa nay làm ở trang kế toán (Kho → Lệnh sửa chữa)."}
+DA_DOI = {"ma": "DA_DOI_SANG_KE_TOAN", "loi": "Lệnh sửa chữa nay làm ở hệ kế toán (Kho → Lệnh sửa chữa)."}
 
 
 @router.get("/api/lenh-sua-chua")

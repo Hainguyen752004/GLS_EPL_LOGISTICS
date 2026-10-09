@@ -278,7 +278,7 @@ def de_nghi_tra(oid: str, d: dict = Body(...), db: Session = Depends(get_db), us
     if user.role not in DE_NGHI_TRA:
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ KT Thu/Chi Viêng Chăn hoặc Sếp lập đề nghị trả chủ xe."})
     if not CHI.chi_o_ke_toan():
-        raise HTTPException(409, {"ma": "CHI_TAI_CHO", "loi": "Đang để chi trên trang kế toán tạm (EPL_CHI_TAM_UNG=tai_cho)."})
+        raise HTTPException(409, {"ma": "CHI_TAI_CHO", "loi": "Đang để chi tại chỗ (EPL_CHI_TAM_UNG=tai_cho)."})
     r = CHI.de_nghi_tra_chu_xe(db, oid, d.get("trip_ids") or [], (d.get("phuong_thuc") or "cash").strip(), user)
     return CHI.xuat_chu_xe(r)
 
