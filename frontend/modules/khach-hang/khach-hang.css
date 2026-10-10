@@ -354,3 +354,6 @@
 .kh3 .tab-note--loi { padding: 8px 12px; border-radius: var(--r-md); background: var(--warn-tint); color: var(--warn); font-weight: 600; }
 .kh3 .tab-note--loi .small { display: block; margin-top: 2px; font-size: 12px; font-weight: 400; color: var(--ink-2); overflow-wrap: anywhere; }
 .kh3 .k3-kt-h{margin:4px 0 8px;font-size:14px;font-weight:600}
+/* ô chọn tài khoản (09/10): gõ tìm thì ô chọn mở thành danh sách (EPL.locChon) — bỏ chiều cao 40px của .input */
+.kh3 select.input.loc-ds { height: auto; padding: 2px; }
+.kh3 .k3-tk-tim { height: 34px; }

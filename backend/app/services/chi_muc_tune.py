@@ -109,6 +109,10 @@ def dung_goi(db, p, muc, rec, dong, obj):
     if tien <= 0:
         _loi("CHI_MUC_BANG_KHONG", "Mục %s phiếu %s không còn khoản quỹ trả ngay — không lập phiếu chi." % (TEN_MUC[muc], p.doc_no), 409)
     no, _, co, _ = CT.dinh_khoan("PC_SC", company=p.company, section=muc, tien_te="LAK", phuong_thuc="cash")
+    if p.company == "joint":
+        from services import tai_khoan as TK
+        if no == TK.CHU_XE:                   # xe thuê: quỹ chi trừ vào công nợ chủ xe — TK Có riêng của chủ xe (soát 10/10)
+            no = TK.rieng(TK.chu_xe_rieng(db, p.owner_id), "co", TK.CHU_XE)
     if not no or not co:
         _loi("THIEU_DINH_KHOAN", "Chưa có định khoản cho phiếu chi mục %s (%s / %s)." % (TEN_MUC[muc], no, co))
     lak, hom_nay = CHI.ma_tien("LAK"), dt.date.today()

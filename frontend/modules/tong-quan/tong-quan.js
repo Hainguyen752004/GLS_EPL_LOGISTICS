@@ -3,6 +3,7 @@
      GET /api/bao-cao/tong-quan?thang=YYYY-MM  → doanh_thu_lak + doanh_thu_tien{}, so_phieu, chi_lak, tan_giao,
                                                  chua_thu_lak + chua_thu_tien{}, chua_thu_so, dem{}, chi_theo_muc{}, chu_y[]
      GET /api/bao-cao/xu-huong?thang=YYYY-MM   → thang_truoc, sau_thang, theo_ngay, hao_hut, xe, van_hanh, xem_nhanh, dong_thoi_gian
+       (09/10: kỳ không trọn một tháng thì ?tu=YYYY-MM-DD&den=YYYY-MM-DD thay cho ?thang= — bộ lọc thời gian dùng chung)
      GET /api/rates                            → USD, THB, VND, CNY
  *
  * TIỀN TỆ: mỗi phiếu bán bằng tiền của hợp đồng phiếu đó, nên mọi ô số ở đây quy về KÍP (tiền gốc)
@@ -12,11 +13,15 @@
 (function () {
 
   const { API, NN, esc, so, AUTH } = EPL;
+  const KTG = EPL.khoangThoiGian;
   const HAO_HUT_MUC = 1.5;              // % hao hụt cân cho phép — cùng ngưỡng với màn Theo dõi phiếu
   // Bãi không thấy TIỀN BÁN (doanh thu, khách chưa trả, doanh thu theo xe) — đó là biên lợi nhuận.
   // Tiền CHI thì thấy hết, vì chính họ chi. Sếp thấy tất cả nên so vai thẳng, không dùng AUTH.la.
   const laBai = () => AUTH.role === 'yard';
-  let root, thang, d, xh, ty_gia, charts = {};
+  // 09/10 (anh Khampla): kỳ xem là KHOẢNG NGÀY {tu, den} chọn ở bộ lọc thời gian dùng chung (KY) — trước đây chỉ một tháng.
+  // Trọn một tháng thì gọi API bằng `thang` như cũ (KTG.thamSo), còn lại tu/den; tối đa một năm (máy chủ đệm báo cáo theo ngày).
+  let root, ky, KY, d, xh, ty_gia, charts = {};
+  const laKyThang = () => !!KTG.laThang(ky);
   /* Tháng trống (01/10). BAO: vào màn mà tháng này chưa có phiếu → đã tự sang tháng gần nhất có phiếu. GAN: tháng gần nhất
    * có phiếu khi người dùng TỰ chọn một tháng trống — nút trên thanh công cụ đưa về đó. */
   let BAO = null, GAN = null;
@@ -31,30 +36,22 @@
     } catch (e) { EPL.baoLoi(e); }
   }
 
-  /** Tháng `th` có phiếu không; không có thì tháng nào GẦN NHẤT có (cùng bộ lọc `loc` của /api/trips). Hỏi hai lần, mỗi lần
-   *  một dòng: phiếu mới nhất tới cuối tháng `th`, phiếu cũ nhất từ đầu tháng `th` — không tải cả năm. Cách đều: tháng trước. */
-  async function thangGan(th, loc) {
-    const [y, m] = th.split('-').map(Number);
-    const hoi = (them) => { const p = new URLSearchParams(loc); p.set('co', '1'); Object.entries(them).forEach(([k, v]) => p.set(k, v));
-      return API.get('/api/trips?' + p).then(x => (x && x[0] && x[0].doc_date ? x[0].doc_date.slice(0, 7) : null), () => null); };
-    const [truoc, sau] = await Promise.all([hoi({ den: th + '-' + String(new Date(y, m, 0).getDate()).padStart(2, '0') }), hoi({ tu: th + '-01', sap: 'cu' })]);
-    if (truoc === th || sau === th) return { co: true, gan: th };
-    const n = (v) => v.slice(0, 4) * 12 + +v.slice(5, 7);
-    return { co: false, gan: !truoc || !sau ? truoc || sau : (n(sau) - n(th) < n(th) - n(truoc) ? sau : truoc) };
-  }
+  /* «Tháng gần nhất có phiếu» dùng chung: EPL.khoangThoiGian.gan (09/10 — trước đây hàm thangGan riêng ở đây, cùng cách). */
   function veBao() {
     const o = root.querySelector('#tq-bao'), trong = d && !d.so_phieu;
     const icon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/></svg>';
     o.hidden = !(trong || BAO);
     o.classList.toggle('trong', !!trong);
-    o.innerHTML = trong ? `${icon}<span>${NN.h('thang_trong_n', { thang: nhanThang(thang) })}</span>${GAN ? `<button type="button" class="btn sm primary" data-thang="${esc(GAN)}">${NN.h('thang_xem_gan', { thang: nhanThang(GAN) })}</button>` : ''}`
+    // kỳ trống: trọn một tháng thì câu «Tháng 09/2026 chưa có phiếu» như cũ, khoảng khác thì «01/09/2026 – 15/09/2026 chưa có phiếu»
+    const chuTrong = laKyThang() ? NN.h('thang_trong_n', { thang: nhanThang(KTG.laThang(ky)) }) : NN.h('ktg_trong_n', { khoang: KTG.nhan(ky) });
+    o.innerHTML = trong ? `${icon}<span>${chuTrong}</span>${GAN ? `<button type="button" class="btn sm primary" data-thang="${esc(GAN)}">${NN.h('thang_xem_gan', { thang: nhanThang(GAN) })}</button>` : ''}`
       : BAO ? `${icon}<span>${NN.h('thang_trong_dang_xem', { trong: nhanThang(BAO.trong), xem: nhanThang(BAO.xem) })}</span>` : '';
     const b = o.querySelector('[data-thang]');
-    if (b) b.addEventListener('click', () => { BAO = null; root.querySelector('#tq-thang').value = b.dataset.thang; tai().catch(EPL.baoLoi); });
+    if (b) b.addEventListener('click', () => { BAO = null; KY.dat(KTG.cuaThang(b.dataset.thang)); tai().catch(EPL.baoLoi); });
   }
   /** Không có dữ liệu thì phải nói ĐÚNG lý do: máy chủ chưa trả được (hỏng/mất mạng) khác hẳn với
    *  tháng này chưa có chuyến nào. Câu sau mà viết như câu trước thì người dùng tưởng phần mềm hỏng. */
-  const chuaCo = () => NN.h(xh ? 'tq_thang_trong' : 'tq_need_endpoint');
+  const chuaCo = () => NN.h(!xh ? 'tq_need_endpoint' : laKyThang() ? 'tq_thang_trong' : 'ktg_tq_trong');
 
   /** Chart.js để sẵn trong dự án, nạp một lần khi mở màn. Không có thư viện thì các khối biểu đồ
    *  báo "chưa vẽ được", phần số vẫn chạy — mất mạng hay thiếu tệp cũng không làm sập màn. */
@@ -115,14 +112,15 @@
   let dangTai = null;
   function tai() { dangTai = taiThat(); return dangTai; }
   async function taiThat() {
-    thang = root.querySelector('#tq-thang').value || EPL.thangNay();
+    ky = KY.giaTri;
+    const ts = KTG.thamSo(ky).toString();
     const [a, b, c] = await Promise.all([
-      API.get('/api/bao-cao/tong-quan?thang=' + thang),
-      API.get('/api/bao-cao/xu-huong?thang=' + thang).catch(() => null),   // endpoint mới; thiếu thì vẫn vẽ phần cũ
+      API.get('/api/bao-cao/tong-quan?' + ts),
+      API.get('/api/bao-cao/xu-huong?' + ts).catch(() => null),   // endpoint mới; thiếu thì vẫn vẽ phần cũ
       API.get('/api/rates'),
     ]);
-    // tháng trống mà người dùng tự chọn: tìm tháng gần nhất có phiếu cho nút trên thanh công cụ (chỉ hỏi khi trống)
-    const g = a && !a.so_phieu ? await thangGan(thang, {}) : null;
+    // kỳ trống mà người dùng tự chọn: tìm tháng gần nhất có phiếu cho nút trên thanh công cụ (chỉ hỏi khi trống)
+    const g = a && !a.so_phieu ? await KTG.gan(ky, {}) : null;
     GAN = g && !g.co ? g.gan : null;
     d = a; xh = b; ty_gia = c; ve();
   }
@@ -134,7 +132,7 @@
     if (!soSanh || prev == null) return '';
     const p = pct(cur, prev); if (p == null) return `<span class="tq-delta flat">—</span>`;
     const k = Math.abs(p) < 0.5 ? 'flat' : p > 0 ? 'up' : 'down';
-    return `<span class="tq-delta ${k} ${inv ? 'inv' : ''}" title="${esc(NN.t('tq_vs_prev'))}">${k === 'up' ? '▲' : k === 'down' ? '▼' : '•'} ${so(Math.abs(p), 1)}%</span>`;
+    return `<span class="tq-delta ${k} ${inv ? 'inv' : ''}" title="${esc(NN.t(laKyThang() ? 'tq_vs_prev' : 'ktg_vs_prev'))}">${k === 'up' ? '▲' : k === 'down' ? '▼' : '•'} ${so(Math.abs(p), 1)}%</span>`;
   }
   function spark(id, data, color) {
     const c = C();
@@ -148,11 +146,14 @@
     const trieu = (v) => so((v || 0) / 1e6, 1);        // Kíp đọc theo triệu cho dễ nhìn
     const chia = (o) => EPL.tienGop(o || {});           // "8,101.36 USD · 12,000 CNY"
     root.querySelector('#tq-stamp').textContent = `${NN.t('tq_updated')} ${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
+    // ô «So với tháng trước»: kỳ không trọn một tháng thì so với kỳ trước cùng độ dài (máy chủ: KN.ky_truoc) — đổi chữ theo
+    const ss = root.querySelector('#tq-so-sanh + span');
+    if (ss) { ss.dataset.i18n = laKyThang() ? 'tq_compare' : 'ktg_compare'; ss.innerHTML = NN.h(ss.dataset.i18n); }
     veBao();
 
     /* 1. KPI — Bãi thay hai ô tiền bán bằng hai ô việc của họ */
     const K = laBai() ? [
-      { k: 'k_month_trips', v: so(d.so_phieu, 0), u: NN.t('trips'), s: `${d.dem.arrived} ${NN.t('s_arrived')}`, dl: '', sp: null, col: c.brand },
+      { k: laKyThang() ? 'k_month_trips' : 'ktg_k_trips', v: so(d.so_phieu, 0), u: NN.t('trips'), s: `${d.dem.arrived} ${NN.t('s_arrived')}`, dl: '', sp: null, col: c.brand },
       // Bãi không thấy tiền chi (anh Khampla A2, 23/09) — ô Tổng chi phí bỏ khỏi vai Bãi
       { k: 'k_tons', v: so(d.tan_giao, 2), u: NN.t('ton'), s: `${d.dem.arrived} ${NN.t('trips')} · ${NN.t('s_arrived')}`, dl: delta(d.tan_giao, tt && tt.tan_giao, false), sp: st && st.tan_giao, col: c.info },
       { k: 'k_running', v: so((d.dem.dispatched || 0) + (d.dem.transit || 0), 0), u: NN.t('trips'), s: `${d.dem.dispatched} ${NN.t('s_dispatched')} · ${d.dem.transit} ${NN.t('s_transit')}`, dl: '', sp: null, col: c.warn },
@@ -183,7 +184,7 @@
       </div>`).join('');
     root.querySelector('#tq-phan-bo').innerHTML = P.map((p, i) => `<span style="width:${p[1] / tongP * 100}%;background:${c.steps[i]}" title="${esc(NN.t(p[0]))}: ${p[1]}"></span>`).join('');
     root.querySelectorAll('.tq-step').forEach(el => {
-      const go = () => EPL.di('theo-doi', { transport_status: el.dataset.st, thang });
+      const go = () => EPL.di('theo-doi', { transport_status: el.dataset.st, ...KTG.diaChi(ky) });
       el.addEventListener('click', go); el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
     });
     const vh = (xh && xh.van_hanh) || {};
@@ -221,7 +222,7 @@
     const tongMuc = Object.values(cm).reduce((a, b) => a + b, 0);
     root.querySelector('#tq-co-cau').innerHTML = M.map(m => `<div class="row" data-muc="${m[1]}"><i style="background:${m[2]}"></i><span>${NN.h(m[0])}</span><span class="v">${so(cm[m[1]] || 0)}</span><span class="p">${so((cm[m[1]] || 0) / tong * 100)}%</span></div>`).join('')
       + (d.chi_lak != null && Math.abs(tongMuc - d.chi_lak) >= 1 ? `<p class="tq-co-cau-ghi small muted">${NN.h('tq_co_cau_ghi_chu')}</p>` : '');
-    root.querySelectorAll('#tq-co-cau .row').forEach(el => el.addEventListener('click', () => EPL.di('theo-doi', { thang })));
+    root.querySelectorAll('#tq-co-cau .row').forEach(el => el.addEventListener('click', () => EPL.di('theo-doi', KTG.diaChi(ky))));
 
     /* 4a. Hao hụt cân theo chuyến — cột %, vạch ngưỡng 1,5 %, cột vượt ngưỡng đổi màu xấu */
     const hh = ((xh && xh.hao_hut) || []).map(x => Object.assign({ pct: x.can_dau ? (x.can_dau - (x.can_cuoi ?? x.can_dau)) / x.can_dau * 100 : 0 }, x)).filter(x => x.can_cuoi != null);
@@ -278,7 +279,7 @@
       ['tq_q_cho_so', q.cho_hoa_don, 'warn', 'theo-doi-tuyen', { o: 'cho_hoa_don' }],
       ['tq_q_my_work', q.viec_toi, 'info', 'phieu-xuat-xe', q.viec_phieu ? { id: q.viec_phieu } : {}],
       ['tq_q_fuel', q.phieu_linh_cho, 'tan', 'kho:chung-tu', {}],       // G8 06/10: Web kho anh Tune → Danh sách chứng từ
-      ['tq_q_unpaid', q.chua_thu_lak != null ? so(q.chua_thu_lak / 1e6, 1) + 'M LAK' : null, 'warn', 'theo-doi', { finance_status: 'unpaid', thang }],
+      ['tq_q_unpaid', q.chua_thu_lak != null ? so(q.chua_thu_lak / 1e6, 1) + 'M LAK' : null, 'warn', 'theo-doi', { finance_status: 'unpaid', ...KTG.diaChi(ky) }],
     ].filter(ch => !(laBai() && ['tq_q_unpaid', 'tq_q_cho_so'].includes(ch[0])));   // hoá đơn và thu tiền không phải việc của Bãi
     root.querySelector('#tq-xem-nhanh').innerHTML = `<span class="lbl">${NN.h('tq_quick')}</span>` +
       chips.map((ch, i) => { const v = ch[1]; const zero = v == null || v === 0; return `<button type="button" class="tq-chip ${ch[2]} ${zero ? 'zero' : ''}" data-i="${i}"><b>${v == null ? '—' : esc(v)}</b>${NN.h(ch[0])}</button>`; }).join('') +
@@ -293,20 +294,33 @@
 
   /* ---------- B2. Dòng thời gian chuyến: Gantt theo ngày, 5 giai đoạn nối tiếp ---------- */
   const GD = [['s_dispatched', 'xuat_xe'], ['s_transit', 'toi_bai'], ['tq_g_border', 'cua_khau'], ['s_arrived', 'cang'], ['dt_st_da_tao_so', 'hoa_don']];   // mốc kết thúc mỗi đoạn; 'thanh_toan' là chấm cuối
+  /* 09/10: trục là các NGÀY CỦA KỲ (tu … den), không còn cố định một tháng. Kỳ dài (trên 62 ngày — vd cả năm) thì ô ngày rất hẹp:
+   * bỏ lưới từng ngày, đầu cột chỉ ghi tháng ở ngày mùng 1 (lớp tq-gantt--dai). */
+  const NGAY_MS = 864e5;
+  const soNgayCua = (s) => Math.round(Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) / NGAY_MS);
   function veGantt(c) {
     const rows = (xh && xh.dong_thoi_gian) || [];
     const box = root.querySelector('#tq-gantt');
-    const [y, m] = thang.split('-').map(Number), n = new Date(y, m, 0).getDate();
-    const today = new Date(), isCur = today.getFullYear() === y && today.getMonth() + 1 === m, td = isCur ? today.getDate() : (today > new Date(y, m, 0) ? n : 0);
-    const dayOf = (iso) => { if (!iso) return null; const [yy, mm, dd] = iso.split('-').map(Number); if (yy < y || (yy === y && mm < m)) return 1; if (yy > y || (yy === y && mm > m)) return n + 1; return dd; };
+    const tu = ky.tu, den = ky.den, n0 = soNgayCua(tu), n = soNgayCua(den) - n0 + 1, homNay = EPL.homNay();
+    const td = homNay < tu ? 0 : homNay > den ? n : soNgayCua(homNay) - n0 + 1;
+    const dayOf = (iso) => { if (!iso) return null; const s = String(iso).slice(0, 10); if (s < tu) return 1; if (s > den) return n + 1; return soNgayCua(s) - n0 + 1; };
     const pos = (day) => ((day - 1) / n * 100), wid = (a, b) => Math.max(0.6, (b - a) / n * 100);
+    const dai = n > 62;
     // 60 dòng cần nhìn nhất (đi lâu → đang chạy → mới nhất) trong tổng số chuyến của tháng
     const tongGantt = (xh && xh.dong_thoi_gian_tong) || rows.length;
     root.querySelector('#tq-gantt-sub').textContent = rows.length ? `${rows.length < tongGantt ? so(rows.length) + ' / ' : ''}${so(tongGantt)} ${NN.t('trips')} · ${NN.t('tq_gantt_sub')}` : '';
     root.querySelector('#tq-gantt-legend').innerHTML = GD.map((g, i) => `<span><i style="background:${c.steps[i]}"></i>${NN.h(g[0])}</span>`).join('') + `<span><i style="background:${c.navy};width:10px;border-radius:50%"></i>${NN.h('s_paid')}</span>`;
+    box.classList.toggle('tq-gantt--dai', dai);
     if (!rows.length) { box.innerHTML = `<div class="tq-empty">${chuaCo()}</div>`; return; }
     box.style.setProperty('--n', n);
-    const hdr = `<div class="hdr"><div></div><div class="days">${Array.from({ length: n }, (_, i) => { const d = new Date(y, m - 1, i + 1).getDay(); return `<span class="${i + 1 === td ? 'today' : (d === 0 || d === 6) ? 'we' : ''}">${i + 1}</span>`; }).join('')}</div></div>`;
+    box.style.setProperty('--cot', dai ? 31 : Math.max(31, n));       // tối thiểu 31 cột rộng --day (như một tháng); dài thì vừa khung
+    const [y0, m0, d0] = tu.split('-').map(Number);
+    const hdr = `<div class="hdr"><div></div><div class="days">${Array.from({ length: n }, (_, i) => {
+      const nd = new Date(y0, m0 - 1, d0 + i), dd = nd.getDate(), w = nd.getDay();
+      // kỳ dài: chỉ ghi «MM/YY» ở mùng 1; kỳ ngắn: số ngày như cũ (kỳ qua nhiều tháng thì mùng 1 ghi «1/MM» cho khỏi lẫn)
+      const chu = dai ? (dd === 1 || i === 0 ? String(nd.getMonth() + 1).padStart(2, '0') + '/' + String(nd.getFullYear() % 100).padStart(2, '0') : '')
+        : (dd === 1 && i > 0 ? dd + '/' + String(nd.getMonth() + 1).padStart(2, '0') : dd);
+      return `<span class="${i + 1 === td ? 'today' : (!dai && (w === 0 || w === 6)) ? 'we' : ''}">${chu}</span>`; }).join('')}</div></div>`;
     const body = rows.map(r => {
       const mo = r.moc || {}, start = dayOf(mo.xuat_xe) || dayOf(mo.lap_phieu) || 1;
       let cur = start, segs = '', lastDone = start;
@@ -324,17 +338,20 @@
   EPL.modules['tong-quan'] = {
     async init(r) {
       root = r;
-      // Mặc định: tháng này (giờ máy — EPL.doiOThang) nếu có phiếu; không có thì THÁNG GẦN NHẤT CÓ PHIẾU, kèm dòng báo.
+      // Mặc định: tháng này (giờ máy) nếu có phiếu; không có thì THÁNG GẦN NHẤT CÓ PHIẾU, kèm dòng báo.
       // Trước đây lấy tháng của phiếu mới nhất: một phiếu ghi nhầm ngày tương lai là màn mở ra tháng đó.
+      // 09/10: kỳ chọn ở bộ lọc thời gian dùng chung (Năm · Tháng · Khoảng thời gian · nút nhanh); đổi kỳ là tải lại, bỏ dòng báo.
       BAO = null; GAN = null;
-      const nay = r.querySelector('#tq-thang').value || EPL.thangNay();
-      const g = await thangGan(nay, {});
-      if (!g.co && g.gan) { BAO = { trong: nay, xem: g.gan }; r.querySelector('#tq-thang').value = g.gan; }
-      r.querySelector('#tq-thang').addEventListener('change', () => { BAO = null; tai().catch(EPL.baoLoi); });
+      const nay = EPL.thangNay();
+      KY = KTG(r.querySelector('#tq-ky'), { cheDo: 'khoang', giaTri: KTG.cuaThang(nay), toiDaNgay: 366,
+        khiDoi: () => { BAO = null; return tai(); } });
+      ky = KY.giaTri;
+      const g = await KTG.gan(ky, {});
+      if (!g.co && g.gan) { BAO = { trong: nay, xem: g.gan }; KY.dat(KTG.cuaThang(g.gan)); ky = KY.giaTri; }
       r.querySelector('#tq-so-sanh').addEventListener('change', () => d && ve());
       r.querySelector('#tq-moi').addEventListener('click', () => EPL.di('phieu-xuat-xe', { moi: 1 }));
-      r.querySelector('#tq-xuat').addEventListener('click', () => EPL.di('theo-doi', { thang, xuat: 1 }));
-      r.querySelector('#tq-chu-y-all').addEventListener('click', () => EPL.di('theo-doi', { thang }));
+      r.querySelector('#tq-xuat').addEventListener('click', () => EPL.di('theo-doi', { ...KTG.diaChi(ky), xuat: 1 }));
+      r.querySelector('#tq-chu-y-all').addEventListener('click', () => EPL.di('theo-doi', KTG.diaChi(ky)));
       dangTai = (async () => { await napChart(); await taiThat(); })();
       await dangTai;
     },
@@ -347,7 +364,7 @@
       if (!d) return [];
       const T = NN.t, L = (v) => EPL.oTien(v, 'LAK'), bai = laBai();
       const chiTieu = [
-        [T('k_month_trips'), EPL.oSo(d.so_phieu, 0, T('trips'))],
+        [T(laKyThang() ? 'k_month_trips' : 'ktg_k_trips'), EPL.oSo(d.so_phieu, 0, T('trips'))],
         ...(bai ? [] : [[T('k_rev'), L(d.doanh_thu_lak)], [T('k_exp'), L(d.chi_lak)], [T('k_unpaid'), L(d.chua_thu_lak)]]),
         [T('k_tons'), EPL.oSo(d.tan_giao, 2, 't')],
         [T('s_dispatched'), d.dem.dispatched], [T('s_transit'), d.dem.transit], [T('s_arrived'), d.dem.arrived],

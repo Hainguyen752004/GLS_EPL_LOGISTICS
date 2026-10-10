@@ -8,7 +8,9 @@
  */
 (function () {
   const { API, NN, esc, so, tien, tag } = EPL;
-  let root, ds = [], tyGia = {}, TRANG = 1, TONG = {};
+  const KTG = EPL.khoangThoiGian;
+  // 09/10 (anh Khampla): kỳ xem chọn ở bộ lọc thời gian dùng chung (KY: Năm · Tháng · Khoảng thời gian · nút nhanh) thay ô tháng
+  let root, ds = [], tyGia = {}, TRANG = 1, TONG = {}, KY = null;
   const CO = 100;              // một trang 100 phiếu — một tháng có thể ~30.000 phiếu (nghìn chuyến / ngày)
   /* Tháng trống (chủ dự án 01/10: mở màn đầu tháng thấy "Chưa có dữ liệu", tưởng màn không tải được).
    * TU_DONG: lượt tải đầu khi vào màn KHÔNG kèm tháng — tháng này trống thì tự sang tháng gần nhất có phiếu, BAO giữ dòng báo.
@@ -16,17 +18,7 @@
   let TU_DONG = false, BAO = null, GAN = null;
   const nhanThang = (v) => (v ? v.slice(5, 7) + '/' + v.slice(0, 4) : '');
 
-  /** Tháng `th` có phiếu không; không có thì tháng nào GẦN NHẤT có (cùng bộ lọc `loc` của /api/trips). Hỏi hai lần, mỗi lần
-   *  một dòng: phiếu mới nhất tới cuối tháng `th`, phiếu cũ nhất từ đầu tháng `th` — không tải cả năm. Cách đều: tháng trước. */
-  async function thangGan(th, loc) {
-    const [y, m] = th.split('-').map(Number);
-    const hoi = (them) => { const p = new URLSearchParams(loc); p.set('co', '1'); Object.entries(them).forEach(([k, v]) => p.set(k, v));
-      return API.get('/api/trips?' + p).then(d => (d && d[0] && d[0].doc_date ? d[0].doc_date.slice(0, 7) : null), () => null); };
-    const [truoc, sau] = await Promise.all([hoi({ den: th + '-' + String(new Date(y, m, 0).getDate()).padStart(2, '0') }), hoi({ tu: th + '-01', sap: 'cu' })]);
-    if (truoc === th || sau === th) return { co: true, gan: th };
-    const n = (v) => v.slice(0, 4) * 12 + +v.slice(5, 7);
-    return { co: false, gan: !truoc || !sau ? truoc || sau : (n(sau) - n(th) < n(th) - n(truoc) ? sau : truoc) };
-  }
+  /* «Tháng gần nhất có phiếu» dùng chung: EPL.khoangThoiGian.gan (09/10 — trước đây hàm thangGan riêng ở đây, cùng cách). */
 
   /** Tỷ giá quy đổi của MỘT phiếu — lấy ngay trên phiếu, không lấy tỷ giá hôm nay. */
   function rate(p, ma) {
@@ -50,8 +42,7 @@
   /* Dữ liệu cả năm (24/09): lọc · tìm · chia trang ở MÁY CHỦ; dòng tổng lấy từ /api/bao-cao/theo-doi/tong — cộng trên
    * TOÀN BỘ phiếu khớp bộ lọc, riêng từng loại tiền (hoặc quy về một tiền theo tỷ giá khoá trên từng phiếu). */
   function thamLoc() {
-    const p = new URLSearchParams();
-    const th = root.querySelector('#td-thang').value; if (th) p.set('thang', th);
+    const p = KTG.thamSo(KY.giaTri);          // trọn một tháng → thang (như cũ), khoảng khác → tu + den
     const tim = root.querySelector('#td-q').value.trim(); if (tim) p.set('q', tim);
     [['td-vc', 'transport_status'], ['td-tc', 'finance_status'], ['td-cty', 'company']].forEach(([id, k]) => {
       const v = root.querySelector('#' + id).value; if (v) p.set(k, v); });
@@ -66,22 +57,22 @@
     const [a, b] = await Promise.all([API.get('/api/bao-cao/theo-doi?' + pt), API.get('/api/bao-cao/theo-doi/tong?' + pq)]);
     if (luot !== LUOT) return;
     ds = a; TONG = b; GAN = null;
-    const th = root.querySelector('#td-thang').value;
-    if (!ds.length && th) {
-      // /api/trips lọc bằng cùng loc_phieu với bảng này: tìm · trạng thái · loại xe giữ nguyên, chỉ bỏ tháng
-      const loc = thamLoc(); loc.delete('thang');
-      const r = await thangGan(th, loc);
+    const gt = KY.giaTri;
+    if (!ds.length && gt.tu) {
+      // /api/trips lọc bằng cùng loc_phieu với bảng này: tìm · trạng thái · loại xe giữ nguyên, chỉ bỏ kỳ (KTG.gan thay bằng hai mép)
+      const r = await KTG.gan(gt, thamLoc());
       if (luot !== LUOT) return;
       GAN = r.co ? null : r.gan;
-      if (TU_DONG && GAN) { TU_DONG = false; BAO = { trong: th, xem: GAN }; root.querySelector('#td-thang').value = GAN; return tai(1); }
+      if (TU_DONG && GAN) { TU_DONG = false; BAO = { trong: KTG.laThang(gt) || gt.tu.slice(0, 7), xem: GAN }; KY.dat(KTG.cuaThang(GAN)); return tai(1); }
     }
     TU_DONG = false;
     locVaVe();
   }
   /** Bộ lọc ngoài tháng đang bật — khung trống nói "không khớp bộ lọc" thay vì "tháng chưa có phiếu". */
   const coLoc = () => !!root.querySelector('#td-q').value.trim() || ['td-vc', 'td-tc', 'td-cty'].some(id => root.querySelector('#' + id).value);
-  /** Người dùng TỰ chọn tháng (ô tháng, nút ở khung trống): giữ đúng tháng đó, bỏ dòng báo, thôi tự sang tháng khác. */
-  function chonThang(v) { TU_DONG = false; BAO = null; root.querySelector('#td-thang').value = v; tai(1).catch(EPL.baoLoi); }
+  /** Người dùng TỰ chọn kỳ (bộ lọc thời gian, nút tháng gần nhất ở khung trống): giữ đúng kỳ đó, bỏ dòng báo, thôi tự sang tháng khác.
+   *  `v` = 'YYYY-MM' (nút ở khung trống) — không có thì kỳ đang chọn trên bộ lọc. */
+  function chonThang(v) { TU_DONG = false; BAO = null; if (v) KY.dat(KTG.cuaThang(v)); return tai(1); }
 
   /** Dòng báo cạnh ô tháng (tự sang tháng khác) và khung trống giữa vùng đang nhìn, có nút về tháng gần nhất có phiếu. */
   function veTrong(trong) {
@@ -92,10 +83,11 @@
     const o = root.querySelector('#td-trong');
     o.hidden = !trong;
     if (!trong) { o.innerHTML = ''; return; }
-    o.innerHTML = `<b>${coLoc() ? NN.h('loc_trong') : NN.h('thang_trong_n', { thang: nhanThang(root.querySelector('#td-thang').value) })}</b>
+    const th = KY.laThang();                  // kỳ trọn một tháng: câu cũ «Tháng 09/2026 chưa có phiếu»; khoảng khác: kèm hai ngày
+    o.innerHTML = `<b>${coLoc() ? NN.h('loc_trong') : th ? NN.h('thang_trong_n', { thang: nhanThang(th) }) : NN.h('ktg_trong_n', { khoang: KY.nhan() })}</b>
       ${GAN ? `<button type="button" class="btn primary" data-thang="${esc(GAN)}">${NN.h('thang_xem_gan', { thang: nhanThang(GAN) })}</button>` : ''}`;
     const b = o.querySelector('[data-thang]');
-    if (b) b.addEventListener('click', () => chonThang(b.dataset.thang));
+    if (b) b.addEventListener('click', () => chonThang(b.dataset.thang).catch(EPL.baoLoi));
   }
 
   function locVaVe() {
@@ -198,14 +190,16 @@
       if (t.transport_status) r.querySelector('#td-vc').value = t.transport_status;
       if (t.finance_status) r.querySelector('#td-tc').value = t.finance_status;
       if (t.cty) r.querySelector('#td-cty').value = t.cty;
-      if (t.thang) r.querySelector('#td-thang').value = t.thang;
       if (t.q) r.querySelector('#td-q').value = t.q;
+      // kỳ mang sang (?thang= hay ?tu=&den= — Tổng quan gửi đúng kỳ đang xem); không có thì tháng này
+      const kyDc = KTG.tuDiaChi(t);
+      KY = KTG(r.querySelector('#td-ky'), { cheDo: 'khoang', giaTri: kyDc || KTG.cuaThang(EPL.thangNay()), toiDaNgay: 366,
+        khiDoi: () => chonThang() });          // tự chọn kỳ: bỏ dòng báo
       BAO = null; GAN = null;
-      TU_DONG = !t.thang;                     // mở thẳng (menu, tìm một số phiếu từ Tổng quan): tháng này trống thì sang tháng gần nhất có
+      TU_DONG = !kyDc;                        // mở thẳng (menu, tìm một số phiếu từ Tổng quan): tháng này trống thì sang tháng gần nhất có
       let hen = null;
       r.querySelector('#td-q').addEventListener('input', () => { clearTimeout(hen); hen = setTimeout(() => tai(1).catch(EPL.baoLoi), 350); });
       ['td-vc', 'td-tc', 'td-cty'].forEach(id => r.querySelector('#' + id).addEventListener('change', () => tai(1).catch(EPL.baoLoi)));
-      r.querySelector('#td-thang').addEventListener('change', (e) => chonThang(e.target.value));   // tự chọn tháng: bỏ dòng báo
       r.querySelector('#td-quy').addEventListener('change', () => tai(TRANG).catch(EPL.baoLoi));   // dòng tổng quy đổi ở máy chủ
       window.removeEventListener('resize', khiDoiCo); window.addEventListener('resize', khiDoiCo);
       r.querySelector('#td-xuat').addEventListener('click', xuatBaoCao);

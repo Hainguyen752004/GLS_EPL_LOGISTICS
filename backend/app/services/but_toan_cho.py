@@ -353,7 +353,7 @@ def dong_khoa_phieu(db, p, cac_dong=None):
       · cung_luong (06/10) — mỗi dòng xe nhà mục IV / VI cách trả `luong` (định khoản …/4201, tai_khoan.tk_dong), EPL chịu, tiền > 0:
         Nợ 625 / Có 4201, đối tượng tài xế của DO, theo nguyên tệ của dòng (như no_ncc). Tiền tới tay tài xế bằng phiếu chi DO
         trên Web (Nợ 4201 / Có tiền — gói DO mang `pay_acc_code`, services/ban_giao.py); ghi chi phí MỘT lần, lúc khoá."""
-    from models import TripExpense
+    from models import Owner, TripExpense
     from services import chi_muc_tune as CMT
     from services.ban_giao import _ten as ten_dong
     from services.tinh_toan import tien_dong, tinh_phieu, ty_gia
@@ -362,12 +362,15 @@ def dong_khoa_phieu(db, p, cac_dong=None):
                     .order_by(TripExpense.section, TripExpense.line_no).all())
     ra = {}
     t = tinh_phieu(p, cac_dong)
+    # 09/10: tài khoản riêng của chủ xe (TK Nợ thay 621, TK Có thay 4022) và của nhà cung cấp trên dòng — services/tai_khoan.doi_cap
+    o = db.get(Owner, p.owner_id) if p.company == "joint" and p.owner_id else None
     if p.company == "joint" and (t.get("tien_thue") or 0) > 0:
         h = t["hire_ccy"]
         r_h = ty_gia(p, h)
         chu = {"loai": "chu_xe", "ref_id": p.owner_id} if p.owner_id else None
         ten_cx = p.owner_name or ""
-        dong_thue = [{"no": TK.CP_THUE_XE, "co": TK.CHU_XE, "tien": t["tien_thue"], "ccy": h, "tien_lak": t["tien_thue_lak"],
+        cx = TK.rieng(o, "co", TK.CHU_XE)
+        dong_thue = [{"no": TK.rieng(o, "no", TK.CP_THUE_XE), "co": cx, "tien": t["tien_thue"], "ccy": h, "tien_lak": t["tien_thue_lak"],
                       "ty_gia": r_h, "doi_tuong": chu, "ve": "thue",
                       "dien_giai": "Chi phí thuê xe liên kết %s · %s" % (p.doc_no, ten_cx)}]
         # 06/10: phí quản lý và cắt quá tải EPL giữ lại của tiền thuê → thu nhập của EPL, CÙNG chứng từ, cùng tiền thuê + tỷ giá khoá;
@@ -377,7 +380,7 @@ def dong_khoa_phieu(db, p, cac_dong=None):
         phi = lam_tron(t.get("phi") or 0, h)
         if phi > 0:
             pct = p.fee_pct if p.fee_pct is not None else 2
-            dong_thue.append({"no": TK.CHU_XE, "co": TK.DT_PHI_QUAN_LY, "tien": phi, "ccy": h, "tien_lak": round(phi * r_h),
+            dong_thue.append({"no": cx, "co": TK.DT_PHI_QUAN_LY, "tien": phi, "ccy": h, "tien_lak": round(phi * r_h),
                               "ty_gia": r_h, "doi_tuong": chu, "ve": "phi_quan_ly", "ty_le": pct,
                               "dien_giai": "Phí quản lý %s %% tiền thuê %s %s · %s · %s" % (
                                   _so_doc(pct), _so_doc(t["tien_thue"]), h, p.doc_no, ten_cx)})
@@ -386,7 +389,7 @@ def dong_khoa_phieu(db, p, cac_dong=None):
         if vuot > 0:
             nguong = p.over_limit_t if p.over_limit_t is not None else 40
             gia = p.over_price if p.over_price is not None else 1
-            dong_thue.append({"no": TK.CHU_XE, "co": TK.TN_CAT_QUA_TAI, "tien": vuot, "ccy": h, "tien_lak": round(vuot * r_h),
+            dong_thue.append({"no": cx, "co": TK.TN_CAT_QUA_TAI, "tien": vuot, "ccy": h, "tien_lak": round(vuot * r_h),
                               "ty_gia": r_h, "doi_tuong": chu, "ve": "cat_qua_tai", "tan_vuot": t.get("vuot_tan"),
                               "dien_giai": "Cắt quá tải %s t (vượt %s t) × %s %s/t · %s · %s" % (
                                   _so_doc(t.get("vuot_tan")), _so_doc(nguong), _so_doc(gia), h, p.doc_no, ten_cx)})
@@ -402,7 +405,12 @@ def dong_khoa_phieu(db, p, cac_dong=None):
         if not ma or "/" not in ma:
             continue
         no, co = ma.split("/", 1)
+        la_no_chu_xe = no == TK.CHU_XE
+        rieng = not TK.tu_chon(d)                         # mã tự chọn trên dòng: giữ nguyên
+        ncc = TK.ncc_cua_dong(db, d) if rieng else None   # nhà cung cấp ghi trên dòng, hoặc theo dõi khoản mục của dòng
         if co == TK.LUONG and p.company != "joint" and d.section in ("travel", "other"):
+            if rieng:
+                no, _co = TK.doi_cap(no, co, ncc=ncc)
             x = _dong_tien(p, d, no, co, ten_dong(db, d)[0])
             if x is not None:
                 x["doi_tuong"] = {"loai": "tai_xe", "ref_id": p.driver_id} if p.driver_id else None
@@ -413,6 +421,8 @@ def dong_khoa_phieu(db, p, cac_dong=None):
             continue
         if co != TK.NCC:
             continue
+        if rieng:
+            no, co = TK.doi_cap(no, co, ncc=ncc, chu=o)
         lak = round(tien_dong(p, d))
         if lak <= 0:
             continue
@@ -428,7 +438,7 @@ def dong_khoa_phieu(db, p, cac_dong=None):
             # nhà cung cấp 4021 bên kế toán thành nợ Kíp trong khi trạm đòi VND. `tien_lak` giữ số quy Kíp để màn / báo cáo cộng
             x.update({"tien": lam_tron((d.qty or 0) * (d.unit_price or 0), ccy), "ccy": ccy, "ty_gia": round(ty_gia(p, ccy), 10),
                       "tien_lak": lak})
-        if no == TK.CHU_XE and p.owner_id:
+        if la_no_chu_xe and p.owner_id:
             x["doi_tuong_no"] = {"loai": "chu_xe", "ref_id": p.owner_id}
         dong.append(x)
     if dong:
@@ -658,7 +668,7 @@ def dong_doanh_thu(db, p):
             ty = 1 if ccy == "LAK" else round(ty_gia(p, ccy), 10)
             k = db.get(Customer, p.customer_id) if p.customer_id else None
             ten_k = p.customer_name or (k.name if k else "") or "—"
-            x = {"no": TK.PHAI_THU, "co": TK.DT_VAN_CHUYEN, "tien": float(tien), "ccy": ccy,
+            x = {"no": TK.rieng(k, "no", TK.PHAI_THU), "co": TK.rieng(k, "co", TK.DT_VAN_CHUYEN), "tien": float(tien), "ccy": ccy,
                  "doi_tuong": {"loai": "khach", "ref_id": p.customer_id} if p.customer_id else None,
                  "ref": b.order_code, "so": b.order_code, "ve": "doanh_thu",
                  "dien_giai": "Doanh thu cước vận chuyển phiếu %s · SO %s · %s" % (p.doc_no, b.order_code or "—", ten_k)}

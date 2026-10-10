@@ -12,8 +12,10 @@
  */
 (function () {
   const { API, NN, esc, so } = EPL;
+  const KTG = EPL.khoangThoiGian;
 
-  let root, DS = [], CHON = null, loc = '', tim = '', hen = null, LUOT = 0, PHIEU = null, TEN = {}, GUI = false;
+  // 09/10 (anh Khampla): kỳ (theo ngày hạch toán) chọn ở bộ lọc thời gian dùng chung KY — thay ô Kỳ một tháng
+  let root, DS = [], CHON = null, loc = '', tim = '', hen = null, LUOT = 0, PHIEU = null, TEN = {}, GUI = false, KY = null;
   const guiDuoc = () => GUI && EPL.AUTH.la('acct', 'expacct');      // Sếp luôn qua (AUTH.la) — cùng danh sách máy chủ
   const q = (s) => root.querySelector(s);
   // xuat_noi_bo / xuat_ban (01/10): xuất kho cho chuyến — một lần xuất một bút toán, nguồn gốc là phiếu xuất xe
@@ -155,7 +157,8 @@
 
   function veXem() {
     const o = q('#btc-xem'), b = DS.find(x => x.id === CHON);
-    ghiDiaChi(new URLSearchParams({ ky: q('#btc-ky').value || '', nguon: q('#btc-nguon').value || '', trip_id: PHIEU ? PHIEU.id : '', id: b ? b.id : '' }));
+    // kỳ: ?thang= (trọn một tháng) hoặc ?tu=&den= — init đọc cả ?ky= của địa chỉ cũ
+    ghiDiaChi(new URLSearchParams({ ...KTG.diaChi(KY.giaTri), nguon: q('#btc-nguon').value || '', trip_id: PHIEU ? PHIEU.id : '', id: b ? b.id : '' }));
     const bang = (rows) => `<div class="tbl-wrap btc-dong"><table class="tbl tbl-compact">
       <thead><tr><th>#</th><th>${NN.h('btc_no')}</th><th>${NN.h('btc_co')}</th><th class="num">${NN.h('amount')}</th>
         <th>${NN.h('btc_doi_tuong')}</th><th>${NN.h('btc_dien_giai')}</th></tr></thead>
@@ -241,9 +244,8 @@
   }
 
   async function tai() {
-    const luot = ++LUOT, p = new URLSearchParams({ gioi_han: 1000 });
-    const ky = q('#btc-ky').value, nguon = q('#btc-nguon').value;
-    if (ky) p.set('thang', ky);
+    const luot = ++LUOT, p = KTG.thamSo(KY.giaTri, new URLSearchParams({ gioi_han: 1000 }));   // thang hoặc tu + den
+    const nguon = q('#btc-nguon').value;
     if (nguon) p.set('nguon', nguon);
     if (PHIEU) p.set('trip_id', PHIEU.id);
     let g;
@@ -277,9 +279,10 @@
       PHIEU = t.trip_id ? { id: t.trip_id, doc: t.doc || null } : null;
       if (t.id) CHON = t.id;
       veNguon(); veChuTT();
-      if (t.ky) q('#btc-ky').value = t.ky;
+      // kỳ mặc định tháng này (như ô Kỳ cũ); địa chỉ mang ?ky= / ?thang= (một tháng) hoặc ?tu=&den=
+      KY = KTG(q('#btc-ky'), { cheDo: 'khoang', giaTri: KTG.tuDiaChi({ thang: t.ky || t.thang, tu: t.tu, den: t.den }) || KTG.cuaThang(EPL.thangNay()),
+        khiDoi: () => { CHON = null; return tai(); } });
       if (t.nguon) q('#btc-nguon').value = t.nguon;
-      q('#btc-ky').addEventListener('change', () => { CHON = null; tai(); });
       q('#btc-nguon').addEventListener('change', () => { CHON = null; tai(); });
       q('#btc-lam-moi').addEventListener('click', () => tai());
       q('#btc-gui-het').addEventListener('click', (e) => viec(null, 'gui-het', e.currentTarget));

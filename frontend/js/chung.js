@@ -53,7 +53,7 @@
         if (r.status === 404 && typeof ct === 'string' && duong.startsWith('/api/')) {
           throw new LoiAPI(404, 'THIEU_DUONG_API', NN.t('err_old_server'));
         }
-        throw new LoiAPI(r.status, ct.ma || 'LOI', chuLoi(ct) || (typeof ct === 'string' ? ct : NN.t('err_generic')));
+        throw new LoiAPI(r.status, ct.ma || 'LOI', chuLoi(ct) || (typeof ct === 'string' ? ct : NN.t('err_generic')), ct.o);
       }
       // Danh sách phân trang (24/09, dữ liệu cả năm): máy chủ gửi tổng số dòng khớp ở header X-Tong — gắn vào mảng
       // thành `ds.tong` (không liệt kê được, nên không lẫn vào dữ liệu hay vào tệp Excel xuất ra).
@@ -85,8 +85,20 @@
     if (lang === 'both' && ct.loi_lo) return (ct.loi || '') + ' / ' + ct.loi_lo;
     return ct.loi || null;
   }
-  EPL.chuLoi = chuLoi;            // 09/10: màn dùng chung cho câu lỗi trả theo đường thường (vd chi_tiet_loi của Gửi hết)
-  class LoiAPI extends Error { constructor(status, ma, loi) { super(loi); this.status = status; this.ma = ma; } }
+  EPL.chuLoi = chuLoi;
+  /** Chữ máy tự sinh lưu trong dữ liệu (mô tả chứng từ, ghi chú sự kiện máy tự ghi — tiếng Việt trong DB) theo tiếng đang xem: máy
+   *  chủ gửi kèm <trường>_lo / <trường>_en khi câu khớp mẫu (services/loi_dich.gan_ban_dich, 10/10). Không có bản dịch (ghi chú người
+   *  dùng tự gõ) → hiện nguyên chữ. */
+  EPL.chuTheo = (x, truong) => {
+    if (!x) return '';
+    const vi = x[truong] || '', lo = x[truong + '_lo'], en = x[truong + '_en'];
+    if (lang === 'lo' && lo) return lo;
+    if (lang === 'en' && en) return en;
+    if (lang === 'both' && lo) return vi + ' / ' + lo;
+    return vi;
+  };            // 09/10: màn dùng chung cho câu lỗi trả theo đường thường (vd chi_tiet_loi của Gửi hết)
+  // `o`: ô bị lỗi máy chủ chỉ ra (vd TK_SAI → "acct_no") — hộp nhập mở lại, đánh dấu đúng ô đó
+  class LoiAPI extends Error { constructor(status, ma, loi, o) { super(loi); this.status = status; this.ma = ma; this.o = o; } }
   EPL.LoiAPI = LoiAPI;
   // Bộ huỷ GET của lượt nạp màn hiện tại (xem API.goi, napModule). Khai ở đây vì API.goi dùng trước khi tới phần điều hướng.
   let MOD_AC = null;
@@ -352,21 +364,57 @@
   };
 
   /** Hộp nhập nhiều ô. Ô select có `tim` (khoá chữ gợi ý) thì có thêm ô tìm phía trên (EPL.locChon); dòng chọn có phần tử thứ tư
-   *  là chữ tìm phụ (data-tim). */
-  EPL.hopNhap = async (tieuDe, fields, nhanOk) => {
-    const html = fields.map(f => `<div class="field"><label>${NN.h(f.label)}</label>${
-      f.type === 'select' && f.tim ? `<input type="search" class="hn-tim" data-hn-loc="hn-${f.id}" placeholder="${esc(NN.t(f.tim))}" autocomplete="off" style="margin-bottom:4px">` : ''}${
-      f.type === 'select' ? `<select id="hn-${f.id}">${(f.options || []).map(o => `<option value="${esc(o[0])}" ${o[0] === f.value ? 'selected' : ''} ${o[2] ? 'disabled' : ''}${o[3] ? ` data-tim="${esc(o[3])}"` : ''}>${esc(o[1])}</option>`).join('')}</select>`
-      : f.type === 'textarea' ? `<textarea id="hn-${f.id}" rows="3">${esc(f.value || '')}</textarea>`
+   *  là chữ tìm phụ (data-tim).
+   *  09/10 (anh Khampla: hộp nhà cung cấp phải đủ như phần mềm kế toán của họ): `tuy.cot = 2` xếp hai cột, hộp rộng ra; `tuy.dau` là
+   *  HTML đặt trên lưới ô. Mỗi ô thêm được: `rong` (trải hết hàng) · `goi_y` (khoá chữ gợi ý dưới ô) · `bat_buoc` (dấu *) · `loi`
+   *  (câu lỗi đỏ dưới ô — mở lại hộp sau khi máy chủ chặn) · `goi_ds` (ô chữ kèm danh sách gợi ý: gõ tự do hoặc chọn) · `chi_doc`
+   *  (ô chữ / ô chọn chỉ xem, vẫn trả giá trị đang có). type 'nhom' là
+   *  dòng tiêu đề nhóm; type 'bat' là công tắc bật / tắt (trả true / false). */
+  EPL.hopNhap = async (tieuDe, fields, nhanOk, tuy = {}) => {
+    const oNhap = (f) => f.type === 'select' ? `<select id="hn-${f.id}"${f.chi_doc ? ' disabled' : ''}>${(f.options || []).map(o => `<option value="${esc(o[0])}" ${o[0] === f.value ? 'selected' : ''} ${o[2] ? 'disabled' : ''}${o[3] ? ` data-tim="${esc(o[3])}"` : ''}>${esc(o[1])}</option>`).join('')}</select>`
+      : f.type === 'textarea' ? `<textarea id="hn-${f.id}" rows="${f.dong || 3}" ${f.lo ? 'lang="lo"' : ''}>${esc(f.value || '')}</textarea>`
+      : f.type === 'bat' ? `<label class="hn-bat"><input id="hn-${f.id}" type="checkbox" ${f.value ? 'checked' : ''}><span class="hn-bat-nut" aria-hidden="true"></span><span>${NN.h(f.nhan_bat || 'active')}</span></label>`
       // Ô số PHẢI nhận số lẻ: cân 40,6 tấn, tiền 1.812,80 USD, tỷ giá, lít dầu. Thiếu step="any" thì trình duyệt
       // chỉ nhận số nguyên và chặn nút Đồng ý bằng câu tiếng Anh — Bãi không báo xe tới được, KT không ghi thu được.
-      : `<input id="hn-${f.id}" type="${f.type || 'text'}" ${f.type === 'number' ? 'step="any" inputmode="decimal"' : ''} ${f.placeholder ? `placeholder="${esc(f.placeholder)}"` : ''} value="${esc(f.value == null ? '' : f.value)}" ${f.lo ? 'lang="lo"' : ''}>`}</div>`).join('');
+      : `<input id="hn-${f.id}" type="${f.type || 'text'}" ${f.chi_doc ? 'readonly aria-readonly="true"' : ''} ${f.type === 'number' ? 'step="any" inputmode="decimal"' : ''} ${f.placeholder ? `placeholder="${esc(f.placeholder)}"` : ''} value="${esc(f.value == null ? '' : f.value)}" ${f.lo ? 'lang="lo"' : ''}${f.goi_ds ? ` list="hn-${f.id}-ds" autocomplete="off"` : ''}>${
+        f.goi_ds ? `<datalist id="hn-${f.id}-ds">${f.goi_ds.map(x => `<option value="${esc(x)}"></option>`).join('')}</datalist>` : ''}`;
+    const o = (f) => f.type === 'nhom' ? `<div class="hn-nhom">${NN.h(f.label)}</div>`
+      : `<div class="field${f.rong ? ' hn-rong' : ''}${f.loi ? ' hn-co-loi' : ''}"><label for="hn-${f.id}">${NN.h(f.label)}${f.bat_buoc ? ' <span class="hn-sao" aria-hidden="true">*</span>' : ''}</label>${
+        f.type === 'select' && f.tim ? `<input type="search" class="hn-tim" data-hn-loc="hn-${f.id}" placeholder="${esc(NN.t(f.tim))}" autocomplete="off" style="margin-bottom:4px">` : ''}${oNhap(f)}${
+        f.goi_y ? `<small class="hn-goi-y">${NN.h(f.goi_y)}</small>` : ''}${f.loi ? `<small class="hn-loi" role="alert">${esc(f.loi)}</small>` : ''}</div>`;
+    const html = (tuy.dau || '') + (tuy.cot === 2 ? `<div class="hn-luoi hn-2">${fields.map(o).join('')}</div>` : fields.map(o).join(''));
     const hoi = EPL.hoi(tieuDe, html, nhanOk);            // hộp hiện ngay khi gọi — gắn ô tìm rồi mới chờ
     document.querySelectorAll('[data-hn-loc]').forEach(inp => inp.addEventListener('input', () => EPL.locChon(document.getElementById(inp.dataset.hnLoc), inp.value, true, inp)));
+    const loiDau = fields.find(f => f.loi && f.type !== 'nhom');
+    if (loiDau) { const el = document.getElementById('hn-' + loiDau.id); if (el) setTimeout(() => el.focus(), 0); }
     const ok = await hoi;
     if (!ok) return null;
-    const ra = {}; fields.forEach(f => { const el = document.getElementById('hn-' + f.id); ra[f.id] = el ? el.value : undefined; });
+    const ra = {};
+    fields.forEach(f => {
+      if (f.type === 'nhom') return;
+      const el = document.getElementById('hn-' + f.id);
+      ra[f.id] = !el ? undefined : f.type === 'bat' ? el.checked : el.value;
+    });
     return ra;
+  };
+  /** Dòng chọn tài khoản cho EPL.hopNhap (09/10): tài khoản trong sổ bắt đầu bằng `nhom` (vd '6'), tên theo tiếng đang xem (sổ ghi tên
+   *  Lào ở `name`, tên Việt ở `description`); tài khoản tổng / đã ngưng hiện mờ, không chọn được. Dòng đầu (giá trị trống) là
+   *  `macDinh` — chữ nói máy dùng tài khoản nào khi để trống. Mã đang lưu mà không còn trong sổ vẫn giữ, ghi rõ. */
+  EPL.dsTaiKhoan = (acc, nhom, chon, macDinh) => {
+    const ten = (x) => (lang === 'lo' ? x.name || x.description : x.description || x.name) || '';
+    const ds = (acc && acc.data || []).filter(x => String(x.code).startsWith(nhom))
+      .sort((a, b) => String(a.code).localeCompare(String(b.code), undefined, { numeric: true }));
+    const o = ds.map(x => {
+      const tong = x.postable === false || x.active === false;
+      return [x.code, x.code + ' — ' + ten(x) + (tong ? ' · ' + NN.t('acct_header') : ''), tong && x.code !== chon, (x.name || '') + ' ' + (x.description || '')];
+    });
+    if (chon && !ds.some(x => x.code === chon)) o.unshift([chon, chon + ' — ' + NN.t('acct_not_in_catalogue')]);
+    return [['', macDinh]].concat(o);
+  };
+  /** Tên một tài khoản theo tiếng đang xem — «625 — Chi phí đi lại…»; không có trong sổ thì chỉ mã. */
+  EPL.tenTaiKhoan = (acc, ma) => {
+    const x = (acc && acc.data || []).find(d => d.code === ma);
+    return !x ? (ma || '') : ma + ' — ' + ((lang === 'lo' ? x.name || x.description : x.description || x.name) || '');
   };
 
   /* ================================================================ Định khoản (Acc code từ API bên công nợ) */

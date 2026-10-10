@@ -5,7 +5,8 @@
      CDN vì máy bên Lào có lúc không ra được Internet.
      Vai Bãi không thấy phần tiền bán (doanh thu, khách chưa trả, doanh thu theo xe): xem tong-quan.js. -->
 <div class="toolbar tq-toolbar no-print">
-  <div class="field"><label data-i18n="month"></label><input type="month" id="tq-thang"></div>
+  <!-- 09/10: bộ lọc thời gian dùng chung (js/khoang_thoi_gian.js) thay ô tháng — Năm · Tháng · Khoảng thời gian + nút nhanh -->
+  <div class="ktg-dong" id="tq-ky"></div>
   <label class="tq-chk"><input type="checkbox" id="tq-so-sanh" checked><span data-i18n="tq_compare"></span></label>
   <span class="small muted" id="tq-stamp"></span>
   <!-- 01/10: tháng này chưa có phiếu → màn tự sang tháng gần nhất có phiếu, dòng này nói rõ; tự chọn tháng trống → nói thẳng + nút về tháng gần nhất -->

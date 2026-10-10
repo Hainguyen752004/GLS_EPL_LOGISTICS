@@ -160,3 +160,6 @@
 .tag.dt_da_tao_so{background:var(--blue-soft);color:var(--blue)}
 .tag.dt_thu_mot_phan{background:var(--ore-soft);color:var(--ore)}
 @media print{.ct2-phai{position:static;max-height:none;overflow:visible}.ct2-cuon{overflow:visible}}
+
+/* 09/10: tab Sổ chứng từ — bộ lọc thời gian dùng chung (thay hai ô Từ ngày / Đến ngày) một hàng dưới đầu thẻ */
+.ct-so-ky{padding:10px 16px;border-bottom:1px solid var(--line)}

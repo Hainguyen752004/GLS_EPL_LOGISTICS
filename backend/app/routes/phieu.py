@@ -21,7 +21,7 @@ from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, Request
 from fastapi.responses import FileResponse
 from sqlalchemy import func, inspect as sa_inspect, or_, text
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
 
 from database import BIEU_THUC_TIM_PHIEU, get_db
 from models import (Contract, Owner, TripAttachment, TripGoods, ma_moi, CHUOI, LOAI_DO, LOAI_SU_CO, SU_CO_SUA_CHUA, MUC, MUC_CHI,
@@ -100,6 +100,15 @@ def _gan_tk(p, e, ma=None):
     """Đặt mã định khoản cho một dòng chi: mã người dùng tự chọn (ngoài bộ mã máy đặt) thì giữ, còn lại tính theo luật
     hiện hành với ĐỦ thông tin của dòng (cách trả, ghi nợ, thẻ, ai trả) — không phải chỉ mục và nguồn như trước 30/09."""
     e.acct_code = ma if (ma and not TK.la_ma_he_thong(ma)) else None
+    if e.acct_code:
+        # 10/10 (soát logic): mã gửi lên TRÙNG mã màn đang hiện cho dòng (luật + TK riêng nhà cung cấp / chủ xe — tk_dong_rieng) thì
+        # không phải mã tự chọn. Hộp Định khoản điền sẵn mã đã thay TK riêng; bấm Đồng ý không đổi gì mà ghim mã đó thì dòng thành
+        # "tự chọn", rơi khỏi bút toán nợ NCC lúc khoá và không theo TK riêng về sau.
+        db, thu = object_session(p), e.acct_code
+        e.acct_code = None
+        chu = TK.chu_xe_rieng(db, p.owner_id) if db is not None and p.company == "joint" else None
+        if db is None or TK.tk_dong_rieng(p.company, e, db, chu=chu) != thu:
+            e.acct_code = thu
     e.acct_code = TK.tk_dong(p.company, e)
     return e
 
@@ -161,6 +170,27 @@ def _trang_thai_muc(ds):
     return ra
 
 
+def _tk_rieng(db, phieu, dong):
+    """09/10 (anh Khampla): tài khoản riêng của nhà cung cấp trên các dòng và của chủ xe phiếu xe thuê — màn cũ tính mã mặc định
+    trên trình duyệt (tkMacDinh) rồi thay theo bảng này, như services/tai_khoan.doi_cap. Chỉ đối tượng có mã riêng.
+    `ncc` theo id nhà cung cấp ghi trên dòng; `ncc_khoan` theo khoản mục của dòng KHÔNG ghi nhà cung cấp (TK.ncc_cua_dong)."""
+    ra = {"ncc": {}, "ncc_khoan": {}, "chu_xe": None}
+    for d in dong:
+        s = TK.ncc_cua_dong(db, d)
+        if s is None or not (s.acct_no or s.acct_co):
+            continue
+        tk = {"no": s.acct_no or None, "co": s.acct_co or None}
+        if getattr(d, "supplier_id", None):
+            ra["ncc"][d.supplier_id] = tk
+        else:
+            ra["ncc_khoan"][d.item_key] = tk
+    if phieu.company == "joint" and phieu.owner_id:
+        o = db.get(Owner, phieu.owner_id)
+        if o is not None and (o.acct_no or o.acct_co):
+            ra["chu_xe"] = {"no": o.acct_no or None, "co": o.acct_co or None}
+    return ra
+
+
 def _dong_chi(db, phieu):
     return (db.query(TripExpense).filter(TripExpense.trip_id == phieu.id)
             .order_by(TripExpense.section, TripExpense.line_no).all())
@@ -192,12 +222,13 @@ DUYET_SU_KIEN = {"fuel": ("yard", "fuel", "admin"), "repair": ("repair", "admin"
 
 
 def _xuat_su_kien(e):
-    return {"id": e.id, "ts": e.ts.isoformat() if e.ts else None, "kind": e.kind, "stop_seq": e.stop_seq, "muc": muc_su_kien(e),
+    # 10/10: ghi chú máy tự ghi (tài xế báo về, báo cân mỏ, đổi xe — tiếng Việt trong DB) kèm note_lo / note_en (services/loi_dich)
+    return LD.gan_ban_dich({"id": e.id, "ts": e.ts.isoformat() if e.ts else None, "kind": e.kind, "stop_seq": e.stop_seq, "muc": muc_su_kien(e),
             "incident_type": e.incident_type, "note": e.note, "expense_id": e.expense_id, "by_user": e.by_user,
             "status": e.status or "approved", "reported_cost": e.reported_cost, "currency": e.currency,
             "qty_l": e.qty_l, "place_id": e.place_id, "supplier_id": e.supplier_id,
             "can_run": e.can_run, "paid_by_driver": e.paid_by_driver,
-            "approved_by": e.approved_by, "approved_at": e.approved_at.isoformat() if e.approved_at else None}
+            "approved_by": e.approved_by, "approved_at": e.approved_at.isoformat() if e.approved_at else None}, "note")
 
 
 def _cau_chua_tam_ung(db, p, hau_qua):
@@ -372,6 +403,7 @@ def xuat_phieu(db, phieu, day_du=True, da_thu=None, vai=None, nap=None):
         ra["goods"] = KH.dong_hang(db, phieu.id)
         ra["ton_lo"] = KH.ton_lo(db, phieu.id) if phieu.kind == "gom" else None
         ra["expenses"] = [_xuat_dong(d, phieu.company) for d in dong]
+        ra["tk_rieng"] = _tk_rieng(db, phieu, dong)
         ra["logs"] = [{"ts": l.ts.isoformat() if l.ts else None, "user": l.user_name, "role": l.role,
                        "action": l.action}
                       for l in db.query(TripLog).filter(TripLog.trip_id == phieu.id)
@@ -436,6 +468,7 @@ def _bo_tien_chi(ra):
             t.pop(c, None)
     for e in (ra.get("events") or []):
         e.pop("reported_cost", None); e.pop("currency", None)
+    ra.pop("tk_rieng", None)                 # TK riêng nhà cung cấp / chủ xe — Bãi không thấy mã tài khoản (A2), soát 10/10
     return ra
 
 
@@ -725,13 +758,14 @@ def tinh_thu(data: dict = Body(...), db: Session = Depends(get_db), user=Depends
                "sections": {s.section: s.status for s in _muc_cua(db, goc).values()} if goc is not None else {}}
         q = QP.quyen(p_q, user.role, moi=goc is None)
         thay_chi, thay_kho = thay_tien_chi(user.role), thay_gia_kho(user.role)
+        chu_rieng = db.get(Owner, p.owner_id) if p.company == "joint" and getattr(p, "owner_id", None) else None
         ra["dong"] = []
         for d in dong:
             xb = la_xuat_ban(p, d)
             ra["dong"].append({
                 "nguon": d.source, "xuat_ban": xb,
                 "tien_lak": round(tien_dong(p, d)) if thay_chi and (thay_kho or d.source != "kho") else None,
-                "tk": TK.tk_dong(p.company, d, db) if thay_chi else None,
+                "tk": TK.tk_dong_rieng(p.company, d, db, chu=chu_rieng) if thay_chi else None,   # 09/10: kèm TK riêng NCC / chủ xe
                 "cach_tra": cach_tra(d, p.company) if thay_chi and d.section in ("travel", "other") else None,
                 "tien_mat_tx": la_tien_mat_tai_xe(d, p.company),
                 "quyen": QP.quyen_dong(q, d, d.source, xb)})

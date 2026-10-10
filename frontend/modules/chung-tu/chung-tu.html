@@ -17,7 +17,8 @@
       <input id="ct2-tim" type="search" autocomplete="off" data-i18n-ph="hs_tim">
     </label>
     <div class="grow"></div>
-    <div class="field ct2-khi-do"><label data-i18n="month"></label><input type="month" id="ct2-thang"></div>
+    <!-- 09/10: bộ lọc thời gian dùng chung (js/khoang_thoi_gian.js) thay ô tháng — hàng riêng dưới thanh tab / lọc -->
+    <div class="ktg-dong ct2-khi-do" id="ct2-ky"></div>
   </div>
 
   <!-- dòng giới thiệu: màn này để làm gì — một dòng, không chiếm chỗ -->
@@ -38,12 +39,12 @@
     <div class="hd">
       <h3 data-i18n="ct_so_chung_tu"></h3><div class="grow"></div>
       <div class="field"><label data-i18n="ct_loai"></label><select id="ct-so-loai"><option value="" data-i18n="all"></option></select></div>
-      <div class="field"><label data-i18n="ct_tu"></label><input type="date" id="ct-so-tu"></div>
-      <div class="field"><label data-i18n="ct_den"></label><input type="date" id="ct-so-den"></div>
       <label class="ct-check"><input type="checkbox" id="ct-so-chua"> <span data-i18n="ct_chua_day"></span></label>
       <!-- Sếp: hai mã bên kế toán cấp (hàng khách gửi · giá vốn) — hết địa chỉ / khoá trang kế toán tạm -->
       <button type="button" class="btn sm no-print" id="ct-cau-hinh" hidden><span data-i18n="ct_cau_hinh"></span></button>
     </div>
+    <!-- 09/10: hai ô Từ ngày / Đến ngày cũ → bộ lọc thời gian dùng chung; để trống cả hai (mặc định) = mọi ngày như trước -->
+    <div class="ct-so-ky no-print" id="ct-so-ky"></div>
     <div class="bd small muted" data-i18n="ct_hint_so"></div>
     <div class="ct-tong-loai" id="ct-so-tong"></div>
     <div class="tbl-wrap"><table class="tbl tbl-compact" id="ct-so-bang">

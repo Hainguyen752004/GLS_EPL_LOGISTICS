@@ -43,8 +43,12 @@
   /* Tab Chuyến & phiếu, bốn ô số đầu hồ sơ (rà 01/10): THÁNG ĐANG XEM theo từng khách (cache[cid].thang). Mở khách mà tháng
    * này chưa có chuyến thì tự sang tháng gần nhất có chuyến của khách đó, kèm dòng báo — trước đây đầu tháng mọi khách đều
    * "0 chuyến", tab trống, trông như mất dữ liệu. Người dùng chọn tháng ở ô trong tab thì giữ đúng tháng đó. */
-  const thangCua = (cid) => ((cache[cid] || {}).thang || thangNay());
-  const thangHien = () => nhanThang(thangCua(st.id));
+  /* 09/10 (anh Khampla): kỳ của tab Chuyến là KHOẢNG NGÀY {tu, den} (cache[cid].ky) chọn ở bộ lọc thời gian dùng chung
+   * (js/khoang_thoi_gian.js) — trước đây một tháng (cache[cid].thang). Mặc định / tự sang vẫn là trọn một tháng. */
+  const KTG = EPL.khoangThoiGian;
+  const kyCua = (cid) => ((cache[cid] || {}).ky || KTG.cuaThang(thangNay()));
+  const kyLaThang = () => !!KTG.laThang(kyCua(st.id));
+  const thangHien = () => KTG.nhan(kyCua(st.id), true);      // «09/2026» · «2026» · «01/09/2026 – 15/09/2026»
   const ngay = (s) => s ? EPL.ngay(s) : '';
   const pad = (n) => (n < 10 ? '0' : '') + n;
   // ngày dd/mm/yyyy ⇄ Date UTC (ô nhập theo mẫu) · ISO ⇄ Date (máy chủ)
@@ -266,13 +270,14 @@
   /* ================= Tab: Chuyến & phiếu ================= */
   function tripsTab(k) {
     const c = cache[k.id] || {}, tr = c.trips;
-    // thanh tháng: ô chọn tháng (EPL.doiOThang đổi thành ô chọn chung sau khi vẽ) + dòng báo khi màn tự sang tháng khác
-    // MỘT hàng: ô tháng (đã ghi chữ "Tháng 09/2026" — khỏi nhãn riêng), dòng báo, câu giải thích
-    const thanh = (chu) => '<div class="k3-thang-bar"><input type="month" id="k3-thang" value="' + esc(thangCua(k.id)) + '" title="' + esc(t('month')) + '">' +
+    // thanh kỳ: bộ lọc thời gian dùng chung (09/10 — dựng vào #k3-thang sau khi vẽ, renderDetail) + dòng báo khi màn tự sang
+    // tháng khác + câu giải thích
+    const thanh = (chu) => '<div class="k3-thang-bar"><div class="k3-ky ktg-dong" id="k3-thang"></div>' +
       (c.bao ? '<span class="k3-thang-bao" role="status">' + h('thang_trong_dang_xem', { trong: nhanThang(c.bao.trong), xem: nhanThang(c.bao.xem) }) + '</span>' : '') +
       (chu ? '<p class="tab-note">' + chu + '</p>' : '') + '</div>';
     if (!tr) return thanh('') + '<div class="k3-empty">' + h('loading') + '</div>';
-    if (!tr.length) return thanh('') + '<div class="k3-empty">' + h('k3_chuyen_trong', { thang: thangHien() }) + '</div>';
+    if (!tr.length) return thanh('') + '<div class="k3-empty">' + (kyLaThang() ? h('k3_chuyen_trong', { thang: thangHien() })
+      : h('ktg_k3_trong', { khoang: KTG.nhan(kyCua(k.id)) })) + '</div>';
     const g = xemTien(), mo = moPhieuDuoc();
     const tong = {};
     const rows = tr.map(x => {
@@ -292,10 +297,10 @@
         '<td class="num">' + n2(ti.tan_tinh) + '</td>' +
         (g ? '<td class="num">' + EPL.tien(ti.don_gia, ccy) + '</td><td class="num"><b>' + EPL.tien(ti.doanh_thu, ccy) + '</b></td>' : '') + '<td>' + inv + '</td></tr>';
     }).join('');
-    return thanh(h('k3_chuyen_note', { thang: thangHien() })) +
+    return thanh(kyLaThang() ? h('k3_chuyen_note', { thang: thangHien() }) : h('ktg_k3_note', { khoang: KTG.nhan(kyCua(k.id)) })) +
       '<div class="k3-tbl-wrap"><table class="k3-tbl k3-tbl--compact"><thead><tr><th>' + h('c_date') + '</th><th>' + h('do_kind') + '</th><th>' + h('doc_no') + '</th><th>' + h('c_truck') + '</th><th>' + h('route') + '</th>' +
       '<th class="num">' + h('k3_khoi_luong') + '</th>' + (g ? '<th class="num">' + h('unit_price') + '</th><th class="num">' + h('c_value') + '</th>' : '') + '<th>' + h('k3_so_thu') + '</th></tr></thead><tbody>' + rows +
-      '</tbody><tfoot><tr><td colspan="5">' + h('k3_cong_thang') + '</td><td class="num">' + n2(sum(tr, x => (x.tinh || {}).tan_tinh || 0)) + '</td>' +
+      '</tbody><tfoot><tr><td colspan="5">' + h(kyLaThang() ? 'k3_cong_thang' : 'ktg_cong') + '</td><td class="num">' + n2(sum(tr, x => (x.tinh || {}).tan_tinh || 0)) + '</td>' +
       (g ? '<td></td><td class="num">' + tienGop(tong) + '</td>' : '') + '<td></td></tr></tfoot></table></div>';
   }
 
@@ -361,7 +366,7 @@
     const stats = '<div class="stat"><span>' + h('k3_chuyen_thang', { thang: thangHien() }) + '</span><b>' + (c.trips ? m.trips : '·') + '</b><em>' + h('k3_gom_giao', { g: m.gom, d: m.giao }) + '</em></div>' +
       '<div class="stat"><span>' + h('k3_san_luong') + '</span><b>' + n2(m.tons) + '<small>' + h('ton') + '</small></b></div>' +
       // số 0 cũng ghi đơn vị (Kíp) — con số trần không nói được là tiền gì; chưa có doanh thu thì bỏ dòng "≈ 0 LAK" lặp lại
-      (g ? '<div class="stat"><span>' + h('k3_doanh_thu_thang') + '</span><b class="stat-tien">' + (Object.keys(m.rev).length ? tienGop(m.rev) : EPL.tien(0, 'LAK')) + '</b>' +
+      (g ? '<div class="stat"><span>' + h(kyLaThang() ? 'k3_doanh_thu_thang' : 'ktg_doanh_thu') + '</span><b class="stat-tien">' + (Object.keys(m.rev).length ? tienGop(m.rev) : EPL.tien(0, 'LAK')) + '</b>' +
           (Object.keys(m.rev).length ? '<em>≈ ' + n0(m.revLak) + ' LAK</em>' : '') + '</div>' +
         '<div class="stat ' + (no && no.con_no_lak > 0 ? 'is-danger' : '') + '"><span>' + h('kh_cong_no') + '</span><b class="stat-tien">' + (no && no.con_no_lak > 0 ? tienGop(no.con_no_tien) : EPL.tien(0, 'LAK')) + '</b>' +
           '<em>' + (no ? (no.con_no_lak > 0 ? '≈ ' + n0(no.con_no_lak) + ' LAK · ' + t('k3_to_con_no', { n: no.so_to_no }) : t('k3_khong_no')) : '') + '</em></div>'
@@ -390,8 +395,9 @@
       '<section class="k3-panel tabs-panel"><div class="tabs-bar"><div class="tabs" role="tablist">' + tabs.map(x =>
         '<button type="button" class="tab" role="tab" data-tab="' + x.id + '" aria-selected="' + (st.tab === x.id) + '">' + x.label + ' <span class="count">' + x.count + '</span></button>').join('') +
       '</div>' + addBtn + '</div><div class="tab-panel" role="tabpanel">' + body + '</div></section>';
-    const oThang = $('#k3-thang');
-    if (oThang) { const v = oThang.value; EPL.doiOThang($('#k3-work')); $('#k3-thang').value = v; }
+    // tab Chuyến: bộ lọc thời gian dùng chung (09/10) — dựng lại mỗi lần vẽ, giữ kỳ của khách đang xem
+    const oKy = $('#k3-thang');
+    if (oKy) KTG(oKy, { cheDo: 'khoang', giaTri: kyCua(k.id), khiDoi: doiKy });
   }
 
   function render() {
@@ -408,7 +414,7 @@
   function ghiDiaChi() {
     if (!root.isConnected || !st.id) return;
     const ts = new URLSearchParams({ id: st.id }); if (st.tab !== 'contracts') ts.set('tab', st.tab);
-    const c = cache[st.id]; if (c && c.chon && c.thang) ts.set('thang', c.thang);     // tháng tự chọn ở tab Chuyến cũng giữ
+    const c = cache[st.id]; if (c && c.chon && c.ky) KTG.thamSo(c.ky, ts);     // kỳ tự chọn ở tab Chuyến cũng giữ (?thang= hay ?tu=&den=)
     const moi = '#/khach-hang?' + ts;
     if (location.hash !== moi) history.replaceState(null, '', moi);
   }
@@ -437,24 +443,18 @@
   }
 
   /* ================= Tải dữ liệu ================= */
-  /** Tháng gần nhất (so với `th`) khách `cid` có chuyến: hỏi hai dòng — chuyến mới nhất tới cuối tháng `th`, chuyến cũ nhất từ
-   *  đầu tháng `th` (cùng cách màn Phiếu đề nghị thu). Không có chuyến nào thì null. */
-  async function thangGan(cid, th) {
-    const [y, m] = th.split('-').map(Number);
-    const hoi = (them) => API.get('/api/trips?' + new URLSearchParams(Object.assign({ customer_id: cid, co: '1' }, them)))
-      .then(d => (d && d[0] && d[0].doc_date ? d[0].doc_date.slice(0, 7) : null), () => null);
-    const [truoc, sau] = await Promise.all([hoi({ den: th + '-' + String(new Date(y, m, 0).getDate()).padStart(2, '0') }), hoi({ tu: th + '-01', sap: 'cu' })]);
-    const n = (v) => v.slice(0, 4) * 12 + +v.slice(5, 7);
-    return !truoc || !sau ? truoc || sau : (n(sau) - n(th) < n(th) - n(truoc) ? sau : truoc);
-  }
+  /* Tháng gần nhất khách `cid` có chuyến: EPL.khoangThoiGian.gan (09/10 — trước đây hàm thangGan riêng ở đây, cùng cách hai dòng
+   * như màn Phiếu đề nghị thu), lọc customer_id. */
   async function taiChuyen(cid) {
     const c = cache[cid];
-    const lay = (th) => API.get('/api/trips?customer_id=' + encodeURIComponent(cid) + '&thang=' + th + '&co=500');
+    // kỳ trọn một tháng → ?thang= như cũ; khoảng khác → ?tu=&den= (/api/trips nhận cả hai)
+    const lay = (ky) => API.get('/api/trips?' + KTG.thamSo(ky, new URLSearchParams({ customer_id: cid, co: '500' })));
     try {
-      let r = await lay(thangCua(cid));
+      let r = await lay(kyCua(cid));
       if (!r.length && !c.chon) {
-        const gan = await thangGan(cid, thangCua(cid));
-        if (gan && gan !== thangCua(cid)) { c.bao = { trong: thangCua(cid), xem: gan }; c.thang = gan; r = await lay(gan); }
+        const g = await KTG.gan(kyCua(cid), { customer_id: cid }), gan = g.co ? null : g.gan;
+        const dang = KTG.laThang(kyCua(cid));
+        if (gan && gan !== dang) { c.bao = { trong: dang || kyCua(cid).tu.slice(0, 7), xem: gan }; c.ky = KTG.cuaThang(gan); r = await lay(c.ky); }
       }
       c.trips = r;
     } catch (e) { c.trips = []; EPL.baoLoi(e); }   // lỗi thì báo — đừng để tab "Chuyến" nói "chưa có chuyến"
@@ -606,9 +606,21 @@
   }
 
   /* ----- Khách hàng ----- */
-  function customerModal(k) {
+  /** Ô TK Nợ / Có của khách (09/10, anh Khampla: "phải chọn từ Sổ tài khoản, dùng hai chỗ Nợ và Có"): ô tìm + ô chọn tài khoản nhóm
+   *  `nhom` (Nợ 1 phải thu · Có 7 doanh thu); trống = mặc định 1211 / 708. Như mã khách, chỉ KT Thu/Chi VC và Sếp đổi — vai khác xem. */
+  function oTaiKhoan(acc, ve, nhom, dang) {
+    const id = 'k3f-acct_' + ve, sua = ganMa();
+    const opts = EPL.dsTaiKhoan(acc, nhom, dang || '', t('kh_tk_' + ve + '_md'));
+    return '<div class="k3-field f-3"><label for="' + id + '">' + h(ve === 'no' ? 'acct_debit' : 'acct_credit') + '</label>' +
+      (sua ? '<input type="search" class="input k3-tk-tim" data-tk-loc="' + id + '" placeholder="' + esc(t('tk_tim')) + '" autocomplete="off">' : '') +
+      '<select class="input" id="' + id + '" name="acct_' + ve + '"' + (sua ? '' : ' disabled') + '>' +
+      opts.map(o => '<option value="' + esc(o[0]) + '"' + (o[0] === (dang || '') ? ' selected' : '') + (o[2] ? ' disabled' : '') + (o[3] ? ' data-tim="' + esc(o[3]) + '"' : '') + '>' + esc(o[1]) + '</option>').join('') +
+      '</select><span class="hint">' + h(sua ? 'kh_tk_' + ve + '_goi_y' : 'tk_chi_ke_toan') + '</span><span class="err" data-err="acct_' + ve + '" hidden></span></div>';
+  }
+  async function customerModal(k) {
     const isEdit = !!k;
     k = k || { name: '', code: '', cust_type: 'person', active: true, phone: '', address: '', invoice_mode: 'phieu', note: '' };
+    const acc = await EPL.accCodes();
     const html =
       '<div class="modal-head"><div><h2>' + h(isEdit ? 'k3_sua_khach' : 'k3_them_khach') + '</h2><p>' + h('k3_ma_goi_y') + '</p></div>' + nutDong() + '</div>' +
       '<div class="modal-body">' +
@@ -624,6 +636,7 @@
           '<label><input type="radio" name="active" value="0"' + (!k.active ? ' checked' : '') + '><span>' + h('inactive') + '</span></label></div></div>' +
         '<div class="k3-field f-3"><label for="k3f-phone">' + h('phone') + '</label><input class="input" id="k3f-phone" name="phone" inputmode="tel" value="' + esc(k.phone || '') + '" placeholder="020 5555 1234"></div>' +
         '<div class="k3-field f-3"><label for="k3f-address">' + h('address') + '</label><input class="input lo" lang="lo" id="k3f-address" name="address" value="' + esc(k.address || '') + '" placeholder="' + esc(t('k3_dc_ph')) + '"></div>' +
+        (xemTien() ? oTaiKhoan(acc, 'no', '1', k.acct_no) + oTaiKhoan(acc, 'co', '7', k.acct_co) : '') +     // Bãi không thấy mã tài khoản (A2)
         '<div class="k3-field f-6"><span class="label">' + h('inv_mode') + '</span><div class="choice-cards">' +
           '<label class="choice"><input type="radio" name="invoice_mode" value="phieu"' + (k.invoice_mode !== 'thang' ? ' checked' : '') + '><b>' + h('inv_phieu_s') + '</b><small>' + h('inv_phieu') + '</small></label>' +
           '<label class="choice"><input type="radio" name="invoice_mode" value="thang"' + (k.invoice_mode === 'thang' ? ' checked' : '') + '><b>' + h('inv_thang_s') + '</b><small>' + h('inv_thang') + '</small></label></div></div>' +
@@ -632,19 +645,21 @@
       '<div class="modal-foot"><span class="summary">' + h('k3_bo_sung_sau') + '</span><div class="actions">' +
         '<button type="button" class="k3-btn" data-close>' + h('cancel') + '</button><button type="submit" class="k3-btn k3-btn--primary">' + h(isEdit ? 'k3_luu_thay_doi' : 'k3_them_khach') + '</button></div></div>';
     openModal(html, async () => {
-      const f = form().elements; setErr('name', ''); setErr('code', '');
+      const f = form().elements; setErr('name', ''); setErr('code', ''); setErr('acct_no', ''); setErr('acct_co', '');
       if (!f.name.value.trim()) { setErr('name', t('k3_e_ten')); f.name.focus(); return false; }
       const body = { name: f.name.value.trim(), cust_type: form().querySelector('[name=cust_type]:checked').value,
         phone: f.phone.value.trim(), address: f.address.value.trim(), invoice_mode: form().querySelector('[name=invoice_mode]:checked').value, note: f.note.value.trim() };
       if (ganMa()) {                                          // vai khác không gửi ô mã — máy chủ cũng chặn đổi mã (403 MA_KHACH_KE_TOAN)
         body.code = f.code.value.trim();
         if (body.code && (body.code.length > MA_TOI_DA || !MA_LUAT.test(body.code))) { setErr('code', t('k3_e_ma_sai')); f.code.focus(); return false; }
+        body.acct_no = f.acct_no.value; body.acct_co = f.acct_co.value;     // vai khác không gửi — máy chủ chặn 403 TK_KHACH_KE_TOAN
       }
       if (isEdit) body.active = form().querySelector('[name=active]:checked').value === '1';
       let luu;
       try { luu = await (isEdit ? API.put('/api/customers/' + k.id, body) : API.post('/api/customers', body)); }
       catch (err) {
         if (/MA_KHACH/.test(String(err.ma || err.code || '')) || /Mã khách/.test(err.message || '')) { setErr('code', err.message); return false; }
+        if (err.o === 'acct_no' || err.o === 'acct_co') { setErr(err.o, err.message); f[err.o].focus(); return false; }
         EPL.baoLoi(err); return false;
       }
       EPL.toast(t(isEdit ? 'k3_da_luu_khach' : 'k3_da_them_khach'), 'ok');
@@ -652,6 +667,7 @@
       ds = await API.get('/api/customers');
       return true;
     });
+    form().querySelectorAll('[data-tk-loc]').forEach(inp => inp.addEventListener('input', () => EPL.locChon(document.getElementById(inp.dataset.tkLoc), inp.value, true, inp)));
   }
 
   /* ----- Bảng giá (giữ ô nhập của màn cũ: tuyến, loại hàng, tiền tệ, cách tính, giá thuê xe liên kết) ----- */
@@ -717,13 +733,14 @@
       try { await API.goi('/api/hop-dong-tep/' + a.dataset.tep, { method: 'DELETE' }); await taiHd(); render(); } catch (err) { EPL.baoLoi(err); }
     }
   }
+  /** Người dùng chọn kỳ ở bộ lọc thời gian của tab Chuyến (09/10 — thay sự kiện change của ô tháng): giữ đúng kỳ đó, bỏ dòng báo. */
+  async function doiKy(gt) {
+    if (!st.id) return;
+    const cid = st.id, c = cache[cid] = cache[cid] || {};
+    c.ky = gt; c.chon = true; c.bao = null; c.trips = undefined;
+    render(); await taiChuyen(cid); if (st.id === cid) render();
+  }
   async function onChange(e) {
-    if (e.target && e.target.id === 'k3-thang' && st.id) {
-      const cid = st.id, c = cache[cid] = cache[cid] || {};
-      c.thang = e.target.value || thangNay(); c.chon = true; c.bao = null; c.trips = undefined;
-      render(); await taiChuyen(cid); if (st.id === cid) render();
-      return;
-    }
     const inp = e.target.closest && e.target.closest('[data-attach]');
     if (!inp || !inp.files || !inp.files.length) return;
     const hd = HD.find(x => x.id === inp.dataset.attach); let n = 0;
@@ -785,7 +802,9 @@
     async init(r, { tham } = {}) {
       root = r; ds = []; HD = []; NO_TONG = {}; Object.keys(cache).forEach(x => delete cache[x]);
       st.id = tham && tham.id ? tham.id : null; st.tab = tham && tham.tab ? tham.tab : 'contracts'; st.filter = 'all'; st.query = '';
-      if (st.id && tham && /^\d{4}-\d{2}$/.test(tham.thang || '')) cache[st.id] = { thang: tham.thang, chon: true };
+      // kỳ tab Chuyến mang trên địa chỉ: ?thang= (bản cũ) hoặc ?tu=&den= (09/10, bộ lọc thời gian)
+      const kyDc = KTG.tuDiaChi(tham);
+      if (st.id && kyDc) cache[st.id] = { ky: kyDc, chon: true };
       const them = $('#k3-them'); them.hidden = !suaDuoc();
       if (!xemTien()) { const cn = root.querySelector('#k3-loc [data-filter="debt"]'); if (cn) cn.remove(); }
       $('#k3-tim').addEventListener('input', (e) => { st.query = e.target.value; renderList(); });

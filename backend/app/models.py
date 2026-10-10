@@ -79,6 +79,10 @@ class Customer(Base):
     # riêng của vận tải (cách xuất hoá đơn, loại khách, ghi chú; bảng giá, hợp đồng trỏ customers.id như cũ).
     obj_id = Column(Integer, index=True)
     gls_synced_at = Column(DateTime)                 # lần chép thông tin chung từ GLS gần nhất
+    # 09/10 (anh Khampla): TÀI KHOẢN RIÊNG của đối tượng, chọn từ sổ tài khoản (như phần mềm kế toán của khách: "Mã số nợ / Mã số có …
+    # để trống để hạch toán theo danh mục") — trống = mã mặc định của luật (services/tai_khoan); có thì bút toán dùng đúng mã này.
+    acct_no = Column(String)                         # phải thu (mặc định 1211)
+    acct_co = Column(String)                         # doanh thu cước (mặc định 708)
 
 
 CACH_XUAT_HOA_DON = ("phieu", "thang")           # mỗi phiếu một hoá đơn · gộp một tờ cuối tháng
@@ -109,6 +113,10 @@ class Owner(Base):
     code = Column(String, index=True)                # OBJ_OBJECTNO (EPLCX-… hoặc mã có sẵn)
     obj_id = Column(Integer, index=True)
     gls_synced_at = Column(DateTime)
+    # 09/10 (anh Khampla): TÀI KHOẢN RIÊNG của đối tượng, chọn từ sổ tài khoản (như phần mềm kế toán của khách: "Mã số nợ / Mã số có …
+    # để trống để hạch toán theo danh mục") — trống = mã mặc định của luật (services/tai_khoan); có thì bút toán dùng đúng mã này.
+    acct_no = Column(String)                         # chi phí thuê xe (mặc định 621)
+    acct_co = Column(String)                         # phải trả chủ xe (mặc định 4022)
 
 
 TRANG_THAI_XE = ("available", "on_trip", "maintenance", "inactive")   # rảnh · đang chạy · đang sửa · ngưng dùng
@@ -253,6 +261,17 @@ class Supplier(Base):
     address = Column(String)
     obj_id = Column(Integer, index=True)
     gls_synced_at = Column(DateTime)
+    # 09/10 (anh Khampla): TÀI KHOẢN RIÊNG của đối tượng, chọn từ sổ tài khoản (như phần mềm kế toán của khách: "Mã số nợ / Mã số có …
+    # để trống để hạch toán theo danh mục") — trống = mã mặc định của luật (services/tai_khoan); có thì bút toán dùng đúng mã này.
+    acct_no = Column(String)                         # chi phí (trống = theo khoản mục: 625 / 614)
+    acct_co = Column(String)                         # phải trả nhà cung cấp (mặc định 4021)
+    # hồ sơ nhà cung cấp đầy đủ (mẫu phần mềm kế toán của khách): dịch vụ ghi bằng chữ khi không có trong khoản mục, mã số thuế,
+    # thư điện tử, trang web, đơn vị tiền giao dịch
+    dich_vu = Column(String)
+    tax_no = Column(String)
+    email = Column(String)
+    website = Column(String)
+    currency = Column(String)
 
 
 class SupplierPayment(Base):

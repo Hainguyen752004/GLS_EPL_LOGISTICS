@@ -95,8 +95,17 @@ def _han(ngay):
 
 # ================================================================ khách hàng
 @router.get("/api/customers")
-def ds_khach(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
-    return [_dict(c) for c in db.query(Customer).order_by(Customer.active.desc(), Customer.name).all()]
+def ds_khach(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    return [_ra_khach(c, user) for c in db.query(Customer).order_by(Customer.active.desc(), Customer.name).all()]
+
+
+def _ra_khach(c, user):
+    """Khách trả ra: TK Nợ / Có riêng (09/10) chỉ cho vai thấy tiền bán — Bãi, tài xế không thấy mã tài khoản (A2, soát 10/10)."""
+    from services.phan_quyen import thay_tien_ban
+    d = _dict(c)
+    if user is None or not thay_tien_ban(user.role):
+        d.pop("acct_no", None); d.pop("acct_co", None)
+    return d
 
 
 @router.post("/api/customers")
@@ -111,14 +120,14 @@ def them_khach(data: dict = Body(...), db: Session = Depends(get_db), user=Depen
     _ap_cach_hoa_don(c, data)
     _ap_ma_loai(db, c, data, user)
     db.add(c); db.commit(); db.refresh(c)
-    return _dict(c)
+    return _ra_khach(c, user)
 
 
 def _ap_rieng_van_tai(db, c, data, user):
     """Phần riêng của vận tải trên hồ sơ khách GLS: cách xuất hoá đơn, loại khách, ghi chú, đang dùng."""
     _ap(c, data, ("note", "active"))
     _ap_cach_hoa_don(c, data)
-    _ap_ma_loai(db, c, {k: data[k] for k in ("cust_type",) if k in data}, user)
+    _ap_ma_loai(db, c, {k: data[k] for k in ("cust_type", "acct_no", "acct_co") if k in data}, user)
 
 
 def _them_khach_gls(db, data, user):
@@ -130,6 +139,10 @@ def _them_khach_gls(db, data, user):
                                       "loi": "Mã khách là mã bên kế toán — chỉ KT Thu/Chi Viêng Chăn hoặc Sếp gán / đổi."})
         if ma and GT.loi_ma_khach(ma):
             raise HTTPException(422, {"ma": "MA_KHACH_SAI", "loi": GT.loi_ma_khach(ma)})
+        # 09/10: kiểm loại khách, cách xuất hoá đơn, TK riêng TRƯỚC khi tạo bên danh mục chung (bản nháp không gắn phiên)
+        nhap = Customer()
+        _ap_cach_hoa_don(nhap, data)
+        _ap_ma_loai(db, nhap, {k: data[k] for k in ("cust_type", "acct_no", "acct_co") if k in data}, user)
         oid = KG.tao(data, ma)
     try:
         oid = int(oid)
@@ -138,7 +151,7 @@ def _them_khach_gls(db, data, user):
     c, _ = KG.lien_ket(db, oid)
     _ap_rieng_van_tai(db, c, data, user)
     db.commit(); db.refresh(c)
-    return _dict(c)
+    return _ra_khach(c, user)
 
 
 @router.get("/api/customers/quyen")
@@ -173,7 +186,7 @@ def lien_ket_khach_gls(obj_id: int, data: dict = Body(default={}), db: Session =
     c, _ = KG.lien_ket(db, obj_id)
     _ap_rieng_van_tai(db, c, data or {}, user)
     db.commit(); db.refresh(c)
-    return _dict(c)
+    return _ra_khach(c, user)
 
 
 @router.post("/api/customers/dong-bo-gls")
@@ -211,6 +224,20 @@ def _ap_ma_loai(db, c, data, user):
         if v and v not in LOAI_KHACH:
             raise HTTPException(422, {"ma": "LOAI_KHACH_SAI", "loi": "Loại khách phải là cá nhân hoặc công ty."})
         c.cust_type = v
+    # 09/10 (anh Khampla): TK Nợ (phải thu, trống = 1211) / TK Có (doanh thu cước, trống = 708) riêng của khách — chọn từ sổ tài
+    # khoản; như mã khách, chỉ KT Thu/Chi VC, Sếp gán / đổi (vai khác gửi lại đúng mã đang có thì bỏ qua)
+    doi = {ve: str(data.get("acct_" + ve) or "").strip() or None for ve in ("no", "co") if "acct_" + ve in data}
+    doi = {ve: v for ve, v in doi.items() if v != (getattr(c, "acct_" + ve) or None)}
+    if doi:
+        if user.role not in GAN_MA_KHACH:
+            raise HTTPException(403, {"ma": "TK_KHACH_KE_TOAN", "loi": "Tài khoản của khách do KT Thu/Chi Viêng Chăn hoặc Sếp gán."})
+        from routes.acc_code import lay_danh_muc
+        danh_muc = lay_danh_muc()[0]
+        for ve, v in doi.items():
+            loi = TK.loi_tk_rieng("khach", ve, v, danh_muc)
+            if loi:
+                raise HTTPException(422, {"ma": "TK_SAI", "loi": loi, "o": "acct_" + ve})
+            setattr(c, "acct_" + ve, v)
 
 
 def _ap_cach_hoa_don(c, data):
@@ -239,7 +266,7 @@ def sua_khach(cid: str, data: dict = Body(...), db: Session = Depends(get_db), u
     _ap(c, data, ("name", "phone", "address", "note", "active"))
     _ap_cach_hoa_don(c, data)
     db.commit(); db.refresh(c)
-    return _dict(c)
+    return _ra_khach(c, user)
 
 
 # ================================================================ bảng giá khách × tuyến (K3)

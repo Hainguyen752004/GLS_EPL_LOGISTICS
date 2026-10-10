@@ -5,7 +5,7 @@
  * /api/owners/{id}/de-nghi-tra, /api/chi-chu-xe/{id}/cap-nhat|gui-lai|huy. */
 (function () {
   const { API, NN, esc, so, AUTH } = EPL;
-  let root, chu = [], HD = [], chuHd = null;
+  let root, chu = [], HD = [], chuHd = null, QUYEN = {};
   const OPM = { phieu: 'opm_phieu', thang: 'opm_thang', dot: 'opm_dot' };
 
   /* ---------------------------------------------------------------- chủ xe liên kết (C4.2 · C4.3) */
@@ -22,11 +22,22 @@
         <td class="num tien">${c.fee_pct != null ? so(c.fee_pct, 1) + ' %' : '—'}</td>
         <td class="num tien">${c.over_limit_t != null ? `${so(c.over_limit_t, 1)} t · ${EPL.tien(c.over_price, c.hire_ccy)}/t` : '—'}</td>
         <td class="mono tien">${esc(c.hire_ccy || '')}</td>
-        <td class="no-print">${themDuoc ? `<button class="btn sm" data-sua-chu="${c.id}">${NN.h('edit')}</button> ` : ''}<button class="btn sm ${chuHd && chuHd.id === c.id ? 'primary' : ''}" data-hd-chu="${c.id}">${NN.h('hd_nut')}</button>${xemTra() ? ` <button class="btn sm" data-tra-chu="${c.id}">${NN.h('cx_tra_kt')}</button>` : ''}</td></tr>`;
+        <td class="no-print nowrap">${themDuoc ? `<button class="btn sm" data-sua-chu="${c.id}">${NN.h('edit')}</button> ` : ''}<button class="btn sm ${chuHd && chuHd.id === c.id ? 'primary' : ''}" data-hd-chu="${c.id}">${NN.h('hd_nut')}</button>${xemTra() ? ` <button class="btn sm" data-tra-chu="${c.id}">${NN.h('cx_tra_kt')}</button>` : ''}`
+        + (themDuoc ? ` <button class="btn sm danger" data-xoa-chu="${c.id}">${NN.h('delete')}</button>` : '') + `</td></tr>`;
     }).join('') : `<tr><td colspan="9" class="empty">${NN.h('no_data')}</td></tr>`;
     o.querySelectorAll('[data-hd-chu]').forEach(b => b.addEventListener('click', () => moHd(chu.find(x => x.id === b.dataset.hdChu))));
     o.querySelectorAll('[data-sua-chu]').forEach(b => b.addEventListener('click', () => suaChu(chu.find(x => x.id === b.dataset.suaChu))));
     o.querySelectorAll('[data-tra-chu]').forEach(b => b.addEventListener('click', () => traKeToan(chu.find(x => x.id === b.dataset.traChu))));
+    o.querySelectorAll('[data-xoa-chu]').forEach(b => b.addEventListener('click', () => xoaChu(chu.find(x => x.id === b.dataset.xoaChu))));
+  }
+  /** 09/10 (anh Khampla: "có chỗ xoá không"): xoá chủ xe nhập nhầm. Máy chủ chặn khi chủ xe đã có xe / phiếu / hợp đồng / đề nghị trả
+   *  (409, câu nói rõ vì sao và bảo dùng Sửa → Ngưng dùng). */
+  async function xoaChu(c) {
+    if (!c || !await EPL.hoi(NN.t('delete') + ' · ' + c.name, '<p>' + NN.h('cx_xoa_hoi', { ten: c.name }) + '</p>', NN.t('delete'))) return;
+    try { await API.del('/api/owners/' + c.id); EPL.toast(NN.t('cx_da_xoa', { ten: c.name }), 'ok'); }
+    catch (e) { return EPL.baoLoi(e); }
+    if (chuHd && chuHd.id === c.id) { chuHd = null; root.querySelector('#xlk-hd').hidden = true; }
+    await tai().catch(EPL.baoLoi);
   }
 
   /* ---------------------------------------------------------------- trả chủ xe qua hệ kế toán (01/10) */
@@ -79,24 +90,46 @@
     } catch (e) { EPL.baoLoi(e); }
     traKeToan(c);
   }
-  async function suaChu(c) {
+  /** Hộp thêm / sửa chủ xe — 09/10 (anh Khampla: "thêm xe ngoài không có chỗ đánh sổ tài khoản"): hai cột, thêm TK Nợ / Có chọn từ
+   *  sổ tài khoản (trống = 621 thuê xe / 4022 phải trả chủ xe). Máy chủ chặn → mở lại hộp, giữ chữ đã gõ, đánh dấu ô lỗi. */
+  async function suaChu(c, nhap, loi) {
+    const acc = await EPL.accCodes();
+    const g = (k, md = '') => nhap && k in nhap ? nhap[k] : (c && c[k] != null ? c[k] : md);
+    const loiO = (k) => (loi && loi.o === k ? loi.chu : null);
+    const chung = !!(QUYEN.gls && c && c.obj_id);     // đã gắn danh mục nhà cung cấp chung: tên · điện thoại · địa chỉ sửa ở đó
     const v = await EPL.hopNhap(c ? NN.t('edit') + ' · ' + c.name : NN.t('owner_add'), [
-      { id: 'name', label: 'owner', value: c ? c.name : '', lo: true },
-      { id: 'phone', label: 'phone', value: c ? c.phone : '' },
-      { id: 'address', label: 'address', value: c ? c.address : '', lo: true },
-      { id: 'pay_mode', label: 'owner_pay_mode', type: 'select', value: c ? c.pay_mode : 'phieu', options: Object.entries(OPM).map(([k, t]) => [k, NN.t(t)]) },
-      { id: 'hire_ccy', label: 'ccy_hire', type: 'select', value: c ? (c.hire_ccy || 'USD') : 'USD', options: EPL.TIEN_TE.map(m => [m, m]) },
-      { id: 'fee_pct', label: 'fee_pct', type: 'number', value: c ? c.fee_pct : 2 },
-      { id: 'over_limit_t', label: 'limit_t', type: 'number', value: c ? c.over_limit_t : 40 },
-      { id: 'over_price', label: 'over_p', type: 'number', value: c ? c.over_price : 1 },
-      { id: 'note', label: 'note', type: 'textarea', value: c ? c.note : '' },
-      ...(c ? [{ id: 'active', label: 'status', type: 'select', value: c.active ? '1' : '0', options: [['1', NN.t('active')], ['0', NN.t('inactive')]] }] : []),
-    ], NN.t('save'));
+      { type: 'nhom', label: 'ncc_nhom_chung' },
+      { id: 'name', label: 'owner', value: g('name'), lo: true, bat_buoc: true, chi_doc: chung, loi: loiO('name'), goi_y: chung ? 'o_chung_goi_y' : null },
+      { id: 'phone', label: 'phone', type: 'tel', value: g('phone'), chi_doc: chung },
+      { id: 'address', label: 'address', value: g('address'), lo: true, rong: true, chi_doc: chung },
+      { type: 'nhom', label: 'cx_nhom_dieu_khoan' },
+      { id: 'pay_mode', label: 'owner_pay_mode', type: 'select', value: g('pay_mode', 'phieu'), loi: loiO('pay_mode'), options: Object.entries(OPM).map(([k, t]) => [k, NN.t(t)]) },
+      { id: 'hire_ccy', label: 'ccy_hire', type: 'select', value: g('hire_ccy', 'USD'), options: EPL.TIEN_TE.map(m => [m, m]) },
+      { id: 'fee_pct', label: 'fee_pct', type: 'number', value: g('fee_pct', 2), loi: loiO('fee_pct') },
+      { id: 'over_limit_t', label: 'limit_t', type: 'number', value: g('over_limit_t', 40) },
+      { id: 'over_price', label: 'over_p', type: 'number', value: g('over_price', 1) },
+      ...(c ? [{ id: 'active', label: 'status', type: 'bat', value: g('active', true) }] : []),
+      { type: 'nhom', label: 'tk_nhom' },
+      { id: 'acct_no', label: 'acct_debit', type: 'select', tim: 'tk_tim', value: g('acct_no'), loi: loiO('acct_no'), goi_y: 'cx_tk_no_goi_y',
+        options: EPL.dsTaiKhoan(acc, '6', g('acct_no'), NN.t('cx_tk_no_md')) },
+      { id: 'acct_co', label: 'acct_credit', type: 'select', tim: 'tk_tim', value: g('acct_co'), loi: loiO('acct_co'), goi_y: 'cx_tk_co_goi_y',
+        options: EPL.dsTaiKhoan(acc, '4', g('acct_co'), NN.t('cx_tk_co_md')) },
+      { id: 'note', label: 'note', type: 'textarea', dong: 2, value: g('note'), lo: true, rong: true },
+    ], NN.t('save'), { cot: 2 });
     if (!v) return;
-    if (!v.name.trim()) return EPL.toast(NN.t('owner') + '?', 'loi');
-    const body = { name: v.name, phone: v.phone, address: v.address, pay_mode: v.pay_mode, hire_ccy: v.hire_ccy, fee_pct: v.fee_pct, over_limit_t: v.over_limit_t, over_price: v.over_price, note: v.note };
-    if (c) body.active = v.active === '1';
-    try { await (c ? API.put('/api/owners/' + c.id, body) : API.post('/api/owners', body)); EPL.toast(NN.t('saved'), 'ok'); await tai(); } catch (e) { EPL.baoLoi(e); }
+    if (!v.name.trim()) return suaChu(c, v, { o: 'name', chu: NN.t('owner') + '?' });
+    const body = { name: v.name, phone: v.phone, address: v.address, pay_mode: v.pay_mode, hire_ccy: v.hire_ccy, fee_pct: v.fee_pct, over_limit_t: v.over_limit_t,
+      over_price: v.over_price, note: v.note, acct_no: v.acct_no, acct_co: v.acct_co };
+    if (chung) ['name', 'phone', 'address'].forEach(k => delete body[k]);
+    if (c) body.active = v.active;
+    try { await (c ? API.put('/api/owners/' + c.id, body) : API.post('/api/owners', body)); }
+    catch (e) {
+      if (e.ma === 'HUY') return;
+      EPL.baoLoi(e);
+      return suaChu(c, v, { o: Array.isArray(e.o) ? e.o[0] : e.o, chu: e.message });
+    }
+    EPL.toast(NN.t('saved'), 'ok');
+    await tai().catch(EPL.baoLoi);
   }
   async function taiHd() { try { HD = await API.get('/api/hop-dong?kind=thue_xe'); } catch (e) { HD = []; EPL.baoLoi(e); } }   // lỗi thì báo — cột hợp đồng trống mà im lặng là tưởng chủ xe chưa có hợp đồng
   async function moHd(c) {
@@ -114,6 +147,7 @@
     async init(r) {
       root = r; chuHd = null;          // HTML mới: khối hợp đồng đóng — đừng để nút "Hợp đồng" của lần trước còn sáng
       r.querySelector('#xlk-them-chu').addEventListener('click', () => suaChu(null));
+      QUYEN = await API.get('/api/suppliers/quyen').catch(() => ({}));     // cờ danh mục chung (gls) — chủ xe cùng danh mục nhà cung cấp
       await tai();
     },
     // khối hợp đồng đang mở (js/hop_dong.js) dựng chữ lúc mở — đổi tiếng thì dựng lại, không để tiêu đề / nút còn tiếng cũ

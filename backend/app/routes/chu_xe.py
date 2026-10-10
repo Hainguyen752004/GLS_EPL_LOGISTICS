@@ -30,6 +30,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import CACH_TRA_CHU_XE, TIEN_TE, Owner, Trip, TripExpense, Vehicle
 from services import doi_tuong_gls as DT
+from services import tai_khoan as TK
 from services.bao_mat import can_vai, nguoi_hien_tai
 from services.phan_quyen import thay_tien_ban
 from services.tinh_toan import tinh_phieu
@@ -37,7 +38,7 @@ from services.tinh_toan import tinh_phieu
 router = APIRouter()
 
 SUA_CHU_XE = can_vai("acct")                    # phí, mức trừ, cách trả là điều khoản hợp đồng — kế toán VC giữ
-COT = ("name", "phone", "address", "fee_pct", "over_limit_t", "over_price", "hire_ccy", "pay_mode", "note")
+COT = ("name", "phone", "address", "fee_pct", "over_limit_t", "over_price", "hire_ccy", "pay_mode", "note", "acct_no", "acct_co")
 COT_SO = ("fee_pct", "over_limit_t", "over_price")
 COT_TIEN = ("fee_pct", "over_limit_t", "over_price", "hire_ccy")   # Bãi không thấy — đây là phần trừ tiền của chủ xe
 
@@ -73,7 +74,9 @@ def xuat_chu_xe(db, o, user=None, xe=None):
          "so_xe": xe.get(o.id, []) if xe is not None else
                   [v.truck_no for v in db.query(Vehicle).filter(Vehicle.owner_id == o.id, Vehicle.active.is_(True)).all()]}
     if user is None or thay_tien_ban(user.role):
-        r.update({"fee_pct": o.fee_pct, "over_limit_t": o.over_limit_t, "over_price": o.over_price, "hire_ccy": o.hire_ccy or "USD"})
+        r.update({"fee_pct": o.fee_pct, "over_limit_t": o.over_limit_t, "over_price": o.over_price, "hire_ccy": o.hire_ccy or "USD",
+                  # 09/10 (anh Khampla): TK Nợ (chi phí thuê xe, trống = 621) / TK Có (phải trả chủ xe, trống = 4022) riêng
+                  "acct_no": o.acct_no, "acct_co": o.acct_co})
     return r
 
 
@@ -134,6 +137,7 @@ def ds_chu_xe(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
 
 
 def _ap(o, data):
+    tk_cu = {"no": o.acct_no, "co": o.acct_co}
     for k in COT:
         if k not in data:
             continue
@@ -156,6 +160,16 @@ def _ap(o, data):
     if o.over_price is None: o.over_price = 1
     if o.fee_pct < 0 or o.fee_pct > 100:
         raise HTTPException(422, {"ma": "PHI_SAI", "loi": "Phí phải từ 0 đến 100 %."})
+    # 09/10: TK riêng phải có trong sổ tài khoản, chi tiết, đúng nhóm (Nợ 6 · Có 4) — CHỈ kiểm vế vừa đổi (soát 10/10: sửa SĐT / phí
+    # / Ngưng dùng không bị chặn vì mã cũ khi API sổ tài khoản lỗi)
+    doi = [ve for ve in ("no", "co") if getattr(o, "acct_" + ve) and getattr(o, "acct_" + ve) != tk_cu.get(ve)]
+    if doi:
+        from routes.acc_code import lay_danh_muc
+        danh_muc = lay_danh_muc()[0]
+        for ve in doi:
+            loi = TK.loi_tk_rieng("chu_xe", ve, getattr(o, "acct_" + ve), danh_muc)
+            if loi:
+                raise HTTPException(422, {"ma": "TK_SAI", "loi": loi, "o": "acct_" + ve})
 
 
 @router.get("/api/owners/gls")
@@ -191,6 +205,9 @@ def them_chu_xe(data: dict = Body(...), db: Session = Depends(get_db), user=Depe
     """Thêm chủ xe. Việc 10: có `obj_id` → gắn đối tượng danh mục chung; EPL_NCC_GLS=1 mà không có → tạo trong danh mục chung
     trước (mã EPLCX-… hoặc ô Mã) rồi gắn. Cờ tắt → chủ xe riêng như cũ."""
     if data.get("obj_id") or DT.bat("chu_xe"):
+        # 09/10: kiểm điều khoản + TK TRƯỚC khi tạo trong danh mục chung (bản nháp không gắn phiên) — hỏng thì không để lại chủ xe
+        # mồ côi bên đó
+        _ap(Owner(), {**{k: v for k, v in data.items() if k not in DT.O_CHUNG}, "name": data.get("name") or "-"})
         oid = data.get("obj_id") or DT.tao("chu_xe", data, str(data.get("code") or "").strip() or None)
         try:
             oid = int(oid)
@@ -218,6 +235,37 @@ def sua_chu_xe(oid: str, data: dict = Body(...), db: Session = Depends(get_db), 
         v.owner_name = o.name
     db.commit(); db.refresh(o)
     return xuat_chu_xe(db, o, user)
+
+
+@router.delete("/api/owners/{oid}")
+def xoa_chu_xe(oid: str, db: Session = Depends(get_db), _=Depends(SUA_CHU_XE)):
+    """09/10 (anh Khampla hỏi "có chỗ xoá không"): xoá chủ xe NHẬP NHẦM. Đã có xe, phiếu, hợp đồng thuê xe hay đề nghị trả thì
+    không xoá (lịch sử, công nợ còn trỏ tới) — báo dùng Ngưng dùng. Chủ xe đã gắn danh mục chung: chỉ xoá hồ sơ vận tải bên này."""
+    from models import ChiChuXeTune, Contract, OwnerPayment, Sale
+    o = db.get(Owner, oid)
+    if not o:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có chủ xe này."})
+    n_xe = db.query(Vehicle).filter(Vehicle.owner_id == o.id).count()
+    if n_xe:
+        raise HTTPException(409, {"ma": "CON_XE", "loi": "Chủ xe còn %d xe trong danh mục xe — chuyển hoặc xoá các xe đó trước, "
+                                                         "hoặc bấm Sửa → Ngưng dùng." % n_xe})
+    n_phieu = db.query(Trip).filter(Trip.owner_id == o.id).count()
+    if n_phieu:
+        raise HTTPException(409, {"ma": "CO_PHIEU", "loi": "Chủ xe đã có %d phiếu xuất xe — không xoá được (giữ lịch sử, công nợ); "
+                                                           "bấm Sửa → Ngưng dùng." % n_phieu})
+    if db.query(ChiChuXeTune).filter(ChiChuXeTune.owner_id == o.id).count():
+        raise HTTPException(409, {"ma": "CO_DE_NGHI_TRA", "loi": "Chủ xe đã có đề nghị trả qua hệ kế toán — không xoá được; "
+                                                                 "bấm Sửa → Ngưng dùng."})
+    n_hd = db.query(Contract).filter(Contract.owner_id == o.id).count()
+    if n_hd:
+        raise HTTPException(409, {"ma": "CON_HOP_DONG", "loi": "Chủ xe còn %d hợp đồng thuê xe — xoá hợp đồng trước, hoặc bấm Sửa → "
+                                                               "Ngưng dùng." % n_hd})
+    if db.query(OwnerPayment.id).filter(OwnerPayment.owner_id == o.id).first() or db.query(Sale.id).filter(Sale.owner_id == o.id).first():
+        raise HTTPException(409, {"ma": "CO_GIAO_DICH", "loi": "Chủ xe đã có đợt trả tiền hoặc phiếu bán hàng cũ — không xoá được; "
+                                                              "bấm Sửa → Ngưng dùng."})
+    db.delete(o)
+    db.commit()
+    return {"ok": True}
 
 
 # ---------------------------------------------------------------- trả chủ xe qua hệ kế toán anh Tune (01/10)

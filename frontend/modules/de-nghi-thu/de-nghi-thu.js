@@ -8,14 +8,16 @@
  * 01/10 (bỏ trang kế toán tạm phần tiền): tờ không còn đẩy sang trang tạm — bỏ nút "Gửi bên công nợ" (dt_gui), lời gọi
  * /api/ke-toan/trang-thai, mã phiếu và lỗi đẩy bên trang tạm. Đường sang hệ kế toán (anh Tune) là nút Tạo SO bên dưới.
  *
- * API: GET /api/de-nghi-thu?thang=&q= · GET/POST /api/trips/{id}/de-nghi-thu.
+ * API: GET /api/de-nghi-thu?thang=&q= (09/10: kỳ không trọn tháng thì ?tu=&den=) · GET/POST /api/trips/{id}/de-nghi-thu.
  * Tạo SO ở hệ kế toán (anh Tune, hợp đồng mục 3.2): GET /api/trips/{id}/tao-so (xem trước, không gọi mạng) → hỏi xác nhận →
  * POST /api/trips/{id}/tao-so. Chỉ KT Thu/Chi Viêng Chăn và Sếp; máy chủ cũng chặn vai khác.
  */
 (function () {
   const { API, NN, esc, so, AUTH } = EPL;
+  const KTG = EPL.khoangThoiGian;
   const TT = ['chua_lap', 'cho_gui', 'da_tao_so', 'thu_mot_phan', 'da_thu', 'cho_khoa', ''];
-  let root, D = { ds: [] }, tt = '', tim = '', chonId = null, hen = null;
+  // 09/10 (anh Khampla): kỳ xem chọn ở bộ lọc thời gian dùng chung (KY: Năm · Tháng · Khoảng thời gian · nút nhanh) thay ô tháng
+  let root, D = { ds: [] }, tt = '', tim = '', chonId = null, hen = null, KY = null;
   const q = (s) => root.querySelector(s);
   const tagTT = (s) => `<span class="tag dt_${esc(s)}">${NN.h('dt_st_' + s)}</span>`;
   const tien = (n, ma) => EPL.tien(n, ma);
@@ -25,19 +27,10 @@
   let TU_DONG = false, BAO = null, GAN = null;
   const nhanThang = (v) => (v ? v.slice(5, 7) + '/' + v.slice(0, 4) : '');
 
-  /** Tháng `th` có phiếu không; không có thì tháng nào GẦN NHẤT có (cùng bộ lọc `loc` của /api/trips). Hỏi hai lần, mỗi lần
-   *  một dòng: phiếu mới nhất tới cuối tháng `th`, phiếu cũ nhất từ đầu tháng `th` — không tải cả năm. Cách đều: tháng trước. */
-  async function thangGan(th, loc) {
-    const [y, m] = th.split('-').map(Number);
-    const hoi = (them) => { const p = new URLSearchParams(loc); p.set('co', '1'); Object.entries(them).forEach(([k, v]) => p.set(k, v));
-      return API.get('/api/trips?' + p).then(d => (d && d[0] && d[0].doc_date ? d[0].doc_date.slice(0, 7) : null), () => null); };
-    const [truoc, sau] = await Promise.all([hoi({ den: th + '-' + String(new Date(y, m, 0).getDate()).padStart(2, '0') }), hoi({ tu: th + '-01', sap: 'cu' })]);
-    if (truoc === th || sau === th) return { co: true, gan: th };
-    const n = (v) => v.slice(0, 4) * 12 + +v.slice(5, 7);
-    return { co: false, gan: !truoc || !sau ? truoc || sau : (n(sau) - n(th) < n(th) - n(truoc) ? sau : truoc) };
-  }
-  /** Người dùng TỰ chọn tháng (ô tháng, nút ở khung trống): giữ đúng tháng đó, bỏ dòng báo, thôi tự sang tháng khác. */
-  function chonThang(v) { TU_DONG = false; BAO = null; q('#dnt-thang').value = v; tai(); }
+  /* «Tháng gần nhất có phiếu» dùng chung: EPL.khoangThoiGian.gan (09/10 — trước đây hàm thangGan riêng ở đây, cùng cách). */
+  /** Người dùng TỰ chọn kỳ (bộ lọc thời gian, nút tháng gần nhất ở khung trống): giữ đúng kỳ đó, bỏ dòng báo, thôi tự sang tháng
+   *  khác. `v` = 'YYYY-MM' (nút ở khung trống) — không có thì kỳ đang chọn trên bộ lọc. */
+  function chonThang(v) { TU_DONG = false; BAO = null; if (v) KY.dat(KTG.cuaThang(v)); return tai(); }
 
   function loc() {
     return D.ds.filter(x => !tt || x.trang_thai === tt);
@@ -60,7 +53,7 @@
     const conLak = D.ds.filter(x => x.locked).reduce((s, x) => s + (x.con_lai_lak || 0), 0);
     const oTien = (m) => Object.keys(m).length ? Object.entries(m).map(([k, v]) => `${so(v, EPL.leTien(k))}<small>${esc(k)}</small>`).join(' · ') : '—';
     q('#dnt-tong').innerHTML = `
-      <div class="o"><span class="l">${NN.h('dt_tong_thang')}</span><span class="v">${oTien(de)}</span><span class="s">${NN.h('dn_so_to', { n: D.ds.filter(x => x.locked).length })}</span></div>
+      <div class="o"><span class="l">${NN.h(KY.laThang() ? 'dt_tong_thang' : 'ktg_dt_tong')}</span><span class="v">${oTien(de)}</span><span class="s">${NN.h('dn_so_to', { n: D.ds.filter(x => x.locked).length })}</span></div>
       <div class="o ${nCho ? 'canh' : ''}"><span class="l">${NN.h('dt_st_cho_gui')}</span><span class="v">${oTien(cho)}</span><span class="s">${NN.h('dn_so_to', { n: nCho })}</span></div>
       <div class="o"><span class="l">${NN.h('ncc_con_thu')}</span><span class="v">${so(conLak)}<small>LAK</small></span><span class="s">${NN.h('dt_con_lai_s')}</span></div>
       ${BAO ? `<div class="dnt-bao" id="dnt-bao" role="status"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/></svg>
@@ -73,7 +66,7 @@
     if (!ds.length) {
       // tháng có DO mà thẻ trạng thái / chữ tìm lọc hết → nói "không khớp bộ lọc", đừng nói tháng này chưa có DO nào về
       const boLoc = D.ds.length || tim;
-      o.innerHTML = `<div class="dnt-trong"><div>${NN.h(boLoc ? 'loc_trong' : 'dt_trong')}</div>
+      o.innerHTML = `<div class="dnt-trong"><div>${NN.h(boLoc ? 'loc_trong' : KY.laThang() ? 'dt_trong' : 'ktg_dt_trong')}</div>
         ${D.ds.length && tt ? `<button type="button" class="btn sm" data-tat-ca="1">${NN.h('tq_view_all')}</button>` : ''}
         ${!D.ds.length && GAN ? `<button type="button" class="btn sm primary" data-thang="${esc(GAN)}">${NN.h('thang_xem_gan', { thang: nhanThang(GAN) })}</button>` : ''}</div>`;
       const b = o.querySelector('[data-thang]'); if (b) b.addEventListener('click', () => chonThang(b.dataset.thang));
@@ -105,7 +98,7 @@
   /* ---------------------------------------------------------------- tờ đề nghị thu */
   async function veTo() {
     const x = D.ds.find(y => y.trip_id === chonId), nut = q('#dnt-nut');
-    ghiDiaChi(new URLSearchParams({ thang: q('#dnt-thang').value || '', id: x ? x.trip_id : '', tt }));
+    ghiDiaChi(new URLSearchParams({ ...KTG.diaChi(KY.giaTri), id: x ? x.trip_id : '', tt }));   // kỳ: ?thang= hoặc ?tu=&den=
     q('#dnt-giay').scrollTop = 0;            // tờ cuộn trong khung riêng (01/10): chọn DO khác thì về đầu tờ
     // danh sách trống: khung trống bên trái đã nói lý do + nút; tờ giấy "Chọn một tờ bên trái" lúc đó chỉ gây rối
     q('#dnt-giay').hidden = !loc().length;
@@ -209,8 +202,8 @@
   let LUOT = 0;                // lượt tải mới nhất — lượt cũ (đang tự sang tháng) về sau thì không vẽ đè
   async function tai() {
     const luot = ++LUOT;
-    const thang = q('#dnt-thang').value || thangNay();
-    const th = new URLSearchParams({ thang });
+    const gt = KY.giaTri;
+    const th = KTG.thamSo(gt);               // trọn một tháng → thang (như cũ), khoảng khác → tu + den
     if (tim) th.set('q', tim);
     let duoc = true, ve;
     // Hỏi "tháng gần nhất" SAU khi danh sách về trống, không hỏi song song: đo 01/10, /api/trips chạy cùng lúc với
@@ -220,10 +213,10 @@
     D = ve; GAN = null;
     if (duoc && !D.ds.length) {
       // tờ đề nghị thu chỉ có ở DO đã về (khoá phiếu đòi xe về): tháng gần nhất có DO đã về, cùng chữ tìm
-      const r = await thangGan(thang, tim ? { transport_status: 'arrived', q: tim } : { transport_status: 'arrived' });
+      const r = await KTG.gan(gt, tim ? { transport_status: 'arrived', q: tim } : { transport_status: 'arrived' });
       if (luot !== LUOT) return;
       GAN = r.co ? null : r.gan;
-      if (TU_DONG && GAN) { TU_DONG = false; BAO = { trong: thang, xem: GAN }; q('#dnt-thang').value = GAN; return tai(); }
+      if (TU_DONG && GAN) { TU_DONG = false; BAO = { trong: KTG.laThang(gt) || gt.tu.slice(0, 7), xem: GAN }; KY.dat(KTG.cuaThang(GAN)); return tai(); }
     }
     TU_DONG = false;
     veHet();
@@ -233,17 +226,18 @@
     async init(r, ctx) {
       root = r; D = { ds: [] }; tim = ''; tt = ''; chonId = null; BAO = null; GAN = null;
       const t = (ctx && ctx.tham) || {};
-      // ô tháng mặc định là tháng này THEO GIỜ MÁY (EPL.doiOThang) — toISOString là giờ UTC, 0–7 giờ sáng ngày 1 ra tháng trước
-      if (t.thang) q('#dnt-thang').value = t.thang;
-      TU_DONG = !t.thang;                     // mở từ Đề nghị theo DO thì đã kèm tháng của DO — giữ nguyên
+      // kỳ mặc định là tháng này THEO GIỜ MÁY (EPL.thangNay) — toISOString là giờ UTC, 0–7 giờ sáng ngày 1 ra tháng trước.
+      // 09/10: kỳ trên địa chỉ là ?thang= (Đề nghị theo DO, bản cũ) hoặc ?tu=&den= (khoảng chọn ở bộ lọc thời gian)
+      const kyDc = KTG.tuDiaChi(t);
+      KY = KTG(q('#dnt-ky'), { cheDo: 'khoang', giaTri: kyDc || KTG.cuaThang(thangNay()), khiDoi: () => chonThang() });
+      TU_DONG = !kyDc;                        // mở từ Đề nghị theo DO thì đã kèm tháng của DO — giữ nguyên
       if (t.id) chonId = t.id;
       if (TT.includes(t.tt)) tt = t.tt;
-      q('#dnt-thang').addEventListener('change', (e) => chonThang(e.target.value));
-      // đọc lại thu tiền mọi SO của tháng từ công nợ khách bên hệ kế toán (chỉ xem) rồi tải lại danh sách
+      // đọc lại thu tiền mọi SO của kỳ đang xem từ công nợ khách bên hệ kế toán (chỉ xem) rồi tải lại danh sách
       q('#dnt-cap-nhat').addEventListener('click', async (e) => {
         const b = e.currentTarget; b.disabled = true;
         try {
-          const r = await API.post('/api/de-nghi-thu/cap-nhat', { thang: q('#dnt-thang').value || thangNay() });
+          const r = await API.post('/api/de-nghi-thu/cap-nhat', KTG.diaChi(KY.giaTri));    // {thang} hoặc {tu, den}
           EPL.toast(`${NN.t('ck_cap_nhat')} · ${r.da_doc} SO` + (r.loi ? ' — ' + r.loi : ''), r.loi ? 'loi' : 'ok');
         } catch (er) { EPL.baoLoi(er); }
         b.disabled = false;

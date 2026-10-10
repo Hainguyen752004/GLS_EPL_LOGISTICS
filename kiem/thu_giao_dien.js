@@ -206,7 +206,8 @@ async function main() {
     assert.ok(g.querySelectorAll('#tq-gantt .row').length > 0, 'dòng thời gian phải có chuyến');
     assert.ok(g.querySelectorAll('.tq-veh').length > 0, 'hiệu suất xe phải có xe');
     assert.ok(g.querySelectorAll('#tq-co-cau .row').length === 4, 'cơ cấu chi phải đủ 4 mục');
-    const xh = await (await fetch(GOC + '/api/bao-cao/xu-huong?thang=' + g.querySelector('#tq-thang').value,
+    // 09/10: ô tháng → bộ lọc thời gian dùng chung (#tq-ky, kỳ đang xem ở ._ktg) — tham số y như màn gọi (thang hoặc tu/den)
+    const xh = await (await fetch(GOC + '/api/bao-cao/xu-huong?' + w.EPL.khoangThoiGian.thamSo(g.querySelector('#tq-ky')._ktg.giaTri),
       { headers: { Authorization: 'Bearer ' + w.EPL.API.token() } })).json();
     assert.strictEqual(g.querySelectorAll('#tq-gantt .row').length, xh.dong_thoi_gian.length, 'số dòng thời gian phải khớp máy chủ');
     assert.ok(g.querySelector('#tq-ops').textContent.includes(String(xh.van_hanh.nguong_ngay)),

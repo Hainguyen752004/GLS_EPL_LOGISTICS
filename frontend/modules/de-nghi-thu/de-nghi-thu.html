@@ -3,6 +3,8 @@
      bên đó chép sang. Trái: DO đã về trong tháng; phải: tờ đề nghị thu đúng khổ in. -->
 <div class="dnt">
   <div class="dnt-top no-print">
+    <!-- 09/10: bộ lọc thời gian dùng chung (js/khoang_thoi_gian.js) thay ô tháng — hàng riêng trên đầu -->
+    <div class="ktg-dong" id="dnt-ky"></div>
     <div class="seg" id="dnt-tt"></div>
     <label class="o-tim">
       <svg viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14M21 21l-5-5"/></svg>
@@ -10,7 +12,6 @@
     </label>
     <div class="grow"></div>
     <button class="btn" id="dnt-cap-nhat" type="button" data-i18n="ck_cap_nhat"></button>
-    <div class="field"><label data-i18n="month"></label><input type="month" id="dnt-thang"></div>
   </div>
 
   <div class="dnt-tong no-print" id="dnt-tong"></div>

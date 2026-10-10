@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import Customer, Supplier, Trip, TripExpense
+from services import tai_khoan as TK
 from services import doi_tuong_gls as DT
 from services.bao_mat import can_vai, nguoi_hien_tai
 from services.phan_quyen import thay_tien_chi
@@ -189,7 +190,10 @@ def _xuat(db, s, tong=None, kem_tien=False):
          "customer_id": s.customer_id, "customer_name": s.customer_name, "so_dong": n,
          # Việc 10: nhà cung cấp là đối tượng danh mục chung — tên · điện thoại · địa chỉ · mã là bản chép (services/doi_tuong_gls)
          "code": s.code, "phone": s.phone, "address": s.address, "obj_id": s.obj_id,
-         "gls_synced_at": s.gls_synced_at.isoformat() if s.gls_synced_at else None}
+         "gls_synced_at": s.gls_synced_at.isoformat() if s.gls_synced_at else None,
+         # 09/10 (anh Khampla): TK Nợ / Có riêng (trống = theo khoản mục / 4021) + hồ sơ đầy đủ như phần mềm kế toán của khách
+         "acct_no": s.acct_no, "acct_co": s.acct_co, "dich_vu": s.dich_vu, "tax_no": s.tax_no, "email": s.email,
+         "website": s.website, "currency": s.currency}
     if kem_tien:
         r.update({"phat_sinh_lak": round(phat_sinh), "ghi_no_lak": round(ghi_no)})
     return r
@@ -221,15 +225,46 @@ def ds(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
         # Bãi không thấy mã tài khoản (anh Khampla A2); chủ dự án chốt 23/09: màn Theo dõi NCC của Bãi giữ danh sách ·
         # số dòng · kỳ trả. Tiền (phát sinh, đã trả, còn nợ) ở /api/suppliers/cong-no — chỉ vai thấy tiền chi.
         for r in ra:
-            r.pop("acct_code", None)
+            for k in ("acct_code", "acct_no", "acct_co"):
+                r.pop(k, None)
     return ra
 
 
+TIEN_NCC = ("LAK", "THB", "USD", "VND", "CNY")             # đơn vị tiền giao dịch của nhà cung cấp
+
+
+def _kiem_rieng(data, s=None):
+    """09/10: kiểm các ô mới — TK Nợ / Có phải có trong sổ tài khoản, là tài khoản chi tiết, đúng nhóm (Nợ 6 · Có 4); email; tiền.
+    TK chỉ kiểm vế ĐỔI so với nhà cung cấp `s` đang có (soát 10/10: hộp luôn gửi lại TK; API sổ tài khoản lỗi thì mã cũ không được
+    chặn việc sửa SĐT / kỳ trả / Ngưng dùng)."""
+    from routes.acc_code import lay_danh_muc
+    doi = [ve for ve in ("no", "co") if str(data.get("acct_" + ve) or "").strip()
+           and str(data.get("acct_" + ve)).strip() != (getattr(s, "acct_" + ve, None) or "")]
+    if doi:
+        danh_muc = lay_danh_muc()[0]
+        for ve in doi:
+            loi = TK.loi_tk_rieng("ncc", ve, data.get("acct_" + ve), danh_muc)
+            if loi:
+                raise HTTPException(422, {"ma": "TK_SAI", "loi": loi, "o": "acct_" + ve})
+    email = str(data.get("email") or "").strip()
+    if email and ("@" not in email or " " in email):
+        raise HTTPException(422, {"ma": "EMAIL_SAI", "loi": "Thư điện tử không đúng dạng.", "o": "email"})
+    tien = str(data.get("currency") or "").strip().upper()
+    if tien and tien not in TIEN_NCC:
+        raise HTTPException(422, {"ma": "TIEN_TE_SAI", "loi": "Đơn vị tiền phải là %s." % ", ".join(TIEN_NCC), "o": "currency"})
+
+
 def _ap_rieng(db, s, data):
-    """Phần riêng vận tải của nhà cung cấp: khoản mục chi, mã kế toán, kỳ trả, ghi chú, đang dùng, khách cấn trừ."""
-    for k in ("item_key", "acct_code", "payment_term", "note", "active"):
+    """Phần riêng vận tải của nhà cung cấp: khoản mục chi, dịch vụ ghi chữ, mã kế toán (cũ), TK Nợ / Có riêng, kỳ trả, ghi chú,
+    đang dùng, khách cấn trừ, mã số thuế, thư điện tử, trang web, đơn vị tiền."""
+    _kiem_rieng(data, s)
+    for k in ("item_key", "dich_vu", "acct_code", "acct_no", "acct_co", "payment_term", "note", "active", "tax_no", "email",
+              "website", "currency"):
         if k in data:
-            setattr(s, k, data[k].strip() if isinstance(data[k], str) else data[k])
+            v = data[k].strip() if isinstance(data[k], str) else data[k]
+            setattr(s, k, (v or None) if isinstance(v, str) else v)
+    if s.currency:
+        s.currency = s.currency.upper()
     s.payment_term = s.payment_term or "t_monthly"
     _ap_khach(db, s, data)
 
@@ -283,6 +318,9 @@ def them(data: dict = Body(...), db: Session = Depends(get_db), _=Depends(SUA_NC
     """Thêm nhà cung cấp. Việc 10: có `obj_id` → gắn đối tượng danh mục chung đó; EPL_NCC_GLS=1 mà không có → tạo trong danh mục
     chung trước (mã: ô Mã hoặc EPLNCC-…) rồi gắn. Cờ tắt → nhà cung cấp riêng như cũ."""
     if data.get("obj_id") or DT.bat("ncc"):
+        # 09/10: kiểm phần riêng (TK, thư điện tử, tiền, khách cấn trừ) TRƯỚC khi tạo trong danh mục chung — hỏng thì không để lại
+        # nhà cung cấp mồ côi bên đó (bản nháp không gắn phiên, không ghi gì)
+        _ap_rieng(db, Supplier(), data)
         oid = data.get("obj_id") or DT.tao("ncc", data, str(data.get("code") or "").strip() or None)
         try:
             oid = int(oid)
@@ -294,9 +332,11 @@ def them(data: dict = Body(...), db: Session = Depends(get_db), _=Depends(SUA_NC
         return _xuat(db, s)
     if not str(data.get("name") or "").strip():
         raise HTTPException(422, {"ma": "THIEU_TEN", "loi": "Nhà cung cấp phải có tên."})
-    s = Supplier(name=data["name"].strip(), item_key=data.get("item_key"), acct_code=data.get("acct_code"),
-                 payment_term=data.get("payment_term") or "t_monthly", note=data.get("note"))
-    _ap_khach(db, s, data)
+    s = Supplier(name=data["name"].strip())
+    for k in ("code", "phone", "address"):
+        if str(data.get(k) or "").strip():
+            setattr(s, k, str(data[k]).strip())
+    _ap_rieng(db, s, data)
     db.add(s); db.commit(); db.refresh(s)
     return _xuat(db, s)
 
@@ -307,10 +347,12 @@ def sua(sid: str, data: dict = Body(...), db: Session = Depends(get_db), _=Depen
     if not s:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có nhà cung cấp này."})
     data = DT.chan_sua_chung("ncc", s, data)          # Việc 10: đã gắn danh mục chung + cờ bật → thông tin chung sửa ở đó
-    for k in ("name", "item_key", "acct_code", "payment_term", "note", "active"):
+    if "name" in data and not str(data.get("name") or "").strip():
+        raise HTTPException(422, {"ma": "THIEU_TEN", "loi": "Nhà cung cấp phải có tên."})
+    for k in ("name", "code", "phone", "address"):
         if k in data:
-            setattr(s, k, data[k].strip() if isinstance(data[k], str) else data[k])
-    _ap_khach(db, s, data)
+            setattr(s, k, str(data[k] or "").strip() or (s.name if k == "name" else None))
+    _ap_rieng(db, s, data)
     db.commit(); db.refresh(s)
     return _xuat(db, s)
 

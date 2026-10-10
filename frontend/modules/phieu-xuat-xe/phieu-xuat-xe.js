@@ -61,6 +61,23 @@
   }
   /** Mã đang có hiệu lực: người dùng tự chọn (ngoài bộ mã máy đặt) thì giữ, còn lại theo luật — như TK.tk_dong. */
   const tkDong = (d) => (d.acct_code && !(KM.acct_rule.he_thong || []).includes(d.acct_code)) ? d.acct_code : tkMacDinh(d.section, d);
+  /** Mã HIỆN của dòng (09/10, anh Khampla): như tkDong, nhưng mã theo luật thì thay bằng tài khoản riêng của nhà cung cấp trên dòng /
+   *  chủ xe của phiếu (P.tk_rieng, máy chủ gửi — như services/tai_khoan.doi_cap). Lưu phiếu vẫn gửi tkDong (mã theo luật): gửi mã
+   *  riêng thì máy chủ coi là mã tự chọn và ghim luôn trên dòng. */
+  function tkHien(d) {
+    const ma = tkDong(d);
+    if (!ma || ma.indexOf('/') < 0 || (d.acct_code && !(KM.acct_rule.he_thong || []).includes(d.acct_code))) return ma;
+    const R = KM.acct_rule, T = (P && P.tk_rieng) || {};
+    // dòng ghi rõ nhà cung cấp → theo id; dòng chỉ mang khoản mục → nhà cung cấp theo dõi khoản đó (TK.ncc_cua_dong)
+    const ncc = d.supplier_id ? (T.ncc || {})[d.supplier_id] : d.item_key ? (T.ncc_khoan || {})[d.item_key] : null, chu = T.chu_xe;
+    let [no, co] = ma.split('/');
+    if (ncc && co === R.ncc) {                       // chỉ dòng NỢ nhà cung cấp (Có 4021) — như doi_cap (soát 10/10)
+      if (ncc.co) co = ncc.co;
+      if ((no === R.cp_di_lai || no === R.cp_sua) && ncc.no) no = ncc.no;
+    }
+    if (chu && chu.co) { if (no === R.chu_xe) no = chu.co; if (co === R.chu_xe) co = chu.co; }
+    return no + '/' + co;
+  }
   /** Chữ khi rê chuột lên ô định khoản: tên hai vế; mã con của khách chưa mở bên kế toán thì nói rõ. */
   function tkTen(cap) {
     const T = KM.acct_rule.ten || {};
@@ -277,7 +294,7 @@
         const khoXeThue = lk && (m === 'fuel' ? nguonCuaDiem(d) === 'kho' : m === 'repair' && d.source === 'kho');
         const eplDuoc = khoaDuoc || (khoXeThue && !d.paid_by_epl && suaTienDuoc(m));
         const pay = `<td class="px-lk"><span class="px-xuat" aria-hidden="true">${esc(NN.t(d.paid_by_epl ? 'pay_epl' : 'pay_own'))}</span><span class="px-pay"><button type="button" class="${d.paid_by_epl ? 'on' : ''}" data-i="${i}" data-pay="1" ${eplDuoc ? '' : 'disabled'}>${esc(NN.t('pay_epl'))}</button><button type="button" class="${!d.paid_by_epl ? 'on' : ''}" data-i="${i}" data-pay="0" ${khoaDuoc && !khoXeThue ? '' : 'disabled'}${khoXeThue ? ` title="${esc(NN.t('pay_kho_xe_thue'))}"` : ''}>${esc(NN.t('pay_own'))}</button></span></td>`;
-        const tkd = tkDong(d);
+        const tkd = tkHien(d);
         // xuất bán (02/10): mã máy đặt 4022/707 không còn là bút toán — phần bán thành SO nhiên liệu, chỉ giá vốn 607/1371.
         // Người dùng tự chọn mã khác (ngoài tập hệ thống) thì vẫn hiện mã đó.
         const xb = xuatBan(d) && tkd && !(d.acct_code && !(KM.acct_rule.he_thong || []).includes(d.acct_code));
@@ -343,7 +360,7 @@
     root.querySelectorAll('.px-chi [data-pay]').forEach(b => b.addEventListener('click', () => { P.expenses[+b.dataset.i].paid_by_epl = b.dataset.pay === '1'; veChi(); veSo(); }));
     root.querySelectorAll('.px-chi [data-xoa]').forEach(b => b.addEventListener('click', () => { P.expenses.splice(+b.dataset.xoa, 1); veChi(); veSo(); }));
     root.querySelectorAll('.px-chi [data-acct]').forEach(b => b.addEventListener('click', async () => {
-      const d = P.expenses[+b.dataset.acct]; const v = await EPL.chonDinhKhoan(tkDong(d));
+      const d = P.expenses[+b.dataset.acct]; const v = await EPL.chonDinhKhoan(tkHien(d));
       if (v) { d.acct_code = v; veChi(); }
     }));
     veSo();

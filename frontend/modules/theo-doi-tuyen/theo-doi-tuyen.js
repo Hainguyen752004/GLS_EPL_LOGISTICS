@@ -362,7 +362,7 @@
         const cho = e.status === 'reported';
         return `<tr><td class="nowrap">${EPL.ngayGio(e.ts)}</td>
           <td><span class="tag ${e.kind === 'incident' ? 'tdt-tag-in' : e.kind === 'repair' ? 'tdt-tag-rp' : 'plain'}">${NN.h('ev_' + e.kind)}${e.incident_type ? ' · ' + NN.h('inc_' + e.incident_type) : ''}</span></td>
-          <td lang="lo">${esc(e.note) || ''}${e.stop_seq ? ` <span class="muted">· ${esc((diem.find(s => s.seq === e.stop_seq) || {}).name || e.stop_seq)}</span>` : ''}
+          <td lang="lo">${esc(EPL.chuTheo(e, 'note'))}${e.stop_seq ? ` <span class="muted">· ${esc((diem.find(s => s.seq === e.stop_seq) || {}).name || e.stop_seq)}</span>` : ''}
             ${e.reported_cost != null ? ` <span class="muted">· ${so(e.reported_cost)} ${esc(e.currency || 'LAK')}</span>` : ''}
             ${e.can_run === false ? ` <span class="tag unpaid">${NN.h('pct_phai_dung')}</span>` : ''}${e.paid_by_driver ? ` <span class="tag plain">${NN.h('pct_da_tu_tra')}</span>` : ''}
             ${cho ? ` <span class="tag partial">${NN.h('st_reported')}</span>` : ''}</td>
@@ -662,7 +662,7 @@
       q('#tdt-so-than').innerHTML = ds.length ? ds.map(e => `<tr>
         <td class="nowrap">${EPL.ngayGio(e.ts)}</td><td class="mono">${esc(e.doc_no || '')}</td><td>${esc(e.truck_no || '')}</td>
         <td>${NN.h(e.kind === 'refuel' ? 'ev_refuel' : 'ev_' + e.kind)}${e.incident_type ? ' · ' + NN.h('inc_' + e.incident_type) : ''}</td>
-        <td lang="lo">${esc(e.note || '')}</td>
+        <td lang="lo">${esc(EPL.chuTheo(e, 'note'))}</td>
         <td class="num">${e.reported_cost != null ? so(e.reported_cost) + ' ' + esc(e.currency || 'LAK') : '—'}</td>
         <td>${tag(e.status === 'reported' ? 'partial' : e.status === 'approved' ? 'paid' : 'unpaid', 'st_' + e.status)}</td></tr>`).join('')
         : `<tr><td colspan="7" class="empty">${NN.h('td_inc_empty')}</td></tr>`;

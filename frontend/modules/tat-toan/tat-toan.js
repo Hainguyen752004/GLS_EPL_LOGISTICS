@@ -9,7 +9,9 @@
  */
 (function () {
   const { API, NN, esc, so, AUTH } = EPL;
-  let root, BANG = { dong: [] }, CHON = null, CT = {}, loc = '', tim = '', hen = null, LUOT = 0, TU_DONG = false, BAO = null;
+  const KTG = EPL.khoangThoiGian;
+  // 09/10: kỳ chốt là MỘT THÁNG (nghiệp vụ theo kỳ) — chọn ở bộ lọc thời gian dùng chung chế độ tháng (KY), thay ô tháng
+  let root, BANG = { dong: [] }, CHON = null, CT = {}, loc = '', tim = '', hen = null, LUOT = 0, TU_DONG = false, BAO = null, KY = null;
   const MO = new Set();               // phiếu đang mở ra trong bảng tính (từng dòng tiền)
   const q = (s) => root.querySelector(s);
   const chotDuoc = () => AUTH.la('expacct');          // Sếp luôn qua (AUTH.la)
@@ -118,7 +120,7 @@
   function veXem() {
     const o = q('#tt2-xem');
     const d = BANG.dong.find(x => x.driver_id === CHON);
-    ghiDiaChi(new URLSearchParams({ ky: BANG.ky || q('#tt2-ky').value || '', tx: d ? d.driver_id : '' }));
+    ghiDiaChi(new URLSearchParams({ ky: BANG.ky || KY.giaTri.thang || '', tx: d ? d.driver_id : '' }));
     if (!d) { o.innerHTML = `<div class="tt2-trong">${NN.h('no_data')}</div>`; return; }
     const c = CT[d.driver_id];                 // bản đầy đủ (phiếu trong kỳ, tạm ứng chờ, QT_TU) — tải riêng
     const x = c || d, t = x.tat_toan, ch = x.chenh_lech_lak, s = trangThai(x);
@@ -313,14 +315,14 @@
   /** Tải bảng tháng. `giu` = giữ tài xế đang chọn (sau một việc). Lần đầu vào màn không kèm kỳ: tháng này trống thì xem
    *  tháng trước (đầu tháng là lúc tất toán tháng vừa qua), kèm dòng báo. */
   async function tai(giu) {
-    const luot = ++LUOT, ky = q('#tt2-ky').value || EPL.thangNay();
+    const luot = ++LUOT, ky = KY.giaTri.thang || EPL.thangNay();
     let b;
     try { b = await API.get('/api/tat-toan?ky=' + encodeURIComponent(ky)); } catch (e) { if (luot === LUOT) EPL.baoLoi(e); b = { ky, dong: [] }; }
     if (luot !== LUOT) return;
     if (TU_DONG && !b.dong.length) {
       TU_DONG = false;
       const truoc = thangTruoc(ky);
-      BAO = { trong: ky, xem: truoc }; q('#tt2-ky').value = truoc;
+      BAO = { trong: ky, xem: truoc }; KY.dat({ thang: truoc });
       return tai();
     }
     TU_DONG = false;
@@ -333,10 +335,10 @@
     async init(r, ctx) {
       root = r; BANG = { dong: [] }; CT = {}; CHON = null; loc = ''; tim = ''; BAO = null; MO.clear();
       const t = (ctx && ctx.tham) || {};
-      if (t.ky) q('#tt2-ky').value = t.ky;
+      KY = KTG(q('#tt2-ky'), { cheDo: 'thang', giaTri: { thang: /^\d{4}-\d{2}$/.test(t.ky || '') ? t.ky : EPL.thangNay() },
+        khiDoi: () => { TU_DONG = false; BAO = null; CHON = null; return tai(); } });     // tự chọn kỳ: bỏ dòng báo
       TU_DONG = !t.ky;
       if (t.tx) CHON = t.tx;
-      q('#tt2-ky').addEventListener('change', () => { TU_DONG = false; BAO = null; CHON = null; tai(); });
       q('#tt2-lam-moi').addEventListener('click', () => tai(true));
       q('#tt2-tim').addEventListener('input', (e) => { clearTimeout(hen); hen = setTimeout(() => { tim = e.target.value.trim(); veHet(); }, 200); });
       window.removeEventListener('resize', khiDoiCo); window.addEventListener('resize', khiDoiCo);

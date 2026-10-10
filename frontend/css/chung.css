@@ -436,3 +436,26 @@ body.vai-yard .tien-chi{display:none!important}
 .loc-nhac.khong{background:var(--red-soft);color:var(--red)}
 select.loc-ds{height:auto;padding:2px;border-color:var(--blue);box-shadow:0 0 0 2px var(--blue-soft)}
 select.loc-ds option{padding:4px 6px}
+
+/* ---------- Hộp nhập hai cột (EPL.hopNhap tuy.cot = 2 — 09/10, hộp nhà cung cấp / chủ xe đủ ô như phần mềm kế toán) ---------- */
+.hop-thoai:has(.hn-2){width:min(780px,calc(94vw / var(--ty-le, 1)))}
+.hn-luoi.hn-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px;max-height:min(64vh,640px);overflow:auto;padding:2px 6px 4px 2px}
+.ht-noi-dung .hn-luoi .field{margin-top:0}
+.hn-rong,.hn-nhom{grid-column:1/-1}
+.hn-nhom{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--green);border-bottom:1px solid var(--line);padding:8px 0 4px}
+.hn-nhom:first-child{padding-top:0}
+.hn-goi-y{font-size:11.5px;color:var(--ink-3);line-height:1.35}
+.hn-loi{font-size:12px;color:var(--red);line-height:1.35;font-weight:500}
+.hn-co-loi input,.hn-co-loi select,.hn-co-loi textarea{border-color:var(--red);box-shadow:0 0 0 2px var(--red-soft)}
+.hn-sao{color:var(--red)}
+/* công tắc bật / tắt (Đang dùng) */
+.hn-bat{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;color:var(--ink);padding:6px 0;width:max-content}
+.hn-bat input{position:absolute;opacity:0;width:1px;height:1px}
+.hn-bat-nut{width:38px;height:22px;border-radius:11px;background:var(--line-2);position:relative;transition:background .15s;flex:none}
+.hn-bat-nut::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+.hn-bat input:checked + .hn-bat-nut{background:var(--green)}
+.hn-bat input:checked + .hn-bat-nut::after{transform:translateX(16px)}
+.hn-bat input:focus-visible + .hn-bat-nut{outline:2px solid var(--blue);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){.hn-bat-nut,.hn-bat-nut::after{transition:none}}
+@media (max-width:640px){.hn-luoi.hn-2{grid-template-columns:minmax(0,1fr)}}
+.hn-luoi .field input[readonly]{background:var(--bg);color:var(--ink-2)}

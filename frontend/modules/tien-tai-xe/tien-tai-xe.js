@@ -11,7 +11,8 @@
   const { API, NN, esc, so } = EPL;
   const KHOAN = ['x_trip', 'x_water', 'x_phone', 'x_vn', 'x_food'];
   const PHIEU_TOI_DA = 3;                      // quá số này thì gộp "+n" để ô trạng thái không kéo dòng dài
-  let root, d = null, LUOT = 0;
+  // 09/10: kỳ là MỘT THÁNG (trả cùng lương theo tháng) — chọn ở bộ lọc thời gian dùng chung chế độ tháng (KY), thay ô tháng
+  let root, d = null, LUOT = 0, KY = null;
   const q = (s) => root.querySelector(s);
   const lak = (v) => `${so(v || 0)} <small>LAK</small>`;
 
@@ -48,7 +49,7 @@
   }
 
   async function tai() {
-    const luot = ++LUOT, th = q('#ttx-thang').value || EPL.thangNay();
+    const luot = ++LUOT, th = KY.giaTri.thang || EPL.thangNay();
     const x = await API.get('/api/bao-cao/tien-tai-xe?thang=' + encodeURIComponent(th));
     if (luot !== LUOT) return;
     d = x; ve();
@@ -60,8 +61,7 @@
       // Mặc định tháng có phiếu gần nhất — cùng lý do với màn Tổng quan.
       let thang = EPL.thangNay();
       try { const ds = await API.get('/api/trips?co=1'); if (ds.length && ds[0].doc_date) thang = ds[0].doc_date.slice(0, 7); } catch (e) { /* giữ tháng này */ }
-      q('#ttx-thang').value = thang;
-      q('#ttx-thang').addEventListener('change', () => tai().catch(EPL.baoLoi));
+      KY = EPL.khoangThoiGian(q('#ttx-thang'), { cheDo: 'thang', giaTri: { thang }, khiDoi: () => tai() });
       q('#ttx-lam-moi').addEventListener('click', () => tai().catch(EPL.baoLoi));
       await tai();
     },

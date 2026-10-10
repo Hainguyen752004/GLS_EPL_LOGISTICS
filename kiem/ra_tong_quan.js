@@ -78,8 +78,13 @@ const gon = s => String(s).replace(/\s+/g, ' ').trim();
   // --- tháng KHÔNG có chuyến nào
   console.log('\n== THÁNG RỖNG (2026-05)');
   await di('#/tong-quan');
-  const o = g().querySelector('#tq-thang'); o.value = '2026-05';
-  o.dispatchEvent(new w.Event('change', { bubbles: true }));
+  // 09/10: ô tháng → bộ lọc thời gian dùng chung (#tq-ky): bấm năm rồi bấm tháng như người dùng
+  const bamKy = async (th) => {
+    g().querySelector(`#tq-ky [data-ktg="nam"][data-v="${th.slice(0, 4)}"]`).dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+    await cho(300);
+    g().querySelector(`#tq-ky [data-ktg="thang"][data-v="${+th.slice(5, 7)}"]`).dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  };
+  await bamKy('2026-05');
   await cho(1500);
   console.log('  chữ trống hiện ra:', [...new Set([...g().querySelectorAll('.tq-empty')].map(e => gon(e.textContent)))].join(' | ') || '(không có)');
   console.log('  KPI:', [...g().querySelectorAll('.tq-kpi .v')].map(e => gon(e.textContent)).join(' / '));
@@ -87,7 +92,7 @@ const gon = s => String(s).replace(/\s+/g, ' ').trim();
 
   // --- bốn ngôn ngữ
   console.log('\n== BỐN NGÔN NGỮ');
-  o.value = '2026-08'; o.dispatchEvent(new w.Event('change', { bubbles: true })); await cho(1200);
+  await bamKy('2026-08'); await cho(1200);
   for (const nn of ['vi', 'lo', 'en', 'both']) {
     w.EPL.NN.dat(nn); await cho(400);
     const chu = g().textContent;

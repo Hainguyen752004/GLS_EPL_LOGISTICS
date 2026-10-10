@@ -318,9 +318,11 @@ def chot_hang_quay(db, ref_no, so_phieu_chi, owner_id, sale_ids, user, by_user=N
         return []
     ds = _kho(db, "POST", "/api/lien-thong/ban-hang/tru", {"sale_ids": list(sale_ids), "ma": TIEN_TO_TUNE + str(so_phieu_chi),
                                                            "ma_cu": GIU_CHO + ref_no, "owner_id": owner_id}, user=user) or []
+    from models import Owner
+    tk_cx = TK.rieng(db.get(Owner, owner_id) if owner_id else None, "co", TK.CHU_XE)      # 09/10: TK Có riêng của chủ xe
     for b in ds:
         BTC.ghi(db, NGUON_BAN, b["id"], b.get("sale_date") or dt.date.today(),
-                [{"no": TK.CHU_XE, "co": TK.DT_BAN_HANG, "tien": b.get("total") or 0, "ccy": b.get("currency") or "LAK",
+                [{"no": tk_cx, "co": TK.DT_BAN_HANG, "tien": b.get("total") or 0, "ccy": b.get("currency") or "LAK",
                   "tien_lak": b.get("total_lak"), "doi_tuong": {"loai": "chu_xe", "ref_id": owner_id}, "ref": b.get("doc_no"),
                   "dien_giai": "Bán hàng cho chủ xe %s, trừ vào tiền trả (%s)" % (b.get("doc_no"), so_phieu_chi)}],
                 "Hàng bán cho chủ xe %s trừ vào phiếu chi %s (đề nghị %s)" % (b.get("doc_no"), so_phieu_chi, ref_no), by_user=by_user)

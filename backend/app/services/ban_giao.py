@@ -174,6 +174,10 @@ def dong_goi(db, p, chung_tu=True):
     ccy = t["ccy"]
     tuyen = db.get(Route, p.route_id) if p.route_id else None
     lk = p.company == "joint"
+    # 09/10: tài khoản riêng của chủ xe (621 / 4022) và của khách (1211 / 708) — services/tai_khoan.rieng; trống = mã mặc định
+    o_cx = TK.chu_xe_rieng(db, p.owner_id) if lk else None        # chủ xe CÓ TK riêng (nạp một lần mỗi yêu cầu — danh sách nhiều DO)
+    k_dt = db.get(Customer, p.customer_id) if p.customer_id else None
+    tk_thue, tk_cx = TK.rieng(o_cx, "no", TK.CP_THUE_XE), TK.rieng(o_cx, "co", TK.CHU_XE)
     ma_kt = _ma_khach(db, p)
     r = ty_gia(p, ccy)
     xong = ban_giao_duoc(p)
@@ -232,15 +236,15 @@ def dong_goi(db, p, chung_tu=True):
             "pay_owner": t["tra_chu_xe"], "pay_owner_lak": t["tra_chu_xe_lak"],
             "owner_self_paid_lak": t["chu_xe_tu_tra_lak"],
             # chủ dự án chốt 01/10: Nợ 621 / Có 4022 bằng `amount` lúc khoá phiếu (services/tai_khoan.py)
-            "acc_code": "%s/%s" % (TK.CP_THUE_XE, TK.CHU_XE),
+            "acc_code": "%s/%s" % (tk_thue, tk_cx),
             # 06/10: phí quản lý và cắt quá tải có bút toán cùng chứng từ thue_xe (but_toan_cho.dong_khoa_phieu) — câu cũ "chưa có
             # bút toán riêng" sai từ hôm nay; acc_code giữ cặp chính 621/4022 (khuôn đã công bố)
             "acc_code_note": ("Nợ %s %s / Có %s %s bằng tiền thuê (amount), lúc khoá phiếu. Cùng chứng từ: phí quản lý (fee) Nợ %s / "
                               "Có %s %s; cắt quá tải (over_deduction) Nợ %s / Có %s %s — khoản bằng 0 thì không có dòng. Sau khoá "
                               "%s còn = amount − fee − over_deduction."
-                              % (TK.CP_THUE_XE, TK.ten(TK.CP_THUE_XE), TK.CHU_XE, TK.ten(TK.CHU_XE),
-                                 TK.CHU_XE, TK.DT_PHI_QUAN_LY, TK.ten(TK.DT_PHI_QUAN_LY),
-                                 TK.CHU_XE, TK.TN_CAT_QUA_TAI, TK.ten(TK.TN_CAT_QUA_TAI), TK.CHU_XE)),
+                              % (tk_thue, TK.ten(tk_thue) or "", tk_cx, TK.ten(tk_cx) or "",
+                                 tk_cx, TK.DT_PHI_QUAN_LY, TK.ten(TK.DT_PHI_QUAN_LY) or "",
+                                 tk_cx, TK.TN_CAT_QUA_TAI, TK.ten(TK.TN_CAT_QUA_TAI) or "", tk_cx)),
         }
     details = [{
         "line_no": 1, "kind": "thu", "charge_type": "freight", "section": None,
@@ -249,7 +253,7 @@ def dong_goi(db, p, chung_tu=True):
         "qty": 1 if t["cach_tinh"] == "chuyen" else t["tan_tinh"], "unit_price": t["don_gia"],
         "calculation": "trọn chuyến" if t["cach_tinh"] == "chuyen" else "%s t × %s %s" % (_so(t["tan_tinh"]), _so(t["don_gia"]), ccy),
         "actual_amount": t["doanh_thu"], "currency": ccy, "amount_lak": t["doanh_thu_lak"],
-        "acc_code": "%s/%s" % (TK.PHAI_THU, TK.DT_VAN_CHUYEN), "missing_acc_code": False,
+        "acc_code": "%s/%s" % (TK.rieng(k_dt, "no", TK.PHAI_THU), TK.rieng(k_dt, "co", TK.DT_VAN_CHUYEN)), "missing_acc_code": False,
         "paid_by": None, "source": "cuoc", "ref_id": p.id,
     }]
     # 06/10: dòng trả cùng lương đã ghi Nợ 625 / Có 4201 lúc khoá (but_toan_cho `cung_luong`) → TK khi trả `pay_acc_code` 4201/1011:
@@ -257,7 +261,7 @@ def dong_goi(db, p, chung_tu=True):
     luong_gl = {} if lk else BTC.cung_luong_da_ghi(db, p.id)
     for i, d in enumerate(dong, start=2):
         epl = not (lk and d.paid_by_epl is False)
-        ma = TK.tk_dong(p.company, d, db) if epl else None
+        ma = TK.tk_dong_rieng(p.company, d, db, chu=o_cx) if epl else None      # 09/10: kèm TK riêng NCC / chủ xe
         gia = gia_dong(p, d)
         vi, lo = _ten(db, d)
         details.append({

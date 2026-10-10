@@ -8,7 +8,8 @@
  */
 (function () {
   const { API, NN, esc, so, tag, AUTH } = EPL;
-  let root, DS = [], KH = [], TX = [], XE = [], T = null, canTru = null;
+  // 09/10: kỳ cấn trừ là MỘT THÁNG — chọn ở bộ lọc thời gian dùng chung chế độ tháng (KY), thay ô tháng
+  let root, DS = [], KH = [], TX = [], XE = [], T = null, canTru = null, KY = null;
 
   const suaDuoc = () => AUTH.la('acct');
   const napDuoc = () => AUTH.la('acct', 'cash', 'treasury');
@@ -151,7 +152,7 @@
   /* ---------------------------------------------------------------- nạp dữ liệu */
   // Ba câu hỏi chạy SONG SONG (rà 01/10: trước đây nối đuôi nhau — mạng chậm thì màn chờ gấp ba)
   async function tai() {
-    const thang = xemCanTru() ? root.querySelector('#tct-thang').value : '';
+    const thang = xemCanTru() ? KY.giaTri.thang : '';
     const [ds, t, ct] = await Promise.all([
       API.get('/api/the-cao-toc'),
       T ? API.get('/api/the-cao-toc/' + T.id).catch(() => null) : null,
@@ -177,7 +178,7 @@
       r.querySelector('#tct-nap').addEventListener('click', nap);
       r.querySelector('#tct-dc').addEventListener('click', dieuChinh);
       r.querySelector('#tct-ct-dong').addEventListener('click', () => { T = null; ve(); veChiTiet(); });
-      r.querySelector('#tct-thang').addEventListener('change', () => tai().catch(EPL.baoLoi));
+      KY = EPL.khoangThoiGian(r.querySelector('#tct-thang'), { cheDo: 'thang', giaTri: { thang: EPL.thangNay() }, khiDoi: () => tai() });
       await Promise.all([danhMuc, tai()]);
     },
     onLang() { if (root) { ve(); veChiTiet(); veCanTru(); } },

@@ -258,8 +258,11 @@ ${xmlSheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml"
   /** Bộ lọc đang chọn trên màn (ô chọn / ô tìm ngoài bảng) → một dòng chữ cho đầu báo cáo. */
   function boLoc(r) {
     const ra = [];
+    // 09/10: bộ lọc thời gian dùng chung (js/khoang_thoi_gian.js) ghi sẵn một dòng «Khoảng thời gian: 01/09/2026 – 30/09/2026» vào
+    // data-xuat-loc — nút năm / tháng không phải ô chọn; hai ô ngày bên trong khỏi đọc lại
+    r.querySelectorAll('[data-xuat-loc]').forEach(o => { if (hien(o) && o.dataset.xuatLoc) ra.push(o.dataset.xuatLoc); });
     r.querySelectorAll('select, input[type="search"], input[type="text"], input[type="date"]').forEach(o => {
-      if (!hien(o) || o.closest('table, dialog, .hop-thoai, form.px-phieu, .px-phieu')) return;
+      if (!hien(o) || o.closest('table, dialog, .hop-thoai, form.px-phieu, .px-phieu, [data-xuat-loc]')) return;
       const gt = o.tagName === 'SELECT' ? (o.selectedIndex >= 0 ? o.options[o.selectedIndex].text : '') : o.value;
       if (!gt || !gt.trim()) return;
       const nhan = (o.id && r.querySelector(`label[for="${o.id}"]`)) || (o.closest('.field, label, .tx-field') || {}).querySelector?.('label, .lb, span:not(.sub)');

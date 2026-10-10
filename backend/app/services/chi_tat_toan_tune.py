@@ -638,6 +638,8 @@ def de_nghi_tra_ncc(db, user, sid, d):
                            "trước." % (format(lak, ","), format(no_["con_no_lak"], ","), s.name), 409, con_no_lak=no_["con_no_lak"])
     ghi_chu = (d.get("ghi_chu") or d.get("note") or "").strip() or None
     no, _, co, _ = CT.dinh_khoan("PC_NCC", tien_te=ccy, phuong_thuc=phuong_thuc)
+    from services import tai_khoan as TK
+    no = TK.rieng(s, "co", no)          # 09/10: trả bớt phải trả NCC theo TK Có riêng của NCC (trống = 4021)
     now = dt.datetime.utcnow()
     so = "TNCC-%s-%s" % (now.strftime("%y%m%d%H%M%S"), sid[:4])
     dg = "Trả nhà cung cấp %s%s" % (s.name, (" · " + ghi_chu) if ghi_chu else "")

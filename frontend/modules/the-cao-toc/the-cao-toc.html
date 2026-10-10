@@ -32,7 +32,8 @@
 <!-- Cuối tháng: khách tự cấp thẻ thì phần EPL đã tiêu trên thẻ được trừ vào cước phải thu. -->
 <div class="card" id="tct-can-tru-card" hidden>
   <div class="hd"><h3 data-i18n="tct_can_tru"></h3><div class="grow"></div>
-    <div class="field"><label data-i18n="month"></label><input type="month" id="tct-thang"></div>
+    <!-- 09/10: kỳ tháng (cấn trừ cuối tháng) chọn ở bộ lọc thời gian dùng chung (js/khoang_thoi_gian.js, chế độ tháng) -->
+    <div id="tct-thang"></div>
   </div>
   <div class="tbl-wrap">
     <table class="tbl">

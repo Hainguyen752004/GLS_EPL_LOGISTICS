@@ -50,6 +50,9 @@ Luật rút ra:
 import json
 import os
 
+from sqlalchemy import event
+from sqlalchemy.orm import Session
+
 _TEP = os.path.join(os.path.dirname(__file__), "danh_muc_tai_khoan_lao.json")
 with open(_TEP, encoding="utf-8") as _f:
     _BAN = json.load(_f)
@@ -73,6 +76,57 @@ DT_BAN_HANG = "707"   # ຂາຍສິນຄ້າ
 DT_PHI_QUAN_LY = "715"   # ຮັບຄ່ານາຍໜ້າ (con của 71) — phí quản lý 2 %/bill trên tiền thuê: Nợ 4022 / Có 715
 TN_CAT_QUA_TAI = "758"   # ລາຍຮັບອື່ນໆ ຈາກການຄຸ້ມຄອງ - ບໍລິຫານ ປົກກະຕິ (con của 75) — cắt quá tải 1/tấn vượt: Nợ 4022 / Có 758
 TIEN = {("cash", True): "1011", ("cash", False): "1012", ("bank", True): "1021", ("bank", False): "1022"}
+
+# ------------------------------------------------------------------ tài khoản RIÊNG của đối tượng (09/10, anh Khampla)
+# Nhà cung cấp, chủ xe, khách chọn TK Nợ / TK Có riêng từ sổ tài khoản (như phần mềm kế toán của khách: "Mã số nợ 6XX — để trống để
+# hạch toán theo danh mục", "Mã số có 4XX"). Trống = mã mặc định ở trên; có thì bút toán dùng đúng mã đó. Nhóm cho phép theo vế:
+# chi phí 6 / phải trả 4 (nhà cung cấp, chủ xe) · phải thu 1 / doanh thu 7 (khách). Kiểm khi lưu (loi_tk_rieng).
+NHOM_RIENG = {"ncc": ("6", "4"), "chu_xe": ("6", "4"), "khach": ("1", "7")}
+MAC_DINH_RIENG = {"ncc": (None, NCC), "chu_xe": (CP_THUE_XE, CHU_XE), "khach": (PHAI_THU, DT_VAN_CHUYEN)}   # None: theo khoản mục
+
+
+def rieng(doi_tuong, ve, mac_dinh):
+    """Mã vế `ve` ('no' | 'co') của đối tượng (Supplier · Owner · Customer, hoặc None): có mã riêng thì dùng, không thì `mac_dinh`."""
+    ma = str(getattr(doi_tuong, "acct_" + ve, None) or "").strip() if doi_tuong is not None else ""
+    return ma or mac_dinh
+
+
+def doi_cap(no, co, ncc=None, chu=None):
+    """Cặp Nợ / Có theo luật → cặp dùng tài khoản riêng của đối tượng trên dòng:
+    - nhà cung cấp của dòng, CHỈ dòng nợ nhà cung cấp (Có 4021): Có 4021 → TK Có của NCC; Nợ chi phí 625 / 614 (xe nhà) → TK Nợ của
+      NCC. Dòng trả tiền mặt / tạm ứng (Có tiền · 1601 · 4201) giữ 625 / 614 — chứng từ thật (QT_TU, PC_SC) ghi đúng mã đó (soát 10/10);
+    - chủ xe của phiếu: vế 4022 (công nợ chủ xe, Nợ hay Có) → TK Có của chủ xe; Nợ 621 (chi phí thuê xe) → TK Nợ của chủ xe.
+    Luật chọn vế (tk_dong / dinh_khoan_dong) không đổi — chỉ thay mã ở khâu ghi bút toán / hiện lên màn."""
+    if ncc is not None and co == NCC:
+        co = rieng(ncc, "co", NCC)
+        if no in (CP_DI_LAI, CP_SUA):
+            no = rieng(ncc, "no", no)
+    if chu is not None:
+        if no == CHU_XE:
+            no = rieng(chu, "co", CHU_XE)
+        if co == CHU_XE:
+            co = rieng(chu, "co", CHU_XE)
+        if no == CP_THUE_XE:
+            no = rieng(chu, "no", CP_THUE_XE)
+    return no, co
+
+
+def loi_tk_rieng(loai, ve, ma, danh_muc):
+    """Câu lỗi nếu mã riêng `ma` (vế `ve` của đối tượng loại `loai`) không dùng được; None nếu được (kể cả để trống).
+    `danh_muc`: sổ tài khoản đang dùng (routes/acc_code.lay_danh_muc — API bên kế toán, hoặc bản chụp)."""
+    ma = str(ma or "").strip()
+    if not ma:
+        return None
+    x = next((d for d in danh_muc or [] if str(d.get("code")) == ma), None)
+    if x is None:
+        return "Tài khoản %s không có trong sổ tài khoản." % ma
+    if x.get("postable") is False or x.get("active") is False:
+        return "Tài khoản %s là tài khoản tổng hoặc đã ngưng — chọn tài khoản chi tiết." % ma
+    nhom = NHOM_RIENG[loai][0 if ve == "no" else 1]
+    if not ma.startswith(nhom):
+        return "Tài khoản %s không dùng cho vế %s — phải là tài khoản nhóm %s." % (ma, "Nợ" if ve == "no" else "Có", nhom)
+    return None
+
 
 # Mã con của khách chưa có trong danh mục thật: mã → (mã cha, tên Việt, tên Lào). Tên Lào ráp từ cụm đã có.
 MA_CON_KHACH = {
@@ -204,6 +258,69 @@ def tk_dong(company, d, db=None):
     return dinh_khoan_dong(company, d.section, d.source, place=getattr(d, "place", None),
                            paid_by_epl=d.paid_by_epl is not False, ghi_no=bool(getattr(d, "ghi_no", False)),
                            the=bool(getattr(d, "toll_card_id", None)), cach=cach, ncc_theo_dot=_ncc_theo_dot(d, db))
+
+
+def tu_chon(d):
+    """Dòng mang mã người dùng tự chọn (ô Định khoản) — giữ nguyên, không thay bằng tài khoản riêng của đối tượng."""
+    ma = getattr(d, "acct_code", None)
+    return bool(ma) and not la_ma_he_thong(ma)
+
+
+def _danh_muc_rieng(db):
+    """Nhà cung cấp + chủ xe CÓ TK riêng cho tài khoản riêng — nạp MỘT LẦN mỗi phiên (một yêu cầu API). Danh sách DO dựng gói bàn giao
+    cho từng DO; tra nhà cung cấp từng dòng chi / chủ xe từng DO là N+1 câu SQL (kiem/thu_ban_giao_trang_thai_chi.py đếm). Phiên có
+    ghi (flush) hoặc huỷ (rollback) thì bỏ bộ nhớ (_quen_tk_rieng) — lần sau đọc lại."""
+    bo = db.info.get("_tk_rieng")
+    if bo is None:
+        from sqlalchemy import or_
+        from models import Owner, Supplier
+        ncc = db.query(Supplier).all()
+        khoan = {}
+        for s in ncc:
+            if s.item_key and s.active is not False:
+                khoan.setdefault(s.item_key, []).append(s)
+        chu = {o.id: o for o in db.query(Owner).filter(or_(Owner.acct_no.isnot(None), Owner.acct_co.isnot(None)))}
+        bo = db.info["_tk_rieng"] = {"ncc": {s.id: s for s in ncc}, "khoan": khoan, "chu": chu}
+    return bo
+
+
+@event.listens_for(Session, "after_flush")
+def _quen_tk_rieng(session, _ctx=None):
+    session.info.pop("_tk_rieng", None)
+
+
+event.listen(Session, "after_soft_rollback", lambda session, _tx: session.info.pop("_tk_rieng", None))
+
+
+def chu_xe_rieng(db, owner_id):
+    """Chủ xe `owner_id` nếu có TK riêng (để TK.rieng thay 621 / 4022); không có TK riêng → None (mã mặc định)."""
+    return _danh_muc_rieng(db)["chu"].get(owner_id) if db is not None and owner_id else None
+
+
+def ncc_cua_dong(db, d):
+    """Nhà cung cấp mà tài khoản riêng áp cho dòng chi `d`: dòng ghi rõ nhà cung cấp (supplier_id) → nhà cung cấp đó; dòng chỉ mang
+    khoản mục → nhà cung cấp ĐANG DÙNG duy nhất theo dõi khoản mục đó (cùng luật routes/nha_cung_cap._cua_ncc: dòng không ghi nhà
+    cung cấp mà trùng khoản mục là nợ của nhà cung cấp đó). Hai nhà cung cấp cùng theo dõi một khoản → không biết của ai: mặc định."""
+    if db is None:
+        return None
+    bo = _danh_muc_rieng(db)
+    sid = getattr(d, "supplier_id", None)
+    if sid:
+        return bo["ncc"].get(sid)
+    k = getattr(d, "item_key", None)
+    ds = bo["khoan"].get(k) or [] if k else []
+    return ds[0] if len(ds) == 1 else None
+
+
+def tk_dong_rieng(company, d, db, chu=None):
+    """Mã HIỆN / GỬI ĐI của một dòng chi (09/10): tk_dong rồi thay bằng tài khoản riêng của nhà cung cấp trên dòng và của chủ xe
+    `chu` (doi_cap). Mã người dùng tự chọn giữ nguyên. KHÔNG ghi kết quả này vào TripExpense.acct_code — mã lưu trên dòng vẫn theo
+    luật, nếu không lần sau mã riêng thành "mã tự chọn" và không đổi theo hồ sơ nữa."""
+    ma = tk_dong(company, d, db)
+    if not ma or "/" not in ma or tu_chon(d):
+        return ma
+    no, co = doi_cap(*ma.split("/", 1), ncc=ncc_cua_dong(db, d), chu=chu)
+    return "%s/%s" % (no, co)
 
 
 def luat_cho_giao_dien():

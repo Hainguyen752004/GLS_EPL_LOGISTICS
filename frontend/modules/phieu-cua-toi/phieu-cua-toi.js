@@ -475,7 +475,7 @@
     if (tu.co) { rows.push(dongDs('wallet', h('tx_tam_ung_chuyen'), h(tu.tt === 'paid' ? 'advance_received' : 'advance_pending'), tienHien(tu.tong, 'LAK'))); cong('LAK', tu.tong); }
     suKien(p, ['incident', 'repair']).filter(e => e.reported_cost != null).forEach(e => {
       if (e.status !== 'rejected') cong(e.currency || 'LAK', e.reported_cost);
-      rows.push(dongDs('alert', esc(tenSuCo(e)), ttSuKien(e) + (e.paid_by_driver ? ' · ' + h('pct_da_tu_tra') : '') + (e.note ? ' · <span lang="lo">' + esc(e.note) + '</span>' : ''),
+      rows.push(dongDs('alert', esc(tenSuCo(e)), ttSuKien(e) + (e.paid_by_driver ? ' · ' + h('pct_da_tu_tra') : '') + (e.note ? ' · <span lang="lo">' + esc(EPL.chuTheo(e, 'note')) + '</span>' : ''),
         tienHien(e.reported_cost, e.currency), 'x2-danger'));
     });
     suKien(p, ['refuel']).forEach((e, i) => rows.push(dongDs('fuel', esc(t('tx_dau_lan', { n: i + 1 })), ttSuKien(e) + ' · ' + h('tx_gia_ke_toan'), esc(so(e.qty_l || 0, 0)) + ' <small>L</small>')));
@@ -491,7 +491,7 @@
         h('v_' + v.status) + (v.status !== 'da_cap' ? ' · <button class="link-btn" type="button" data-qr="' + esc(v.id) + '">' + h('pct_mo_qr') + '</button>' : ''),
         esc(so(soLitDN(v), 0)) + ' <small>L</small>'))
       .concat(suKien(p, ['refuel']).map((e, i) => dongDs('fuel', esc(t('tx_dau_lan', { n: i + 1 })) + (e.place_id ? ' · <span lang="lo">' + esc(tenDiem(e.place_id)) + '</span>' : ''),
-        ttSuKien(e) + (e.note ? ' · <span lang="lo">' + esc(e.note) + '</span>' : ''), esc(so(e.qty_l || 0, 0)) + ' <small>L</small>')))
+        ttSuKien(e) + (e.note ? ' · <span lang="lo">' + esc(EPL.chuTheo(e, 'note')) + '</span>' : ''), esc(so(e.qty_l || 0, 0)) + ' <small>L</small>')))
       // khai lúc mất mạng (06/10): nằm trong máy, đang chờ gửi — giờ là giờ máy lúc bấm
       .concat(choCua(p, 'khai_dau').map(x => dongDs('fuel', h('df_declare') + (x.body.place_id ? ' · <span lang="lo">' + esc(tenDiem(x.body.place_id)) + '</span>' : ''),
         h('tx_dang_cho_gui_1') + ' · ' + esc(EPL.ngayGio(x.luc)) + (x.body.note ? ' · <span lang="lo">' + esc(x.body.note) + '</span>' : ''),
@@ -507,7 +507,7 @@
       '<span lang="lo">' + esc(x.body.note || '') + '</span>' + (x.body.can_run === false ? ' · <b>' + h('pct_phai_dung') + '</b>' : '') + ' · ' + esc(EPL.ngayGio(x.luc)),
       x.body.reported_cost != null ? tienHien(x.body.reported_cost, x.body.currency) : '<small>—</small>', 'x2-danger x2-cho-gui'))     // bấm lúc mất mạng (06/10)
       .concat(suKien(p, ['incident', 'repair']).map(e => dongDs('alert', esc(tenSuCo(e)) + ' · ' + ttSuKien(e),
-      '<span lang="lo">' + esc(e.note || '') + '</span>' + (e.stop_seq && diem(e.stop_seq) ? ' · <span lang="lo">' + esc(diem(e.stop_seq)) + '</span>' : '') +
+      '<span lang="lo">' + esc(EPL.chuTheo(e, 'note')) + '</span>' + (e.stop_seq && diem(e.stop_seq) ? ' · <span lang="lo">' + esc(diem(e.stop_seq)) + '</span>' : '') +
         (e.can_run === false ? ' · <b>' + h('pct_phai_dung') + '</b>' : '') + (e.paid_by_driver ? ' · ' + h('pct_da_tu_tra') : '') + ' · ' + esc(EPL.ngayGio(e.ts)),
       e.reported_cost != null ? tienHien(e.reported_cost, e.currency) : '<small>—</small>', 'x2-danger')));
     o.innerHTML = '<div class="x2-card">' + dauPanel('tx_tab_su_co', h('tx_su_co_mo_ta'), xong ? '' : '<button class="btn-primary btn-danger" type="button" data-act="bao">' + ic('alert', 'icon-sm') + h('report_breakdown') + '</button>') +

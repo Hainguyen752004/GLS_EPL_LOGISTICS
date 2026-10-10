@@ -1198,9 +1198,9 @@ window.EPL_TU_DIEN = {
   "en": "Terms"
  },
  "sup_hint": {
-  "vi": "Công nợ theo 625/4021 và 614/4021",
-  "lo": "ໜີ້ຕາມ 625/4021 ແລະ 614/4021",
-  "en": "Payables under 625/4021 and 614/4021"
+  "vi": "Công nợ theo TK Nợ / Có của từng nhà cung cấp — trống: 625 · 614 / 4021",
+  "lo": "ໜີ້ຕາມບັນຊີ ໜີ້ / ມີ ຂອງແຕ່ລະຜູ້ສະໜອງ — ຫວ່າງ: 625 · 614 / 4021",
+  "en": "Payables under each supplier's Dr / Cr accounts — blank: 625 · 614 / 4021"
  },
  "sup_chip_lao": {
   "vi": "Kho hải quan (chipping Lào)",
@@ -3009,7 +3009,7 @@ window.EPL_TU_DIEN = {
  },
  "kx_c_con_h": {
   "vi": "Tồn trừ phần chờ cấp và phần đã khai trên phiếu",
-  "lo": "Tồn trừ phần chờ cấp và phần đã khai trên phiếu",
+  "lo": "ຍອດຄົງເຫຼືອ ຫັກສ່ວນທີ່ລໍຖ້າເບີກ ແລະ ສ່ວນທີ່ແຈ້ງໃນໃບແລ້ວ",
   "en": "Stock minus what is awaiting issue and what is already on slips"
  },
  "kx_c_tren_phieu": {
@@ -3139,12 +3139,12 @@ window.EPL_TU_DIEN = {
  },
  "cp_goi_y_tuyen": {
   "vi": "Đã điền chi phí gợi ý theo tuyến {ten} — thêm, bớt, sửa được",
-  "lo": "Đã điền chi phí gợi ý theo tuyến {ten} — thêm, bớt, sửa được",
+  "lo": "ໄດ້ຕື່ມຄ່າໃຊ້ຈ່າຍແນະນຳຕາມເສັ້ນທາງ {ten} ແລ້ວ — ເພີ່ມ, ລຶບ, ແກ້ໄຂໄດ້",
   "en": "Pre-filled suggested costs for route {ten} — add, remove or change freely"
  },
  "cp_goi_y_chung": {
   "vi": "Đã điền chi phí gợi ý theo bộ chung (Excel) — thêm, bớt, sửa được",
-  "lo": "Đã điền chi phí gợi ý theo bộ chung (Excel) — thêm, bớt, sửa được",
+  "lo": "ໄດ້ຕື່ມຄ່າໃຊ້ຈ່າຍແນະນຳຕາມຊຸດທົ່ວໄປ (Excel) ແລ້ວ — ເພີ່ມ, ລຶບ, ແກ້ໄຂໄດ້",
   "en": "Pre-filled suggested costs from the general set (Excel) — add, remove or change freely"
  },
  "ht_tam_ung_noi_bo": {
@@ -4841,6 +4841,171 @@ window.EPL_TU_DIEN = {
   "vi": "Tài khoản Có",
   "lo": "ບັນຊີມີ",
   "en": "Credit account"
+ },
+ "o_chung_goi_y": {
+  "vi": "Tên, mã, điện thoại, địa chỉ lấy từ danh mục nhà cung cấp chung — sửa ở đó",
+  "lo": "ຊື່, ລະຫັດ, ເບີໂທ, ທີ່ຢູ່ ມາຈາກລາຍຊື່ຜູ້ສະໜອງລວມ — ແກ້ໄຂຢູ່ທີ່ນັ້ນ",
+  "en": "Name, code, phone and address come from the shared supplier list — edit them there"
+ },
+ "ncc_nhom_chung": {
+  "vi": "Thông tin chung",
+  "lo": "ຂໍ້ມູນທົ່ວໄປ",
+  "en": "General information"
+ },
+ "ncc_nhom_dich_vu": {
+  "vi": "Dịch vụ và thanh toán",
+  "lo": "ບໍລິການ ແລະ ການຊຳລະ",
+  "en": "Service and payment"
+ },
+ "tk_nhom": {
+  "vi": "Định khoản — chọn từ Sổ tài khoản",
+  "lo": "ການລົງບັນຊີ — ເລືອກຈາກຜັງບັນຊີ",
+  "en": "Posting accounts — pick from the chart of accounts"
+ },
+ "ncc_ma": {
+  "vi": "Mã nhà cung cấp",
+  "lo": "ລະຫັດຜູ້ສະໜອງ",
+  "en": "Supplier code"
+ },
+ "tax_no": {
+  "vi": "Mã số thuế",
+  "lo": "ເລກປະຈຳຕົວຜູ້ເສຍອາກອນ",
+  "en": "Tax ID"
+ },
+ "email": {
+  "vi": "Thư điện tử",
+  "lo": "ອີເມວ",
+  "en": "Email"
+ },
+ "website": {
+  "vi": "Trang web",
+  "lo": "ເວັບໄຊ",
+  "en": "Website"
+ },
+ "ncc_tien_te": {
+  "vi": "Đơn vị tiền giao dịch",
+  "lo": "ສະກຸນເງິນທີ່ໃຊ້ຊື້ຂາຍ",
+  "en": "Trading currency"
+ },
+ "ncc_dich_vu_goi_y": {
+  "vi": "Gõ tự do, hoặc chọn một dòng gợi ý",
+  "lo": "ພິມເອງໄດ້ ຫຼື ເລືອກຈາກລາຍການແນະນຳ",
+  "en": "Type freely, or pick a suggestion"
+ },
+ "ncc_dich_vu_ph": {
+  "vi": "Ví dụ: Phí chip Lào, thay lốp, trạm dầu…",
+  "lo": "ເຊັ່ນ: ຄ່າຊິບລາວ, ປ່ຽນຢາງ, ປ້ຳນ້ຳມັນ…",
+  "en": "e.g. Lao chip fee, tyres, fuel station…"
+ },
+ "ncc_khoan_muc": {
+  "vi": "Khoản mục chi trên phiếu",
+  "lo": "ລາຍການຄ່າໃຊ້ຈ່າຍໃນໃບເບີກລົດ",
+  "en": "Cost item on slips"
+ },
+ "ncc_khoan_muc_goi_y": {
+  "vi": "Dòng chi trên phiếu mang khoản mục này được tính là nợ nhà cung cấp này",
+  "lo": "ແຖວຄ່າໃຊ້ຈ່າຍໃນໃບເບີກລົດທີ່ມີລາຍການນີ້ ນັບເປັນໜີ້ຂອງຜູ້ສະໜອງນີ້",
+  "en": "Slip lines with this cost item count as owed to this supplier"
+ },
+ "ncc_khong_khoan": {
+  "vi": "— Không gắn khoản mục —",
+  "lo": "— ບໍ່ຜູກລາຍການ —",
+  "en": "— No cost item —"
+ },
+ "tk_tim": {
+  "vi": "Gõ số hoặc tên tài khoản…",
+  "lo": "ພິມເລກ ຫຼື ຊື່ບັນຊີ…",
+  "en": "Type an account number or name…"
+ },
+ "ncc_tk_no_md": {
+  "vi": "Để trống — theo khoản mục (625 đi đường · 614 sửa chữa)",
+  "lo": "ປ່ອຍຫວ່າງ — ຕາມລາຍການ (625 ເດີນທາງ · 614 ສ້ອມແປງ)",
+  "en": "Leave blank — by cost item (625 travel · 614 repairs)"
+ },
+ "ncc_tk_co_md": {
+  "vi": "Để trống — 4021 Phải trả nhà cung cấp",
+  "lo": "ປ່ອຍຫວ່າງ — 4021 ໜີ້ຕ້ອງສົ່ງຜູ້ສະໜອງ",
+  "en": "Leave blank — 4021 Payable to suppliers"
+ },
+ "ncc_tk_no_goi_y": {
+  "vi": "Mã số Nợ nhóm 6XX — chi phí của dòng chi nhà cung cấp này",
+  "lo": "ເລກບັນຊີໜີ້ ໝວດ 6XX — ຄ່າໃຊ້ຈ່າຍຂອງແຖວຜູ້ສະໜອງນີ້",
+  "en": "Debit account, group 6XX — expense for this supplier's lines"
+ },
+ "ncc_tk_co_goi_y": {
+  "vi": "Mã số Có nhóm 4XX — phải trả nhà cung cấp này",
+  "lo": "ເລກບັນຊີມີ ໝວດ 4XX — ໜີ້ຕ້ອງສົ່ງຜູ້ສະໜອງນີ້",
+  "en": "Credit account, group 4XX — payable to this supplier"
+ },
+ "cx_tk_no_md": {
+  "vi": "Để trống — 621 Chi phí thuê xe ngoài",
+  "lo": "ປ່ອຍຫວ່າງ — 621 ຄ່າເຊົ່າລົດພາຍນອກ",
+  "en": "Leave blank — 621 Outside truck hire"
+ },
+ "cx_tk_co_md": {
+  "vi": "Để trống — 4022 Phải trả chủ xe liên kết",
+  "lo": "ປ່ອຍຫວ່າງ — 4022 ເຈົ້າໜີ້ເຈົ້າຂອງລົດຮ່ວມ",
+  "en": "Leave blank — 4022 Payable to partner truck owners"
+ },
+ "cx_tk_no_goi_y": {
+  "vi": "Mã số Nợ nhóm 6XX — tiền thuê xe của chủ xe này",
+  "lo": "ເລກບັນຊີໜີ້ ໝວດ 6XX — ຄ່າເຊົ່າລົດຂອງເຈົ້າຂອງລົດນີ້",
+  "en": "Debit account, group 6XX — hire cost for this owner"
+ },
+ "cx_tk_co_goi_y": {
+  "vi": "Mã số Có nhóm 4XX — công nợ chủ xe (phí, quá tải, ứng trước cấn trừ vào đây)",
+  "lo": "ເລກບັນຊີມີ ໝວດ 4XX — ໜີ້ເຈົ້າຂອງລົດ (ຄ່າທຳນຽມ, ນ້ຳໜັກເກີນ, ເງິນລ່ວງໜ້າ ຫັກຢູ່ບັນຊີນີ້)",
+  "en": "Credit account, group 4XX — owner payable (fee, overload and advances are offset here)"
+ },
+ "kh_tk_no_md": {
+  "vi": "Để trống — 1211 Phải thu khách hàng",
+  "lo": "ປ່ອຍຫວ່າງ — 1211 ລູກຄ້າ-ຄ່າສິນຄ້າ",
+  "en": "Leave blank — 1211 Customer receivable"
+ },
+ "kh_tk_co_md": {
+  "vi": "Để trống — 708 Doanh thu vận chuyển",
+  "lo": "ປ່ອຍຫວ່າງ — 708 ລາຍຮັບຄ່າຂົນສົ່ງ",
+  "en": "Leave blank — 708 Freight revenue"
+ },
+ "kh_tk_no_goi_y": {
+  "vi": "Mã số Nợ nhóm 1XX — phải thu khách này",
+  "lo": "ເລກບັນຊີໜີ້ ໝວດ 1XX — ໜີ້ຕ້ອງຮັບຈາກລູກຄ້ານີ້",
+  "en": "Debit account, group 1XX — receivable from this customer"
+ },
+ "kh_tk_co_goi_y": {
+  "vi": "Mã số Có nhóm 7XX — doanh thu cước của khách này",
+  "lo": "ເລກບັນຊີມີ ໝວດ 7XX — ລາຍຮັບຄ່າຂົນສົ່ງຂອງລູກຄ້ານີ້",
+  "en": "Credit account, group 7XX — freight revenue from this customer"
+ },
+ "tk_chi_ke_toan": {
+  "vi": "Chỉ KT Thu/Chi và Sếp đổi được",
+  "lo": "ສະເພາະ ບັນຊີ ຮັບ/ຈ່າຍ ແລະ ຫົວໜ້າ ປ່ຽນໄດ້",
+  "en": "Only the receipts/payments accountant and the manager can change this"
+ },
+ "tk_mac_dinh": {
+  "vi": "mặc định",
+  "lo": "ຕັ້ງຕົ້ນ",
+  "en": "default"
+ },
+ "tk_no_co": {
+  "vi": "TK Nợ / Có",
+  "lo": "ບັນຊີ ໜີ້ / ມີ",
+  "en": "Dr / Cr account"
+ },
+ "cx_xoa_hoi": {
+  "vi": "Xoá chủ xe «{ten}»? Chỉ xoá được chủ xe chưa có xe, phiếu, hợp đồng hay đề nghị trả — còn dùng thì đặt «Ngưng dùng».",
+  "lo": "ລຶບເຈົ້າຂອງລົດ «{ten}»? ລຶບໄດ້ສະເພາະເຈົ້າຂອງລົດທີ່ຍັງບໍ່ມີລົດ, ໃບເບີກ, ສັນຍາ ຫຼື ຄຳຂໍຈ່າຍ — ຖ້າຍັງມີ ໃຫ້ຕັ້ງ «ຢຸດໃຊ້».",
+  "en": "Delete truck owner «{ten}»? Only an owner with no trucks, slips, contracts or payment requests can be deleted — otherwise set it to «Inactive»."
+ },
+ "cx_da_xoa": {
+  "vi": "Đã xoá chủ xe {ten}",
+  "lo": "ລຶບເຈົ້າຂອງລົດ {ten} ແລ້ວ",
+  "en": "Truck owner {ten} deleted"
+ },
+ "cx_nhom_dieu_khoan": {
+  "vi": "Điều khoản thuê xe",
+  "lo": "ເງື່ອນໄຂການເຊົ່າລົດ",
+  "en": "Hire terms"
  },
  "acct_source_remote": {
   "vi": "Danh mục Acc code từ API kế toán",
@@ -8014,12 +8179,12 @@ window.EPL_TU_DIEN = {
  },
  "khong_co_man": {
   "vi": "Việc của tài khoản này ở trang kế toán",
-  "lo": "Việc của tài khoản này ở trang kế toán",
+  "lo": "ວຽກຂອງຜູ້ໃຊ້ນີ້ ຢູ່ໃນລະບົບບັນຊີ",
   "en": "This account works on the ledger site"
  },
  "khong_co_man_goi_y": {
   "vi": "Cấp dầu theo phiếu đề nghị xuất kho nhiên liệu, kho nhiên liệu, kho phụ tùng… nay làm ở trang kế toán — đăng nhập bên đó bằng cùng tên và mật khẩu.",
-  "lo": "Cấp dầu theo phiếu đề nghị xuất kho nhiên liệu, kho nhiên liệu, kho phụ tùng… nay làm ở trang kế toán — đăng nhập bên đó bằng cùng tên và mật khẩu.",
+  "lo": "ການເບີກນໍ້າມັນຕາມໃບສະເໜີເບີກສາງນໍ້າມັນ, ສາງນໍ້າມັນ, ສາງອາໄຫຼ່… ດຽວນີ້ເຮັດຢູ່ໃນລະບົບບັນຊີ — ເຂົ້າລະບົບທີ່ນັ້ນ ດ້ວຍຊື່ຜູ້ໃຊ້ ແລະ ລະຫັດຜ່ານດຽວກັນ.",
   "en": "Issuing fuel per request, the fuel and parts stores… are now on the ledger site — sign in there with the same username and password."
  },
  "mo_ke_toan": {
@@ -8206,6 +8371,151 @@ window.EPL_TU_DIEN = {
   "vi": "Tìm kho, số phiếu, số xe",
   "lo": "ຄົ້ນຫາ ສາງ, ເລກທີ, ລົດ",
   "en": "Search depot, slip no., truck"
+ },
+ "ktg_nam": {
+  "vi": "Năm",
+  "lo": "ປີ",
+  "en": "Year"
+ },
+ "ktg_theo_nam": {
+  "vi": "Theo năm",
+  "lo": "ຕາມປີ",
+  "en": "By year"
+ },
+ "ktg_theo_thang": {
+  "vi": "Theo tháng",
+  "lo": "ຕາມເດືອນ",
+  "en": "By month"
+ },
+ "ktg_khoang": {
+  "vi": "Khoảng thời gian",
+  "lo": "ໄລຍະເວລາ",
+  "en": "Date range"
+ },
+ "ktg_den": {
+  "vi": "Đến",
+  "lo": "ເຖິງ",
+  "en": "to"
+ },
+ "ktg_tu_ngay": {
+  "vi": "Từ ngày",
+  "lo": "ແຕ່ວັນທີ",
+  "en": "From date"
+ },
+ "ktg_den_ngay": {
+  "vi": "Đến ngày",
+  "lo": "ເຖິງວັນທີ",
+  "en": "To date"
+ },
+ "ktg_tim": {
+  "vi": "Tìm kiếm",
+  "lo": "ຄົ້ນຫາ",
+  "en": "Search"
+ },
+ "ktg_hom_qua": {
+  "vi": "Hôm qua",
+  "lo": "ມື້ວານນີ້",
+  "en": "Yesterday"
+ },
+ "ktg_hom_nay": {
+  "vi": "Hôm nay",
+  "lo": "ມື້ນີ້",
+  "en": "Today"
+ },
+ "ktg_tuan_nay": {
+  "vi": "Tuần này",
+  "lo": "ອາທິດນີ້",
+  "en": "This week"
+ },
+ "ktg_thang_nay": {
+  "vi": "Tháng này",
+  "lo": "ເດືອນນີ້",
+  "en": "This month"
+ },
+ "ktg_nam_nay": {
+  "vi": "Năm này",
+  "lo": "ປີນີ້",
+  "en": "This year"
+ },
+ "ktg_nhan_thang": {
+  "vi": "Tháng {thang}",
+  "lo": "ເດືອນ {thang}",
+  "en": "{thang}"
+ },
+ "ktg_nhan_nam": {
+  "vi": "Năm {nam}",
+  "lo": "ປີ {nam}",
+  "en": "{nam}"
+ },
+ "ktg_trong_n": {
+  "vi": "{khoang} chưa có phiếu nào",
+  "lo": "{khoang} ຍັງບໍ່ມີໃບເທື່ອ",
+  "en": "No slips in {khoang}"
+ },
+ "ktg_loi_thieu": {
+  "vi": "Chọn đủ Từ ngày và Đến ngày rồi bấm Tìm kiếm",
+  "lo": "ເລືອກ ແຕ່ວັນທີ ແລະ ເຖິງວັນທີ ໃຫ້ຄົບ ແລ້ວກົດ ຄົ້ນຫາ",
+  "en": "Pick both the From and To dates, then press Search"
+ },
+ "ktg_loi_khoang": {
+  "vi": "Từ ngày phải trước hoặc trùng Đến ngày",
+  "lo": "ແຕ່ວັນທີ ຕ້ອງກ່ອນ ຫຼື ກົງກັບ ເຖິງວັນທີ",
+  "en": "The From date must be on or before the To date"
+ },
+ "ktg_loi_dai": {
+  "vi": "Khoảng thời gian tối đa {n} ngày",
+  "lo": "ໄລຍະເວລາສູງສຸດ {n} ວັນ",
+  "en": "The date range can be at most {n} days"
+ },
+ "ktg_vs_prev": {
+  "vi": "So với kỳ trước cùng độ dài",
+  "lo": "ທຽບກັບງວດກ່ອນທີ່ຍາວເທົ່າກັນ",
+  "en": "vs. the previous period of the same length"
+ },
+ "ktg_compare": {
+  "vi": "So với kỳ trước",
+  "lo": "ທຽບກັບງວດກ່ອນ",
+  "en": "vs. previous period"
+ },
+ "ktg_k_trips": {
+  "vi": "Phiếu trong kỳ",
+  "lo": "ໃບເບີກລົດໃນງວດ",
+  "en": "Slips in period"
+ },
+ "ktg_tq_trong": {
+  "vi": "Khoảng thời gian này chưa có chuyến nào",
+  "lo": "ໄລຍະເວລານີ້ຍັງບໍ່ມີຖ້ຽວໃດ",
+  "en": "No trips in this period yet"
+ },
+ "ktg_dt_tong": {
+  "vi": "Đề nghị thu trong kỳ",
+  "lo": "ໃບສະເໜີຮັບເງິນ ໃນງວດ",
+  "en": "Collection requests in period"
+ },
+ "ktg_dt_trong": {
+  "vi": "Chưa có DO nào đã về trong khoảng thời gian này",
+  "lo": "ໄລຍະເວລານີ້ຍັງບໍ່ມີ DO ໃດກັບມາເທື່ອ",
+  "en": "No DO has come back in this period"
+ },
+ "ktg_k3_trong": {
+  "vi": "{khoang}: khách này chưa có chuyến hay phiếu nào.",
+  "lo": "{khoang}: ລູກຄ້ານີ້ຍັງບໍ່ມີຖ້ຽວ ຫຼື ໃບໃດ.",
+  "en": "{khoang}: no trips or slips for this customer."
+ },
+ "ktg_k3_note": {
+  "vi": "{khoang}: phiếu gom (mỏ về bãi) và phiếu giao hàng, tiền theo tiền cước của từng phiếu.",
+  "lo": "{khoang}: ໃບເກັບ (ບໍ່ແຮ່ ມາສະໜາມ) ແລະ ໃບສົ່ງສິນຄ້າ, ເງິນຕາມສະກຸນຄ່າຂົນສົ່ງຂອງແຕ່ລະໃບ.",
+  "en": "{khoang}: collection slips (mine to yard) and delivery slips, amounts in each slip's freight currency."
+ },
+ "ktg_cong": {
+  "vi": "Cộng kỳ",
+  "lo": "ລວມງວດ",
+  "en": "Period total"
+ },
+ "ktg_doanh_thu": {
+  "vi": "Doanh thu trong kỳ",
+  "lo": "ລາຍຮັບໃນງວດ",
+  "en": "Revenue in period"
  },
  "k2_loc_con": {
   "vi": "Còn hàng",
@@ -9335,7 +9645,7 @@ window.EPL_TU_DIEN = {
  "lg2_p_dispatch": {
   "vi": "Bãi EPL Thà Bốc",
   "lo": "ສະໜາມ EPL ທ່າບົກ",
-  "en": "EPL yard, Thà Bốc"
+  "en": "EPL yard, Thabok"
  },
  "lg2_s_dispatch": {
   "vi": "Lập phiếu xuất xe",
@@ -9355,7 +9665,7 @@ window.EPL_TU_DIEN = {
  "lg2_p_fuel": {
   "vi": "Kho dầu Thà Bốc",
   "lo": "ສາງນໍ້າມັນ ທ່າບົກ",
-  "en": "Thà Bốc fuel depot"
+  "en": "Thabok fuel depot"
  },
  "lg2_s_fuel": {
   "vi": "Cấp dầu theo đề nghị",
@@ -9895,7 +10205,7 @@ window.EPL_TU_DIEN = {
  "tx_su_co_mo_ta": {
   "vi": "Báo xong, người duyệt xem: Tổ sửa chữa Thà Bốc (hỏng xe, lốp, tai nạn) hoặc Admin Thà Bốc (việc khác). Có khoản chi thì vào mục V hoặc VI của phiếu, KT Chi phí VC kiểm, Quỹ tiền mặt Thà Bốc chi.",
   "lo": "ແຈ້ງແລ້ວ ຜູ້ອະນຸມັດຈະເບິ່ງ: ໜ່ວຍສ້ອມແປງ ທ່າບົກ (ລົດເສຍ, ຢາງ, ອຸບັດເຫດ) ຫຼື ແອັດມິນ ທ່າບົກ (ເລື່ອງອື່ນ). ມີຄ່າໃຊ້ຈ່າຍ ຈະເຂົ້າພາກ V ຫຼື VI ຂອງໃບ, ບັນຊີລາຍຈ່າຍ ວຽງຈັນ ກວດ, ຄັງເງິນສົດຍ່ອຍ ທ່າບົກ ຈ່າຍ.",
-  "en": "Once reported, the approver reviews it: the Thabok repair team (breakdown, tyre, accident) or the Thabok admin (anything else). Any cost goes into section V or VI of the slip; the Vientiane cost accountant checks it and Thà Bốc petty cash pays."
+  "en": "Once reported, the approver reviews it: the Thabok repair team (breakdown, tyre, accident) or the Thabok admin (anything else). Any cost goes into section V or VI of the slip; the Vientiane cost accountant checks it and Thabok petty cash pays."
  },
  "tx_su_co_trong": {
   "vi": "Chưa có sự cố nào — chúc chuyến đi an toàn",
@@ -10020,7 +10330,7 @@ window.EPL_TU_DIEN = {
  "tx_co_chi_goi_y": {
   "vi": "Tích nếu phải trả tiền (vá lốp, cứu hộ, phụ tùng, phí khi bị giữ xe…). Duyệt xong, khoản này vào phiếu: sửa chữa ở mục V, việc khác ở mục VI. KT Chi phí VC kiểm, Quỹ tiền mặt Thà Bốc chi.",
   "lo": "ໝາຍຖ້າຕ້ອງຈ່າຍເງິນ (ປະຢາງ, ກູ້ໄພ, ອາໄຫຼ່, ຄ່າທຳນຽມເມື່ອຖືກກັກລົດ…). ອະນຸມັດແລ້ວ ລາຍການນີ້ເຂົ້າໃບ: ສ້ອມແປງ ພາກ V, ເລື່ອງອື່ນ ພາກ VI. ບັນຊີລາຍຈ່າຍ ວຽງຈັນ ກວດ, ຄັງເງິນສົດຍ່ອຍ ທ່າບົກ ຈ່າຍ.",
-  "en": "Tick if money was or must be paid (tyre patch, towing, parts, fees when the truck is held…). Once approved it goes on the slip: repairs in section V, anything else in section VI. The Vientiane cost accountant checks it and Thà Bốc petty cash pays."
+  "en": "Tick if money was or must be paid (tyre patch, towing, parts, fees when the truck is held…). Once approved it goes on the slip: repairs in section V, anything else in section VI. The Vientiane cost accountant checks it and Thabok petty cash pays."
  },
  "tx_tien_loi": {
   "vi": "Nhập số tiền lớn hơn 0",
@@ -10150,7 +10460,7 @@ window.EPL_TU_DIEN = {
  "lg2_p_advance": {
   "vi": "Quỹ tiền mặt Thà Bốc",
   "lo": "ຄັງເງິນສົດຍ່ອຍ ທ່າບົກ",
-  "en": "Thà Bốc petty cash"
+  "en": "Thabok petty cash"
  },
  "lg2_s_advance": {
   "vi": "Chi tạm ứng trước khi đi",
@@ -10225,7 +10535,7 @@ window.EPL_TU_DIEN = {
  "lg2_t_check_2": {
   "vi": "Thủ quỹ Viêng Chăn chi mục III, quỹ Thà Bốc chi mục V–VI theo phiếu đã ghi sổ",
   "lo": "ຄັງເງິນ ວຽງຈັນ ຈ່າຍພາກ III, ຄັງເງິນສົດຍ່ອຍ ທ່າບົກ ຈ່າຍພາກ V–VI ຕາມໃບທີ່ບັນທຶກແລ້ວ",
-  "en": "The Vientiane treasury pays III, Thà Bốc petty cash pays V–VI once booked"
+  "en": "The Vientiane treasury pays III, Thabok petty cash pays V–VI once booked"
  },
  "lg2_p_lock": {
   "vi": "Kế toán · công nợ",

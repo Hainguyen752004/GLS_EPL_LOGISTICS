@@ -21,6 +21,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 
 from models import ChungTu
+from services import loi_dich as LD
 from services import tai_khoan as TK
 
 # ------------------------------------------------------------------ danh mục loại chứng từ
@@ -224,7 +225,8 @@ def xuat(c):
     except ValueError:
         pl = {}
     ten = LOAI.get(c.loai, (c.loai, c.loai, False))
-    return {"id": c.id, "loai": c.loai, "loai_ten": ten[0], "loai_ten_lo": ten[1], "so": c.so,
+    # 10/10: mô tả máy tự sinh (tiếng Việt, lưu nguyên trong DB) kèm mo_ta_lo / mo_ta_en — màn hiện theo tiếng đang xem
+    return LD.gan_ban_dich({"id": c.id, "loai": c.loai, "loai_ten": ten[0], "loai_ten_lo": ten[1], "so": c.so,
             "ngay": c.ngay.isoformat() if c.ngay else None,
             "trip_id": c.trip_id, "trip_doc_no": c.trip_doc_no,
             "doi_tuong_loai": c.doi_tuong_loai, "doi_tuong_ten": c.doi_tuong_ten,
@@ -234,4 +236,4 @@ def xuat(c):
             "by_user": c.by_user, "ts": c.ts.isoformat() if c.ts else None,
             "da_day": bool(c.da_day), "day_luc": c.day_luc.isoformat() if c.day_luc else None,
             "ma_ben_ke_toan": c.ma_ben_ke_toan, "loi_day": c.loi_day, "lan_thu": c.lan_thu or 0,
-            "payload": pl}
+            "payload": pl}, "mo_ta")

@@ -9,6 +9,7 @@ Bên kho / bên tiền làm việc thật; bên này chỉ XEM trạng thái bê
 
     GET  /api/de-nghi-theo-do?thang=YYYY-MM&q=&loc=      mỗi DO một dòng: đề nghị chi, đề nghị thu, hồ sơ gửi kế toán
     GET  /api/de-nghi-thu?thang=&q=&trang_thai=          DO đã về: tờ đề nghị thu và trạng thái bên công nợ
+                                                         (09/10: hoặc &tu=&den= YYYY-MM-DD — bộ lọc khoảng thời gian)
     GET  /api/trips/{tid}/de-nghi-thu                    nội dung tờ để in
     POST /api/trips/{tid}/de-nghi-thu                    lập tờ cho phiếu đã khoá mà chưa có (phiếu khoá trước 30/09)
     GET  /api/trips/{tid}/tao-so                         xem trước gói gửi bên công nợ (không gọi mạng) + lần gửi trước
@@ -41,6 +42,7 @@ from services import chi_tune as CHI
 from services import chung_tu as CT
 from services import de_nghi_thu as DNT
 from services import gui_tune as GT
+from services import khoang_ngay as KN
 from services import so_nhien_lieu as NL
 from services.bao_mat import nguoi_hien_tai
 from services.phan_quyen import thay_tien_ban, thay_tien_chi
@@ -59,8 +61,13 @@ def _thang(thang):
     return dau, cuoi
 
 
-def _loc_phieu(db, thang, q):
-    dau, cuoi = _thang(thang)
+def _ky(thang, tu=None, den=None):
+    """(đầu, cuối): khoảng `tu` … `den` (09/10, bộ lọc khoảng thời gian màn Phiếu đề nghị thu) nếu có, không thì tháng như cũ."""
+    return KN.khoang(tu, den) or _thang(thang)
+
+
+def _loc_phieu(db, thang, q, tu=None, den=None):
+    dau, cuoi = _ky(thang, tu, den)
     qs = db.query(Trip).filter(Trip.doc_date >= dau, Trip.doc_date <= cuoi)
     if q:
         k = "%" + q.strip() + "%"
@@ -161,11 +168,14 @@ def theo_do(thang: str = "", q: str = "", db: Session = Depends(get_db), user=De
 
 # ---------------------------------------------------------------- đề nghị thu
 @router.get("/api/de-nghi-thu")
-def ds_de_nghi_thu(thang: str = "", q: str = "", cap_nhat: int = 0, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+def ds_de_nghi_thu(thang: str = "", q: str = "", cap_nhat: int = 0, tu: str = "", den: str = "",
+                   db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     """DO đã về (và DO đã khoá): tờ đề nghị thu, số cước, trạng thái bên công nợ. `cap_nhat=1` → đọc lại thu tiền các SO
-    trong danh sách từ hệ anh Tune trước (chỉ xem); không thì dùng bản đọc lần trước. `doc_ke_toan` báo lần đọc này."""
+    trong danh sách từ hệ anh Tune trước (chỉ xem); không thì dùng bản đọc lần trước. `doc_ke_toan` báo lần đọc này.
+    Kỳ: tháng `thang`, hoặc (09/10) khoảng `tu` … `den` theo ngày lập DO."""
     _chan_tai_xe(user); _chan_tien_ban(user)
-    ds = [p for p in _loc_phieu(db, thang, q) if p.transport_status == "arrived" or p.locked]
+    dau, cuoi = _ky(thang, tu, den)
+    ds = [p for p in _loc_phieu(db, thang, q, tu, den) if p.transport_status == "arrived" or p.locked]
     ma = [p.id for p in ds]
     dong, pdt = defaultdict(list), {}
     if ma:
@@ -190,16 +200,17 @@ def ds_de_nghi_thu(thang: str = "", q: str = "", cap_nhat: int = 0, db: Session 
                    "tan_tinh": t["tan_tinh"], "don_gia": t["don_gia"], "cach_tinh": t["cach_tinh"], "ccy": t["ccy"],
                    "doanh_thu": t["doanh_thu"], "doanh_thu_lak": t["doanh_thu_lak"], "da_thu_lak": t["da_thu_lak"],
                    "con_lai_lak": t["con_lai_lak"], "da_tao_so": bool(b is not None and b.status == "synced")})
-    return {"thang": _thang(thang)[0].strftime("%Y-%m"), "ds": ra, "gioi_han": GIOI_HAN if len(ra) >= GIOI_HAN else None,
-            "doc_ke_toan": doc}
+    return {"thang": dau.strftime("%Y-%m"), "tu": dau.isoformat(), "den": cuoi.isoformat(), "ds": ra,
+            "gioi_han": GIOI_HAN if len(ra) >= GIOI_HAN else None, "doc_ke_toan": doc}
 
 
 @router.post("/api/de-nghi-thu/cap-nhat")
 def cap_nhat_de_nghi_thu(data: dict = Body(default={}), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
-    """Nút Cập nhật màn Phiếu đề nghị thu: đọc lại thu tiền mọi SO của DO trong tháng (`thang`, mặc định tháng này) từ công nợ
-    khách bên hệ anh Tune — chỉ xem, không ghi gì sang bên đó. Trả {da_doc, loi}."""
+    """Nút Cập nhật màn Phiếu đề nghị thu: đọc lại thu tiền mọi SO của DO trong tháng (`thang`, mặc định tháng này) — hoặc (09/10)
+    khoảng `tu` … `den` màn đang xem — từ công nợ khách bên hệ anh Tune; chỉ xem, không ghi gì sang bên đó. Trả {da_doc, loi}."""
     _chan_tai_xe(user); _chan_tien_ban(user)
-    dau, cuoi = _thang((data or {}).get("thang") or "")
+    d = data or {}
+    dau, cuoi = _ky(d.get("thang") or "", d.get("tu") or "", d.get("den") or "")
     cac = (db.query(GuiSoTune).join(Trip, Trip.id == GuiSoTune.trip_id)
            .filter(GuiSoTune.status == "synced", Trip.doc_date >= dau, Trip.doc_date <= cuoi).limit(GIOI_HAN).all())
     kq = DNT.doc_thu_tune(db, cac, ep=True)

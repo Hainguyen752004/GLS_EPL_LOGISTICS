@@ -124,7 +124,11 @@
 
 /* ===== B2. Dòng thời gian chuyến (Gantt theo ngày) ===== */
 .tq-gantt-bd { padding: 8px 16px 14px; overflow-x: auto; }
-.tq-gantt { --lab: 250px; --day: 26px; min-width: calc(var(--lab) + 31 * var(--day)); display: grid; grid-template-columns: var(--lab) 1fr; }
+.tq-gantt { --lab: 250px; --day: 26px; min-width: calc(var(--lab) + var(--cot, 31) * var(--day)); display: grid; grid-template-columns: var(--lab) 1fr; }
+/* 09/10: trục theo kỳ của bộ lọc thời gian — kỳ tới 62 ngày: mỗi ngày một ô rộng --day (cuộn ngang khi quá khung); kỳ dài hơn (cả năm):
+   vừa khung, bỏ lưới từng ngày, đầu cột chỉ ghi tháng ở ngày mùng 1 (js: lớp tq-gantt--dai, biến --cot) */
+.tq-gantt--dai .days span { overflow: visible; white-space: nowrap; text-align: left; }
+.tq-gantt--dai .track { background-image: none; }
 .tq-gantt .hdr, .tq-gantt .row { display: contents; }
 .tq-gantt .days { position: relative; display: grid; grid-template-columns: repeat(var(--n), 1fr); height: 26px; border-bottom: 1px solid var(--tq-line); }
 .tq-gantt .days span { font-size: 10.5px; color: var(--tq-muted); text-align: center; line-height: 26px; font-variant-numeric: tabular-nums; }

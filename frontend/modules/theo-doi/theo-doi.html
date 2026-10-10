@@ -1,6 +1,8 @@
 <!-- Theo dõi phiếu vận chuyển — ລາຍງານ ຕິດຕາມໃບຂົນສົ່ງສິນຄ້າ. Bảng họ thích nhất: một dòng một phiếu.
      Cột "Tiền" nói mỗi dòng tính bằng tiền gì; ô "Quy đổi" gom cả bảng về một loại tiền khi cần. -->
 <div class="toolbar">
+  <!-- 09/10: bộ lọc thời gian dùng chung (js/khoang_thoi_gian.js) thay ô tháng — một hàng riêng trên đầu, các ô lọc khác ở hàng dưới -->
+  <div class="ktg-dong" id="td-ky"></div>
   <div class="field td-tim"><label data-i18n="search"></label><input id="td-q" data-i18n-ph="search_ph"></div>
   <div class="field"><label data-i18n="st_transport"></label>
     <select id="td-vc"><option value="" data-i18n="all"></option><option value="dispatched" data-i18n="s_dispatched"></option><option value="transit" data-i18n="s_transit"></option><option value="arrived" data-i18n="s_arrived"></option></select></div>
@@ -10,7 +12,6 @@
     <select id="td-cty"><option value="" data-i18n="all"></option><option value="EPL" data-i18n="co_epl"></option><option value="joint" data-i18n="co_joint"></option></select></div>
   <div class="field tien"><label data-i18n="in_lak"></label>
     <select id="td-quy"><option value="" data-i18n="c_ccy"></option><option value="LAK">LAK</option><option value="USD">USD</option><option value="CNY">CNY</option><option value="THB">THB</option></select></div>
-  <div class="field"><label data-i18n="month"></label><input type="month" id="td-thang"></div>
   <!-- 01/10: vào màn mà tháng này chưa có phiếu thì tự sang tháng gần nhất có phiếu — dòng này nói rõ đang xem tháng nào -->
   <div class="td-bao" id="td-bao" role="status" hidden></div>
 </div>

@@ -3,7 +3,8 @@
      Tune đã ghi sổ (phiếu Web lập theo DO, trang này hỏi lại theo khoá dòng — services/chi_luong_tune.py); trước đó "Chờ trả cùng
      lương". Tổng tách hai phần. -->
 <div class="toolbar no-print">
-  <div class="field"><label data-i18n="month"></label><input type="month" id="ttx-thang"></div>
+  <!-- 09/10: kỳ tháng chọn ở bộ lọc thời gian dùng chung (js/khoang_thoi_gian.js, chế độ tháng: hàng Năm + hàng Tháng) -->
+  <div id="ttx-thang"></div>
   <div class="grow"></div>
   <button class="btn" id="ttx-lam-moi" data-i18n="ck_cap_nhat"></button>
   <button class="btn" onclick="window.print()"><span data-i18n="print"></span></button>

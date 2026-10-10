@@ -14,7 +14,9 @@
  */
 (function () {
   const { API, NN, esc, so, AUTH } = EPL;
-  let root, BANG = null, CHUA_CO = false, CHON = null, loc = '', tim = '', hen = null, LUOT = 0, tab = 'bang', moQuay = false;
+  const KTG = EPL.khoangThoiGian;
+  // 09/10: kỳ là MỘT THÁNG (nghiệp vụ theo kỳ) — chọn ở bộ lọc thời gian dùng chung chế độ tháng (KY), thay ô tháng
+  let root, BANG = null, CHUA_CO = false, CHON = null, loc = '', tim = '', hen = null, LUOT = 0, tab = 'bang', moQuay = false, KY = null;
   const CT = {};                  // owner_id → bảng tính của đối tác (có chi_tiet)
   const MO = new Set();           // trip_id đang mở ra
   const TICH = new Set();         // trip_id đã tích để lập đề nghị
@@ -83,7 +85,7 @@
   /* ---------------------------------------------------------------- một đối tác */
   function ghiDiaChi() {
     if (!root || !root.isConnected) return;
-    const ts = new URLSearchParams({ ky: q('#ttd-ky').value || '', owner_id: CHON || '' });
+    const ts = new URLSearchParams({ ky: KY.giaTri.thang || '', owner_id: CHON || '' });
     [...ts.keys()].forEach(k => { if (!ts.get(k)) ts.delete(k); });
     const moi = '#/tat-toan-doi-tac' + (ts.toString() ? '?' + ts : '');
     if (location.hash !== moi) history.replaceState(null, '', moi);
@@ -329,7 +331,7 @@
 
   /** Bảng của kỳ. 404 (máy chủ chưa có đường này) → "chưa có dữ liệu", không báo lỗi đỏ. */
   async function tai(giu) {
-    const luot = ++LUOT, ky = q('#ttd-ky').value || EPL.thangNay();
+    const luot = ++LUOT, ky = KY.giaTri.thang || EPL.thangNay();
     let b = null, chua = false;
     try { b = await API.get('/api/tat-toan-doi-tac?ky=' + encodeURIComponent(ky)); }
     catch (e) { if (e.status === 404) chua = true; else if (luot === LUOT) EPL.baoLoi(e); b = { ky, tong: {}, doi_tac: [] }; }
@@ -362,10 +364,10 @@
       Object.keys(CT).forEach(k => delete CT[k]); MO.clear(); TICH.clear();
       const h = document.getElementById('pageTitle'); if (h) h.innerHTML = NN.h('title_tat_toan_doi_tac');
       const t = (ctx && ctx.tham) || {};
-      if (t.ky) q('#ttd-ky').value = t.ky;
+      KY = KTG(q('#ttd-ky'), { cheDo: 'thang', giaTri: { thang: /^\d{4}-\d{2}$/.test(t.ky || '') ? t.ky : EPL.thangNay() },
+        khiDoi: () => { CHON = null; return tai(); } });
       if (t.owner_id) CHON = t.owner_id;
       veGioiThieu();
-      q('#ttd-ky').addEventListener('change', () => { CHON = null; tai(); });
       q('#ttd-lam-moi').addEventListener('click', () => { if (CHON) delete CT[CHON]; tai(true); });
       q('#ttd-tim').addEventListener('input', (e) => { clearTimeout(hen); hen = setTimeout(() => { tim = e.target.value.trim(); veHet(); }, 200); });
       window.removeEventListener('resize', khiDoiCo); window.addEventListener('resize', khiDoiCo);

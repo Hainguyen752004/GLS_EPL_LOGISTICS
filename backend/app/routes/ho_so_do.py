@@ -19,6 +19,7 @@ Mỗi nhóm: {ap_dung, muc, em: [tờ bên điều xe], kt: [chứng từ bên k
     xong     xong cả hai bên                  loi      chưa sang được kế toán / chờ bút toán đảo
 
     GET /api/ho-so-do?thang=YYYY-MM&q=     mỗi DO một dòng + bảy nhóm (không gói dòng — nhẹ, nạp theo lô)
+                                           (09/10: hoặc ?tu=YYYY-MM-DD&den=YYYY-MM-DD — bộ lọc khoảng thời gian)
     GET /api/ho-so-do/{trip_id}            một DO: bảy nhóm + từng dòng tiền và chứng từ của nó (ban_giao.dong_goi → settlement)
 
 Quyền như màn Đề nghị theo DO (routes/de_nghi.py): tài xế và ba vai một việc (thủ kho, kho phụ tùng, tổ sửa) không vào. Vai
@@ -40,6 +41,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import (ButToanCho, ChiChuXeTune, ChiMucTune, ChiTune, ChungTu, FuelPlace, GuiSoTune, Trip, TripExpense,
                     TripSection, Voucher)
+from services import khoang_ngay as KN
 from services.bao_mat import nguoi_hien_tai
 from services.phan_quyen import thay_tien_ban, thay_tien_chi
 from services.tinh_toan import cach_tra, la_tien_mat_tai_xe, la_xuat_ban, tien_dong, tinh_phieu
@@ -362,10 +364,11 @@ def _vai(user):
 
 # ================================================================ danh sách
 @router.get("/api/ho-so-do")
-def ds_ho_so(thang: str = "", q: str = "", db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+def ds_ho_so(thang: str = "", q: str = "", tu: str = "", den: str = "", db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """DO của kỳ (theo ngày lập): tháng `thang`, hoặc (09/10, bộ lọc khoảng thời gian) khoảng `tu` … `den`; tối đa GIOI_HAN dòng."""
     _chan(user)
     chi, ban, xem_bt = _vai(user)
-    dau, cuoi = _thang(thang)
+    dau, cuoi = KN.khoang(tu, den) or _thang(thang)
     qs = db.query(Trip).filter(Trip.doc_date >= dau, Trip.doc_date <= cuoi)
     if q and q.strip():
         k = "%" + q.strip() + "%"
@@ -373,7 +376,8 @@ def ds_ho_so(thang: str = "", q: str = "", db: Session = Depends(get_db), user=D
                            Trip.owner_name.ilike(k)))
     ds = qs.order_by(Trip.doc_date.desc(), Trip.doc_no.desc()).limit(GIOI_HAN).all()
     N = _nap(db, ds)
-    return {"thang": dau.strftime("%Y-%m"), "thay_tien_chi": chi, "thay_tien_ban": ban, "xem_but_toan": xem_bt,
+    return {"thang": dau.strftime("%Y-%m"), "tu": dau.isoformat(), "den": cuoi.isoformat(),
+            "thay_tien_chi": chi, "thay_tien_ban": ban, "xem_but_toan": xem_bt,
             "ds": [{**_co_ban(p), "nhom": _nhom(p, N, chi, ban, xem_bt)} for p in ds],
             "gioi_han": GIOI_HAN if len(ds) >= GIOI_HAN else None}
 

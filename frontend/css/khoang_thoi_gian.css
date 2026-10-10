@@ -1,0 +1,42 @@
+/* EPL Lào — bộ lọc thời gian dùng chung (js/khoang_thoi_gian.js, 09/10/2026). Theo ảnh phần mềm kế toán anh Khampla gửi: hàng Năm ·
+   hàng Tháng · Khoảng thời gian + nút nhanh; nút đang chọn tô màu chủ đạo (--green-2). Các nhóm đứng cạnh nhau, hết chỗ thì xuống
+   dòng — màn 1366 px còn hai hàng (Năm + Tháng | Khoảng + nút nhanh), không xếp dọc dài; điện thoại: mỗi nhóm một hàng, nút trong
+   nhóm tự xuống dòng. Màu lấy theo token của chung.css. */
+.ktg{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;min-width:0}
+.ktg-nhom{display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-width:0}
+.ktg-nhan{margin-right:2px;font-size:12px;font-weight:600;color:var(--ink-2);white-space:nowrap}
+.ktg-day{display:inline-flex;flex-wrap:wrap;gap:3px}
+/* nút xếp dọc bên trong: chế độ VI + ລາວ dòng Lào nằm DƯỚI chữ Việt (không chen cạnh); chỉ một dòng thì như nút thường */
+.ktg .ktg-b{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;min-height:30px;min-width:28px;padding:2px 6px;border:1px solid var(--line-2);
+  border-radius:var(--r);background:var(--paper);color:var(--ink-2);font:inherit;font-size:12.5px;font-weight:500;line-height:1.2;
+  white-space:nowrap;font-variant-numeric:tabular-nums;cursor:pointer}
+.ktg .ktg-b:hover{border-color:var(--green-2);color:var(--green)}
+.ktg .ktg-b.on{background:var(--green-2);border-color:var(--green-2);color:#fff;font-weight:600}
+.ktg .ktg-b.on:hover{background:var(--green);border-color:var(--green);color:#fff}
+.ktg .ktg-b:focus-visible{outline:2px solid var(--green-2);outline-offset:1px}
+/* 12 nút tháng hẹp hơn — khung hẹp (tab Chuyến màn Khách hàng ~800 px) vẫn đủ Năm + Tháng trên một hàng */
+.ktg .ktg-thang .ktg-day .ktg-b{min-width:27px;padding:2px 3px}
+.ktg .ktg-theo{margin-left:2px}
+/* VI + ລາວ: dòng Lào nằm dưới, nhỏ — nút cao lên một chút chứ không tràn */
+.ktg .lo-sub{font-size:.78em;line-height:1.15}
+.ktg .ktg-b .lo-sub{color:inherit;opacity:.8}
+.ktg .ktg-tim{background:var(--green-soft);border-color:#B7D8CB;color:var(--green);font-weight:600}
+.ktg-den{padding:0 2px;font-size:12.5px;color:var(--ink-2)}
+.ktg-o{display:inline-flex;min-width:0}
+/* ô ngày do js/lich.js dựng (ô hiện dd/mm/yyyy + nút lịch) — cùng cỡ với nút */
+.ktg-o .lich-o>input.lich-hien{height:30px;width:118px;padding:0 28px 0 8px;border:1px solid var(--line-2);border-radius:var(--r);
+  background:var(--paper);font-size:12.5px}
+.ktg-o .lich-o>.lich-nut{width:24px;height:24px;margin-top:-12px;right:3px}
+.ktg-nhanh{gap:3px}
+/* Trong thanh công cụ của màn (.toolbar · *-top, flex-wrap căn đáy): bộ lọc khoảng (khung lớp ktg-dong) đứng thành MỘT HÀNG
+   RIÊNG — hai hàng nút bên trong, các ô lọc khác của màn ở hàng trên / dưới. Bộ lọc kỳ tháng (hẹp: Năm + Tháng một hàng) đứng
+   cuối hàng như ô tháng cũ, thiếu chỗ thì tự xuống hàng. */
+.ktg.ktg-dong{flex:1 1 100%}
+.ktg--thang{flex:0 1 auto;align-self:flex-end}
+
+@media (max-width:640px){
+  .ktg{gap:6px}
+  .ktg-nhom{width:100%}
+  .ktg-o .lich-o>input.lich-hien{width:124px}
+}
+@media print{.ktg{display:none!important}}

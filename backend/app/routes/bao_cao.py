@@ -25,6 +25,7 @@ from services.bao_mat import can_vai, nguoi_hien_tai
 from services.phan_quyen import QUYEN, thay_tien_ban, thay_tien_chi, viec_dang_cho
 from services.tinh_toan import cach_tra, tien_dong, tinh_phieu, ty_gia
 from services import dem_bao_cao as DEM
+from services import khoang_ngay as KN
 # 06/10: khoản tài xế dùng chung với luồng hỏi phiếu chi lương (một chỗ định nghĩa); giờ máy chủ kế toán để ra ngày ghi sổ
 from services.chi_luong_tune import KHOAN_TAI_XE
 from services.chi_tune import GIO_KE_TOAN
@@ -50,6 +51,12 @@ def _thang(thang):
     dau = dt.date(y, m, 1)
     cuoi = dt.date(y + (m == 12), (m % 12) + 1, 1) - dt.timedelta(days=1)
     return dau, cuoi
+
+
+def _ky(thang, tu, den):
+    """(đầu, cuối) của kỳ báo cáo. 09/10 (bộ lọc khoảng thời gian, anh Khampla): màn gửi `tu`/`den` thì dùng khoảng đó (tối đa một
+    năm — báo cáo đệm theo từng ngày); không gửi thì tháng `thang` như cũ (Web C# và chỗ khác còn gọi theo tháng)."""
+    return KN.khoang(tu, den, toi_da=KN.TOI_DA_BAO_CAO) or _thang(thang)
 
 
 def _gon(d):
@@ -104,8 +111,9 @@ def _da_thu_gon(db, dau, cuoi, *loc):
 
 
 @router.get("/api/bao-cao/tong-quan")
-def tong_quan(thang: str = None, db: Session = Depends(get_db), user=Depends(XEM_BAO_CAO)):
-    dau, cuoi = _thang(thang)
+def tong_quan(thang: str = None, tu: str = None, den: str = None, db: Session = Depends(get_db), user=Depends(XEM_BAO_CAO)):
+    """Bốn con số + tiến trình + cơ cấu chi + việc cần chú ý của KỲ: tháng `thang`, hoặc (09/10) khoảng `tu` … `den`."""
+    dau, cuoi = _ky(thang, tu, den)
     t = _gop_tq(_theo_ngay(db, "tq6", _cac_ngay(dau, cuoi), _tq_lo).values())
     chu_y = list(t["chu_y"])
     if t["cho_kiem"]:
@@ -352,9 +360,13 @@ def _xh_lo(db, cac_ngay):
 
 
 @router.get("/api/bao-cao/xu-huong")
-def xu_huong(thang: str = None, db: Session = Depends(get_db), user=Depends(XEM_BAO_CAO)):
-    """Số liệu xu hướng cho màn Tổng quan: so tháng trước, sáu tháng gần nhất, theo ngày, hao hụt,
+def xu_huong(thang: str = None, tu: str = None, den: str = None, db: Session = Depends(get_db), user=Depends(XEM_BAO_CAO)):
+    """Số liệu xu hướng cho màn Tổng quan: so kỳ trước, sáu tháng gần nhất, theo ngày, hao hụt,
     hiệu suất xe, vận hành, xem nhanh, và dòng thời gian từng chuyến.
+
+    Kỳ: tháng `thang`, hoặc (09/10, bộ lọc khoảng thời gian) khoảng `tu` … `den` — mọi phần ghép từ các ngày trong kỳ. «Kỳ trước»
+    (khoá `thang_truoc`, giữ tên) cùng độ dài, đứng ngay trước: kỳ trọn tháng thì chừng ấy tháng liền trước (tháng 9 → tháng 8 như
+    lâu nay), còn lại lùi đúng số ngày (KN.ky_truoc). Sáu tháng gần nhất tính tới tháng của NGÀY CUỐI kỳ.
 
     Mốc dòng thời gian lấy từ dữ liệu THẬT, không suy diễn: ngày lập phiếu · ngày xuất xe · các mốc
     "tới điểm" Bãi đã bấm trên tuyến (điểm 2 = về bãi, điểm 3 = cửa khẩu, điểm cuối = nơi giao) ·
@@ -363,26 +375,27 @@ def xu_huong(thang: str = None, db: Session = Depends(get_db), user=Depends(XEM_
     Dữ liệu cả năm (24/09): ghép từ phần tính sẵn của từng NGÀY (xem _xh_lo, _tq_lo) — chỉ ngày có dữ liệu vừa đổi
     mới phải tính lại."""
     vai = user.role
-    dau, cuoi = _thang(thang)
+    dau, cuoi = _ky(thang, tu, den)
     hom_nay = dt.date.today()
 
-    # ---- tháng trước và sáu tháng gần nhất (cũ → mới, kể cả tháng đang xem) — MỘT lượt đệm cho cả 180 ngày
-    y, m = dau.year, dau.month
+    # ---- kỳ trước và sáu tháng gần nhất (cũ → mới, tới tháng của ngày cuối kỳ) — MỘT lượt đệm cho mọi ngày cần
+    y, m = cuoi.year, cuoi.month
     khoang = []
     for i in range(5, -1, -1):
         yy, mm = _lui_thang(y, m, i)
         d1 = dt.date(yy, mm, 1)
         khoang.append((i, yy, mm, d1, dt.date(yy + (mm == 12), (mm % 12) + 1, 1) - dt.timedelta(days=1)))
-    tq = _theo_ngay(db, "tq6", [d for _, _, _, d1, d2 in khoang for d in _cac_ngay(d1, d2)], _tq_lo)
+    truoc = KN.ky_truoc(dau, cuoi)
+    can = {d for _, _, _, d1, d2 in khoang for d in _cac_ngay(d1, d2)} | set(_cac_ngay(*truoc))
+    tq = _theo_ngay(db, "tq6", sorted(can), _tq_lo)
     sau_thang = {"nhan": [], "doanh_thu_lak": [], "chi_lak": [], "tan_giao": [], "chua_thu_lak": []}
-    thang_truoc = None
     for i, yy, mm, d1, d2 in khoang:
         g = _gom_thang(db, d1, d2, tq=tq)
         sau_thang["nhan"].append("%02d/%02d" % (mm, yy % 100))
         for k in ("doanh_thu_lak", "chi_lak", "tan_giao", "chua_thu_lak"):
             sau_thang[k].append(g[k])
-        if i == 1:
-            thang_truoc = g
+    # kỳ tháng: đúng tháng liền trước như trước 09/10 (cùng phép _gom_thang trên cùng bản đệm ngày)
+    thang_truoc = _gom_thang(db, *truoc, tq=tq)
 
     # ---- ghép phần của từng ngày trong tháng đang xem
     ngay = _theo_ngay(db, "xh7", _cac_ngay(dau, cuoi), _xh_lo)
@@ -485,7 +498,8 @@ def xu_huong(thang: str = None, db: Session = Depends(get_db), user=Depends(XEM_
             thang_truoc.pop("chi_lak", None)
         theo_ngay_ra = []
     return {
-        "thang": dau.strftime("%Y-%m"), "thang_truoc": thang_truoc, "sau_thang": sau_thang,
+        "thang": dau.strftime("%Y-%m"), "tu": dau.isoformat(), "den": cuoi.isoformat(),
+        "ky_truoc": {"tu": truoc[0].isoformat(), "den": truoc[1].isoformat()}, "thang_truoc": thang_truoc, "sau_thang": sau_thang,
         "theo_ngay": theo_ngay_ra,
         "hao_hut": hao_hut, "xe": sorted(xe.values(), key=lambda x: -(x.get("doanh_thu_lak") or x["tan"])),
         "van_hanh": van_hanh, "xem_nhanh": xem_nhanh, "dong_thoi_gian": dong_thoi_gian,
@@ -524,11 +538,12 @@ def _loc_td(qs, q=None, transport_status=None, finance_status=None, company=None
 
 @router.get("/api/bao-cao/theo-doi/tong")
 def theo_doi_tong(thang: str = None, q: str = None, transport_status: str = None, finance_status: str = None,
-                  company: str = None, quy: str = None, db: Session = Depends(get_db), user=Depends(XEM_BAO_CAO)):
+                  company: str = None, quy: str = None, tu: str = None, den: str = None,
+                  db: Session = Depends(get_db), user=Depends(XEM_BAO_CAO)):
     """Dòng TỔNG của bảng theo dõi trên TOÀN BỘ phiếu khớp bộ lọc (không chỉ trang đang xem) — cộng riêng từng loại
     tiền; `quy` (LAK · USD · …) thì mọi phiếu quy theo tỷ giá đã khoá trên chính phiếu đó, còn một con số. Cùng cách
-    cộng với giao diện trước đây (modules/theo-doi: cong / ve_tien)."""
-    dau, cuoi = _thang(thang)
+    cộng với giao diện trước đây (modules/theo-doi: cong / ve_tien). Kỳ: tháng `thang` hoặc (09/10) khoảng `tu` … `den`."""
+    dau, cuoi = _ky(thang, tu, den)
     # ghép từ phần tính sẵn của từng NGÀY cho đúng bộ lọc này (tính một lần cho mọi vai, bỏ khoá theo vai trên bản chép)
     loc = (q or "", transport_status or "", finance_status or "", company or "", (quy or "").strip().upper())
     cac = _cac_ngay(dau, cuoi)
@@ -614,14 +629,15 @@ def _tron_tien(theo_tien):
 
 @router.get("/api/bao-cao/theo-doi")
 def theo_doi(response: Response, thang: str = None, trang: int = 1, co: int = None, q: str = None,
-             transport_status: str = None, finance_status: str = None, company: str = None,
+             transport_status: str = None, finance_status: str = None, company: str = None, tu: str = None, den: str = None,
              db: Session = Depends(get_db), user=Depends(XEM_BAO_CAO)):
     """Bảng "ລາຍງານ ຕິດຕາມໃບຂົນສົ່ງສິນຄ້າ" — một dòng một phiếu, đủ 29 cột như Excel.
 
     Vai không được thấy tiền bán thì các cột cước, doanh thu, lãi **không có trong gói trả về** —
     không phải chỉ ẩn cột ở giao diện.
-    Dữ liệu cả năm (24/09): không ghi tháng thì là THÁNG NÀY — trước đây là mọi phiếu từ trước tới nay."""
-    dau, cuoi = _thang(thang)
+    Dữ liệu cả năm (24/09): không ghi tháng thì là THÁNG NÀY — trước đây là mọi phiếu từ trước tới nay.
+    09/10: `tu` … `den` (bộ lọc khoảng thời gian) thay cho tháng khi có."""
+    dau, cuoi = _ky(thang, tu, den)
     ds = _trang_phieu(response, _loc_td(db.query(Trip).filter(*_trong(dau, cuoi)), q, transport_status, finance_status, company),
                       trang, co)
     thu = da_thu_theo_phieu(db, [p.id for p in ds])

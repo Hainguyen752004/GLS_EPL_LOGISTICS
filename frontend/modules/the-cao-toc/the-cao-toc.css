@@ -10,3 +10,5 @@
 .tct-chi{color:var(--red)}
 .tct-tat{opacity:.55}
 @media (max-width:760px){.tct-dau>div{min-width:calc(50% - 22px)}}
+/* 09/10: đầu thẻ cấn trừ mang bộ lọc thời gian (hàng Năm + hàng Tháng) — màn hẹp thì xuống dòng */
+#tct-can-tru-card>.hd{flex-wrap:wrap}

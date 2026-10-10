@@ -246,6 +246,10 @@ def dung_goi(db, p, v, obj):
     if tien <= 0:
         _loi("TAM_UNG_BANG_KHONG", "Tờ tạm ứng %s chưa có số tiền — KT Chi phí nhập giá mục IV trước." % v.doc_no, 409)
     no, _, co, _ = CT.dinh_khoan("PC_TU", company=p.company, section="travel", tien_te="LAK", phuong_thuc="cash")
+    if p.company == "joint":
+        from services import tai_khoan as TK
+        if no == TK.CHU_XE:                   # xe thuê: EPL ứng trừ vào công nợ chủ xe — TK Có riêng của chủ xe (soát 10/10)
+            no = TK.rieng(TK.chu_xe_rieng(db, p.owner_id), "co", TK.CHU_XE)
     if not no or not co:
         _loi("THIEU_DINH_KHOAN", "Chưa có định khoản cho phiếu chi tạm ứng (%s / %s)." % (no, co))
     dong = dong_tam_ung(db, p, v, tien)
@@ -709,7 +713,8 @@ def _gui_chu_xe(db, rec, o, TK, user=None):
                            "BaseAmount": rec.amount_lak if rec.currency != "LAK" else rec.amount, "ContactName": (o.name or "")[:100] or None},
                 "Relations": [],
                 "Entries": [{"SourceLineKey": "EPLLAO:%s:TCX:%s" % (rec.id, d["trip_id"]), "ObjectId": obj, "CurrencyId": ma_cur,
-                             "DebitAccount": TK.CHU_XE, "CreditAccount": co, "Amount": d["tra_thuc"],
+                             # 09/10: phải trả chủ xe theo TK Có riêng của chủ xe (trống = 4022) — services/tai_khoan.rieng
+                             "DebitAccount": TK.rieng(o, "co", TK.CHU_XE), "CreditAccount": co, "Amount": d["tra_thuc"],
                              "BaseAmount": d["tra_thuc_lak"] if rec.currency != "LAK" else d["tra_thuc"],
                              # tỷ giá RIÊNG từng dòng = Kíp khoá trên phiếu / nguyên tệ: máy chủ anh Tune nay tự tính base
                              # dòng = Amount × ExchangeRate (ce95b3c+) — gửi tỷ giá chung thì Kíp từng phiếu bị dịch (rà 01/10)
