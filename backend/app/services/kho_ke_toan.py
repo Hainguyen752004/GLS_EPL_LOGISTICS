@@ -240,11 +240,11 @@ class GiaoDichKho:
         self.da_xuat.append(("dau", r["move_id"]))
         return r
 
-    def nhap_hang(self, trip, dong, *, ngay, tan, boc_len, hao_hut):
+    def nhap_hang(self, trip, dong, *, ngay, tan, boc_len, hao_hut, kho_id=None):
         """Phiếu gom về tới bãi → nhập kho hàng bên trang kế toán. Trả {da_co}: đã nhập từ trước thì không làm gì."""
         if KQ.bat():                     # hàng khách gửi: sổ goods_moves bên này + tờ PNK_HH (05/10), cùng giao dịch
             return KHD.nhap(self.db, trip, dong, ngay, getattr(self.nguoi, "full_name", None), tan=tan, boc_len=boc_len,
-                            hao_hut=hao_hut)
+                            hao_hut=hao_hut, kho_id=kho_id)        # 12/10: kho bãi nhận (trống → mặc định)
         r = KT.goi(self.db, "POST", "/api/lien-thong/kho-hang/nhap", {
             "trip_id": trip.id, "trip_doc_no": trip.doc_no, "ngay": ngay.isoformat() if ngay else None, "dong": dong,
             "customer_name": trip.customer_name, "origin": trip.origin, "truck_no": trip.truck_no, "company": trip.company,

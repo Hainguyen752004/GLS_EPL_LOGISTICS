@@ -57,12 +57,49 @@ def _ngay(s, ten="ngay"):
 
 @router.get("/api/kho-hang")
 @router.get("/api/kho-hang/ton")
-def ton_kho(q: str = "", khach: str = "", chi_con: int = 1, limit: int = 2000, db: Session = Depends(get_db),
+def ton_kho(q: str = "", khach: str = "", chi_con: int = 1, limit: int = 2000, kho: str = "", db: Session = Depends(get_db),
             user=Depends(nguoi_hien_tai)):
-    """Tồn kho hàng theo lô. `chi_con=1` (mặc định): chỉ lô còn hàng, cũ trước; `chi_con=0`: cả lô đã hết, mới trước."""
+    """Tồn kho hàng theo lô. `chi_con=1` (mặc định): chỉ lô còn hàng, cũ trước; `chi_con=0`: cả lô đã hết, mới trước.
+    12/10: `kho` = id kho bãi (trống = mọi kho); mỗi lô kèm kho_id · kho; `kho_bai` = danh mục kho đang dùng."""
     _xem(user)
-    ra = KHD.ton_kho(db, q=q, khach=khach, chi_con=bool(chi_con), gioi_han=limit)
-    ra["quyen"] = _quyen(user.role)
+    ra = KHD.ton_kho(db, q=q, khach=khach, chi_con=bool(chi_con), gioi_han=limit, kho=kho)
+    ra["quyen"] = dict(_quyen(user.role), sua_kho=user.role in KHD.VAI_SUA_KHO)
+    ra["kho_bai"] = KHD.ds_kho(db)
+    db.commit()                              # kho mặc định (Thà Bốc) tạo lần đầu
+    return ra
+
+
+# ---------------------------------------------------------------- kho bãi (12/10 — xe về bãi chọn kho nhận)
+@router.get("/api/kho-hang/kho-bai")
+def ds_kho_bai(ca_ngung: int = 0, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Danh mục kho bãi (mặc định trước) — ô «Kho nhận» của hộp Xe đã tới, bộ lọc màn Xem kho. Mọi vai trừ tài xế."""
+    _xem(user)
+    ra = KHD.ds_kho(db, ca_ngung=bool(ca_ngung))
+    db.commit()
+    return ra
+
+
+@router.post("/api/kho-hang/kho-bai")
+def them_kho_bai(d: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """{ma, ten, ten_lo?, ghi_chu?} → kho bãi mới. Bãi, KT Thu/Chi Viêng Chăn, Sếp."""
+    _xem(user)
+    if user.role not in KHD.VAI_SUA_KHO:
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ Bãi, KT Thu/Chi Viêng Chăn hoặc Sếp thêm / sửa kho bãi."})
+    KHD.kho_mac_dinh(db)
+    ra = KHD.luu_kho(db, d or {})
+    db.commit()
+    return ra
+
+
+@router.put("/api/kho-hang/kho-bai/{kid}")
+def sua_kho_bai(kid: str, d: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """{ma?, ten?, ten_lo?, ghi_chu?, active?} — sửa / ngừng dùng một kho bãi (kho mặc định không ngừng được)."""
+    _xem(user)
+    if user.role not in KHD.VAI_SUA_KHO:
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ Bãi, KT Thu/Chi Viêng Chăn hoặc Sếp thêm / sửa kho bãi."})
+    KHD.kho_mac_dinh(db)
+    ra = KHD.luu_kho(db, d or {}, kho_id=kid)
+    db.commit()
     return ra
 
 

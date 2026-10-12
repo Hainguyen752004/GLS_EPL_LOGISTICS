@@ -27,10 +27,12 @@ import json
 from fastapi import HTTPException
 from sqlalchemy import and_, case, exists, func, or_
 
-from models import ChungTu, DieuChinhHang, GoodsMove, Trip, TripGoods, bay_gio
+from models import ChungTu, DieuChinhHang, GoodsMove, KhoBai, Trip, TripGoods, bay_gio
 from services import chung_tu as CT
 
 DEPOT = "Thà Bốc"
+KHO_MAC_DINH = "TB"                          # 12/10: id kho bãi mặc định (Thà Bốc) — dòng sổ cũ không ghi kho_id thuộc kho này
+VAI_SUA_KHO = ("yard", "acct", "admin")      # thêm / sửa danh mục kho bãi
 SAI = 0.0005
 TO_HANG = ("PNK_HH", "PXK_HH")             # tờ nguồn "trips" của kho hàng (DC_HH nguồn "goods_moves")
 VAI_LAP_DC = ("yard", "admin")             # Bãi (Admin Thà Bốc) lập đơn điều chỉnh
@@ -55,6 +57,78 @@ def _ten(nguoi):
     return getattr(nguoi, "full_name", None) or getattr(nguoi, "username", None)
 
 
+# ---------------------------------------------------------------- kho bãi (12/10 — xe về bãi chọn kho nhận)
+def kho_mac_dinh(db):
+    """Kho bãi mặc định (id cố định «TB», Thà Bốc) — chưa có thì tạo (id cố định nên gọi ở lượt chỉ đọc cũng không lệch)."""
+    k = db.get(KhoBai, KHO_MAC_DINH)
+    if k is None:
+        k = KhoBai(id=KHO_MAC_DINH, ma=KHO_MAC_DINH, ten=DEPOT, ten_lo="ທ່າບົກ", active=True, mac_dinh=True)
+        db.add(k)
+        db.flush()
+    return k
+
+
+def kho_cua(db, kho_id=None):
+    """Kho bãi theo id (kho đang dùng); trống → kho mặc định. Không có / đã ngừng dùng → 422 KHO_SAI."""
+    if not (kho_id or "").strip():
+        return kho_mac_dinh(db)
+    k = db.get(KhoBai, kho_id.strip())
+    if k is None or not k.active:
+        raise HTTPException(422, {"ma": "KHO_SAI", "loi": "Kho bãi đã chọn không có hoặc đã ngừng dùng — chọn lại kho nhận."})
+    return k
+
+
+def xuat_kho(k):
+    return {"id": k.id, "ma": k.ma, "ten": k.ten, "ten_lo": k.ten_lo, "ghi_chu": k.ghi_chu, "active": bool(k.active),
+            "mac_dinh": bool(k.mac_dinh)}
+
+
+def ds_kho(db, ca_ngung=False):
+    """Danh mục kho bãi: mặc định trước, rồi theo mã."""
+    kho_mac_dinh(db)
+    q = db.query(KhoBai)
+    if not ca_ngung:
+        q = q.filter(KhoBai.active.is_(True))
+    return [xuat_kho(k) for k in q.order_by(KhoBai.mac_dinh.desc(), KhoBai.ma).all()]
+
+
+def luu_kho(db, d, kho_id=None):
+    """Thêm (kho_id trống) / sửa một kho bãi: {ma, ten, ten_lo, ghi_chu, active}. Mã: chữ / số / - _ , không trùng; tên bắt buộc;
+    kho mặc định không ngừng dùng được."""
+    ma = (d.get("ma") or "").strip().upper()
+    ten = (d.get("ten") or "").strip()
+    k = db.get(KhoBai, kho_id) if kho_id else None
+    if kho_id and k is None:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có kho bãi này."})
+    if k is None or "ma" in d:
+        if not ma or len(ma) > 20 or not all(c.isalnum() or c in "-_" for c in ma):
+            raise HTTPException(422, {"ma": "MA_KHO_SAI", "loi": "Mã kho bãi chỉ gồm chữ, số, - _ (tối đa 20 ký tự)."})
+        trung = db.query(KhoBai.id).filter(func.upper(KhoBai.ma) == ma, KhoBai.id != (k.id if k else "")).first()
+        if trung:
+            raise HTTPException(409, {"ma": "TRUNG_MA_KHO", "loi": "Mã kho bãi %s đã có." % ma})
+    if k is None or "ten" in d:
+        if not ten:
+            raise HTTPException(422, {"ma": "THIEU_TEN_KHO", "loi": "Chưa nhập tên kho bãi."})
+    if k is None:
+        k = KhoBai(ma=ma, ten=ten, active=True, mac_dinh=False)
+        db.add(k)
+    else:
+        if "ma" in d:
+            k.ma = ma
+        if "ten" in d:
+            k.ten = ten
+    if "ten_lo" in d:
+        k.ten_lo = (d.get("ten_lo") or "").strip() or None
+    if "ghi_chu" in d:
+        k.ghi_chu = (d.get("ghi_chu") or "").strip() or None
+    if "active" in d:
+        if not d.get("active") and k.mac_dinh:
+            raise HTTPException(409, {"ma": "KHO_MAC_DINH", "loi": "Không ngừng dùng được kho bãi mặc định."})
+        k.active = bool(d.get("active"))
+    db.flush()
+    return xuat_kho(k)
+
+
 def _khoa_lo(db, *lo):
     """Khoá dòng phiếu gom của các lô (theo thứ tự mã) rồi mới đọc tồn — hai phiếu giao cùng lấy một lô không cùng lọt."""
     ids = sorted({x for x in lo if x})
@@ -77,7 +151,7 @@ def ton_lo(db, lo_trip_id, tru_phieu_id=None):
     return round(float(v or 0), 3)
 
 
-def _bang_lo(db, *, lo_ids=None, tru_phieu_id=None, q=None, khach=None, chi_con=False, moi_truoc=False):
+def _bang_lo(db, *, lo_ids=None, tru_phieu_id=None, q=None, khach=None, chi_con=False, moi_truoc=False, kho=None):
     """MỌI LÔ trong MỘT câu: gom goods_moves theo lô (nhập · điều chỉnh · xuất · ngày nhập · ngày xuất cuối · tên hàng), nối DO gom
     (khách, nơi lấy, xe) và tờ PNK_HH. Lô = có ít nhất một dòng nhập. → [{lo, doc_no, ten, ngay, xuat_cuoi, nhap, dc, xuat, ton,
     khach, origin, truck_no, so_pnk}]."""
@@ -90,18 +164,23 @@ def _bang_lo(db, *, lo_ids=None, tru_phieu_id=None, q=None, khach=None, chi_con=
                     func.min(case((la_nhap, G.move_date))).label("ngay"),
                     func.max(case((G.kind == "out", G.move_date))).label("xuat_cuoi"),
                     func.min(case((la_nhap, G.goods_name))).label("ten"),
-                    func.min(case((la_nhap, G.trip_doc_no))).label("so"))
+                    func.min(case((la_nhap, G.trip_doc_no))).label("so"),
+                    func.min(case((la_nhap, G.kho_id))).label("kho_id"),
+                    func.min(case((la_nhap, G.depot))).label("kho"))
            .filter(G.lo_trip_id.isnot(None)))
     if lo_ids is not None:
         sub = sub.filter(G.lo_trip_id.in_(sorted(lo_ids)))
     sub = sub.group_by(G.lo_trip_id).having(func.count(case((la_nhap, 1))) > 0).subquery()
     ton = sub.c.nhap + sub.c.dc - sub.c.xuat
-    qr = (db.query(sub.c.lo, sub.c.nhap, sub.c.dc, sub.c.xuat, sub.c.ngay, sub.c.xuat_cuoi, sub.c.ten, sub.c.so,
+    qr = (db.query(sub.c.lo, sub.c.nhap, sub.c.dc, sub.c.xuat, sub.c.ngay, sub.c.xuat_cuoi, sub.c.ten, sub.c.so, sub.c.kho_id, sub.c.kho,
                    Trip.doc_no, Trip.customer_name, Trip.origin, Trip.truck_no, ChungTu.so.label("so_pnk"))
           .outerjoin(Trip, Trip.id == sub.c.lo)
           .outerjoin(ChungTu, and_(ChungTu.loai == "PNK_HH", ChungTu.nguon_bang == "trips", ChungTu.nguon_id == sub.c.lo)))
     if chi_con:
         qr = qr.filter(ton > SAI)
+    if (kho or "").strip():                  # 12/10: lọc theo kho bãi — dòng cũ (kho_id trống) thuộc kho mặc định
+        kho = kho.strip()
+        qr = qr.filter(or_(sub.c.kho_id == kho, sub.c.kho_id.is_(None)) if kho == KHO_MAC_DINH else sub.c.kho_id == kho)
     if (q or "").strip():
         k = "%" + q.strip() + "%"
         qr = qr.filter(or_(Trip.doc_no.ilike(k), sub.c.so.ilike(k), Trip.customer_name.ilike(k), sub.c.ten.ilike(k),
@@ -114,16 +193,18 @@ def _bang_lo(db, *, lo_ids=None, tru_phieu_id=None, q=None, khach=None, chi_con=
     for r in qr.all():
         ra.append({"lo": r.lo, "doc_no": r.doc_no or r.so, "ten": r.ten, "ngay": r.ngay, "xuat_cuoi": r.xuat_cuoi,
                    "nhap": round(r.nhap, 3), "dc": round(r.dc, 3), "xuat": round(r.xuat, 3), "ton": round(r.nhap + r.dc - r.xuat, 3),
-                   "khach": r.customer_name, "origin": r.origin, "truck_no": r.truck_no, "so_pnk": r.so_pnk})
+                   "khach": r.customer_name, "origin": r.origin, "truck_no": r.truck_no, "so_pnk": r.so_pnk,
+                   "kho_id": r.kho_id or KHO_MAC_DINH, "kho": r.kho or DEPOT})
     return ra
 
 
-def danh_sach_lo(db, con_hang=True, tru_phieu_id=None):
+def danh_sach_lo(db, con_hang=True, tru_phieu_id=None, kho=None):
     """Lô còn hàng — cùng khoá với kho tạm (ô chọn lô của phiếu giao, màn Xem kho): lo_trip_id, doc_no, goods_name, ngay, nhap_t,
     dieu_chinh_t, con_t, customer_name, origin, truck_no. 05/10: một câu GROUP BY (`_bang_lo`)."""
     return [{"lo_trip_id": o["lo"], "doc_no": o["doc_no"], "goods_name": o["ten"], "ngay": _iso(o["ngay"]), "nhap_t": o["nhap"],
-             "dieu_chinh_t": o["dc"], "con_t": o["ton"], "customer_name": o["khach"], "origin": o["origin"], "truck_no": o["truck_no"]}
-            for o in _bang_lo(db, tru_phieu_id=tru_phieu_id, chi_con=con_hang)]
+             "dieu_chinh_t": o["dc"], "con_t": o["ton"], "customer_name": o["khach"], "origin": o["origin"], "truck_no": o["truck_no"],
+             "kho_id": o["kho_id"], "kho": o["kho"]}
+            for o in _bang_lo(db, tru_phieu_id=tru_phieu_id, chi_con=con_hang, kho=kho)]
 
 
 def _item_lo(o, hom_nay=None):
@@ -133,12 +214,12 @@ def _item_lo(o, hom_nay=None):
     return {"lo_id": o["lo"], "lo_doc_no": o["doc_no"], "khach": o["khach"], "loai_hang": o["ten"], "ngay_nhap": _iso(o["ngay"]),
             "tan_nhap": o["nhap"], "tan_xuat": o["xuat"], "tan_dieu_chinh": o["dc"], "ton": o["ton"],
             "so_ngay_ton": (den - o["ngay"]).days if o["ngay"] else None, "so_phieu_nhap": o["so_pnk"],
-            "trang_thai": "con" if con else "het", "noi_lay": o["origin"], "xe": o["truck_no"]}
+            "trang_thai": "con" if con else "het", "noi_lay": o["origin"], "xe": o["truck_no"], "kho_id": o["kho_id"], "kho": o["kho"]}
 
 
-def ton_kho(db, q=None, khach=None, chi_con=True, gioi_han=2000):
-    """Tồn kho hàng theo lô + tổng. Còn hàng: lô cũ trước (hàng nằm lâu nhất lên đầu); xem cả lô hết: mới trước."""
-    ds = [_item_lo(o) for o in _bang_lo(db, q=q, khach=khach, chi_con=chi_con, moi_truoc=not chi_con)]
+def ton_kho(db, q=None, khach=None, chi_con=True, gioi_han=2000, kho=None):
+    """Tồn kho hàng theo lô + tổng. Còn hàng: lô cũ trước (hàng nằm lâu nhất lên đầu); xem cả lô hết: mới trước. `kho`: một kho bãi."""
+    ds = [_item_lo(o) for o in _bang_lo(db, q=q, khach=khach, chi_con=chi_con, moi_truoc=not chi_con, kho=kho)]
     con = [x for x in ds if x["trang_thai"] == "con"]
     return {"items": ds[:max(1, min(int(gioi_han or 2000), 5000))],
             "tong": {"so_lo": len(ds), "tan_ton": round(sum(x["ton"] for x in con), 3), "so_lo_con": len(con)}}
@@ -154,37 +235,39 @@ def cua_phieu(db, trip_id):
 
 
 # ---------------------------------------------------------------- ghi (phiếu gọi qua KK.GiaoDichKho)
-def _ghi_pnk(db, trip, ngay, tan, boc_len, hao_hut, ten, by_user, bu=False):
+def _ghi_pnk(db, trip, ngay, tan, boc_len, hao_hut, ten, by_user, bu=False, kho=None):
+    kho = kho or kho_mac_dinh(db)
     pl = {"tan": tan, "boc_len": boc_len, "hao_hut": hao_hut, "hang": ten, "lo": trip.id, "lo_doc_no": trip.doc_no,
-          "khach": trip.customer_name, "xe": trip.truck_no}
+          "khach": trip.customer_name, "xe": trip.truck_no, "kho_id": kho.id, "kho": kho.ten}
     if bu:
         pl["sinh_bu"] = True                  # sinh sau từ dòng sổ đã có (DO nhập trước 05/10 / chép từ kho tạm)
-    return CT.ghi(db, "PNK_HH", nguon_bang="trips", nguon_id=trip.id, trip=trip, ngay=ngay, doi_tuong_loai="kho", doi_tuong_ten=DEPOT,
+    return CT.ghi(db, "PNK_HH", nguon_bang="trips", nguon_id=trip.id, trip=trip, ngay=ngay, doi_tuong_loai="kho", doi_tuong_ten=kho.ten,
                   tien=0, tien_te="LAK", by_user=by_user, mo_ta="Nhập kho hàng từ %s · %s tấn" % (trip.doc_no, tan), payload=pl)
 
 
-def nhap(db, trip, dong, ngay, by_user, tan=None, boc_len=None, hao_hut=None):
+def nhap(db, trip, dong, ngay, by_user, tan=None, boc_len=None, hao_hut=None, kho_id=None):
     """Phiếu gom về tới bãi → nhập theo số thực nhập (cân bãi) đã chia sẵn + tờ PNK_HH. Gọi lại không nhập trùng →
     {da_co, so_dong, chung_tu}. Đã nhập mà chưa có tờ (DO nhập trước 05/10) → sinh tờ từ dòng sổ đã có (`dam_bao_to`)."""
     if db.query(GoodsMove.id).filter(GoodsMove.trip_id == trip.id, GoodsMove.kind == "in").first():
         to = dam_bao_to(db, trip, by_user)
         return {"da_co": True, "chung_tu": to.so if to is not None else None}
     ngay = ngay or dt.date.today()
+    kho = kho_cua(db, kho_id)                # 12/10: kho nhận Bãi chọn ở hộp «Xe đã tới» (trống → kho mặc định)
     n, ten = 0, []
     for x in dong or []:
         sl = round(float(x.get("qty_t") or 0), 3)
         if sl <= 0:
             continue
         db.add(GoodsMove(move_date=ngay, kind="in", goods_name=x.get("goods_name") or "—", qty_t=sl, trip_id=trip.id,
-                         trip_doc_no=trip.doc_no, lo_trip_id=trip.id, depot=DEPOT, by_user=by_user))
+                         trip_doc_no=trip.doc_no, lo_trip_id=trip.id, depot=kho.ten, kho_id=kho.id, by_user=by_user))
         n += 1
         ten.append(x.get("goods_name") or "—")
     db.flush()
     if not n:
         return {"da_co": False, "so_dong": 0}
     tong = round(float(tan if tan is not None else sum(float(x.get("qty_t") or 0) for x in dong)), 3)
-    to = _ghi_pnk(db, trip, ngay, tong, boc_len, hao_hut, ten, by_user)
-    return {"da_co": False, "so_dong": n, "chung_tu": to.so}
+    to = _ghi_pnk(db, trip, ngay, tong, boc_len, hao_hut, ten, by_user, kho=kho)
+    return {"da_co": False, "so_dong": n, "chung_tu": to.so, "kho": kho.ten}
 
 
 def dam_bao_to(db, trip, by_user=None):
@@ -204,7 +287,9 @@ def dam_bao_to(db, trip, by_user=None):
         hang = db.query(TripGoods).filter(TripGoods.trip_id == trip.id, TripGoods.loai == "hang").all()
         boc = round(sum(g.qty_t for g in hang), 3) if hang else trip.weight_origin
         hao = round(boc - tan, 3) if boc is not None else None
-        return _ghi_pnk(db, trip, ms[0].move_date, tan, boc, hao, [m.goods_name for m in ms], ms[0].by_user or by_user, bu=True)
+        kho = db.get(KhoBai, ms[0].kho_id) if ms[0].kho_id else None
+        return _ghi_pnk(db, trip, ms[0].move_date, tan, boc, hao, [m.goods_name for m in ms], ms[0].by_user or by_user, bu=True,
+                        kho=kho)
     if trip.kind == "giao":
         to = CT.tim(db, "PXK_HH", "trips", trip.id)
         if to is not None:
@@ -233,20 +318,26 @@ def _to_xuat(db, trip, dong, ngay, by_user, bu=False):
             db.expunge(to)
         return None
     lo_so = dict(db.query(Trip.id, Trip.doc_no).filter(Trip.id.in_({x.get("lo_trip_id") for x in dong})).all())
+    lo_kho = {lo: (k or DEPOT) for lo, k in db.query(GoodsMove.lo_trip_id, GoodsMove.depot)
+              .filter(GoodsMove.lo_trip_id.in_({x.get("lo_trip_id") for x in dong}), GoodsMove.kind == "in").all()}
     gop = {}
     for x in dong:
         k = (x.get("lo_trip_id"), x.get("goods_name") or "—")
         gop[k] = round(gop.get(k, 0) + float(x["qty_t"]), 3)
-    ds = [{"hang": h, "tan": t, "lo": lo, "lo_doc_no": lo_so.get(lo)} for (lo, h), t in sorted(gop.items(), key=lambda z: (lo_so.get(z[0][0]) or "", z[0][1]))]
+    ds = [{"hang": h, "tan": t, "lo": lo, "lo_doc_no": lo_so.get(lo), "kho": lo_kho.get(lo, DEPOT)}
+          for (lo, h), t in sorted(gop.items(), key=lambda z: (lo_so.get(z[0][0]) or "", z[0][1]))]
+    ten_kho = ", ".join(sorted({x["kho"] for x in ds})) or DEPOT
     tong = round(sum(x["tan"] for x in ds), 3)
-    pl = {"tan": tong, "dong": ds, "khach": trip.customer_name, "xe": trip.truck_no}
+    pl = {"tan": tong, "dong": ds, "khach": trip.customer_name, "xe": trip.truck_no, "kho": ten_kho}
     if bu:
         pl["sinh_bu"] = True
     mo_ta = "Xuất kho hàng đi giao %s · %s tấn" % (trip.doc_no, tong)
     if to is None:
-        return CT.ghi(db, "PXK_HH", nguon_bang="trips", nguon_id=trip.id, trip=trip, ngay=ngay, doi_tuong_loai="kho", doi_tuong_ten=DEPOT,
+        return CT.ghi(db, "PXK_HH", nguon_bang="trips", nguon_id=trip.id, trip=trip, ngay=ngay, doi_tuong_loai="kho", doi_tuong_ten=ten_kho,
                       tien=0, tien_te="LAK", by_user=by_user, mo_ta=mo_ta, payload=pl)
     gon = lambda d: sorted((z.get("lo"), z.get("hang"), round(float(z.get("tan") or 0), 3)) for z in (d or []))   # noqa: E731
+    if not to.da_day:
+        to.doi_tuong_ten = ten_kho
     if gon(_pl(to).get("dong")) == gon(ds) and to.ngay == ngay:
         return to
     _chan_doi_chieu(to)
@@ -278,10 +369,12 @@ def xuat(db, trip, dong, ngay, by_user):
     cu_q = db.query(GoodsMove).filter(GoodsMove.trip_id == trip.id, GoodsMove.kind == "out")
     cu = [{"goods_name": m.goods_name, "qty_t": m.qty_t, "lo_trip_id": m.lo_trip_id} for m in cu_q]
     cu_q.delete(synchronize_session=False)
+    kho_lo = {m.lo_trip_id: m for m in db.query(GoodsMove).filter(GoodsMove.lo_trip_id.in_(list(can)), GoodsMove.kind == "in").all()}
     for x in dong:
+        g = kho_lo.get(x.get("lo_trip_id"))          # 12/10: xuất ở đúng kho của lô
         db.add(GoodsMove(move_date=ngay, kind="out", goods_name=x.get("goods_name") or "—",
                          qty_t=round(float(x["qty_t"]), 3), trip_id=trip.id, trip_doc_no=trip.doc_no, lo_trip_id=x.get("lo_trip_id"),
-                         depot=DEPOT, by_user=by_user))
+                         depot=(g.depot if g else None) or DEPOT, kho_id=g.kho_id if g else None, by_user=by_user))
     db.flush()
     to = _to_xuat(db, trip, dong, ngay, by_user)
     return {"cu": cu, "chung_tu": to.so if to is not None else None}
@@ -374,10 +467,12 @@ def duyet_dieu_chinh(db, don_id, dong_y, ghi_chu, nguoi):
     so_lo = lo.doc_no if lo else hang.trip_doc_no
     hom_nay = dt.date.today()
     m = GoodsMove(move_date=hom_nay, kind="adj", goods_name=hang.goods_name, qty_t=round(d.tan, 3), trip_id=d.lo_trip_id,
-                  trip_doc_no=so_lo, lo_trip_id=d.lo_trip_id, depot=DEPOT, note=d.ly_do, by_user=_ten(nguoi))
+                  trip_doc_no=so_lo, lo_trip_id=d.lo_trip_id, depot=hang.depot or DEPOT, kho_id=hang.kho_id, note=d.ly_do,
+                  by_user=_ten(nguoi))
     db.add(m)
     db.flush()
-    to = CT.ghi(db, "DC_HH", nguon_bang="goods_moves", nguon_id=m.id, trip=lo, ngay=hom_nay, doi_tuong_loai="kho", doi_tuong_ten=DEPOT,
+    to = CT.ghi(db, "DC_HH", nguon_bang="goods_moves", nguon_id=m.id, trip=lo, ngay=hom_nay, doi_tuong_loai="kho",
+                doi_tuong_ten=hang.depot or DEPOT,
                 tien=0, tien_te="LAK", by_user=_ten(nguoi),
                 mo_ta="Điều chỉnh kho lô %s: %s%s tấn — %s" % (so_lo, "+" if d.tan > 0 else "", round(d.tan, 3), d.ly_do),
                 payload={"chieu": "tang" if d.tan > 0 else "giam", "tan": round(abs(d.tan), 3), "tan_co_dau": round(d.tan, 3),
@@ -433,7 +528,7 @@ def mot_lo(db, lo_id):
     hao = pl.get("hao_hut") if pl.get("hao_hut") is not None else (round(can_mo - o["nhap"], 3) if can_mo is not None else None)
     nhap = {"so_phieu": pnk.so if pnk else None, "ngay": _iso(o["ngay"]), "do_no": o["doc_no"], "xe": p.truck_no if p else o["truck_no"],
             "tai_xe": p.driver_name if p else None, "can_mo": can_mo, "can_bai": p.weight_dest if p else None, "hao_hut": hao,
-            "tan": o["nhap"], "nguoi_xac_nhan": pnk.by_user if pnk else None}
+            "tan": o["nhap"], "nguoi_xac_nhan": pnk.by_user if pnk else None, "kho": o["kho"]}
     G = GoodsMove
     xs = (db.query(G.trip_id, func.sum(G.qty_t).label("tan"), func.min(G.move_date).label("ngay"), Trip.doc_no, Trip.truck_no,
                    Trip.customer_name, Trip.destination, ChungTu.so)
@@ -476,7 +571,8 @@ def to_kho_hang(db, trip):
             "do_no": trip.doc_no, "trip_id": trip.id, "khach": trip.customer_name, "loai_hang": ", ".join(hang) or None,
             "xe": trip.truck_no, "tai_xe": trip.driver_name, "dong": dong, "tong_tan": pl.get("tan"),
             "can_mo": can_mo, "can_bai": can_bai, "can_noi_giao": can_noi_giao, "hao_hut": hao,
-            "nguoi_xac_nhan": to.by_user, "kho": DEPOT, "da_doi_chieu": bool(to.da_day), "chung_tu_id": to.id}
+            "nguoi_xac_nhan": to.by_user, "kho": pl.get("kho") or to.doi_tuong_ten or DEPOT, "da_doi_chieu": bool(to.da_day),
+            "chung_tu_id": to.id}
 
 
 def doi_soat(db, ngay):

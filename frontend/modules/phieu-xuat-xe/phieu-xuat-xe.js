@@ -235,7 +235,7 @@
       return `<tr data-i="${i}">
         <td><input data-i="${i}" data-f="goods_name" value="${esc(g.goods_name || '')}" lang="lo" ${khoaDuoc ? '' : 'disabled'}></td>
         <td class="px-tu-lo"><select data-i="${i}" data-f="tu_phieu_id" ${khoaDuoc ? '' : 'disabled'}>
-          <option value="">—</option>${lo.map(x => `<option value="${x.lo_trip_id}" ${x.lo_trip_id === g.tu_phieu_id ? 'selected' : ''}>${esc(x.doc_no)} · ${so(x.con_t, 2)} t</option>`).join('')}</select></td>
+          <option value="">—</option>${lo.map(x => `<option value="${x.lo_trip_id}" ${x.lo_trip_id === g.tu_phieu_id ? 'selected' : ''}>${esc(x.doc_no)} · ${so(x.con_t, 2)} t${x.kho ? ' · ' + esc(x.kho) : ''}</option>`).join('')}</select></td>
         <td><input class="num" data-i="${i}" data-f="qty_t" value="${esc(g.qty_t ?? '')}" inputmode="decimal" ${khoaDuoc ? '' : 'disabled'}></td>
         <td><input data-i="${i}" data-f="note" value="${esc(g.note || '')}" ${khoaDuoc ? '' : 'disabled'}></td>
         <td class="no-print">${khoaDuoc ? `<button type="button" class="x" data-xoa-hang="${i}">×</button>` : ''}</td></tr>`;
@@ -1046,12 +1046,18 @@
    *  điền (giữ số đã gõ), câu lỗi của máy chủ ở đầu hộp, con trỏ ở ô "Cân tại bãi khi về". */
   async function baoXeToi() {
     const hoiMo = laGom() && gomMotDong();
+    // 12/10 (anh Hải): DO gom chọn KHO BÃI nhận hàng — lô nằm ở kho đó; danh mục từ /api/kho-hang/kho-bai (mặc định đứng đầu)
+    let kho = [];
+    if (laGom()) { try { kho = await API.get('/api/kho-hang/kho-bai'); } catch (e) { kho = []; } }
+    const khoMd = (kho.find(k => k.mac_dinh) || kho[0] || {}).id || '';
     let cu = { weight_origin: P.weight_origin ?? '', weight_dest: P.weight_dest ?? '', back_date: P.back_date || EPL.homNay(), odo_back: P.odo_back ?? '',
-      pod_no: P.pod_no || '', pod_receiver: P.pod_receiver || '' }, loi = '';
+      pod_no: P.pod_no || '', pod_receiver: P.pod_receiver || '', kho_id: khoMd }, loi = '';
     for (;;) {
       const hop = EPL.hopNhap(NN.t('mark_arrived'), [
         ...(hoiMo ? [{ id: 'weight_origin', label: 'w_origin_gom', type: 'number', value: cu.weight_origin }] : []),
         { id: 'weight_dest', label: laGom() ? 'w_dest_gom' : 'weight_dest_prompt', type: 'number', value: cu.weight_dest },
+        ...(laGom() && kho.length ? [{ id: 'kho_id', label: 'kb_kho_nhan', type: 'select', value: cu.kho_id, goi_y: 'kb_kho_nhan_goi_y',
+          options: kho.map(k => [k.id, k.ma + ' · ' + k.ten + (k.ten_lo ? ' · ' + k.ten_lo : '')]) }] : []),
         { id: 'back_date', label: 'd_back', type: 'date', value: cu.back_date },
         { id: 'odo_back', label: 'odo_back_prompt', type: 'number', value: cu.odo_back },
         ...(laGom() ? [] : [{ id: 'pod_no', label: 'pod_no', value: cu.pod_no },
@@ -1063,12 +1069,13 @@
       if (hoiMo && !(EPL.doc(v.weight_origin) > 0)) return EPL.toast(NN.t('w_origin_gom') + '?', 'loi');
       const body = { status: 'arrived', weight_dest: v.weight_dest, back_date: v.back_date };
       if (hoiMo) body.weight_origin = v.weight_origin;
+      if (v.kho_id) body.kho_id = v.kho_id;
       if (v.odo_back !== '') body.odo_back = v.odo_back;
       if (v.pod_no) body.pod_no = v.pod_no; if (v.pod_receiver) body.pod_receiver = v.pod_receiver;
       let r;
       try { r = await API.post(`/api/trips/${P.id}/transport-status`, body); }
       catch (e) {
-        if (e && e.ma === 'THIEU_CAN_BAI') { cu = Object.assign(cu, v); loi = e.message || NN.t('w_dest_gom'); continue; }
+        if (e && (e.ma === 'THIEU_CAN_BAI' || e.ma === 'KHO_SAI')) { cu = Object.assign(cu, v); loi = e.message || NN.t('w_dest_gom'); continue; }
         return EPL.baoLoi(e);
       }
       P = r;

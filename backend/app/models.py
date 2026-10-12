@@ -480,9 +480,27 @@ class GoodsMove(Base):
     trip_id = Column(String, ForeignKey("trips.id", ondelete="CASCADE"), index=True)
     trip_doc_no = Column(String)
     lo_trip_id = Column(String, ForeignKey("trips.id", ondelete="SET NULL"), index=True)   # lô = DO gom
-    depot = Column(String, default="Thà Bốc")
+    depot = Column(String, default="Thà Bốc")                    # tên kho bãi lúc ghi (chụp lại) — xem kho_id
+    # 12/10 (anh Hải: xe về bãi phải chọn nhập vào kho nào): kho bãi của dòng (kho_bai.id). Trống = kho mặc định (Thà Bốc) — các dòng
+    # trước 12/10. Lô nằm ở MỘT kho: dòng xuất / điều chỉnh lấy kho của dòng nhập của lô.
+    kho_id = Column(String, index=True)
     note = Column(Text)
     by_user = Column(String)
+    created_at = Column(DateTime, default=bay_gio)
+
+
+class KhoBai(Base):
+    """KHO BÃI chứa hàng khách gửi (12/10 — anh Hải: «tạo phiếu nhập khi xe về chưa cho chọn kho nào»). DO gom báo «Xe đã tới» chọn
+    kho nhận; lô (một DO gom) nằm ở kho đó tới khi xuất hết. Kho mặc định id «TB» (Thà Bốc) — máy tự tạo nếu chưa có; dòng sổ cũ
+    không ghi kho_id thuộc kho này. Thêm / sửa: Bãi, KT Thu/Chi Viêng Chăn, Sếp (routes/kho_hang.py)."""
+    __tablename__ = "kho_bai"
+    id = Column(String, primary_key=True, default=ma_moi)
+    ma = Column(String, unique=True, nullable=False)
+    ten = Column(String, nullable=False)
+    ten_lo = Column(String)
+    ghi_chu = Column(Text)
+    active = Column(Boolean, default=True)
+    mac_dinh = Column(Boolean, default=False)
     created_at = Column(DateTime, default=bay_gio)
 
 

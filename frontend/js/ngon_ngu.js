@@ -15701,5 +15701,55 @@ window.EPL_TU_DIEN = {
   "vi": "+ tạm tính {tien} · {n} DO chưa có cân cuối (chưa cộng)",
   "lo": "+ ຊົ່ວຄາວ {tien} · {n} DO ຍັງບໍ່ມີນ້ຳໜັກປາຍທາງ (ຍັງບໍ່ລວມ)",
   "en": "+ provisional {tien} · {n} DOs without destination weight (not added)"
+ },
+ "kb_kho_nhan": {
+  "vi": "Kho nhận",
+  "lo": "ສາງຮັບ",
+  "en": "Receiving store"
+ },
+ "kb_kho_nhan_goi_y": {
+  "vi": "Kho bãi nhận hàng của DO gom này — lô hàng nằm ở kho đó tới khi xuất hết.",
+  "lo": "ສາງສະໜາມທີ່ຮັບສິນຄ້າຂອງ DO ເກັບນີ້ — ລ໊ອດສິນຄ້າຢູ່ສາງນັ້ນຈົນກວ່າຈະອອກໝົດ.",
+  "en": "Yard store receiving this collection DO — the lot stays in that store until fully issued."
+ },
+ "kb_kho": {
+  "vi": "Kho bãi",
+  "lo": "ສາງສະໜາມ",
+  "en": "Yard store"
+ },
+ "kb_tat_ca": {
+  "vi": "Tất cả kho bãi",
+  "lo": "ທຸກສາງສະໜາມ",
+  "en": "All yard stores"
+ },
+ "kb_them": {
+  "vi": "Thêm kho bãi",
+  "lo": "ເພີ່ມສາງສະໜາມ",
+  "en": "Add yard store"
+ },
+ "kb_ma": {
+  "vi": "Mã kho",
+  "lo": "ລະຫັດສາງ",
+  "en": "Store code"
+ },
+ "kb_ten": {
+  "vi": "Tên kho",
+  "lo": "ຊື່ສາງ",
+  "en": "Store name"
+ },
+ "kb_ten_lo": {
+  "vi": "Tên tiếng Lào",
+  "lo": "ຊື່ພາສາລາວ",
+  "en": "Lao name"
+ },
+ "kb_da_them": {
+  "vi": "Đã thêm kho bãi {ten}",
+  "lo": "ເພີ່ມສາງສະໜາມ {ten} ແລ້ວ",
+  "en": "Yard store {ten} added"
+ },
+ "kb_mac_dinh": {
+  "vi": "mặc định",
+  "lo": "ຕັ້ງຕົ້ນ",
+  "en": "default"
  }
 };

@@ -1864,6 +1864,10 @@ def doi_trang_thai_van_chuyen(tid: str, data: dict = Body(...), db: Session = De
         can_bai = _so(data.get("weight_dest"), "weight_dest") if data.get("weight_dest") not in (None, "") else p.weight_dest
         if can_bai is None or can_bai <= 0:
             raise HTTPException(422, KH.THIEU_CAN_BAI)
+        # 12/10 (anh Hải): hộp «Xe đã tới» chọn KHO BÃI nhận hàng — kiểm trước khi đổi trạng thái (kho sai / ngừng dùng → 422 KHO_SAI)
+        if (data.get("kho_id") or "").strip():
+            from services import kho_hang_dia as KHD
+            KHD.kho_cua(db, data["kho_id"])
     if moi == "arrived":
         if data.get("weight_dest") not in (None, ""): p.weight_dest = _so(data["weight_dest"], "weight_dest")
         if data.get("back_date"): p.back_date = _ngay(data["back_date"])
@@ -1886,7 +1890,7 @@ def doi_trang_thai_van_chuyen(tid: str, data: dict = Body(...), db: Session = De
         # DO giao thì chốt dòng hao hụt.
         if moi == "arrived":
             if p.kind == "gom":
-                KH.nhap_kho(db, p, user, gd)            # đã nhập mà thiếu PNK_HH → sinh tờ, không nhập trùng (05/10)
+                KH.nhap_kho(db, p, user, gd, (data.get("kho_id") or "").strip() or None)   # thiếu PNK_HH → sinh tờ, không nhập trùng
             else:
                 KH.ghi_hao_hut_giao(db, p)
                 KK.dam_bao_to_hang(db, user, p)         # DO giao đã xuất mà thiếu PXK_HH → sinh tờ (05/10)

@@ -26,7 +26,7 @@
   /* Hàng gửi bãi: r = GET /api/kho-hang/ton; lo = lô đang mở; ben = 'duyet' khi khung bên phải là hàng chờ duyệt; ct = chi tiết
    * từng lô đã nạp; cho = phiếu điều chỉnh chờ duyệt (chỉ người có quyền duyệt); soat = đối soát hôm nay; form = phiếu điều
    * chỉnh đang lập; duyet = phiếu đang duyệt / từ chối (ô ghi chú mở). Lọc khách làm ở máy (khớp đúng tên khách của lô). */
-  const KH = { r: null, loi: '', luot: 0, q: '', khach: '', chiCon: true, khachDs: [], lo: null, ben: '', ct: {}, ctLoi: {},
+  const KH = { r: null, loi: '', luot: 0, q: '', khach: '', kho: '', chiCon: true, khachDs: [], lo: null, ben: '', ct: {}, ctLoi: {},
     cho: null, choLoi: '', soat: null, soatLoi: '', form: null, duyet: null };
   const KH_VANG = 15, KH_DO = 30;          // số ngày tồn: quá 15 ngày tô vàng, quá 30 ngày tô đỏ
 
@@ -397,8 +397,9 @@
   /* ================= Hàng khách gửi ở bãi — tồn theo LÔ (05/10) ================= */
   const khQuyen = () => (KH.r && KH.r.quyen) || {};
   const khDs = () => (KH.r && KH.r.items) || [];
-  const khLoc = () => khDs().filter(x => !KH.khach || (x.khach || '') === KH.khach);
-  const khSoLo = () => (KH.khach || !KH.r || !KH.r.tong) ? khLoc().length : (KH.r.tong.so_lo || 0);
+  const khLoc = () => khDs().filter(x => (!KH.khach || (x.khach || '') === KH.khach) && (!KH.kho || x.kho_id === KH.kho));
+  const khSoLo = () => (KH.khach || KH.kho || !KH.r || !KH.r.tong) ? khLoc().length : (KH.r.tong.so_lo || 0);
+  const khKhoDs = () => (KH.r && KH.r.kho_bai) || [];
   const khSoLoCon = () => khDs().filter(x => x.trang_thai !== 'het' && x.ton > 0).length;
   const hangMo = () => st.view === 'all' && st.ovTab === 'cargo';
   // loại hàng: máy chủ gửi tên hàng trên phiếu ("ແຮ່ເຫຼັກ (quặng sắt)"); gặp mã có trong từ điển (iron_ore) thì dịch
@@ -465,13 +466,17 @@
     if (KH.lo) napLo(KH.lo);
   }
 
+  function khoOpts() {
+    return '<option value="">' + esc(t('kb_tat_ca')) + '</option>' +
+      khKhoDs().map(k => '<option value="' + esc(k.id) + '"' + (k.id === KH.kho ? ' selected' : '') + '>' + esc(k.ma + ' · ' + k.ten + (k.ten_lo ? ' · ' + k.ten_lo : '')) + '</option>').join('');
+  }
   function khachOpts() {
     return '<option value="">' + esc(t('khh_tat_ca_khach')) + '</option>' +
       KH.khachDs.map(k => '<option value="' + esc(k) + '"' + (k === KH.khach ? ' selected' : '') + '>' + esc(k) + '</option>').join('');
   }
   function tongHtml() {
     if (!KH.r) return '';
-    const ds = khLoc(), tg = KH.khach || !KH.r.tong ? { so_lo: ds.length, tan_ton: sum(ds, 'ton') } : KH.r.tong, nCho = (KH.cho || []).length;
+    const ds = khLoc(), tg = KH.khach || KH.kho || !KH.r.tong ? { so_lo: ds.length, tan_ton: sum(ds, 'ton') } : KH.r.tong, nCho = (KH.cho || []).length;
     return '<span class="kh-tong-chu">' + h('khh_tong', { n: EPL.so(tg.so_lo || 0), t: n2(tg.tan_ton) }) + '</span>' +
       (khQuyen().duyet_dieu_chinh ? '<button type="button" class="k2-btn k2-btn--sm kh-nut-cho' + (KH.ben === 'duyet' ? ' is-on' : '') + '" data-kh-ben="duyet" aria-pressed="' + (KH.ben === 'duyet') + '">' +
         h('st_reported') + ' <span class="count' + (nCho ? ' is-co' : '') + '">' + nCho + '</span></button>' : '');
@@ -492,21 +497,22 @@
   function bangLo() {
     if (!KH.r) return '<div class="k2-empty">' + (KH.loi ? h('khh_loi_tai', { loi: KH.loi }) + ' <button type="button" class="link" data-kh-tai-lai>' + h('khh_thu_lai') + '</button>' : h('loading')) + '</div>';
     const ds = khLoc();
-    if (!ds.length) return '<div class="k2-empty">' + h(KH.q.trim() || KH.khach ? 'khh_trong' : KH.chiCon ? 'khh_trong_con' : 'khh_trong_het') + '</div>';
+    if (!ds.length) return '<div class="k2-empty">' + h(KH.q.trim() || KH.khach || KH.kho ? 'khh_trong' : KH.chiCon ? 'khh_trong_con' : 'khh_trong_het') + '</div>';
     const rows = ds.map(x => {
       const het = x.trang_thai === 'het' || !(x.ton > 0), dc = +x.tan_dieu_chinh || 0;
       return '<tr class="is-clickable kh-dong' + (KH.lo === x.lo_id ? ' is-chon' : '') + (het ? ' is-het' : '') + '" data-kh-lo="' + esc(x.lo_id) + '" tabindex="0">' +
         '<td><span class="code kh-so-do">' + esc(x.lo_doc_no || '—') + '</span><span class="k2-sub code">' + esc(x.so_phieu_nhap || '—') + '</span></td>' +
         '<td><span lang="lo">' + esc(x.khach || '—') + '</span><span class="k2-sub" lang="lo">' + esc(tenHang(x.loai_hang)) + '</span></td>' +
+        '<td><span lang="lo">' + esc(x.kho || '—') + '</span></td>' +
         '<td class="kh-c-ngay">' + esc(ngay(x.ngay_nhap)) + (het ? '<span class="kh-ngay het">' + h('khh_het') + '</span>'
           : '<span class="kh-ngay ' + mucTon(x) + '">' + h('khh_n_ngay', { n: x.so_ngay_ton == null ? '—' : x.so_ngay_ton }) + '</span>') + '</td>' +
         '<td class="num">' + n2(x.tan_nhap) + '</td><td class="num">' + dash(x.tan_xuat, n2) + '</td>' +
         '<td class="num ' + (dc < 0 ? 'kh-am' : dc > 0 ? 'kh-duong' : '') + '">' + (dc ? tanDau(dc) : '<span class="dash">–</span>') + '</td>' +
         '<td class="num"><b>' + n2(x.ton) + '</b></td></tr>';
     }).join('');
-    return '<div class="k2-tbl-wrap"><table class="k2-tbl kh-bang"><thead><tr><th>' + h('khh_c_do') + '</th><th>' + h('khh_c_khach') + '</th><th>' + h('khh_c_ngay') + '</th>' +
+    return '<div class="k2-tbl-wrap"><table class="k2-tbl kh-bang"><thead><tr><th>' + h('khh_c_do') + '</th><th>' + h('khh_c_khach') + '</th><th>' + h('kb_kho') + '</th><th>' + h('khh_c_ngay') + '</th>' +
       '<th class="num">' + h('kx_nhap_t') + '</th><th class="num">' + h('khh_c_xuat') + '</th><th class="num">' + h('khh_c_dc') + '</th><th class="num">' + h('kx_ton_t') + '</th></tr></thead>' +
-      '<tbody>' + rows + '</tbody><tfoot><tr><td colspan="6">' + h('khh_cong_lo', { n: ds.length }) + '</td><td class="num">' + n2(sum(ds, 'ton')) + '</td></tr></tfoot></table></div>' +
+      '<tbody>' + rows + '</tbody><tfoot><tr><td colspan="7">' + h('khh_cong_lo', { n: ds.length }) + '</td><td class="num">' + n2(sum(ds, 'ton')) + '</td></tr></tfoot></table></div>' +
       '<p class="tab-intro kh-chu-giai">' + h('khh_chu_giai', { v: KH_VANG, d: KH_DO }) + '</p>';
   }
   /** Nút Duyệt / Từ chối một phiếu điều chỉnh chờ duyệt; đã bấm thì thành ô ghi chú + nút xác nhận (từ chối phải có lý do). */
@@ -559,7 +565,7 @@
     const nh = c.nhap, so2 = (v) => v == null || v === '' ? '<span class="dash">–</span>' : n2(v);
     const hao = nh && nh.hao_hut != null ? n2(nh.hao_hut) + ' ' + h('ton') + (nh.can_mo > 0 ? ' <small>(' + EPL.so(nh.hao_hut / nh.can_mo * 100, 1) + '%)</small>' : '') : '<span class="dash">–</span>';
     const khNhap = nh && (nh.so_phieu || nh.do_no) ? '<div class="kh-luoi2">' + o('doc_no', '<span class="code">' + esc(nh.so_phieu || '—') + '</span>') + o('c_date', esc(ngay(nh.ngay) || '—')) +
-        o('khh_do', moDo(id, nh.do_no)) + o('truck_no', esc(nh.xe || '—')) + o('w_origin_gom', so2(nh.can_mo)) + o('w_dest_gom', so2(nh.can_bai)) + o('w_loss', hao) +
+        o('khh_do', moDo(id, nh.do_no)) + o('kb_kho', '<span lang="lo">' + esc(nh.kho || x.kho || '—') + '</span>') + o('truck_no', esc(nh.xe || '—')) + o('w_origin_gom', so2(nh.can_mo)) + o('w_dest_gom', so2(nh.can_bai)) + o('w_loss', hao) +
         (nh.nguoi_xac_nhan ? o('khh_xac_nhan', '<span lang="lo">' + esc(nh.nguoi_xac_nhan) + '</span>') : '') + '</div>'
       : '<div class="k2-empty">' + h('khh_chua_nhap') + '</div>';
     const xs = c.xuat || [];
@@ -600,6 +606,8 @@
         '<label class="kh-tim"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>' +
           '<input id="kh-tim" type="search" autocomplete="off" value="' + esc(KH.q) + '" placeholder="' + esc(t('khh_tim')) + '" aria-label="' + esc(t('khh_tim')) + '"></label>' +
         '<select id="kh-khach" class="kh-khach" aria-label="' + esc(t('c_customer')) + '">' + khachOpts() + '</select>' +
+        '<select id="kh-kho" class="kh-khach" aria-label="' + esc(t('kb_kho')) + '">' + khoOpts() + '</select>' +
+        '<span id="kh-them-kho-o">' + nutThemKho() + '</span>' +
         '<label class="kh-cong-tac"><input type="checkbox" id="kh-chi-con"' + (KH.chiCon ? ' checked' : '') + '><i aria-hidden="true"></i><span>' + h('khh_chi_con') + '</span></label>' +
         '<div class="kh-tong" id="kh-tong">' + tongHtml() + '</div>' +
         '<div class="kh-soat-o" id="kh-soat">' + soatHtml() + '</div>' +
@@ -613,6 +621,8 @@
     DOCS = D ? allDocs() : [];
     const o = $('#kh-tong'); if (o) o.innerHTML = tongHtml();
     const k = $('#kh-khach'); if (k) k.innerHTML = khachOpts();
+    const kb = $('#kh-kho'); if (kb) kb.innerHTML = khoOpts();
+    const nk = $('#kh-them-kho-o'); if (nk) nk.innerHTML = nutThemKho();
     const s = $('#kh-soat'); if (s) s.innerHTML = soatHtml();
     const th = $('#kh-than'); if (th) th.innerHTML = hangThan();
     const dem = root.querySelector('[data-ovtab="cargo"] .count'); if (dem) dem.textContent = t('k2_n_lo', { n: khSoLo() });
@@ -656,6 +666,23 @@
       await lamMoiHang();
     } catch (e) { z.dang = false; z.loi = e.message || String(e); veHangBen(); }
   }
+  /** 12/10: Bãi / KT / admin thêm kho bãi (nơi đổ quặng) — chọn ở hộp «Xe đã tới · nhập cân cuối». */
+  const nutThemKho = () => khQuyen().sua_kho ? '<button type="button" class="k2-btn k2-btn--sm" data-kh-them-kho>' + h('kb_them') + '</button>' : '';
+  async function themKho(loi = {}, cu = {}) {
+    const v = await EPL.hopNhap(t('kb_them'), [
+      { id: 'ma', label: 'kb_ma', value: cu.ma, bat_buoc: true, loi: loi.ma },
+      { id: 'ten', label: 'kb_ten', value: cu.ten, bat_buoc: true, loi: loi.ten },
+      { id: 'ten_lo', label: 'kb_ten_lo', value: cu.ten_lo, lo: true }], t('save'));
+    if (!v) return;
+    try {
+      const k = await API.post('/api/kho-hang/kho-bai', { ma: (v.ma || '').trim(), ten: (v.ten || '').trim(), ten_lo: (v.ten_lo || '').trim() });
+      EPL.toast(t('kb_da_them', { ten: (k && k.ten) || v.ten }), 'ok');
+      if (await taiTon()) veHang();
+    } catch (e) {
+      const m = e.message || String(e), ma = e && e.ma;
+      themKho(ma === 'THIEU_TEN_KHO' ? { ten: m } : { ma: m }, v);
+    }
+  }
   /** Bấm trong tab Hàng gửi bãi. Trả true khi đã xử lý. */
   function onClickHang(e) {
     const el = (s) => e.target.closest(s);
@@ -664,7 +691,8 @@
     if (el('[data-kh-dong]')) { if (KH.ben) KH.ben = ''; else { KH.lo = null; KH.form = null; } KH.duyet = null; danhDauLo(); veHangBen(); return true; }
     if ((x = el('[data-kh-ben]'))) { const v = x.getAttribute('data-kh-ben'); KH.ben = KH.ben === v ? '' : v; KH.duyet = null; veHangBen(); return true; }
     if (el('[data-kh-lap]')) { KH.form = { lo: KH.lo, tan: '', ly_do: '', loi: '', loiO: '', dang: false }; KH.duyet = null; veHangBen(); datTro('kh-dc-tan'); return true; }
-    if (el('[data-kh-form-bo]')) { KH.form = null; veHangBen(); return true; }
+    if (el('[data-kh-form-bo]')) { KH.form = null; veHang(); return true; }
+    if (el('[data-kh-them-kho]')) { themKho(); return true; }
     if (el('[data-kh-form-gui]')) { guiDc(); return true; }
     if ((x = el('[data-kh-duyet]'))) { KH.duyet = { id: x.getAttribute('data-kh-duyet'), dong_y: x.getAttribute('data-dong-y') === '1', ghi_chu: '', loi: '', dang: false }; veHangBen(); datTro('kh-duyet-gc'); return true; }
     if (el('[data-kh-duyet-bo]')) { KH.duyet = null; veHangBen(); return true; }
@@ -683,6 +711,7 @@
   function onChangeHang(e) {
     const id = e.target && e.target.id;
     if (id === 'kh-khach') { KH.khach = e.target.value; veHang(); }
+    else if (id === 'kh-kho') { KH.kho = e.target.value; veHang(); }
     else if (id === 'kh-chi-con') { KH.chiCon = e.target.checked; taiTon().then(ok => { if (ok) veHang(); }); }
   }
 

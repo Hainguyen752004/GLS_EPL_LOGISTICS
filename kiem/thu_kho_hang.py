@@ -200,7 +200,7 @@ def main():
         plg = json.loads(to_g[0].payload) if to_g else {}
         so_g = to_g[0].so if to_g else None
         dung(len(to_g) == 1 and so_g.startswith("PXK_HH/") and to_g[0].tien == 0 and to_g[0].no is None
-             and plg.get("dong") == [{"hang": QUANG, "tan": 12.0, "lo": A.id, "lo_doc_no": A.doc_no}] and plg.get("tan") == 12,
+             and plg.get("dong") == [{"hang": QUANG, "tan": 12.0, "lo": A.id, "lo_doc_no": A.doc_no, "kho": KHD.DEPOT}] and plg.get("tan") == 12,
              "PXK_HH: một tờ / DO giao, dòng theo lô, tiền 0, một vế", (so_g, plg))
         dung(KHD.ton_lo(db, A.id) == 7.6, "lô A còn 7,6 t", KHD.ton_lo(db, A.id))
         url_g = "/api/trips/%s" % G.id
@@ -247,10 +247,10 @@ def main():
              and it[0]["lo_doc_no"] == A.doc_no and it[0]["loai_hang"] == QUANG and it[0]["khach"] == A.customer_name
              and it[0]["ngay_nhap"] == hom_nay.isoformat(), "tồn lô A: nhập 19,6 · xuất 10 · tồn 9,6 · số PNK · còn", it)
         dung(all(A.doc_no in (z["lo_doc_no"] or "") for z in d["items"]) and d["tong"]["so_lo"] == len(d["items"]), "lọc q theo số DO", d["tong"])
-        dung(d["quyen"] == {"lap_dieu_chinh": True, "duyet_dieu_chinh": False}, "Bãi: được lập, không duyệt", d["quyen"])
+        dung(d["quyen"] == {"lap_dieu_chinh": True, "duyet_dieu_chinh": False, "sua_kho": True}, "Bãi: được lập, không duyệt", d["quyen"])
         r = c.get("/api/kho-hang/ton", headers=KT_VC)
         d = r.json()
-        dung(d["quyen"] == {"lap_dieu_chinh": False, "duyet_dieu_chinh": True}, "KT Thu/Chi VC: duyệt, không lập", d["quyen"])
+        dung(d["quyen"] == {"lap_dieu_chinh": False, "duyet_dieu_chinh": True, "sua_kho": True}, "KT Thu/Chi VC: duyệt, không lập", d["quyen"])
         ds_api = {z["lo_id"]: z for z in d["items"]}
         dung(all(z["trang_thai"] == "con" for z in d["items"]) and abs(d["tong"]["tan_ton"] - sum(z["ton"] for z in d["items"])) < 1e-6
              and d["tong"]["so_lo"] == len(d["items"]), "chi_con mặc định: chỉ lô còn, tổng tấn = Σ tồn", d["tong"])
@@ -263,7 +263,7 @@ def main():
         cu_lo = KHD.danh_sach_lo(db, con_hang=True, tru_phieu_id=G.id)
         a_lo = next((z for z in cu_lo if z["lo_trip_id"] == A.id), None)
         dung(a_lo is not None and a_lo["con_t"] == 19.6 and set(a_lo) == {"lo_trip_id", "doc_no", "goods_name", "ngay", "nhap_t", "dieu_chinh_t",
-                                                                         "con_t", "customer_name", "origin", "truck_no"},
+                                                                         "con_t", "customer_name", "origin", "truck_no", "kho_id", "kho"},
              "danh_sach_lo khuôn cũ, tru_phieu bỏ phần G đang giữ (A 19,6)", a_lo)
         r = c.get("/api/kho-hang/lo", params={"tru_phieu": G.id}, headers=BAI)
         dung(r.status_code == 200 and any(z["lo_trip_id"] == A.id and z["con_t"] == 19.6 for z in r.json()), "ô chọn lô phiếu giao vẫn chạy")

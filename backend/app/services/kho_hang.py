@@ -148,7 +148,7 @@ THIEU_CAN_BAI = {"ma": "THIEU_CAN_BAI", "loi": "Chưa có cân tại bãi — nh
                                                 "theo cân bãi (cân mỏ chỉ để tính hao hụt)."}
 
 
-def nhap_kho(db, trip, user, gd):
+def nhap_kho(db, trip, user, gd, kho_id=None):
     """DO gom về tới bãi → hàng vào kho (sổ goods_moves bên này + tờ PNK_HH, 05/10). Gọi lại lần nữa không nhập trùng.
 
     Nhập theo **cân tại bãi** — BẮT BUỘC từ 05/10 (trước đó trống thì lấy cân mỏ: hàng vào kho theo số chưa ai cân ở bãi);
@@ -167,7 +167,7 @@ def nhap_kho(db, trip, user, gd):
     # Chia số thực nhập theo tỷ lệ các dòng hàng (thường chỉ có một dòng).
     dong = [{"goods_name": g.goods_name, "qty_t": round(thucNhap * (g.qty_t / bocLen), 3) if bocLen else 0} for g in hang]
     hao = round(bocLen - thucNhap, 3)
-    r = gd.nhap_hang(trip, dong, ngay=ngay, tan=round(thucNhap, 3), boc_len=bocLen, hao_hut=hao)
+    r = gd.nhap_hang(trip, dong, ngay=ngay, tan=round(thucNhap, 3), boc_len=bocLen, hao_hut=hao, kho_id=kho_id)
     if r.get("da_co"):
         return
     if abs(hao) > 0.0005:
