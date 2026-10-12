@@ -299,3 +299,8 @@
 .px-ct-nk summary{cursor:pointer;color:var(--ink-2)}
 .px-ct-nk ul{margin:6px 0 0;padding-left:18px;line-height:1.55}
 .px-ct-nk .ts{color:var(--ink-3, #7A858F);font-variant-numeric:tabular-nums}
+
+/* 12/10 (rà VI + ລາວ ở 1366 × 657: phần dưới cột phải — phiếu đề nghị, trạng thái, các bước duyệt — bị bóp còn 9px) — phần dưới
+   giữ tối thiểu 180px, cả cột phải cuộn khi thiếu chỗ (thay vì cắt) */
+.px-ben{overflow:auto;scrollbar-width:thin}
+.px-ben-duoi{flex:1 0 auto;min-height:180px}

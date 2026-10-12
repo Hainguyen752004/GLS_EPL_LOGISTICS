@@ -112,3 +112,8 @@
 .tt2-cc{line-height:1.5}
 .tt2-cc ul{margin:4px 0;padding-left:18px}
 .tt2-cc small{display:block;color:var(--ink-2)}
+
+/* 12/10 (anh Hải: «Bảng tính từng phiếu» bị bóp còn một dòng ở chế độ VI + ລາວ / cửa sổ thấp) — khung chi tiết CUỘN thay vì cắt;
+   bảng luôn giữ đủ chỗ vài dòng (khung ngoài cuộn khi thiếu chỗ) */
+.tt2-xem{overflow:auto}
+.tt2-phieu{flex:1 0 auto;min-height:260px}

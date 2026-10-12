@@ -148,3 +148,13 @@
 .ttd-quay .ttd-khoi th{padding:4px 8px;font-size:11px;color:var(--ink-3);text-align:left;border-bottom:1px solid var(--line)}
 .ttd-quay .ttd-khoi th.num,.ttd-quay .ttd-khoi td.num{text-align:right;white-space:nowrap!important}
 .ttd-quay .tag{font-size:10.5px;padding:1px 7px}
+
+/* 12/10 (anh Hải: lỗi giao diện ở chế độ VI + ລາວ / cửa sổ thấp) — khung chi tiết CUỘN thay vì cắt (trước đây overflow:hidden làm
+   bảng tính bị dồn còn 0 dòng, dòng gợi ý cắt nửa chữ); bảng luôn giữ đủ chỗ vài dòng; tab cao theo chữ (dòng Lào không đè vạch
+   gạch chân, số đếm đứng bên phải); dòng thông tin dưới tên đối tác không vỡ dòng vì nhãn Lào */
+.ttd-xem{overflow:auto}
+.ttd-bang{flex:1 0 auto;min-height:260px}
+.ttd-tab button{display:inline-flex;align-items:center;gap:6px;height:auto;min-height:32px;padding:4px 4px 7px;text-align:left;line-height:1.25}
+.ttd-tab button b{margin-left:0}
+.ttd-dau .small .lo-sub{display:inline;font-size:1em}
+.ttd-dau .small .lo-sub::before{content:' / '}

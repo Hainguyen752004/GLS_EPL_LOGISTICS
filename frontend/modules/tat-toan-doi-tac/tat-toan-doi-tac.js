@@ -214,8 +214,8 @@
       <div class="ttd-cong">${cong.map(([k, v], i) => `${i ? '<i>−</i>' : ''}<span>${NN.h(k)} <b>${t$(v || 0, ma)}</b></span>`).join('')}<i>=</i>
         <span class="kq">${NN.h('ttd_c_con_tra')} ${t$(d.con_tra, ma)}</span>${ma !== 'LAK' && d.con_tra_lak != null ? `<span class="muted">≈ ${lak(d.con_tra_lak)}</span>` : ''}</div>
       ${veQuay(d)}
-      <div class="ttd-tab no-print"><button type="button" data-tab="bang" class="${tab === 'bang' ? 'on' : ''}">${NN.h('ttd_tab_bang')}<b>${ds.length}</b></button>
-        <button type="button" data-tab="ls" class="${tab === 'ls' ? 'on' : ''}">${NN.h('ttd_tab_ls')}<b>${(d.de_nghi || []).length}</b></button>
+      <div class="ttd-tab no-print"><button type="button" data-tab="bang" class="${tab === 'bang' ? 'on' : ''}"><span class="ttd-tab-chu">${NN.h('ttd_tab_bang')}</span><b>${ds.length}</b></button>
+        <button type="button" data-tab="ls" class="${tab === 'ls' ? 'on' : ''}"><span class="ttd-tab-chu">${NN.h('ttd_tab_ls')}</span><b>${(d.de_nghi || []).length}</b></button>
         <span class="grow"></span>
         ${tab === 'bang' && ds.length ? `<button type="button" class="btn sm quiet" id="ttd-mo-het">${NN.h(MO.size ? 'ttd_thu_het' : 'ttd_mo_het')}</button>` : ''}
         ${chon.length ? `<span class="chon">${NN.h('ttd_da_chon', { n: chon.length, tien: t$(tong(chon, c => c.con_tra), ma) })}</span>` : ''}</div>
