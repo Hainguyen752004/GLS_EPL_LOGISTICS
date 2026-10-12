@@ -135,6 +135,9 @@ def tinh_phieu(phieu, cac_dong, da_thu_lak=0.0):
     doanh_thu_lak = round(doanh_thu * r_ccy)
     da_thu_lak = round(da_thu_lak or 0)
     ket = {
+        # 12/10 (anh Khampla: tổng tiền màn Theo dõi phiếu không đúng): chưa có cân cuối thì doanh thu chỉ là TẠM TÍNH (theo
+        # cân đầu, hoặc cước trọn chuyến của xe chưa về) — số vẫn tính như cũ, báo cáo hiện «tạm tính» và không cộng vào tổng
+        "tam_tinh": phieu.weight_dest is None,
         "ccy": ccy, "don_gia": gia, "tan_tinh": w, "cach_tinh": "chuyen" if khoan else "ton",
         "doanh_thu": doanh_thu, "doanh_thu_lak": doanh_thu_lak,
         "chi": muc, "tong_chi_lak": tong_chi, "tong_chi_ccy": lam_tron(tong_chi / r_ccy, ccy),

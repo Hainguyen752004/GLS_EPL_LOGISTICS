@@ -4987,6 +4987,16 @@ window.EPL_TU_DIEN = {
   "lo": "ຕັ້ງຕົ້ນ",
   "en": "default"
  },
+ "tk_theo_dong": {
+  "vi": "theo dòng chi",
+  "lo": "ຕາມແຖວຄ່າໃຊ້ຈ່າຍ",
+  "en": "by cost line"
+ },
+ "tk_theo_dong_goi_y": {
+  "vi": "Chưa gắn khoản mục — mỗi dòng chi ghi một mã theo mục của dòng: đi đường (mục IV) Nợ 625, sửa chữa (mục V) Nợ 614.",
+  "lo": "ຍັງບໍ່ໄດ້ກຳນົດລາຍການ — ແຕ່ລະແຖວຄ່າໃຊ້ຈ່າຍບັນທຶກໜຶ່ງເລກບັນຊີຕາມໜ້າຂອງແຖວ: ຄ່າເດີນທາງ (ໜ້າ IV) ໜີ້ 625, ສ້ອມແປງ (ໜ້າ V) ໜີ້ 614.",
+  "en": "No cost item set — each cost line takes one account by its section: travel (section IV) Dr 625, repair (section V) Dr 614."
+ },
  "tk_no_co": {
   "vi": "TK Nợ / Có",
   "lo": "ບັນຊີ ໜີ້ / ມີ",
@@ -7333,9 +7343,9 @@ window.EPL_TU_DIEN = {
   "en": "Today"
  },
  "tq_g_hint": {
-  "vi": "Sọc chéo = giai đoạn chưa kết thúc; đỏ = đã quá 25 ngày.",
-  "lo": "ລາຍຂວາງ = ໄລຍະຍັງບໍ່ສິ້ນສຸດ; ສີແດງ = ເກີນ 25 ວັນ.",
-  "en": "Hatched = stage not finished; red = over 25 days."
+  "vi": "Sọc chéo = giai đoạn chưa kết thúc; đỏ = đi quá 5 ngày chưa về.",
+  "lo": "ລາຍຂວາງ = ໄລຍະຍັງບໍ່ສິ້ນສຸດ; ສີແດງ = ໄປເກີນ 5 ວັນຍັງບໍ່ກັບ.",
+  "en": "Hatched = stage not finished; red = out over 5 days, not back."
  },
  "k_month_trips": {
   "vi": "Phiếu tháng này",
@@ -15666,5 +15676,30 @@ window.EPL_TU_DIEN = {
   "vi": "Khoản mục chi phí<span class=\"sub\">Khoản chi lưu sẵn trên phiếu xuất xe · cách trả mặc định</span>",
   "lo": "ລາຍການຄ່າໃຊ້ຈ່າຍ<span class=\"sub\">ລາຍການບັນທຶກໄວ້ໃນໃບເບີກລົດ · ວິທີຈ່າຍຕັ້ງຕົ້ນ</span>",
   "en": "Cost items<span class=\"sub\">Saved expense items on the dispatch slip · default payment</span>"
+ },
+ "td_tam": {
+  "vi": "tạm tính",
+  "lo": "ຊົ່ວຄາວ",
+  "en": "provisional"
+ },
+ "td_tam_goi_y": {
+  "vi": "Tạm tính theo cân đầu — chưa có cân cuối, không cộng vào dòng tổng.",
+  "lo": "ຄິດໄລ່ຊົ່ວຄາວຕາມນ້ຳໜັກຕົ້ນທາງ — ຍັງບໍ່ມີນ້ຳໜັກປາຍທາງ, ບໍ່ລວມເຂົ້າຍອດລວມ.",
+  "en": "Provisional, based on the origin weight — no destination weight yet; not included in the total."
+ },
+ "td_tam_goi_y_chuyen": {
+  "vi": "Tạm tính — cước trọn chuyến, chưa có cân cuối, không cộng vào dòng tổng.",
+  "lo": "ຄິດໄລ່ຊົ່ວຄາວ — ຄ່າຂົນສົ່ງເໝົາຖ້ຽວ, ຍັງບໍ່ມີນ້ຳໜັກປາຍທາງ, ບໍ່ລວມເຂົ້າຍອດລວມ.",
+  "en": "Provisional — flat trip rate, no destination weight yet; not included in the total."
+ },
+ "td_tam_dong": {
+  "vi": "Tạm tính · {n} chuyến chưa có cân cuối — không cộng vào tổng",
+  "lo": "ຊົ່ວຄາວ · {n} ຖ້ຽວຍັງບໍ່ມີນ້ຳໜັກປາຍທາງ — ບໍ່ລວມເຂົ້າຍອດລວມ",
+  "en": "Provisional · {n} trips without destination weight — not in the total"
+ },
+ "tq_tam": {
+  "vi": "+ tạm tính {tien} · {n} DO chưa có cân cuối (chưa cộng)",
+  "lo": "+ ຊົ່ວຄາວ {tien} · {n} DO ຍັງບໍ່ມີນ້ຳໜັກປາຍທາງ (ຍັງບໍ່ລວມ)",
+  "en": "+ provisional {tien} · {n} DOs without destination weight (not added)"
  }
 };

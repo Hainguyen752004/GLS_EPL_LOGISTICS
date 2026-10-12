@@ -64,3 +64,9 @@ table.tbl.td-bang{border-collapse:separate;border-spacing:0}   /* table.tbl (chu
 .app[data-view="top"] .td-cuon{max-height:var(--td-cao, calc(100vh / var(--ty-le, 1) - 396px))}
 /* ô tìm giãn vào chỗ trống của thanh lọc (rà 01/10: 1366 tiếng Anh chữ gợi ý bị cắt "…driver, tr"), tối đa 420px — như màn Xe */
 .toolbar .td-tim{flex:1 1 260px;min-width:220px;max-width:420px}
+
+/* 12/10 — doanh thu TẠM TÍNH (DO chưa có cân cuối): chữ nghiêng nhạt + nhãn nhỏ; dòng tổng riêng dưới dòng tổng chính */
+.td-tam{font-style:italic;color:var(--ink-3);cursor:help}
+.td-tam-nhan{display:block;margin-top:1px;font-size:10.5px;font-weight:600;font-style:italic;color:var(--amber);white-space:nowrap;cursor:help}
+.td-bang tfoot tr.td-chan-tam td{font-weight:500;color:var(--ink-3);border-top:1px dashed var(--line-2)}
+.td-bang tfoot tr.td-chan-tam td.td-chan-nhan{font-style:italic;font-weight:600;color:var(--amber)}

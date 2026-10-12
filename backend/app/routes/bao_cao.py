@@ -111,25 +111,31 @@ def _da_thu_gon(db, dau, cuoi, *loc):
 
 
 @router.get("/api/bao-cao/tong-quan")
-def tong_quan(thang: str = None, tu: str = None, den: str = None, db: Session = Depends(get_db), user=Depends(XEM_BAO_CAO)):
-    """Bốn con số + tiến trình + cơ cấu chi + việc cần chú ý của KỲ: tháng `thang`, hoặc (09/10) khoảng `tu` … `den`."""
+def tong_quan(thang: str = None, tu: str = None, den: str = None, tu_tim: bool = False, db: Session = Depends(get_db),
+              user=Depends(XEM_BAO_CAO)):
+    """Bốn con số + tiến trình + cơ cấu chi + việc cần chú ý của KỲ: tháng `thang`, hoặc (09/10) khoảng `tu` … `den`.
+    12/10 (Web, Việc 12b): `tu_tim` + kỳ trống → thêm `gan` = tháng gần nhất có phiếu ('YYYY-MM' | None), như theo-doi/tong."""
     dau, cuoi = _ky(thang, tu, den)
-    t = _gop_tq(_theo_ngay(db, "tq6", _cac_ngay(dau, cuoi), _tq_lo).values())
+    t = _gop_tq(_theo_ngay(db, "tq7", _cac_ngay(dau, cuoi), _tq_lo).values())
     chu_y = list(t["chu_y"])
     if t["cho_kiem"]:
         chu_y.append({"loai": "cho_kiem", "so": t["cho_kiem"]})
     ra = {"tu": dau.isoformat(), "den": cuoi.isoformat(), "so_phieu": t["so_phieu"],
           "doanh_thu_lak": round(t["doanh_thu"]), "doanh_thu_tien": _gon(t["theo_tien"]),
+          "tam_tinh_lak": round(t["tam_lak"]), "tam_tinh_tien": _gon(t["tam_tien"]), "tam_tinh_so": t["tam_so"],
           "chi_lak": round(t["chi_lak"]), "tan_giao": round(t["tan"], 2),
           "chua_thu_lak": round(t["chua_thu_lak"]), "chua_thu_tien": _gon(t["chua_thu_tien"]), "chua_thu_so": t["chua_thu_so"],
           "dem": t["dem"], "chi_theo_muc": {k: round(v) for k, v in t["theo_muc"].items()}, "chu_y": chu_y[:12]}
     # Vai không được thấy tiền bán thì máy chủ BỎ HẲN các khoá đó, không chỉ giấu ở giao diện.
     if not thay_tien_ban(user.role):
-        for k in ("doanh_thu_lak", "doanh_thu_tien", "chua_thu_lak", "chua_thu_tien", "chua_thu_so"):
+        for k in ("doanh_thu_lak", "doanh_thu_tien", "chua_thu_lak", "chua_thu_tien", "chua_thu_so", "tam_tinh_lak", "tam_tinh_tien",
+                  "tam_tinh_so"):
             ra.pop(k, None)
     if not thay_tien_chi(user.role):
         # anh Khampla A2 (23/09): Bãi không thấy cả tiền CHI — tổng chi và cơ cấu chi
         ra.pop("chi_lak", None); ra.pop("chi_theo_muc", None)
+    if tu_tim and not ra["so_phieu"]:
+        ra["gan"] = _thang_gan(db, dau, cuoi, None, None, None, None)
     return ra
 
 
@@ -181,7 +187,7 @@ def _chi_epl(p, c):
 
 
 def _tq_trong(cho_kiem=0):
-    return {"so_phieu": 0, "doanh_thu": 0.0, "theo_tien": {}, "chi_lak": 0.0,
+    return {"so_phieu": 0, "doanh_thu": 0.0, "theo_tien": {}, "tam_lak": 0.0, "tam_tien": {}, "tam_so": 0, "chi_lak": 0.0,
             "theo_muc": {"fuel": 0.0, "travel": 0.0, "repair": 0.0, "other": 0.0}, "tan": 0.0,
             "chua_thu_lak": 0.0, "chua_thu_so": 0, "chua_thu_tien": {},
             "dem": {"dispatched": 0, "transit": 0, "arrived": 0, "invoiced": 0, "paid": 0}, "chu_y": [], "cho_kiem": cho_kiem}
@@ -204,13 +210,18 @@ def _tq_lo(db, cac_ngay):
         o = ra[p.doc_date.isoformat()]
         c = tinh_phieu(p, dong[p.id], thu.get(p.id, 0))
         o["so_phieu"] += 1
-        o["doanh_thu"] += c["doanh_thu_lak"]
-        o["theo_tien"][c["ccy"]] = o["theo_tien"].get(c["ccy"], 0.0) + c["doanh_thu"]
+        # 12/10: doanh thu chỉ tính DO đã có cân cuối; DO chưa cân là «tạm tính», cộng riêng (tam_*)
+        if c["tam_tinh"]:
+            o["tam_lak"] += c["doanh_thu_lak"]; o["tam_so"] += 1
+            o["tam_tien"][c["ccy"]] = o["tam_tien"].get(c["ccy"], 0.0) + c["doanh_thu"]
+        else:
+            o["doanh_thu"] += c["doanh_thu_lak"]
+            o["theo_tien"][c["ccy"]] = o["theo_tien"].get(c["ccy"], 0.0) + c["doanh_thu"]
         o["chi_lak"] += _chi_epl(p, c)
         for m in o["theo_muc"]: o["theo_muc"][m] += c["chi"][m]
         if p.weight_dest: o["tan"] += p.weight_dest
         # Chưa thu = phần hoá đơn CHƯA VỀ TIỀN, không phải cả doanh thu của phiếu chưa đánh dấu "đã thu".
-        if p.transport_status == "arrived" and c["con_lai_lak"] > 0:
+        if p.transport_status == "arrived" and not c["tam_tinh"] and c["con_lai_lak"] > 0:
             o["chua_thu_lak"] += c["con_lai_lak"]; o["chua_thu_so"] += 1
             o["chua_thu_tien"][c["ccy"]] = o["chua_thu_tien"].get(c["ccy"], 0.0) + c["con_lai"]
         o["dem"][p.transport_status] = o["dem"].get(p.transport_status, 0) + 1
@@ -230,9 +241,9 @@ def _tq_lo(db, cac_ngay):
 def _gop_tq(cac):
     t = _tq_trong()
     for o in cac:                            # theo thứ tự ngày
-        for k in ("so_phieu", "doanh_thu", "chi_lak", "tan", "chua_thu_lak", "chua_thu_so", "cho_kiem"):
+        for k in ("so_phieu", "doanh_thu", "tam_lak", "tam_so", "chi_lak", "tan", "chua_thu_lak", "chua_thu_so", "cho_kiem"):
             t[k] += o[k]
-        for k in ("theo_tien", "theo_muc", "chua_thu_tien", "dem"):
+        for k in ("theo_tien", "tam_tien", "theo_muc", "chua_thu_tien", "dem"):
             _cong(t[k], o[k])
         t["chu_y"].extend(o["chu_y"][:max(0, 12 - len(t["chu_y"]))])
     return t
@@ -240,7 +251,7 @@ def _gop_tq(cac):
 
 def _gom_thang(db, dau, cuoi, tq=None):
     """Bốn con số của một tháng — cùng công thức với /api/bao-cao/tong-quan để hai màn không lệch nhau."""
-    t = _gop_tq((tq or _theo_ngay(db, "tq6", _cac_ngay(dau, cuoi), _tq_lo)).get(d.isoformat()) for d in _cac_ngay(dau, cuoi))
+    t = _gop_tq((tq or _theo_ngay(db, "tq7", _cac_ngay(dau, cuoi), _tq_lo)).get(d.isoformat()) for d in _cac_ngay(dau, cuoi))
     return {"doanh_thu_lak": round(t["doanh_thu"]), "chi_lak": round(t["chi_lak"]),
             "tan_giao": round(t["tan"], 2), "chua_thu_lak": round(t["chua_thu_lak"])}
 
@@ -287,7 +298,9 @@ def _xh_lo(db, cac_ngay):
         # chi theo ngày = CHI CỦA EPL (xe liên kết: tiền thuê trừ phần giữ lại) — cùng phép với ô "Tổng chi phí" và dãy sáu tháng
         # (_tq_lo). Trước đây cộng tổng dòng chi kể cả khoản ứng cho xe thuê: cột ngày cộng lại ra 75,4 M trong khi ô Tổng chi
         # phí ghi 58,8 M cùng tháng (rà giao diện 01/10). Đổi phép thì đổi khoá đệm xh6 → xh7.
-        o["tn"]["doanh_thu_lak"] += c["doanh_thu_lak"]; o["tn"]["chi_lak"] += _chi_epl(p, c)
+        # 12/10: doanh thu theo ngày / theo xe chỉ tính DO đã có cân cuối (tạm tính không cộng) — đổi khoá đệm xh7 → xh8
+        dt_that = 0.0 if c["tam_tinh"] else c["doanh_thu_lak"]
+        o["tn"]["doanh_thu_lak"] += dt_that; o["tn"]["chi_lak"] += _chi_epl(p, c)
         if p.weight_origin and p.weight_dest is not None:
             pct = round((p.weight_origin - p.weight_dest) / p.weight_origin * 100, 2)
             o["hao"].append({"doc_no": p.doc_no, "so_xe": p.truck_no, "can_dau": p.weight_origin, "can_cuoi": p.weight_dest, "pct": pct})
@@ -299,7 +312,7 @@ def _xh_lo(db, cac_ngay):
             x["tan"] += p.weight_dest or p.weight_origin or 0
             if p.odo_back is not None and p.odo_out is not None and p.odo_back >= p.odo_out:
                 x["km"] += p.odo_back - p.odo_out
-            x["doanh_thu_lak"] += c["doanh_thu_lak"]
+            x["doanh_thu_lak"] += dt_that
         # Số ngày trung bình chỉ tính chuyến ĐÃ VỀ (chuyến đang chạy thì số ngày còn tăng từng ngày)
         ngay_di = p.out_date or p.doc_date
         if ngay_di and p.transport_status == "arrived" and p.back_date:
@@ -314,7 +327,7 @@ def _xh_lo(db, cac_ngay):
             o["cho_thu"][0] += 1; o["cho_thu"][1] = o["cho_thu"][1] or p.id
         if p.transport_status in ("dispatched", "transit"): o["dang_chay"] += 1
         if p.transport_status == "arrived" and not co_so: o["cho_hoa_don"] += 1
-        if p.transport_status == "arrived": o["chua_thu_ve"] += c["con_lai_lak"]
+        if p.transport_status == "arrived" and not c["tam_tinh"]: o["chua_thu_ve"] += c["con_lai_lak"]
         if p.transport_status != "arrived" and ngay_di is not None:           # "đi lâu" tính lúc ghép (theo hôm nay)
             o["khong_ve"][ngay_di.isoformat()] = o["khong_ve"].get(ngay_di.isoformat(), 0) + 1
         # dòng thời gian: mốc từ sự kiện "tới điểm"; "hoá đơn" = ngày bên hệ kế toán tạo SO; "thanh toán" = SO đã thu đủ theo
@@ -387,7 +400,7 @@ def xu_huong(thang: str = None, tu: str = None, den: str = None, db: Session = D
         khoang.append((i, yy, mm, d1, dt.date(yy + (mm == 12), (mm % 12) + 1, 1) - dt.timedelta(days=1)))
     truoc = KN.ky_truoc(dau, cuoi)
     can = {d for _, _, _, d1, d2 in khoang for d in _cac_ngay(d1, d2)} | set(_cac_ngay(*truoc))
-    tq = _theo_ngay(db, "tq6", sorted(can), _tq_lo)
+    tq = _theo_ngay(db, "tq7", sorted(can), _tq_lo)
     sau_thang = {"nhan": [], "doanh_thu_lak": [], "chi_lak": [], "tan_giao": [], "chua_thu_lak": []}
     for i, yy, mm, d1, d2 in khoang:
         g = _gom_thang(db, d1, d2, tq=tq)
@@ -398,7 +411,7 @@ def xu_huong(thang: str = None, tu: str = None, den: str = None, db: Session = D
     thang_truoc = _gom_thang(db, *truoc, tq=tq)
 
     # ---- ghép phần của từng ngày trong tháng đang xem
-    ngay = _theo_ngay(db, "xh7", _cac_ngay(dau, cuoi), _xh_lo)
+    ngay = _theo_ngay(db, "xh8", _cac_ngay(dau, cuoi), _xh_lo)
     theo_ngay, hao_hut, xe = {}, [], {}
     hao_tong = hao_vuot = hao_n = 0; hao_sum = 0.0
     ve = [0, 0, 0]
@@ -538,29 +551,66 @@ def _loc_td(qs, q=None, transport_status=None, finance_status=None, company=None
 
 @router.get("/api/bao-cao/theo-doi/tong")
 def theo_doi_tong(thang: str = None, q: str = None, transport_status: str = None, finance_status: str = None,
-                  company: str = None, quy: str = None, tu: str = None, den: str = None,
+                  company: str = None, quy: str = None, tu: str = None, den: str = None, tu_tim: bool = False,
                   db: Session = Depends(get_db), user=Depends(XEM_BAO_CAO)):
     """Dòng TỔNG của bảng theo dõi trên TOÀN BỘ phiếu khớp bộ lọc (không chỉ trang đang xem) — cộng riêng từng loại
     tiền; `quy` (LAK · USD · …) thì mọi phiếu quy theo tỷ giá đã khoá trên chính phiếu đó, còn một con số. Cùng cách
-    cộng với giao diện trước đây (modules/theo-doi: cong / ve_tien). Kỳ: tháng `thang` hoặc (09/10) khoảng `tu` … `den`."""
+    cộng với giao diện trước đây (modules/theo-doi: cong / ve_tien). Kỳ: tháng `thang` hoặc (09/10) khoảng `tu` … `den`.
+    12/10 (Web, Việc 12): `tu_tim` + kỳ trống → thêm `gan` = tháng gần nhất có phiếu khớp bộ lọc ('YYYY-MM' | None) — màn Web
+    tự sang tháng đó lúc mới mở, như màn cũ (khoang_thoi_gian.js gan) nhưng tính ở máy chủ."""
     dau, cuoi = _ky(thang, tu, den)
     # ghép từ phần tính sẵn của từng NGÀY cho đúng bộ lọc này (tính một lần cho mọi vai, bỏ khoá theo vai trên bản chép)
     loc = (q or "", transport_status or "", finance_status or "", company or "", (quy or "").strip().upper())
     cac = _cac_ngay(dau, cuoi)
-    viec = [(("tdt6", d.isoformat()) + loc, [d.isoformat()], None) for d in cac]
-    tong = {"so_phieu": 0, "tong_chi_lak": 0.0, "doanh_thu": {}, "da_thu": {}, "con_lai": {}, "lai": {}}
+    # 12/10: đổi khoá tdt6 → tdt7 — phần mỗi ngày tách thêm «tạm tính» (DO chưa có cân cuối, không cộng vào tổng)
+    viec = [(("tdt7", d.isoformat()) + loc, [d.isoformat()], None) for d in cac]
+    khoan = ("doanh_thu", "da_thu", "con_lai", "lai", "tam_tinh", "tam_con_lai")
+    tong = {"so_phieu": 0, "tong_chi_lak": 0.0, "so_tam": 0, **{k: {} for k in khoan}}
     for phan in DEM.lay_nhieu(db, viec, tinh_lo=lambda thieu: _tdt_lo(db, [cac[i] for i in thieu], *loc)):
-        tong["so_phieu"] += phan["so_phieu"]; tong["tong_chi_lak"] += phan["tong_chi_lak"]
-        for k in ("doanh_thu", "da_thu", "con_lai", "lai"):
+        tong["so_phieu"] += phan["so_phieu"]; tong["tong_chi_lak"] += phan["tong_chi_lak"]; tong["so_tam"] += phan["so_tam"]
+        for k in khoan:
             _cong(tong[k], phan[k])
-    ra = {"so_phieu": tong["so_phieu"], "tong_chi_lak": round(tong["tong_chi_lak"]),
-          **{k: _tron_tien(tong[k]) for k in ("doanh_thu", "da_thu", "con_lai", "lai")}}
+    ra = {"so_phieu": tong["so_phieu"], "tong_chi_lak": round(tong["tong_chi_lak"]), "so_phieu_tam": tong["so_tam"],
+          **{k: _tron_tien(tong[k]) for k in khoan}}
     if not thay_tien_ban(user.role):
-        for k in ("doanh_thu", "da_thu", "con_lai", "lai"):
+        for k in khoan:
             ra.pop(k, None)
     if not thay_tien_chi(user.role):
         ra.pop("tong_chi_lak", None)
+    if tu_tim and not ra["so_phieu"]:
+        ra["gan"] = _thang_gan(db, dau, cuoi, q, transport_status, finance_status, company)
     return ra
+
+
+def _thang_gan(db, dau, cuoi, q, transport_status, finance_status, company):
+    """Tháng gần nhất có phiếu khớp bộ lọc ngoài kỳ [dau, cuoi] — phiếu sát nhất trước `dau` và sau `cuoi`, chọn bên cách kỳ ít
+    tháng hơn (hoà thì bên trước), y cách màn cũ (frontend/js/khoang_thoi_gian.js gan). Không có phiếu nào → None."""
+    goc = lambda: _loc_td(db.query(Trip.doc_date), q, transport_status, finance_status, company)
+    truoc = goc().filter(Trip.doc_date < dau).order_by(Trip.doc_date.desc()).limit(1).scalar()
+    sau = goc().filter(Trip.doc_date > cuoi).order_by(Trip.doc_date.asc()).limit(1).scalar()
+    so_thang = lambda d: d.year * 12 + d.month
+    if not truoc or not sau:
+        d = truoc or sau
+        return d.strftime("%Y-%m") if d else None
+    return (sau if so_thang(sau) - so_thang(cuoi) < so_thang(dau) - so_thang(truoc) else truoc).strftime("%Y-%m")
+
+
+def _quy_dong(p, r, dich):
+    """12/10 (Web, Việc 12): các số tiền của MỘT dòng bảng theo dõi quy về `dich` theo tỷ giá đã khoá trên chính phiếu đó — cùng
+    cách dòng tổng (_tdt_lo) và màn cũ (theo-doi.js ve_tien). Cước / doanh thu / đã thu / còn lại / lãi theo tiền cước; tiền thuê ·
+    phí · trừ vượt theo tiền thuê xe. Khoá vai không được thấy (đã bỏ khỏi dòng) → None."""
+    c = r.get("tinh") or {}
+    ma = c.get("ccy") or "LAK"
+    mh = c.get("hire_ccy") or ma
+    le = 0 if dich in ("LAK", "VND") else 2
+
+    def doi(v, tu):
+        if v is None:
+            return None
+        return round(v if tu == dich else v * ty_gia(p, tu) / ty_gia(p, dich), le)
+    return {"ccy": dich, "price": doi(r.get("price"), ma), "doanh_thu": doi(c.get("doanh_thu"), ma), "da_thu": doi(c.get("da_thu"), ma),
+            "con_lai": doi(c.get("con_lai"), ma), "lai": doi(c.get("lai"), ma), "tien_thue": doi(c.get("tien_thue"), mh),
+            "phi": doi(c.get("phi"), mh), "tru_vuot": doi(c.get("tru_vuot"), mh)}
 
 
 def _tdt_lo(db, cac_ngay, q, transport_status, finance_status, company, quy):
@@ -571,21 +621,26 @@ def _tdt_lo(db, cac_ngay, q, transport_status, finance_status, company, quy):
     dong = _dong_loc(db, Trip.id.in_(db.query(loc.c.id)))
     thu = _da_thu_loc(db, Trip.id.in_(db.query(loc.c.id)))
     dich = (quy or "").strip().upper() or None
-    ra = {d.isoformat(): {"so_phieu": 0, "tong_chi_lak": 0.0, "doanh_thu": {}, "da_thu": {}, "con_lai": {}, "lai": {}}
+    ra = {d.isoformat(): {"so_phieu": 0, "tong_chi_lak": 0.0, "doanh_thu": {}, "da_thu": {}, "con_lai": {}, "lai": {},
+                          "so_tam": 0, "tam_tinh": {}, "tam_con_lai": {}}
           for d in cac_ngay}
     for p in ds:
         o = ra[p.doc_date.isoformat()]
         c = tinh_phieu(p, dong.get(p.id, []), thu.get(p.id, 0))
         o["so_phieu"] += 1
-        o["tong_chi_lak"] += c.get("tong_chi_lak") or 0
-        for k in ("doanh_thu", "da_thu", "con_lai", "lai"):
+        o["tong_chi_lak"] += c.get("tong_chi_lak") or 0          # chi là tiền thật — cộng cả DO chưa có cân cuối
+        # 12/10: DO chưa có cân cuối — doanh thu tạm tính, không vào bốn khoản của dòng tổng; cộng riêng ở «tạm tính»
+        cac_khoan = (("doanh_thu", "tam_tinh"), ("con_lai", "tam_con_lai")) if c["tam_tinh"] else \
+            (("doanh_thu", "doanh_thu"), ("da_thu", "da_thu"), ("con_lai", "con_lai"), ("lai", "lai"))
+        o["so_tam"] += 1 if c["tam_tinh"] else 0
+        for k, vao in cac_khoan:
             v = c.get(k)
             if v is None:
                 continue
             ma = c["ccy"]
             if dich and dich != ma:
                 v, ma = v * ty_gia(p, ma) / ty_gia(p, dich), dich
-            o[k][ma] = o[k].get(ma, 0.0) + v
+            o[vao][ma] = o[vao].get(ma, 0.0) + v
     return [ra[d.isoformat()] for d in cac_ngay]
 
 
@@ -603,20 +658,23 @@ def _theo_doi_tong_tinh(db, dau, cuoi, q, transport_status, finance_status, comp
         dong[r.trip_id].append(r)
     thu = _da_thu_loc(db, Trip.id.in_(db.query(con.c.id)))
     dich = (quy or "").strip().upper() or None
-    tong = {"doanh_thu": defaultdict(float), "da_thu": defaultdict(float), "con_lai": defaultdict(float), "lai": defaultdict(float)}
-    chi = 0.0
+    tong = {k: defaultdict(float) for k in ("doanh_thu", "da_thu", "con_lai", "lai", "tam_tinh", "tam_con_lai")}
+    chi, so_tam = 0.0, 0
     for p in ds:
         c = tinh_phieu(p, dong.get(p.id, []), thu.get(p.id, 0))
-        for k in tong:
+        cac_khoan = (("doanh_thu", "tam_tinh"), ("con_lai", "tam_con_lai")) if c["tam_tinh"] else \
+            (("doanh_thu", "doanh_thu"), ("da_thu", "da_thu"), ("con_lai", "con_lai"), ("lai", "lai"))
+        so_tam += 1 if c["tam_tinh"] else 0
+        for k, vao in cac_khoan:
             v = c.get(k)
             if v is None:
                 continue
             ma = c["ccy"]
             if dich and dich != ma:
                 v, ma = v * ty_gia(p, ma) / ty_gia(p, dich), dich
-            tong[k][ma] += v
+            tong[vao][ma] += v
         chi += c.get("tong_chi_lak") or 0
-    ra = {"so_phieu": len(ds), "tong_chi_lak": round(chi)}
+    ra = {"so_phieu": len(ds), "tong_chi_lak": round(chi), "so_phieu_tam": so_tam}
     for k, v in tong.items():
         ra[k] = _tron_tien(v)
     return ra
@@ -630,19 +688,26 @@ def _tron_tien(theo_tien):
 @router.get("/api/bao-cao/theo-doi")
 def theo_doi(response: Response, thang: str = None, trang: int = 1, co: int = None, q: str = None,
              transport_status: str = None, finance_status: str = None, company: str = None, tu: str = None, den: str = None,
-             db: Session = Depends(get_db), user=Depends(XEM_BAO_CAO)):
+             quy: str = None, db: Session = Depends(get_db), user=Depends(XEM_BAO_CAO)):
     """Bảng "ລາຍງານ ຕິດຕາມໃບຂົນສົ່ງສິນຄ້າ" — một dòng một phiếu, đủ 29 cột như Excel.
 
     Vai không được thấy tiền bán thì các cột cước, doanh thu, lãi **không có trong gói trả về** —
     không phải chỉ ẩn cột ở giao diện.
     Dữ liệu cả năm (24/09): không ghi tháng thì là THÁNG NÀY — trước đây là mọi phiếu từ trước tới nay.
-    09/10: `tu` … `den` (bộ lọc khoảng thời gian) thay cho tháng khi có."""
+    09/10: `tu` … `den` (bộ lọc khoảng thời gian) thay cho tháng khi có.
+    12/10 (Web, Việc 12): `quy` (LAK · USD · …) → mỗi dòng thêm khối "quy" (_quy_dong) — Web hiện số đã quy, không tự đổi tiền."""
     dau, cuoi = _ky(thang, tu, den)
     ds = _trang_phieu(response, _loc_td(db.query(Trip).filter(*_trong(dau, cuoi)), q, transport_status, finance_status, company),
                       trang, co)
     thu = da_thu_theo_phieu(db, [p.id for p in ds])
     nap = nap_lo(db, ds)
-    return [xuat_phieu(db, p, day_du=False, da_thu=thu.get(p.id, 0), vai=user.role, nap=nap) for p in ds]
+    ra = [xuat_phieu(db, p, day_du=False, da_thu=thu.get(p.id, 0), vai=user.role, nap=nap) for p in ds]
+    from models import TIEN_TE
+    dich = (quy or "").strip().upper()
+    if dich in TIEN_TE:                      # tiền lạ → bỏ qua (ty_gia sẽ ra 1.0, số quy sai)
+        for p, r in zip(ds, ra):
+            r["quy"] = _quy_dong(p, r, dich)
+    return ra
 
 
 @router.get("/api/bao-cao/can-tru")

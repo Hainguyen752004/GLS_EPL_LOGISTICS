@@ -49,7 +49,9 @@ KEY_HOP_LE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:\-]{0,99}$")
 GIOI_HAN = Decimal("9999999999999")
 # khoá header gửi đi: khoá bắt buộc + khoá "nên gửi nếu có" của hướng dẫn. Bỏ các khối lồng không thuộc hợp đồng
 # (hire, fx_rates_on_trip, cost_by_section_lak) — không thử vận may với bộ kiểm bên đó.
-KHOA_HEADER = ("do_id", "status", "customer_id", "route", "currency", "currency_thu", "currency_chi", "selling_price",
+# 12/10 (anh Khampla hỏi SO bên kế toán ứng với DO nào): thêm `doc_no` — số DO người dùng thấy (G4-0001-10/EPL); bên kế toán đọc từ
+# gói đã lưu (LogisticsPushOrder.Payload) ra cột «Số DO» ở danh sách đơn bán. Bộ kiểm bên đó không chặn khoá thêm ở header.
+KHOA_HEADER = ("do_id", "doc_no", "status", "customer_id", "route", "currency", "currency_thu", "currency_chi", "selling_price",
                "customer_surcharge_total", "final_selling_price", "billed_qty", "quotation_id", "origin", "destination",
                "trip_id", "vehicle_id", "driver_id", "weight_kg", "pod_receiver", "pod_signed_at")
 KET_QUA_CHUA_RO = ("QLSX_KHONG_GOI_DUOC", "LOGISTICS_52903")

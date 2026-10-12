@@ -158,7 +158,9 @@
       { k: 'k_tons', v: so(d.tan_giao, 2), u: NN.t('ton'), s: `${d.dem.arrived} ${NN.t('trips')} · ${NN.t('s_arrived')}`, dl: delta(d.tan_giao, tt && tt.tan_giao, false), sp: st && st.tan_giao, col: c.info },
       { k: 'k_running', v: so((d.dem.dispatched || 0) + (d.dem.transit || 0), 0), u: NN.t('trips'), s: `${d.dem.dispatched} ${NN.t('s_dispatched')} · ${d.dem.transit} ${NN.t('s_transit')}`, dl: '', sp: null, col: c.warn },
     ] : [
-      { k: 'k_rev', v: trieu(d.doanh_thu_lak), u: 'M LAK', s: `${d.so_phieu} ${NN.t('trips')} · ${chia(d.doanh_thu_tien)}`, dl: delta(d.doanh_thu_lak, tt && tt.doanh_thu_lak, false), sp: st && st.doanh_thu_lak, col: c.brand },
+      // 12/10: Doanh thu chỉ DO đã có cân cuối; DO chưa cân là tạm tính — dòng riêng dưới ô, không cộng vào số lớn
+      { k: 'k_rev', v: trieu(d.doanh_thu_lak), u: 'M LAK', s: `${d.so_phieu - (d.tam_tinh_so || 0)} ${NN.t('trips')} · ${chia(d.doanh_thu_tien)}`, dl: delta(d.doanh_thu_lak, tt && tt.doanh_thu_lak, false), sp: st && st.doanh_thu_lak, col: c.brand,
+        tam: d.tam_tinh_so ? NN.t('tq_tam', { tien: chia(d.tam_tinh_tien), n: d.tam_tinh_so }) : '' },
       { k: 'k_exp', v: trieu(d.chi_lak), u: 'M LAK', s: `${d.doanh_thu_lak ? so(d.chi_lak / d.doanh_thu_lak * 100) : 0}% ${NN.t('tq_of_revenue')} · ≈ ${so(d.chi_lak / r_usd)} USD`, dl: delta(d.chi_lak, tt && tt.chi_lak, true), sp: st && st.chi_lak, col: c.fuel },
       { k: 'k_tons', v: so(d.tan_giao, 2), u: NN.t('ton'), s: `${d.dem.arrived} ${NN.t('trips')} · ${NN.t('s_arrived')}`, dl: delta(d.tan_giao, tt && tt.tan_giao, false), sp: st && st.tan_giao, col: c.info },
       { k: 'k_unpaid', v: trieu(d.chua_thu_lak), u: 'M LAK', s: `${d.chua_thu_so} ${NN.t('trips')} · ${chia(d.chua_thu_tien)}`, dl: delta(d.chua_thu_lak, tt && tt.chua_thu_lak, true), sp: st && st.chua_thu_lak, col: c.warn },
@@ -168,6 +170,7 @@
         <div class="v">${k.v}<small>${esc(k.u)}</small></div>
         <div class="spark">${k.sp ? `<canvas id="tq-sp-${i}"></canvas>` : ''}</div>
         <div class="s">${k.dl}<span>${esc(k.s)}</span></div>
+        ${k.tam ? `<div class="tq-tam" title="${esc(NN.t('td_tam_goi_y'))}">${esc(k.tam)}</div>` : ''}
       </div>`).join('');
     K.forEach((k, i) => k.sp && spark('tq-sp-' + i, k.sp, k.col));
 

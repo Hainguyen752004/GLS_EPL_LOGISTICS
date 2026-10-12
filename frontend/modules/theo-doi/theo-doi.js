@@ -98,6 +98,11 @@
       const c = p.tinh, ma = c.ccy, mh = c.hire_ccy || ma;
       const chi = c.chi || {};                 // Bãi không nhận tiền chi (anh Khampla A2) — cột đó ẩn với Bãi
       const hao = c.hao_hut_pct !== null && c.hao_hut_pct > 1.5 ? `<span class="td-hao" title="${esc(NN.t('w_loss'))}">${so(c.hao_hut_pct, 1)}%</span>` : '';
+      // 12/10 (anh Khampla: tổng tiền không đúng): chưa có cân cuối → doanh thu · còn lại · lãi là TẠM TÍNH — chữ nghiêng, nhãn
+      // «tạm tính», không cộng vào dòng tổng (máy chủ tách riêng ở TONG.tam_tinh)
+      const tam = !!c.tam_tinh;
+      const goiTam = esc(NN.t(c.cach_tinh === 'chuyen' ? 'td_tam_goi_y_chuyen' : 'td_tam_goi_y'));
+      const oTam = (html) => tam ? `<i class="td-tam" title="${goiTam}">${html}</i>` : html;
       return `<tr data-id="${p.id}">
         <td>${dau + i + 1}</td><td class="nowrap">${EPL.ngay(p.doc_date)}</td><td class="nowrap mono"><b>${esc(p.doc_no)}</b></td>
         <td class="mono">${esc(p.ore_bill_no) || d}</td><td class="nowrap" lang="lo">${p.origin || p.destination ? `${esc(p.origin) || d} → ${esc(p.destination) || d}` : d}</td>
@@ -106,11 +111,11 @@
         <td lang="lo">${esc(p.customer_name) || d}</td><td>${tag('ore', p.goods_type || 'iron_ore')}</td>
         <td class="num">${so(p.weight_origin, 2)}</td><td class="num">${p.weight_dest != null ? so(p.weight_dest, 2) : d}${hao}</td>
         <td class="mono tien td-ccy">${esc(quy() || ma)}</td>
-        <td class="num tien">${oTien(p, p.price, ma)}${c.cach_tinh === 'chuyen' ? `<span class="td-hao" style="color:var(--muted)" title="${esc(NN.t('pm_chuyen'))}">${NN.h('pm_chuyen_s')}</span>` : ''}</td><td class="num tien">${oTien(p, c.doanh_thu, ma, true)}</td>
-        <td class="num tien">${c.da_thu ? oTien(p, c.da_thu, ma) : d}</td><td class="num tien ${c.con_lai ? 'neg' : ''}">${c.con_lai ? oTien(p, c.con_lai, ma) : d}</td>
+        <td class="num tien">${oTien(p, p.price, ma)}${c.cach_tinh === 'chuyen' ? `<span class="td-hao" style="color:var(--muted)" title="${esc(NN.t('pm_chuyen'))}">${NN.h('pm_chuyen_s')}</span>` : ''}</td><td class="num tien">${tam ? oTam(oTien(p, c.doanh_thu, ma)) + `<span class="td-tam-nhan" title="${goiTam}">${NN.h('td_tam')}</span>` : oTien(p, c.doanh_thu, ma, true)}</td>
+        <td class="num tien">${c.da_thu ? oTien(p, c.da_thu, ma) : d}</td><td class="num tien ${c.con_lai && !tam ? 'neg' : ''}">${c.con_lai ? oTam(oTien(p, c.con_lai, ma)) : d}</td>
         <td class="num tien">${c.lien_ket ? oTien(p, c.tien_thue, mh) : d}</td><td class="num tien">${c.lien_ket ? oTien(p, c.phi, mh) : d}</td><td class="num tien">${c.lien_ket ? oTien(p, c.tru_vuot, mh) : d}</td>
         <td class="num tien-chi">${so(chi.fuel)}</td><td class="num tien-chi">${so(chi.travel)}</td><td class="num tien-chi">${chi.repair ? so(chi.repair) : d}</td><td class="num tien-chi">${chi.other ? so(chi.other) : d}</td><td class="num tien-chi"><b>${so(c.tong_chi_lak)}</b></td>
-        <td class="num tien ${c.lai < 0 ? 'neg' : 'pos'}"><b>${oTien(p, c.lai, ma)}</b></td>
+        <td class="num tien ${tam ? '' : c.lai < 0 ? 'neg' : 'pos'}">${tam ? oTam(oTien(p, c.lai, ma)) : `<b>${oTien(p, c.lai, ma)}</b>`}</td>
         <td>${tag(p.transport_status)}</td><td>${tag(p.finance_status)}</td></tr>`;
     }).join('') : `<tr><td colspan="31" class="empty">${NN.h('no_data')}</td></tr>`;
     const gop = (t) => `<span class="td-gop">${EPL.tienGop(t, '<br>')}</span>`;
@@ -119,7 +124,12 @@
     root.querySelector('#td-chan').innerHTML = `<tr><td colspan="3" class="td-chan-nhan">${NN.ghep([{ k: 'total' }, ' · ' + so(soPhieu) + ' ', { k: 'trips' }])}</td><td colspan="12"></td>
       <td class="tien"></td><td class="num tien">${gop(sVal)}</td><td class="num tien">${gop(sThu)}</td><td class="num tien">${gop(sCon)}</td>
       <td class="tien"></td><td class="tien"></td><td class="tien"></td><td class="tien-chi"></td><td class="tien-chi"></td><td class="tien-chi"></td><td class="tien-chi"></td>
-      <td class="num tien-chi">${so(sExp)} LAK</td><td class="num tien">${gop(sNet)}</td><td colspan="2"></td></tr>`;
+      <td class="num tien-chi">${so(sExp)} LAK</td><td class="num tien">${gop(sNet)}</td><td colspan="2"></td></tr>` +
+      // 12/10: dòng riêng cho doanh thu TẠM TÍNH (DO chưa có cân cuối) — không nằm trong dòng tổng ở trên
+      (TONG.so_phieu_tam && TONG.tam_tinh ? `<tr class="td-chan-tam"><td colspan="3" class="td-chan-nhan">${NN.h('td_tam_dong', { n: so(TONG.so_phieu_tam) })}</td><td colspan="12"></td>
+      <td class="tien"></td><td class="num tien"><i>${gop(TONG.tam_tinh)}</i></td><td class="tien"></td><td class="num tien"><i>${gop(TONG.tam_con_lai || {})}</i></td>
+      <td class="tien"></td><td class="tien"></td><td class="tien"></td><td class="tien-chi"></td><td class="tien-chi"></td><td class="tien-chi"></td><td class="tien-chi"></td>
+      <td class="tien-chi"></td><td class="tien"></td><td colspan="2"></td></tr>` : '');
     const tong = ds.tong ?? rows.length, soTrang = Math.max(1, Math.ceil(tong / CO));
     root.querySelector('#td-dem').textContent = rows.length ? `${so(dau + 1)}–${so(dau + rows.length)} / ${so(tong)} ${NN.t('rows')}` : '';
     const tr = root.querySelector('#td-trang');
