@@ -946,7 +946,7 @@ def _gia_mac_dinh(db, p, m, source, d):
     if db is None:
         return 0, "LAK"
     if m == "fuel" and source == "kho":
-        return KK.gia_dau(db, d.get("place_id")), "LAK"                   # kho nhiên liệu ở trang kế toán (28/09)
+        return KK.gia_dau(db, d.get("place_id"), d.get("item_key")), "LAK"   # kho nhiên liệu ở trang kế toán (28/09); 16/10 theo khoản
     if m == "repair" and source == "kho" and d.get("part_id"):
         return KK.gia_phu_tung(db, d["part_id"]), "LAK"         # kho phụ tùng ở trang kế toán (28/09)
     if m == "travel" and d.get("item_key") == "x_toll" and d.get("toll_station_id"):

@@ -15618,9 +15618,9 @@ window.EPL_TU_DIEN = {
   "en": "Add cost item"
  },
  "km_giai_thich": {
-  "vi": "Khoản lưu sẵn để chọn trên phiếu xuất xe thay cho «Khác (tự gõ)». Cách trả mặc định (mục IV, VI): dòng mới mang cách trả này, KT Chi phí VC đổi được khi kiểm mục. Đổi mặc định không làm đổi phiếu cũ. Mục III chỉ có dầu (mã hàng kho).",
-  "lo": "ລາຍການບັນທຶກໄວ້ ເພື່ອເລືອກໃນໃບເບີກລົດ ແທນ «ອື່ນໆ (ພິມເອງ)». ວິທີຈ່າຍຕັ້ງຕົ້ນ (ໝວດ IV, VI): ແຖວໃໝ່ໃຊ້ວິທີນີ້, ບັນຊີລາຍຈ່າຍ ວຽງຈັນ ປ່ຽນໄດ້ຕອນກວດ. ປ່ຽນຄ່າຕັ້ງຕົ້ນ ບໍ່ປ່ຽນໃບເກົ່າ. ໝວດ III ມີແຕ່ນໍ້າມັນ (ລະຫັດສິນຄ້າສາງ).",
-  "en": "Saved items to pick on the dispatch slip instead of «Other (type in)». Default payment (sections IV, VI): new lines take it, the Vientiane cost accountant can change it when verifying. Changing a default does not change past slips. Section III is fuel only (warehouse item code)."
+  "vi": "Khoản lưu sẵn để chọn trên phiếu xuất xe thay cho «Khác (tự gõ)». Cách trả mặc định (mục IV, VI): dòng mới mang cách trả này, KT Chi phí VC đổi được khi kiểm mục. Đổi mặc định không làm đổi phiếu cũ. Khoản mục III (nhiên liệu) phải có mã hàng kho EPLNL-… đã có ở Quản lý kho.",
+  "lo": "ລາຍການບັນທຶກໄວ້ ເພື່ອເລືອກໃນໃບເບີກລົດ ແທນ «ອື່ນໆ (ພິມເອງ)». ວິທີຈ່າຍຕັ້ງຕົ້ນ (ໝວດ IV, VI): ແຖວໃໝ່ໃຊ້ວິທີນີ້, ບັນຊີລາຍຈ່າຍ ວຽງຈັນ ປ່ຽນໄດ້ຕອນກວດ. ປ່ຽນຄ່າຕັ້ງຕົ້ນ ບໍ່ປ່ຽນໃບເກົ່າ. ລາຍການໝວດ III (ນໍ້າມັນ) ຕ້ອງມີລະຫັດສິນຄ້າສາງ EPLNL-… ທີ່ມີໃນ ການຈັດການສາງ ແລ້ວ.",
+  "en": "Saved items to pick on the dispatch slip instead of «Other (type in)». Default payment (sections IV, VI): new lines take it, the Vientiane cost accountant can change it when verifying. Changing a default does not change past slips. Section III (fuel) items need a warehouse item code EPLNL-… that exists in Warehouse management."
  },
  "km_co_san": {
   "vi": "Có sẵn",
@@ -16086,5 +16086,15 @@ window.EPL_TU_DIEN = {
   "vi": "Đã xoá trạm",
   "lo": "ລຶບດ່ານແລ້ວ",
   "en": "Station deleted"
+ },
+ "km_ma_kho": {
+  "vi": "Mã hàng kho",
+  "lo": "ລະຫັດສິນຄ້າໃນສາງ",
+  "en": "Warehouse item code"
+ },
+ "km_ma_kho_goi_y": {
+  "vi": "Mã mặt hàng nhiên liệu ở Quản lý kho (EPLNL-…). Xuất kho, sổ nhiên liệu, giá vốn đi theo mã này — phải có sẵn mặt hàng bên kho.",
+  "lo": "ລະຫັດສິນຄ້ານ້ຳມັນຢູ່ ການຈັດການສາງ (EPLNL-…). ການເບີກສາງ, ປຶ້ມນ້ຳມັນ, ລາຄາຕົ້ນທຶນ ຕາມລະຫັດນີ້ — ຕ້ອງມີສິນຄ້ານີ້ໃນສາງກ່ອນ.",
+  "en": "Code of the fuel item in Warehouse management (EPLNL-…). Stock issues, the fuel ledger and cost follow this code — the item must exist in the warehouse."
  }
 };

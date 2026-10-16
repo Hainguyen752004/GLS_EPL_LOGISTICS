@@ -1001,7 +1001,7 @@
    "CACH_TRA_SAI"
   ],
   "o": [
-   "backend/app/routes/khoan_muc.py:33"
+   "backend/app/routes/khoan_muc.py:37"
   ]
  },
  "Cách trả phải là tiền mặt (cash) hoặc chuyển khoản (bank).": {
@@ -1172,7 +1172,7 @@
    "DA_DOI_SANG_QLSX"
   ],
   "o": [
-   "backend/app/services/kho_ke_toan.py:233"
+   "backend/app/services/kho_ke_toan.py:245"
   ]
  },
  "Cấp {1} lít khác số duyệt {2} lít thì phải ghi lý do.": {
@@ -1463,7 +1463,7 @@
    "DA_CAP_KHO_QLSX"
   ],
   "o": [
-   "backend/app/services/kho_ke_toan.py:113"
+   "backend/app/services/kho_ke_toan.py:125"
   ]
  },
  "EPL chưa tạo khoá cho hệ kế toán gọi sang.": {
@@ -2021,14 +2021,24 @@
    "backend/app/services/bao_mat.py:155"
   ]
  },
- "Khoản mới thêm được ở mục IV (đi đường), V (sửa chữa), VI (khác) — mục III chỉ có dầu.": {
-  "en": "New items can be added to section IV (travel), V (repairs) or VI (other) — section III is fuel only.",
-  "lo": "ລາຍການໃໝ່ເພີ່ມໄດ້ຢູ່ ໝວດ IV (ເດີນທາງ), V (ສ້ອມແປງ), VI (ອື່ນໆ) — ໝວດ III ມີແຕ່ນໍ້າມັນ.",
+ "Khoản mới thêm được ở mục III (nhiên liệu), IV (đi đường), V (sửa chữa), VI (khác).": {
+  "en": "New items can be added in section III (fuel), IV (travel), V (repairs), VI (other).",
+  "lo": "ລາຍການໃໝ່ເພີ່ມໄດ້ຢູ່ໝວດ III (ນ້ຳມັນ), IV (ເດີນທາງ), V (ສ້ອມແປງ), VI (ອື່ນໆ).",
   "ma": [
    "MUC_SAI"
   ],
   "o": [
-   "backend/app/routes/khoan_muc.py:59"
+   "backend/app/routes/khoan_muc.py:63"
+  ]
+ },
+ "Khoản nhiên liệu phải có mã hàng kho EPLNL-… (chữ, số, dấu gạch; tối đa 40 ký tự) — mã mặt hàng nhiên liệu ở Quản lý kho.": {
+  "en": "A fuel item needs a warehouse item code EPLNL-… (letters, digits, dashes; up to 40 characters) — the fuel item code in Warehouse management.",
+  "lo": "ລາຍການນ້ຳມັນຕ້ອງມີລະຫັດສິນຄ້າໃນສາງ EPLNL-… (ຕົວອັກສອນ, ຕົວເລກ, ຂີດ; ບໍ່ເກີນ 40 ຕົວ) — ລະຫັດສິນຄ້ານ້ຳມັນຢູ່ ການຈັດການສາງ.",
+  "ma": [
+   "MA_KHO_SAI"
+  ],
+  "o": [
+   "backend/app/routes/khoan_muc.py:71"
   ]
  },
  "Khoản này máy dùng (dầu mục III / phí cao tốc theo tuyến) — không ngưng được.": {
@@ -2038,7 +2048,7 @@
    "KHONG_NGUNG_DUOC"
   ],
   "o": [
-   "backend/app/routes/khoan_muc.py:98"
+   "backend/app/routes/khoan_muc.py:114"
   ]
  },
  "Khoản sửa chữa do tổ sửa chữa Thà Bốc khai, không phải vai {1}.": {
@@ -2215,7 +2225,7 @@
    "KHONG_THAY"
   ],
   "o": [
-   "backend/app/routes/khoan_muc.py:77"
+   "backend/app/routes/khoan_muc.py:93"
   ]
  },
  "Không có khách hàng này.": {
@@ -3095,6 +3105,16 @@
    "backend/app/routes/chu_xe.py:215"
   ]
  },
+ "Mã hàng kho EPLNL-{1} đã có khoản mục.": {
+  "en": "Warehouse item code EPLNL-{1} already has a cost item.",
+  "lo": "ລະຫັດສິນຄ້າໃນສາງ EPLNL-{1} ມີລາຍການແລ້ວ.",
+  "ma": [
+   "TRUNG_MA"
+  ],
+  "o": [
+   "backend/app/routes/khoan_muc.py:74"
+  ]
+ },
  "Mã kho bãi chỉ gồm chữ, số, - _ (tối đa 20 ký tự).": {
   "en": "The yard store code may only contain letters, digits, - and _ (up to 20 characters).",
   "lo": "ລະຫັດສາງສະໜາມມີໄດ້ສະເພາະຕົວອັກສອນ, ຕົວເລກ, - _ (ສູງສຸດ 20 ຕົວ).",
@@ -3343,7 +3363,7 @@
    "TRUNG_TEN"
   ],
   "o": [
-   "backend/app/routes/khoan_muc.py:42"
+   "backend/app/routes/khoan_muc.py:46"
   ]
  },
  "Mục {1} chưa có dòng chi nào để gửi kiểm.": {
@@ -3516,8 +3536,8 @@
    "THIEU_TEN"
   ],
   "o": [
-   "backend/app/routes/khoan_muc.py:62",
-   "backend/app/routes/khoan_muc.py:82"
+   "backend/app/routes/khoan_muc.py:78",
+   "backend/app/routes/khoan_muc.py:98"
   ]
  },
  "Nước của trạm phải là LA, VN hoặc TH.": {
@@ -4689,7 +4709,7 @@
    "SO_SAI"
   ],
   "o": [
-   "backend/app/routes/khoan_muc.py:95"
+   "backend/app/routes/khoan_muc.py:111"
   ]
  },
  "Tiền mặt EPL ứng mà không nằm trong số đã ứng{1} — EPL chưa đưa tiền; lập phiếu chi nếu EPL trả.": {
@@ -5757,7 +5777,7 @@
    "THIEU_CHU_XE"
   ],
   "o": [
-   "backend/app/services/kho_ke_toan.py:212"
+   "backend/app/services/kho_ke_toan.py:224"
   ]
  },
  "Xe {1} đã ngưng dùng.": {

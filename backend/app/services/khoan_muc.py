@@ -11,7 +11,9 @@ và mỗi lần màn hỏi /api/khoan-muc (máy chạy nhiều tiến trình th�
 (doi_cach_tra_mac_dinh) — phiếu đã kiểm / ghi sổ / chi không đổi nghĩa; chỉ dòng khai từ nay mới theo mặc định mới.
 
 Khoản có sẵn (built_in) giữ tên theo từ điển giao diện (frontend/js/ngon_ngu.js); khoản thêm mới mang tên ba thứ tiếng ở bảng — TEN.
-Không thêm khoản mục III (dầu): mã hàng kho bên Web là EPLNL-<khoản> (ban_giao_dau.MA_HANG), khoản dầu mới không có hàng bên kho.
+Mục III (nhiên liệu) — 16/10 anh Hải: «chưa cho anh chọn thêm mục chi»: thêm được, nhưng khoản nhiên liệu mới phải mang MÃ HÀNG KHO
+EPLNL-<khoá> của một mặt hàng nhiên liệu ở Quản lý kho; khoá khoản = phần sau EPLNL- — xuất kho (ban_giao_dau.MA_HANG + khoá), SO
+nhiên liệu (so_nhien_lieu), giá vốn (kho_ke_toan.gia_dau) đều đi theo mã này. Mục III không có cách trả (MUC_CACH_TRA).
 """
 import datetime as dt
 import threading
@@ -22,7 +24,8 @@ from models import CostItem, TripExpense, ma_moi
 from services import tinh_toan as TT
 
 MUC = ("fuel", "travel", "repair", "other")
-MUC_THEM = ("travel", "repair", "other")
+MUC_THEM = ("fuel", "travel", "repair", "other")
+MA_NL = "EPLNL-"                                   # mã hàng nhiên liệu bên kho: EPLNL-<khoá khoản> (= ban_giao_dau.MA_HANG)
 MUC_CACH_TRA = ("travel", "other")                 # cách trả chỉ có ở mục IV, VI (chi tiền mặt / cùng lương / nợ NCC)
 # bộ gốc trước 08/10 — gieo vào bảng lần đầu (thứ tự = thứ tự trên ô chọn)
 GOC = {
@@ -79,6 +82,7 @@ def xuat(r):
     return {"id": r.id, "key": r.key, "section": r.section, "name_vi": r.name_vi, "name_lo": r.name_lo, "name_en": r.name_en,
             "pay_default": r.pay_default, "sort": r.sort, "active": bool(r.active), "built_in": bool(r.built_in),
             "khong_tat": r.key in KHONG_TAT, "updated_by": r.updated_by,
+            "ma_kho": (MA_NL + r.key) if r.section == "fuel" else None,
             "updated_at": r.updated_at.isoformat(timespec="minutes") if r.updated_at else None}
 
 

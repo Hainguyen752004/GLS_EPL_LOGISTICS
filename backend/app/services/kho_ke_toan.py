@@ -101,10 +101,22 @@ def kho_dau(db):
     return bang
 
 
-def gia_dau(db, place_id):
-    """Giá bình quân hiện tại (LAK/lít) của một kho dầu; trống = kho Thà Bốc."""
+def gia_dau(db, place_id, key=None):
+    """Giá bình quân hiện tại (LAK/lít) của một kho dầu; trống = kho Thà Bốc. `key` = khoản mục III của dòng — 16/10 thêm được khoản
+    nhiên liệu khác dầu (mã hàng kho EPLNL-<key>); trống / diesel = dầu (bảng kho_dau)."""
     from services.gia_von import kho_goc
-    return ((kho_dau(db).get(place_id or kho_goc(db)) or {}).get("gia_bq")) or 0
+    pid = place_id or kho_goc(db)
+    if key and key != "diesel" and KQ.bat():
+        from models import FuelPlace
+        k = db.get(FuelPlace, pid) if pid else None
+        if k is None or not k.code:
+            return 0
+        ma = ("EPLNL-" + key).lower()
+        for r in KQ.ton(db, kho=(k.code,), hang=("EPLNL-" + key,)):
+            if str(r.get("itemCode") or "").lower() == ma and r.get("warehouseCode") == k.code:
+                return float(r.get("avgUnitCost") or 0)
+        return 0
+    return ((kho_dau(db).get(pid) or {}).get("gia_bq")) or 0
 
 
 def huy_xuat_dau(db, nguoi, move_id=None, khoa=None):

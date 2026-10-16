@@ -3,11 +3,15 @@
 cách trả mặc định theo khoản mục, cấu hình ở đây). Luật ở services/khoan_muc.py.
 
     GET  /api/khoan-muc/danh-sach   mọi khoản (kể cả đã ngưng) + số dòng đang dùng + quyền
-    POST /api/khoan-muc             thêm khoản (mục IV · V · VI; tên ba thứ tiếng; cách trả mặc định ở mục IV, VI)
+    POST /api/khoan-muc             thêm khoản (mục III · IV · V · VI; tên ba thứ tiếng; cách trả mặc định ở mục IV, VI; mục III kèm
+                                    mã hàng kho EPLNL-… — 16/10)
     PUT  /api/khoan-muc/{id}        sửa tên (khoản thêm mới), cách trả mặc định, thứ tự, đang dùng / ngưng
 
 Đọc danh mục cho phiếu vẫn là GET /api/khoan-muc (routes/phieu.py). Sửa: KT Chi phí VC và Sếp (khoan_muc.VAI_SUA)."""
+import re
+
 from fastapi import APIRouter, Body, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -56,13 +60,25 @@ def danh_sach(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
 def them(d: dict = Body(...), db: Session = Depends(get_db), user=Depends(SUA)):
     section = str(d.get("section") or "").strip()
     if section not in KMC.MUC_THEM:
-        raise HTTPException(422, {"ma": "MUC_SAI", "loi": "Khoản mới thêm được ở mục IV (đi đường), V (sửa chữa), VI (khác) — mục III chỉ có dầu."})
+        raise HTTPException(422, {"ma": "MUC_SAI", "loi": "Khoản mới thêm được ở mục III (nhiên liệu), IV (đi đường), V (sửa chữa), VI (khác)."})
+    khoa = KMC.moi_khoa()
+    if section == "fuel":
+        # khoản nhiên liệu: khoá = mã hàng kho bỏ EPLNL- — xuất kho, SO nhiên liệu, giá vốn tìm mặt hàng theo EPLNL-<khoá>
+        ma = str(d.get("ma_kho") or "").strip()
+        if ma.upper().startswith(KMC.MA_NL.upper()):
+            ma = ma[len(KMC.MA_NL):]
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,39}", ma):
+            raise HTTPException(422, {"ma": "MA_KHO_SAI", "loi": "Khoản nhiên liệu phải có mã hàng kho EPLNL-… (chữ, số, dấu gạch; tối đa 40 ký tự) — "
+                                                               "mã mặt hàng nhiên liệu ở Quản lý kho."})
+        if db.query(CostItem).filter(func.lower(CostItem.key) == ma.lower()).first():
+            raise HTTPException(409, {"ma": "TRUNG_MA", "loi": "Mã hàng kho EPLNL-%s đã có khoản mục." % ma})
+        khoa = ma
     vi, lo, en = _ten(d, "name_vi"), _ten(d, "name_lo"), _ten(d, "name_en")
     if not (vi or lo):
         raise HTTPException(422, {"ma": "THIEU_TEN", "loi": "Nhập tên khoản (tiếng Việt hoặc tiếng Lào)."})
     _chan_trung_ten(db, section, vi)
     cuoi = max([r.sort or 0 for r in db.query(CostItem).filter(CostItem.section == section).all()] or [0])
-    r = CostItem(key=KMC.moi_khoa(), section=section, name_vi=vi or lo, name_lo=lo or vi, name_en=en, built_in=False, active=True,
+    r = CostItem(key=khoa, section=section, name_vi=vi or lo, name_lo=lo or vi, name_en=en, built_in=False, active=True,
                  pay_default=_cach_tra(section, d.get("pay_default")), sort=cuoi + 10, updated_by=user.full_name, updated_at=KMC.gio())
     db.add(r)
     db.commit()

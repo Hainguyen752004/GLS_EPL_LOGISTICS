@@ -1,8 +1,8 @@
 /* Khoản mục chi phí — ລາຍການຄ່າໃຊ້ຈ່າຍ (08/10, anh Khampla: "chi phí khác cho gõ tay → thêm trang cấu hình chi phí để dùng lại";
  * chủ dự án chốt: cách trả mặc định theo khoản mục, KT Chi phí VC đổi từng dòng khi kiểm mục).
  *
- * Khoản có sẵn (dầu, tiền nước, phí cao tốc…) giữ tên theo từ điển; khoản thêm mới mang tên ba thứ tiếng. Thêm ở mục IV · V · VI (mục
- * III chỉ có dầu — mã hàng kho). Đổi cách trả mặc định: dòng trên phiếu cũ giữ cách trả đang có (máy chủ ghi rõ trước khi đổi). Không xoá
+ * Khoản có sẵn (dầu, tiền nước, phí cao tốc…) giữ tên theo từ điển; khoản thêm mới mang tên ba thứ tiếng. Thêm ở mục III · IV · V · VI
+ * (16/10 mở mục III: khoản nhiên liệu mới kèm MÃ HÀNG KHO EPLNL-… của mặt hàng ở Quản lý kho; mục III không có cách trả). Đổi cách trả mặc định: dòng trên phiếu cũ giữ cách trả đang có (máy chủ ghi rõ trước khi đổi). Không xoá
  * khoản — ngưng dùng (dòng cũ vẫn hiện tên). Luật, quyền: máy chủ (services/khoan_muc.py, routes/khoan_muc.py).
  */
 (function () {
@@ -26,7 +26,7 @@
       const dau = x.section !== nhom ? `<tr class="km-nhom"><td colspan="6">${esc(tenMuc(x.section))}</td></tr>` : '';
       nhom = x.section;
       return dau + `<tr class="${x.active ? '' : 'km-tat'}">
-        <td><b lang="lo">${esc(ten(x))}</b>${x.built_in ? `<span class="km-san">${NN.h('km_co_san')}</span>` : ''}<span class="km-ma">${esc(x.key)}</span></td>
+        <td><b lang="lo">${esc(ten(x))}</b>${x.built_in ? `<span class="km-san">${NN.h('km_co_san')}</span>` : ''}<span class="km-ma">${esc(x.ma_kho || x.key)}</span></td>
         <td>${coCachTra(x.section) ? NN.h(CA[x.pay_default || 'tien_mat']) : '<span class="muted">—</span>'}</td>
         <td class="num">${x.so_dong || 0}</td>
         <td class="num">${x.sort || 0}</td>
@@ -41,17 +41,30 @@
     options: L.pay_channels.map(c => [c, NN.t(CA[c] || c)]) });
 
   async function them() {
-    const v = await EPL.hopNhap(NN.t('km_them'), [
+    const hop = EPL.hopNhap(NN.t('km_them'), [
       { id: 'section', label: 'km_muc', type: 'select', value: 'travel', options: L.sections_them.map(m => [m, tenMuc(m)]) },
+      { id: 'ma_kho', label: 'km_ma_kho', value: 'EPLNL-', placeholder: 'EPLNL-adblue', goi_y: 'km_ma_kho_goi_y' },
       { id: 'name_vi', label: 'km_ten_vi', value: '' },
       { id: 'name_lo', label: 'km_ten_lo', value: '', lo: true },
       { id: 'name_en', label: 'km_ten_en', value: '' },
       oCachTra('tien_mat'),
     ], NN.t('save'));
+    // hộp đã dựng xong ngay khi gọi: đổi mục thì hiện / ẩn ô mã hàng kho (chỉ mục III) và ô cách trả (chỉ mục IV, VI)
+    const oMuc = document.getElementById('hn-section');
+    const apMuc = () => {
+      const m = oMuc ? oMuc.value : 'travel';
+      const o = (id) => { const el = document.getElementById(id); return el && el.closest('.field'); };
+      const mk = o('hn-ma_kho'), ct = o('hn-pay_default');
+      if (mk) mk.hidden = m !== 'fuel';
+      if (ct) ct.hidden = !coCachTra(m);
+    };
+    if (oMuc) { oMuc.addEventListener('change', apMuc); apMuc(); }
+    const v = await hop;
     if (!v) return;
     if (!String(v.name_vi || v.name_lo || '').trim()) return EPL.toast(NN.t('km_ten_vi') + '?', 'loi');
     const than = { section: v.section, name_vi: v.name_vi, name_lo: v.name_lo, name_en: v.name_en };
-    if (coCachTra(v.section)) than.pay_default = v.pay_default;        // mục V không có cách trả
+    if (v.section === 'fuel') than.ma_kho = v.ma_kho;
+    if (coCachTra(v.section)) than.pay_default = v.pay_default;        // mục III, V không có cách trả
     await luu(() => API.post('/api/khoan-muc', than));
   }
 
