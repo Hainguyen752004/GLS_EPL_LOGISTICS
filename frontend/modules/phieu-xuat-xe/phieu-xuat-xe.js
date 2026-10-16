@@ -262,7 +262,9 @@
         // khoản đã ngưng ở màn Khoản mục chi phí (08/10) mà dòng cũ còn mang: vẫn có trong ô chọn của dòng đó, không thành "Khác (tự gõ)"
         const kl = d.item_key && !khoa.includes(d.item_key) && ((KM.all_items || {})[m] || []).includes(d.item_key) ? [...khoa, d.item_key] : khoa;
         const tuGo = !kl.includes(d.item_key);
-        const sel = `<select data-i="${i}" data-f="item_key" ${khoaDuoc ? '' : 'disabled'}>${kl.map(k => `<option value="${k}" ${k === d.item_key ? 'selected' : ''}>${esc(NN.t(k))}</option>`).join('')}<option value="" ${tuGo ? 'selected' : ''}>${esc(NN.t('x_custom'))}</option></select>${tuGo ? `<input data-i="${i}" data-f="item_name" value="${esc(d.item_name || '')}" placeholder="…" ${khoaDuoc ? '' : 'disabled'} style="margin-top:4px">` : ''}`;
+        // phí cao tốc theo TRẠM (16/10): dưới ô chọn khoản ghi tên trạm — mỗi trạm trên tuyến một dòng
+        const tenTram = !tuGo && d.item_name && ['x_toll', 'x_bridge'].includes(d.item_key) ? `<small class="px-ten-tram" lang="lo">${esc(d.item_name)}</small>` : '';
+        const sel = tenTram + `<select data-i="${i}" data-f="item_key" ${khoaDuoc ? '' : 'disabled'}>${kl.map(k => `<option value="${k}" ${k === d.item_key ? 'selected' : ''}>${esc(NN.t(k))}</option>`).join('')}<option value="" ${tuGo ? 'selected' : ''}>${esc(NN.t('x_custom'))}</option></select>${tuGo ? `<input data-i="${i}" data-f="item_name" value="${esc(d.item_name || '')}" placeholder="…" ${khoaDuoc ? '' : 'disabled'} style="margin-top:4px">` : ''}`;
         const giaMo = giaDuoc(m, d);
         const inp = (f, cls = 'num') => f === 'unit_price'
           ? `<input class="${cls}${giaMo && d.paid_by_epl && EPL.doc(d.qty) > 0 && !EPL.doc(d.unit_price) ? ' px-can-gia' : ''}" data-i="${i}" data-f="${f}" value="${esc(d[f] == null ? '' : d[f])}" ${giaMo ? '' : 'disabled'} inputmode="decimal" title="${esc(nguonKho(m, d) ? NN.t('price_avg_kho') : '')}">`
@@ -343,7 +345,7 @@
     napSoNL();
     q('#px-phieu').querySelectorAll('.px-chi [data-f]').forEach(el => el.addEventListener('input', e => {
       const d = P.expenses[+el.dataset.i], f = el.dataset.f; d[f] = el.value; delete d._goiY;   // người lập đã sửa → không còn là dòng gợi ý
-      if (f === 'item_key') { if (el.value === '') d.item_name = d.item_name || ''; else d.item_name = null; if (!['x_toll', 'x_bridge'].includes(el.value)) d.toll_card_id = null; d.pay_channel = null; veChi(); }
+      if (f === 'item_key') { if (el.value === '') d.item_name = d.item_name || ''; else d.item_name = null; d.toll_station_id = null; if (!['x_toll', 'x_bridge'].includes(el.value)) d.toll_card_id = null; d.pay_channel = null; veChi(); }
       if (f === 'toll_card_id') { d.toll_card_id = el.value || null; veChi(); }
       if (f === 'ghi_no') { d.ghi_no = el.checked; veChi(); }
       if (f === 'pay_channel') veChi();
@@ -810,7 +812,7 @@
   /** Câu máy chủ (loi · loi_lo · loi_en) theo tiếng đang xem. */
   const chuMay = (x) => (!x ? '' : NN.lang === 'lo' && x.loi_lo ? x.loi_lo : NN.lang === 'en' && x.loi_en ? x.loi_en
     : NN.lang === 'both' && x.loi_lo ? x.loi + ' / ' + x.loi_lo : x.loi || '');
-  const tenDongCT = (z) => (z.item_key ? NN.t(z.item_key) : z.item_name || '—');
+  const tenDongCT = (z) => EPL.khoanMuc(z);
   function veChiThat() {
     const o = g('px-chi-that'), x = CHI_THAT;
     if (!o || !x || !P || x.trip_id !== P.id) return;
@@ -1256,7 +1258,8 @@
       if (P.expenses.some(d => d.section === m)) return;
       r.goi_y.filter(x => x.section === m).forEach(x => {
         const d = { section: m, item_key: x.item_key || null, item_name: x.item_name || null, qty: x.qty, unit_price: x.unit_price || 0,
-          currency: x.currency || 'LAK', place_id: x.place_id || null, paid_by_epl: true, pay_channel: x.pay_channel || null, _goiY: true };
+          currency: x.currency || 'LAK', place_id: x.place_id || null, paid_by_epl: true, pay_channel: x.pay_channel || null, _goiY: true,
+          toll_station_id: x.toll_station_id || null };
         if (m === 'fuel') { d.source = nguonCuaDiem(d); if (P.company === 'joint') d.paid_by_epl = d.source === 'kho'; }
         // 06/10 (chạy thử kịch bản CA-3): xe THUÊ — khoản đi đường gợi ý theo tuyến (tiền nước, tiền chuyến, điện thoại…) mặc định
         // «Chủ xe tự trả»: EPL không trả lương tài xế của chủ xe, EPL ứng là tạm ứng ghi công nợ chủ xe — chỉ khi Bãi chọn «EPL ứng».

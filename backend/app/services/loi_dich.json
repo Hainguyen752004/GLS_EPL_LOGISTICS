@@ -26,7 +26,7 @@
    "DA_XU_LY"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2458"
+   "backend/app/routes/phieu.py:2469"
   ]
  },
  "Báo hỏng phải ghi hỏng gì.": {
@@ -36,7 +36,7 @@
    "THIEU_MO_TA"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2290"
+   "backend/app/routes/phieu.py:2301"
   ]
  },
  "Bãi không xem tiền chuyến & nước của tài xế.": {
@@ -56,7 +56,7 @@
    "DA_TAO_SO"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2070"
+   "backend/app/routes/phieu.py:2081"
   ]
  },
  "Bên công nợ đã tạo SO {1} cho DO này — báo bên đó trước, rồi nhờ Sếp mở khoá.": {
@@ -66,7 +66,7 @@
    "DA_TAO_SO"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2059"
+   "backend/app/routes/phieu.py:2070"
   ]
  },
  "Bên kế toán chưa bỏ cấn trừ {1} {2} ({3}): {4}": {
@@ -196,7 +196,7 @@
    "GOI_Y_SAI"
   ],
   "o": [
-   "backend/app/routes/tuyen.py:124"
+   "backend/app/routes/tuyen.py:125"
   ]
  },
  "Chi ở hệ kế toán chỉ cho mục V (repair), VI (other).": {
@@ -236,7 +236,7 @@
    "*"
   ],
   "o": [
-   "backend/app/routes/phieu.py:237"
+   "backend/app/routes/phieu.py:238"
   ]
  },
  "Chưa chọn chủ xe liên kết của hợp đồng.": {
@@ -286,7 +286,7 @@
    "THIEU_POD"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1935"
+   "backend/app/routes/phieu.py:1946"
   ]
  },
  "Chưa có cân cuối.": {
@@ -296,7 +296,7 @@
    "THIEU_CAN_CUOI"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1919"
+   "backend/app/routes/phieu.py:1930"
   ]
  },
  "Chưa có cân tại bãi khi xe về.": {
@@ -306,7 +306,7 @@
    "THIEU_CAN_CUOI"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1919"
+   "backend/app/routes/phieu.py:1930"
   ]
  },
  "Chưa có cân tại bãi — nhập số tấn cân ở bãi Thà Bốc rồi mới báo xe tới: hàng vào kho theo cân bãi (cân mỏ chỉ để tính hao hụt).": {
@@ -326,7 +326,7 @@
    "THIEU_CAN_MO"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1860"
+   "backend/app/routes/phieu.py:1871"
   ]
  },
  "Chưa có dòng nào để sửa chi thật.": {
@@ -346,7 +346,7 @@
    "THIEU_KM_VE"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1923"
+   "backend/app/routes/phieu.py:1934"
   ]
  },
  "Chưa có phiếu quặng của khách — đính kèm ảnh, hoặc nhập tay số phiếu quặng.": {
@@ -356,7 +356,7 @@
    "THIEU_PHIEU_QUANG"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1931"
+   "backend/app/routes/phieu.py:1942"
   ]
  },
  "Chưa có số tiền: tài xế không báo và người duyệt chưa nhập.": {
@@ -366,7 +366,7 @@
    "THIEU_GIA"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2483"
+   "backend/app/routes/phieu.py:2494"
   ]
  },
  "Chưa có token hệ kế toán (QLSX_ACCESS_TOKEN / tài khoản tích hợp / EPL_ACC_CODE_TOKEN).": {
@@ -418,6 +418,16 @@
   ],
   "o": [
    "backend/app/services/chi_tat_toan_tune.py:633"
+  ]
+ },
+ "Chưa có đường xe đi để dò trạm — chấm vị trí ít nhất hai điểm của tuyến.": {
+  "en": "There is no truck path to search for toll stations yet — pin at least two stops of the route.",
+  "lo": "ຍັງບໍ່ມີເສັ້ນທາງລົດແລ່ນເພື່ອຊອກດ່ານ — ປັກຕຳແໜ່ງຢ່າງໜ້ອຍສອງຈຸດຂອງເສັ້ນທາງ.",
+  "ma": [
+   "THIEU_DUONG"
+  ],
+  "o": [
+   "backend/app/routes/tram_thu_phi.py:130"
   ]
  },
  "Chưa có định khoản cho phiếu chi mục {1} ({2} / {3}).": {
@@ -507,7 +517,7 @@
    "*"
   ],
   "o": [
-   "backend/app/routes/phieu.py:245"
+   "backend/app/routes/phieu.py:246"
   ]
  },
  "Chưa vào chứng từ nào bên kế toán.": {
@@ -557,7 +567,7 @@
    "KHONG_CO_QUYEN"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1597"
+   "backend/app/routes/phieu.py:1608"
   ]
  },
  "Chỉ Admin Thà Bốc hoặc Sếp xoá phiếu.": {
@@ -567,7 +577,7 @@
    "KHONG_CO_QUYEN"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2566"
+   "backend/app/routes/phieu.py:2577"
   ]
  },
  "Chỉ Admin Thà Bốc hoặc tài xế của phiếu cập nhật trạng thái xe.": {
@@ -577,7 +587,7 @@
    "KHONG_CO_QUYEN"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1818"
+   "backend/app/routes/phieu.py:1829"
   ]
  },
  "Chỉ Admin Thà Bốc lập phiếu xuất xe.": {
@@ -587,7 +597,7 @@
    "KHONG_CO_QUYEN"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1221"
+   "backend/app/routes/phieu.py:1227"
   ]
  },
  "Chỉ Admin Thà Bốc đổi xe — họ là người điều xe.": {
@@ -597,7 +607,7 @@
    "KHONG_CO_QUYEN"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1701"
+   "backend/app/routes/phieu.py:1712"
   ]
  },
  "Chỉ Bãi hoặc kế toán đính kèm tệp.": {
@@ -607,7 +617,7 @@
    "KHONG_CO_QUYEN"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2138"
+   "backend/app/routes/phieu.py:2149"
   ]
  },
  "Chỉ Bãi, KT Thu/Chi Viêng Chăn hoặc Sếp thêm / sửa kho bãi.": {
@@ -698,7 +708,7 @@
    "KHONG_CO_QUYEN"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1420"
+   "backend/app/routes/phieu.py:1431"
   ]
  },
  "Chỉ có phiếu đề nghị xuất kho nhiên liệu hoặc phiếu đề nghị tạm ứng.": {
@@ -718,7 +728,7 @@
    "KHONG_CO_QUYEN"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2021"
+   "backend/app/routes/phieu.py:2032"
   ]
  },
  "Chỉ kế toán Viêng Chăn lập phiếu đề nghị thu.": {
@@ -738,7 +748,7 @@
    "KHONG_CO_QUYEN"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2054"
+   "backend/app/routes/phieu.py:2065"
   ]
  },
  "Chỉ người đưa lên hoặc kế toán xoá tệp.": {
@@ -748,7 +758,7 @@
    "KHONG_CO_QUYEN"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2185"
+   "backend/app/routes/phieu.py:2196"
   ]
  },
  "Chỉ nhận ảnh (JPG, PNG, WEBP, HEIC) hoặc PDF.": {
@@ -760,7 +770,7 @@
   "o": [
    "backend/app/routes/giao_nhan.py:45",
    "backend/app/routes/hop_dong.py:226",
-   "backend/app/routes/phieu.py:2142"
+   "backend/app/routes/phieu.py:2153"
   ]
  },
  "Chỉ phiếu gom (đi lấy hàng ở mỏ) mới báo cân tại mỏ.": {
@@ -810,7 +820,7 @@
    "KHONG_CO_QUYEN"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2278"
+   "backend/app/routes/phieu.py:2289"
   ]
  },
  "Chỉ tài xế của phiếu (hoặc Bãi) báo xe về.": {
@@ -820,7 +830,7 @@
    "KHONG_CO_QUYEN"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1784"
+   "backend/app/routes/phieu.py:1795"
   ]
  },
  "Chỉ tài xế của phiếu (hoặc Bãi) ghi giao hàng hoàn tất.": {
@@ -840,7 +850,7 @@
    "KHONG_CO_QUYEN"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2407"
+   "backend/app/routes/phieu.py:2418"
   ]
  },
  "Chọn tài xế trước khi lưu phiếu xuất xe.": {
@@ -850,7 +860,7 @@
    "THIEU_TAI_XE"
   ],
   "o": [
-   "backend/app/routes/phieu.py:787"
+   "backend/app/routes/phieu.py:789"
   ]
  },
  "Chọn xe trước khi lưu phiếu xuất xe.": {
@@ -860,7 +870,7 @@
    "THIEU_XE"
   ],
   "o": [
-   "backend/app/routes/phieu.py:785"
+   "backend/app/routes/phieu.py:787"
   ]
  },
  "Chủ xe còn {1} hợp đồng thuê xe — xoá hợp đồng trước, hoặc bấm Sửa → Ngưng dùng.": {
@@ -1012,7 +1022,7 @@
    "CACH_TRA_SAI"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1014"
+   "backend/app/routes/phieu.py:1020"
   ]
  },
  "Cách trả phải là {1}.": {
@@ -1032,7 +1042,7 @@
    "CACH_TINH_SAI"
   ],
   "o": [
-   "backend/app/routes/phieu.py:841"
+   "backend/app/routes/phieu.py:843"
   ]
  },
  "Cách tính phải là 'ton' hoặc 'chuyen'.": {
@@ -1062,7 +1072,7 @@
    "CHUA_VE"
   ],
   "o": [
-   "backend/app/routes/phieu.py:825"
+   "backend/app/routes/phieu.py:827"
   ]
  },
  "Cân tại mỏ không được âm.": {
@@ -1072,7 +1082,7 @@
    "SO_AM"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1853"
+   "backend/app/routes/phieu.py:1864"
   ]
  },
  "Còn phải trả {1} {2} ≤ 0 (tổng phiếu {3}, đã trừ hàng mua ở quầy {4}, EPL đã ứng trừ sẵn trên phiếu) — không lập phiếu chi.": {
@@ -1255,6 +1265,16 @@
    "backend/app/services/ban_giao_phu_tung.py:66"
   ]
  },
+ "Danh sách trạm thu phí phải là danh sách mã trạm.": {
+  "en": "The toll station list must be a list of station codes.",
+  "lo": "ລາຍການດ່ານເກັບຄ່າທາງຕ້ອງເປັນລາຍການລະຫັດດ່ານ.",
+  "ma": [
+   "TRAM_SAI"
+  ],
+  "o": [
+   "backend/app/routes/tuyen.py:220"
+  ]
+ },
  "Dòng '{1}' đã {2}, không xoá được trên phiếu.": {
   "en": "Line '{1}': already {2} — it cannot be removed from the slip.",
   "lo": "ແຖວ '{1}': {2} ແລ້ວ — ລຶບອອກຈາກໃບບໍ່ໄດ້.",
@@ -1262,7 +1282,7 @@
    "*"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1074"
+   "backend/app/routes/phieu.py:1080"
   ]
  },
  "Dòng 0 đồng — không có tiền để chi.": {
@@ -1302,7 +1322,7 @@
    "*chen"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1475"
+   "backend/app/routes/phieu.py:1486"
   ]
  },
  "Dòng này xuất ở KHO TẠM cũ (trước khi kho chuyển sang hệ kế toán 05/10) — không trả kho tự động được nữa. Nhờ kế toán lập phiếu nhập điều chỉnh ở kho bên kế toán, rồi mới xoá phiếu.": {
@@ -1362,7 +1382,7 @@
    "GOI_Y_SAI"
   ],
   "o": [
-   "backend/app/routes/tuyen.py:140"
+   "backend/app/routes/tuyen.py:141"
   ]
  },
  "Dòng {1}: cách trả không có trong danh sách.": {
@@ -1372,7 +1392,7 @@
    "CACH_TRA_SAI"
   ],
   "o": [
-   "backend/app/routes/tuyen.py:155"
+   "backend/app/routes/tuyen.py:156"
   ]
  },
  "Dòng {1}: khoản mục không có trong danh mục.": {
@@ -1382,7 +1402,7 @@
    "GOI_Y_SAI"
   ],
   "o": [
-   "backend/app/routes/tuyen.py:138"
+   "backend/app/routes/tuyen.py:139"
   ]
  },
  "Dòng {1}: mục phải là nhiên liệu, đi đường hoặc chi khác.": {
@@ -1392,7 +1412,7 @@
    "GOI_Y_SAI"
   ],
   "o": [
-   "backend/app/routes/tuyen.py:132"
+   "backend/app/routes/tuyen.py:133"
   ]
  },
  "Dòng {1}: mục {2} không hợp lệ.": {
@@ -1402,8 +1422,8 @@
    "MUC_SAI"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1049",
-   "backend/app/routes/phieu.py:725"
+   "backend/app/routes/phieu.py:1055",
+   "backend/app/routes/phieu.py:727"
   ]
  },
  "Dòng {1}: nơi đổ không có trong danh mục.": {
@@ -1413,7 +1433,7 @@
    "GOI_Y_SAI"
   ],
   "o": [
-   "backend/app/routes/tuyen.py:150"
+   "backend/app/routes/tuyen.py:151"
   ]
  },
  "Dòng {1}: số lượng không được âm.": {
@@ -1423,7 +1443,7 @@
    "SO_AM"
   ],
   "o": [
-   "backend/app/routes/tuyen.py:143"
+   "backend/app/routes/tuyen.py:144"
   ]
  },
  "Dòng {1}: đơn giá không âm, tiền tệ LAK · VND · THB · USD · CNY.": {
@@ -1433,7 +1453,7 @@
    "SO_SAI"
   ],
   "o": [
-   "backend/app/routes/tuyen.py:163"
+   "backend/app/routes/tuyen.py:164"
   ]
  },
  "Dầu đã cấp ở kho bên kế toán (phiếu kho {1}) — huỷ phiếu xuất kho bên đó trước.": {
@@ -1493,7 +1513,7 @@
    "SO_SAI"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1156"
+   "backend/app/routes/phieu.py:1162"
   ]
  },
  "Giá cước, giá thuê xe và phí do kế toán Viêng Chăn nhập; Bãi không nhập ô này.": {
@@ -1503,7 +1523,27 @@
    "KHONG_CO_QUYEN"
   ],
   "o": [
-   "backend/app/routes/phieu.py:816"
+   "backend/app/routes/phieu.py:818"
+  ]
+ },
+ "Giá qua trạm không được âm.": {
+  "en": "The toll fee cannot be negative.",
+  "lo": "ຄ່າຜ່ານດ່ານຕ້ອງບໍ່ຕິດລົບ.",
+  "ma": [
+   "SO_AM"
+  ],
+  "o": [
+   "backend/app/routes/tram_thu_phi.py:77"
+  ]
+ },
+ "Giá qua trạm phải là số.": {
+  "en": "The toll fee must be a number.",
+  "lo": "ຄ່າຜ່ານດ່ານຕ້ອງເປັນຕົວເລກ.",
+  "ma": [
+   "SO_SAI"
+  ],
+  "o": [
+   "backend/app/routes/tram_thu_phi.py:75"
   ]
  },
  "Giá vốn dòng {1}": {
@@ -1623,7 +1663,7 @@
    "HAO_HUT"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1917"
+   "backend/app/routes/phieu.py:1928"
   ]
  },
  "Hoá đơn và thu tiền khách làm ở hệ kế toán: khoá phiếu → gửi đề nghị thu (SO) ở màn Phiếu đề nghị thu; thu tiền ghi ở công nợ khách bên đó.": {
@@ -1633,7 +1673,7 @@
    "DA_DOI_SANG_KE_TOAN"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2197"
+   "backend/app/routes/phieu.py:2208"
   ]
  },
  "Hoá đơn và thu tiền khách làm ở hệ kế toán: mỗi DO đã khoá gửi một đề nghị thu (SO) ở màn Phiếu đề nghị thu; gộp tháng, thu tiền ở công nợ khách bên đó.": {
@@ -1653,7 +1693,7 @@
    "HANG_DA_NHAP_KHO"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1311"
+   "backend/app/routes/phieu.py:1322"
   ]
  },
  "Hàng thiếu hoặc hư hỏng thì phải ghi rõ thiếu / hỏng gì.": {
@@ -1673,7 +1713,7 @@
    "*chen"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1937"
+   "backend/app/routes/phieu.py:1948"
   ]
  },
  "Hạn bằng lái phải sau ngày cấp.": {
@@ -1838,7 +1878,7 @@
    "HOP_DONG_SAI"
   ],
   "o": [
-   "backend/app/routes/phieu.py:904"
+   "backend/app/routes/phieu.py:906"
   ]
  },
  "Hợp đồng trên phiếu do kế toán Viêng Chăn chọn.": {
@@ -1848,7 +1888,7 @@
    "KHONG_CO_QUYEN"
   ],
   "o": [
-   "backend/app/routes/phieu.py:899"
+   "backend/app/routes/phieu.py:901"
   ]
  },
  "Hợp đồng {1} của {2} đã hết hạn ngày {3} — trước ngày phiếu.": {
@@ -1858,7 +1898,7 @@
    "HOP_DONG_HET_HAN"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1944"
+   "backend/app/routes/phieu.py:1955"
   ]
  },
  "Hợp đồng {1} của {2} đã hết hạn ngày {3}; chưa có hợp đồng mới.": {
@@ -1868,7 +1908,7 @@
    "HOP_DONG_HET_HAN"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1949"
+   "backend/app/routes/phieu.py:1960"
   ]
  },
  "Hợp đồng {1} do kế toán Viêng Chăn quản lý.": {
@@ -2008,7 +2048,7 @@
    "KHONG_CO_QUYEN"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1594"
+   "backend/app/routes/phieu.py:1605"
   ]
  },
  "Khoảng thời gian tối đa {1} ngày — đang chọn {2} ngày.": {
@@ -2068,7 +2108,7 @@
    "KHONG_THAY"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2451"
+   "backend/app/routes/phieu.py:2462"
   ]
  },
  "Không có bút toán này.": {
@@ -2227,7 +2267,7 @@
    "MUC_SAI"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1439",
+   "backend/app/routes/phieu.py:1450",
    "backend/app/services/phan_quyen.py:154"
   ]
  },
@@ -2333,6 +2373,17 @@
    "backend/app/routes/the_cao_toc.py:211"
   ]
  },
+ "Không có trạm thu phí này.": {
+  "en": "This toll station does not exist.",
+  "lo": "ບໍ່ມີດ່ານເກັບຄ່າທາງນີ້.",
+  "ma": [
+   "KHONG_THAY"
+  ],
+  "o": [
+   "backend/app/routes/tram_thu_phi.py:102",
+   "backend/app/routes/tram_thu_phi.py:114"
+  ]
+ },
  "Không có tuyến này.": {
   "en": "This route does not exist.",
   "lo": "ບໍ່ມີເສັ້ນທາງນີ້.",
@@ -2342,8 +2393,8 @@
   ],
   "o": [
    "backend/app/routes/danh_muc.py:311",
-   "backend/app/routes/phieu.py:634",
-   "backend/app/routes/phieu.py:866"
+   "backend/app/routes/phieu.py:635",
+   "backend/app/routes/phieu.py:868"
   ]
  },
  "Không có tài khoản này.": {
@@ -2377,7 +2428,7 @@
   "o": [
    "backend/app/routes/hop_dong.py:246",
    "backend/app/routes/hop_dong.py:260",
-   "backend/app/routes/phieu.py:2167"
+   "backend/app/routes/phieu.py:2178"
   ]
  },
  "Không có việc {1}.": {
@@ -2659,6 +2710,16 @@
    "backend/app/services/chung_tu_dong_do.py:473"
   ]
  },
+ "Kinh độ": {
+  "en": "Longitude",
+  "lo": "ລອງຈິຈູດ",
+  "ma": [
+   "*chen"
+  ],
+  "o": [
+   "backend/app/routes/tram_thu_phi.py:51"
+  ]
+ },
  "Km chiều về không được âm.": {
   "en": "Return km cannot be negative.",
   "lo": "ກິໂລແມັດກັບຄືນ ຕ້ອງບໍ່ຕິດລົບ.",
@@ -2666,7 +2727,7 @@
    "SO_AM"
   ],
   "o": [
-   "backend/app/routes/tuyen.py:39"
+   "backend/app/routes/tuyen.py:40"
   ]
  },
  "Km về ({1}) không thể nhỏ hơn km lúc đi ({2}).": {
@@ -2676,7 +2737,7 @@
    "KM_SAI"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1792"
+   "backend/app/routes/phieu.py:1803"
   ]
  },
  "Km về thật {1} lệch {2}% so với ước tính {3} (tuyến {4} km{5}).": {
@@ -2686,7 +2747,7 @@
    "KM_LECH"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1911"
+   "backend/app/routes/phieu.py:1922"
   ]
  },
  "Kế toán chỉ nhập đơn giá cho dòng Bãi đã khai; thêm dòng thì trả lại cho Bãi.": {
@@ -2696,7 +2757,7 @@
    "CHI_SUA_GIA"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1128"
+   "backend/app/routes/phieu.py:1134"
   ]
  },
  "Kỳ này chênh dưới 1 Kíp — không có phiếu chi / thu bên kế toán.": {
@@ -2808,7 +2869,7 @@
    "LOAI_DO_SAI"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1224"
+   "backend/app/routes/phieu.py:1230"
   ]
  },
  "Loại thẻ phải là {1}.": {
@@ -2919,8 +2980,8 @@
    "THIEU_PHU_TUNG"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1638",
-   "backend/app/routes/phieu.py:2478"
+   "backend/app/routes/phieu.py:1649",
+   "backend/app/routes/phieu.py:2489"
   ]
  },
  "Lần gửi SO nhiên liệu trước bên kế toán báo trùng DO (409) — hai bên đối soát, không gửi lại.": {
@@ -2940,7 +3001,7 @@
    "SO_CHUA_RO"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2073"
+   "backend/app/routes/phieu.py:2084"
   ]
  },
  "Lần gửi SO trước của DO này chưa rõ kết quả ({1}) — bấm gửi lại ở màn Phiếu đề nghị thu để biết bên công nợ đã tạo SO chưa, rồi mới mở khoá.": {
@@ -2950,7 +3011,7 @@
    "SO_CHUA_RO"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2064"
+   "backend/app/routes/phieu.py:2075"
   ]
  },
  "Lần gửi trước bên kế toán báo trùng DO (409) — hai bên đối soát trước, không gửi lại.": {
@@ -2980,7 +3041,7 @@
    "THIEU_GIA"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1641"
+   "backend/app/routes/phieu.py:1652"
   ]
  },
  "Máy chủ chưa cài thư viện qrcode.": {
@@ -3232,7 +3293,7 @@
    "MUC_DA_KHOA"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1341"
+   "backend/app/routes/phieu.py:1352"
   ]
  },
  "Mục II đã kiểm với cân tại mỏ {1} t — muốn đổi thì báo Bãi nhờ kế toán trả lại mục II.": {
@@ -3252,7 +3313,7 @@
    "MUC_DA_KHOA"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1855"
+   "backend/app/routes/phieu.py:1866"
   ]
  },
  "Mục IV chưa ghi sổ — KT Chi phí ghi sổ thì phiếu chi tạm ứng mới sang hệ kế toán để thủ quỹ chi; {1}.": {
@@ -3262,7 +3323,7 @@
    "*"
   ],
   "o": [
-   "backend/app/routes/phieu.py:247"
+   "backend/app/routes/phieu.py:248"
   ]
  },
  "Mục IV phiếu {1} chưa ghi sổ — KT Chi phí ghi sổ trước.": {
@@ -3292,7 +3353,7 @@
    "MUC_TRONG"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1463"
+   "backend/app/routes/phieu.py:1474"
   ]
  },
  "Mục {1} có dòng chi nhưng chưa kiểm.": {
@@ -3302,7 +3363,7 @@
    "MUC_CHUA_KIEM"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1957"
+   "backend/app/routes/phieu.py:1968"
   ]
  },
  "Mục {1} không có bước {2}.": {
@@ -3352,7 +3413,7 @@
    "MUC_DA_KHOA"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1062"
+   "backend/app/routes/phieu.py:1068"
   ]
  },
  "Mục {1} đã khoá ({2}); phải trả lại mới sửa được.": {
@@ -3362,7 +3423,7 @@
    "MUC_DA_KHOA"
   ],
   "o": [
-   "backend/app/routes/phieu.py:832"
+   "backend/app/routes/phieu.py:834"
   ]
  },
  "Mục {1}: {2} chưa có đơn giá — nhập đơn giá rồi kiểm lại.{3}": {
@@ -3372,7 +3433,7 @@
    "THIEU_DON_GIA"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1475"
+   "backend/app/routes/phieu.py:1486"
   ]
  },
  "Nguồn phải là kho hay mua.": {
@@ -3382,7 +3443,7 @@
    "NGUON_SAI"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2470"
+   "backend/app/routes/phieu.py:2481"
   ]
  },
  "Ngày hết hạn phải sau ngày bắt đầu hiệu lực.": {
@@ -3403,7 +3464,7 @@
   ],
   "o": [
    "backend/app/routes/chu_xe.py:61",
-   "backend/app/routes/phieu.py:124",
+   "backend/app/routes/phieu.py:125",
    "backend/app/routes/the_cao_toc.py:59"
   ]
  },
@@ -3424,7 +3485,7 @@
    "CHUA_VE"
   ],
   "o": [
-   "backend/app/routes/phieu.py:825"
+   "backend/app/routes/phieu.py:827"
   ]
  },
  "Người nhận {1} ghi hàng {2} khi ký nhận: {3}": {
@@ -3434,7 +3495,7 @@
    "HANG_THIEU_HONG"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1937"
+   "backend/app/routes/phieu.py:1948"
   ]
  },
  "Nhà cung cấp phải có tên.": {
@@ -3457,6 +3518,16 @@
   "o": [
    "backend/app/routes/khoan_muc.py:62",
    "backend/app/routes/khoan_muc.py:82"
+  ]
+ },
+ "Nước của trạm phải là LA, VN hoặc TH.": {
+  "en": "The station country must be LA, VN or TH.",
+  "lo": "ປະເທດຂອງດ່ານຕ້ອງເປັນ LA, VN ຫຼື TH.",
+  "ma": [
+   "NUOC_SAI"
+  ],
+  "o": [
+   "backend/app/routes/tram_thu_phi.py:46"
   ]
  },
  "Nước phải là LA (Lào) hoặc VN (Việt Nam).": {
@@ -3506,7 +3577,7 @@
    "*"
   ],
   "o": [
-   "backend/app/routes/phieu.py:242"
+   "backend/app/routes/phieu.py:243"
   ]
  },
  "Phiếu chi tạm ứng {1} bên hệ kế toán đã ghi sổ (tiền đã chi) — không xoá / huỷ được ở đây, đối soát ở hệ kế toán trước.": {
@@ -3576,7 +3647,7 @@
    "THIEU_DONG_HANG"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1921"
+   "backend/app/routes/phieu.py:1932"
   ]
  },
  "Phiếu còn {1} điểm cần xem; xem rồi xác nhận khoá.": {
@@ -3586,7 +3657,7 @@
    "CO_CANH_BAO"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2035"
+   "backend/app/routes/phieu.py:2046"
   ]
  },
  "Phiếu có nhiều dòng hàng — Bãi ghi số tấn từng dòng trên phiếu.": {
@@ -3836,7 +3907,7 @@
    "TRONG_DE_NGHI_TRA_CHU_XE"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2080"
+   "backend/app/routes/phieu.py:2091"
   ]
  },
  "Phiếu {1} nằm trong đề nghị trả chủ xe {2} — bỏ đề nghị đó ở màn Xe liên kết / Tất toán đối tác trước.": {
@@ -3846,7 +3917,7 @@
    "TRONG_DE_NGHI_TRA_CHU_XE"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2586"
+   "backend/app/routes/phieu.py:2597"
   ]
  },
  "Phiếu {1} đã cấp dầu ở kho bên kế toán (phiếu kho {2}) — huỷ phiếu xuất kho bên đó trước.": {
@@ -3856,7 +3927,7 @@
    "DA_CAP_KHO_QLSX"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2601"
+   "backend/app/routes/phieu.py:2612"
   ]
  },
  "Phiếu {1} đã cấp theo chứng từ khác — không ghi lần hai.": {
@@ -3876,7 +3947,7 @@
    "DA_TAO_SO"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2580"
+   "backend/app/routes/phieu.py:2591"
   ]
  },
  "Phiếu {1} đã gửi đề nghị thu sang bên công nợ (SO {2}) — huỷ SO bên đó (đối soát) trước.": {
@@ -3886,7 +3957,7 @@
    "DA_TAO_SO"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2576"
+   "backend/app/routes/phieu.py:2587"
   ]
  },
  "Phiếu {1} đã huỷ trên EPL — huỷ phiếu xuất kho bên kế toán.": {
@@ -3906,7 +3977,7 @@
    "DA_KHOA"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1280"
+   "backend/app/routes/phieu.py:1291"
   ]
  },
  "Phiếu {1} đã khoá — mở khoá phiếu rồi mới trả lại mục để sửa.": {
@@ -3916,7 +3987,7 @@
    "DA_KHOA"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1435"
+   "backend/app/routes/phieu.py:1446"
   ]
  },
  "Phiếu {1} đã khoá, không lập thêm phiếu đề nghị.": {
@@ -3946,7 +4017,7 @@
    "DA_TRA_CHU_XE"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2583"
+   "backend/app/routes/phieu.py:2594"
   ]
  },
  "Phiếu {1}: dòng xuất bán {2} thành tiền 0.": {
@@ -3976,7 +4047,7 @@
    "KHAC_LOAI_XE"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1717"
+   "backend/app/routes/phieu.py:1728"
   ]
  },
  "Phiếu đã có dòng hàng hoặc đã ghi sổ kho, không đổi loại gom/giao được nữa.": {
@@ -3986,7 +4057,7 @@
    "KHONG_DOI_LOAI"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1304"
+   "backend/app/routes/phieu.py:1315"
   ]
  },
  "Phiếu đã có dòng xuất kho, không xoá được.": {
@@ -3996,7 +4067,7 @@
    "DA_XUAT_KHO"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2570"
+   "backend/app/routes/phieu.py:2581"
   ]
  },
  "Phiếu đã có mục được kiểm, không xoá được.": {
@@ -4006,7 +4077,7 @@
    "DA_DUYET"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2568"
+   "backend/app/routes/phieu.py:2579"
   ]
  },
  "Phiếu đã có {1} được cấp ({2}), không xoá được.": {
@@ -4016,7 +4087,7 @@
    "DA_CAP_PHAT"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2593"
+   "backend/app/routes/phieu.py:2604"
   ]
  },
  "Phiếu đã cấp thì không huỷ được.": {
@@ -4036,7 +4107,7 @@
    "PHIEU_DA_TOI"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1788"
+   "backend/app/routes/phieu.py:1799"
   ]
  },
  "Phiếu đã khoá rồi.": {
@@ -4046,7 +4117,7 @@
    "DA_KHOA"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2023"
+   "backend/app/routes/phieu.py:2034"
   ]
  },
  "Phiếu đã thu tiền xong, không ghi thêm diễn biến.": {
@@ -4056,7 +4127,7 @@
    "PHIEU_DA_XONG"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1599"
+   "backend/app/routes/phieu.py:1610"
   ]
  },
  "Phiếu đã thu tiền xong, không khai thêm.": {
@@ -4066,7 +4137,7 @@
    "PHIEU_DA_XONG"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2413"
+   "backend/app/routes/phieu.py:2424"
   ]
  },
  "Phiếu đã tới nơi, không nhận thêm vị trí.": {
@@ -4086,7 +4157,7 @@
    "PHIEU_DA_XONG"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2284"
+   "backend/app/routes/phieu.py:2295"
   ]
  },
  "Phiếu đề nghị {1} không còn phiếu DO.": {
@@ -4118,7 +4189,7 @@
    "THIEU_NOI_DO"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2419"
+   "backend/app/routes/phieu.py:2430"
   ]
  },
  "Phải chọn tuyến.": {
@@ -4138,7 +4209,7 @@
    "THIEU_SO"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2357"
+   "backend/app/routes/phieu.py:2368"
   ]
  },
  "Phải có đơn giá mỗi tấn.": {
@@ -4158,7 +4229,7 @@
    "THIEU_SO_LIT"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2416"
+   "backend/app/routes/phieu.py:2427"
   ]
  },
  "Phụ tùng phải có tên.": {
@@ -4310,7 +4381,7 @@
    "TRUNG_SO"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1251"
+   "backend/app/routes/phieu.py:1257"
   ]
  },
  "Số phiếu {1} đã có.": {
@@ -4320,7 +4391,7 @@
    "TRUNG_SO"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1227"
+   "backend/app/routes/phieu.py:1233"
   ]
  },
  "Số phiếu đã có.": {
@@ -4330,7 +4401,7 @@
    "TRUNG_SO"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1315"
+   "backend/app/routes/phieu.py:1326"
   ]
  },
  "Số tiền không được âm.": {
@@ -4340,8 +4411,8 @@
    "SO_AM"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2293",
-   "backend/app/routes/phieu.py:2320"
+   "backend/app/routes/phieu.py:2304",
+   "backend/app/routes/phieu.py:2331"
   ]
  },
  "Số tiền phải lớn hơn 0.": {
@@ -4411,7 +4482,7 @@
    "KHONG_CO_QUYEN"
   ],
   "o": [
-   "backend/app/routes/phieu.py:800"
+   "backend/app/routes/phieu.py:802"
   ]
  },
  "Số {1} có quá nhiều chữ số lẻ để gửi chính xác — làm tròn trên phiếu rồi gửi lại.": {
@@ -4441,7 +4512,7 @@
    "NGUON_SAI"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1631"
+   "backend/app/routes/phieu.py:1642"
   ]
  },
  "THIẾU": {
@@ -4451,7 +4522,7 @@
    "*chen"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1937"
+   "backend/app/routes/phieu.py:1948"
   ]
  },
  "Tham số {1} phải là ngày ISO (YYYY-MM-DD).": {
@@ -4527,7 +4598,7 @@
   "o": [
    "backend/app/routes/de_nghi.py:59",
    "backend/app/routes/ho_so_do.py:72",
-   "backend/app/routes/phieu.py:519"
+   "backend/app/routes/phieu.py:520"
   ]
  },
  "Tháng phải dạng YYYY-MM, nhận '{1}'.": {
@@ -4651,6 +4722,16 @@
    "backend/app/services/chi_tat_toan_tune.py:623"
   ]
  },
+ "Tiền tệ của trạm phải là LAK, VND, THB, USD hoặc CNY.": {
+  "en": "The station currency must be LAK, VND, THB, USD or CNY.",
+  "lo": "ສະກຸນເງິນຂອງດ່ານຕ້ອງເປັນ LAK, VND, THB, USD ຫຼື CNY.",
+  "ma": [
+   "TIEN_TE_SAI"
+  ],
+  "o": [
+   "backend/app/routes/tram_thu_phi.py:65"
+  ]
+ },
  "Tiền tệ phải là một trong {1}.": {
   "en": "Currency must be one of {1}.",
   "lo": "ສະກຸນເງິນຕ້ອງເປັນໜຶ່ງໃນ {1}.",
@@ -4721,6 +4802,36 @@
    "backend/app/services/chi_tune.py:87"
   ]
  },
+ "Trạm thu phí phải có tên.": {
+  "en": "A toll station needs a name.",
+  "lo": "ດ່ານເກັບຄ່າທາງຕ້ອງມີຊື່.",
+  "ma": [
+   "THIEU_TEN"
+  ],
+  "o": [
+   "backend/app/routes/tram_thu_phi.py:41"
+  ]
+ },
+ "Trạm thu phí thứ {1} không có trong danh mục.": {
+  "en": "Toll station no. {1} is not in the list.",
+  "lo": "ດ່ານເກັບຄ່າທາງທີ {1} ບໍ່ມີໃນລາຍການ.",
+  "ma": [
+   "TRAM_SAI"
+  ],
+  "o": [
+   "backend/app/routes/tuyen.py:229"
+  ]
+ },
+ "Trạm đang gắn với tuyến hoặc đã có trên phiếu — chỉ ngưng dùng được, không xoá.": {
+  "en": "This station is on a route or already on a slip — it can only be deactivated, not deleted.",
+  "lo": "ດ່ານນີ້ກຳລັງຜູກກັບເສັ້ນທາງ ຫຼື ມີຢູ່ໃນໃບແລ້ວ — ຢຸດໃຊ້ໄດ້ເທົ່ານັ້ນ, ລຶບບໍ່ໄດ້.",
+  "ma": [
+   "TRAM_DANG_DUNG"
+  ],
+  "o": [
+   "backend/app/routes/tram_thu_phi.py:117"
+  ]
+ },
  "Trạng thái bằng lái phải là {1}.": {
   "en": "Licence status must be {1}.",
   "lo": "ສະຖານະໃບຂັບຂີ່ຕ້ອງເປັນ {1}.",
@@ -4739,7 +4850,7 @@
   ],
   "o": [
    "backend/app/routes/danh_muc.py:970",
-   "backend/app/routes/phieu.py:1831"
+   "backend/app/routes/phieu.py:1842"
   ]
  },
  "Trạng thái xe phải là {1}.": {
@@ -4789,7 +4900,7 @@
    "DA_DOI_SANG_KE_TOAN"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2097"
+   "backend/app/routes/phieu.py:2108"
   ]
  },
  "Trả theo chuyến cùng lương — EPL không lập chứng từ cho khoản này; kế toán lập phiếu chi khi trả.": {
@@ -4829,7 +4940,7 @@
    "DIEM_SAI"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1609"
+   "backend/app/routes/phieu.py:1620"
   ]
  },
  "Tuyến phải có tên.": {
@@ -4839,7 +4950,7 @@
    "THIEU_TEN"
   ],
   "o": [
-   "backend/app/routes/tuyen.py:245"
+   "backend/app/routes/tuyen.py:277"
   ]
  },
  "Tuyến phải có ít nhất điểm đi và điểm đến.": {
@@ -4849,7 +4960,7 @@
    "THIEU_DIEM"
   ],
   "o": [
-   "backend/app/routes/tuyen.py:205"
+   "backend/app/routes/tuyen.py:237"
   ]
  },
  "Tuần phải ghi dạng YYYY-MM-DD.": {
@@ -5185,7 +5296,7 @@
   ],
   "o": [
    "backend/app/routes/hop_dong.py:254",
-   "backend/app/routes/phieu.py:2173"
+   "backend/app/routes/phieu.py:2184"
   ]
  },
  "Tệp rỗng.": {
@@ -5218,7 +5329,7 @@
   ],
   "o": [
    "backend/app/routes/hop_dong.py:229",
-   "backend/app/routes/phieu.py:2145"
+   "backend/app/routes/phieu.py:2156"
   ]
  },
  "Tối đa {1} ảnh mỗi lần.": {
@@ -5239,7 +5350,7 @@
    "THIEU_DIEM"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1613"
+   "backend/app/routes/phieu.py:1624"
   ]
  },
  "Tờ tạm ứng không có mã QR — tài xế lĩnh tiền ở quỹ kế toán, đưa số DO cho thủ quỹ.": {
@@ -5536,7 +5647,7 @@
    "KHONG_CO_QUYEN"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2455"
+   "backend/app/routes/phieu.py:2466"
   ]
  },
  "Vai {1} không được làm việc này.": {
@@ -5579,6 +5690,16 @@
    "backend/app/services/bao_mat.py:92"
   ]
  },
+ "Vĩ độ": {
+  "en": "Latitude",
+  "lo": "ລາຕິຈູດ",
+  "ma": [
+   "*chen"
+  ],
+  "o": [
+   "backend/app/routes/tram_thu_phi.py:49"
+  ]
+ },
  "Xe chưa về (trạng thái {1}) thì chưa khoá phiếu.": {
   "en": "The truck is not back yet (status {1}), so the slip cannot be locked.",
   "lo": "ລົດຍັງບໍ່ກັບ (ສະຖານະ {1}) ຈຶ່ງຍັງລັອກໃບບໍ່ໄດ້.",
@@ -5586,7 +5707,7 @@
    "XE_CHUA_VE"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2025"
+   "backend/app/routes/phieu.py:2036"
   ]
  },
  "Xe chưa xuất phát — chưa ghi giao hàng hoàn tất được.": {
@@ -5616,7 +5737,7 @@
    "CUNG_XE"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1709"
+   "backend/app/routes/phieu.py:1720"
   ]
  },
  "Xe phải có số hiệu (ເບີລົດ).": {
@@ -5646,7 +5767,7 @@
    "XE_NGUNG"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1711"
+   "backend/app/routes/phieu.py:1722"
   ]
  },
  "Xe đã tới nơi rồi, không đổi xe nữa.": {
@@ -5656,7 +5777,7 @@
    "PHIEU_DA_TOI"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1704"
+   "backend/app/routes/phieu.py:1715"
   ]
  },
  "Xe đã về tới bãi — hàng đã vào kho theo cân tại mỏ {1} t.": {
@@ -5736,7 +5857,7 @@
    "*chen"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2080"
+   "backend/app/routes/phieu.py:2091"
   ]
  },
  "chưa báo xe tới được": {
@@ -5746,7 +5867,7 @@
    "*cum"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1843"
+   "backend/app/routes/phieu.py:1854"
   ]
  },
  "chưa xuất phát": {
@@ -5756,7 +5877,7 @@
    "*cum"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1836"
+   "backend/app/routes/phieu.py:1847"
   ]
  },
  "chốt tất toán (việc của KT Chi phí VC)": {
@@ -5776,7 +5897,7 @@
    "*chen"
   ],
   "o": [
-   "backend/app/routes/phieu.py:904"
+   "backend/app/routes/phieu.py:906"
   ]
  },
  "company phải là EPL hoặc joint.": {
@@ -5786,7 +5907,7 @@
    "LOAI_SAI"
   ],
   "o": [
-   "backend/app/routes/phieu.py:873"
+   "backend/app/routes/phieu.py:875"
   ]
  },
  "cập nhật tất toán": {
@@ -5978,8 +6099,8 @@
    "LOAI_SAI"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1619",
-   "backend/app/routes/phieu.py:2287"
+   "backend/app/routes/phieu.py:1630",
+   "backend/app/routes/phieu.py:2298"
   ]
  },
  "khách": {
@@ -5989,7 +6110,7 @@
    "*chen"
   ],
   "o": [
-   "backend/app/routes/phieu.py:904"
+   "backend/app/routes/phieu.py:906"
   ]
  },
  "không rõ": {
@@ -6009,7 +6130,7 @@
    "LOAI_SAI"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1602"
+   "backend/app/routes/phieu.py:1613"
   ]
  },
  "kinh độ": {
@@ -6019,7 +6140,7 @@
    "*chen"
   ],
   "o": [
-   "backend/app/routes/tuyen.py:215"
+   "backend/app/routes/tuyen.py:247"
   ]
  },
  "km chiều về": {
@@ -6029,7 +6150,7 @@
    "*chen"
   ],
   "o": [
-   "backend/app/routes/tuyen.py:37"
+   "backend/app/routes/tuyen.py:38"
   ]
  },
  "km điểm {1}": {
@@ -6039,7 +6160,7 @@
    "*chen"
   ],
   "o": [
-   "backend/app/routes/tuyen.py:212"
+   "backend/app/routes/tuyen.py:244"
   ]
  },
  "lập đề nghị trả nhà cung cấp (việc của KT Chi phí VC)": {
@@ -6119,7 +6240,7 @@
    "*chen"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2593"
+   "backend/app/routes/phieu.py:2604"
   ]
  },
  "role phải là main (lái chính) hoặc co (phụ xe).": {
@@ -6179,7 +6300,7 @@
    "*chen"
   ],
   "o": [
-   "backend/app/routes/tuyen.py:141"
+   "backend/app/routes/tuyen.py:142"
   ]
  },
  "số tiền": {
@@ -6209,7 +6330,7 @@
    "*chen"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2080"
+   "backend/app/routes/phieu.py:2091"
   ]
  },
  "trang_thai phải là cho, da_duyet hoặc tu_choi.": {
@@ -6229,7 +6350,7 @@
    "*chen"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1074"
+   "backend/app/routes/phieu.py:1080"
   ]
  },
  "tài xế": {
@@ -6269,7 +6390,7 @@
    "*chen"
   ],
   "o": [
-   "backend/app/routes/tuyen.py:215"
+   "backend/app/routes/tuyen.py:247"
   ]
  },
  "vận chuyển với khách": {
@@ -6299,7 +6420,7 @@
    "*chen"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1717"
+   "backend/app/routes/phieu.py:1728"
   ]
  },
  "xe nhà": {
@@ -6309,7 +6430,7 @@
    "*chen"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1717"
+   "backend/app/routes/phieu.py:1728"
   ]
  },
  "xem công nợ nhà cung cấp": {
@@ -6339,7 +6460,7 @@
    "*chen"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1074"
+   "backend/app/routes/phieu.py:1080"
   ]
  },
  "{1} = {2} nằm ngoài khoảng bên kế toán nhận (0 … 9.999.999.999.999).": {
@@ -6410,7 +6531,7 @@
    "NOI_DO_LA_KHO"
   ],
   "o": [
-   "backend/app/routes/phieu.py:2421"
+   "backend/app/routes/phieu.py:2432"
   ]
  },
  "{1} phải có tên.": {
@@ -6449,12 +6570,23 @@
   "en": "{1} must be a number.",
   "lo": "{1} ຕ້ອງເປັນຕົວເລກ.",
   "ma": [
-   "SO_SAI"
+   "SO_SAI",
+   "TOA_DO_SAI"
   ],
   "o": [
    "backend/app/routes/kho.py:46",
-   "backend/app/services/ban_giao_dau.py:172",
-   "backend/app/services/ban_giao_dau.py:174"
+   "backend/app/routes/tram_thu_phi.py:31",
+   "backend/app/services/ban_giao_dau.py:172"
+  ]
+ },
+ "{1} phải từ {2} đến {3}.": {
+  "en": "{1} must be between {2} and {3}.",
+  "lo": "{1} ຕ້ອງຢູ່ລະຫວ່າງ {2} ຫາ {3}.",
+  "ma": [
+   "TOA_DO_SAI"
+  ],
+  "o": [
+   "backend/app/routes/tram_thu_phi.py:33"
   ]
  },
  "{1} — bút toán chờ gửi sang kế toán{2}; không lập phiếu chi.": {
@@ -6545,7 +6677,7 @@
   ],
   "o": [
    "backend/app/routes/danh_muc.py:304",
-   "backend/app/routes/phieu.py:148"
+   "backend/app/routes/phieu.py:149"
   ]
  },
  "Ô {1} phải là ngày YYYY-MM-DD.": {
@@ -6566,7 +6698,7 @@
   ],
   "o": [
    "backend/app/routes/chu_xe.py:52",
-   "backend/app/routes/phieu.py:139",
+   "backend/app/routes/phieu.py:140",
    "backend/app/routes/the_cao_toc.py:50"
   ]
  },
@@ -6578,7 +6710,7 @@
   ],
   "o": [
    "backend/app/routes/danh_muc.py:65",
-   "backend/app/routes/tuyen.py:28",
+   "backend/app/routes/tuyen.py:29",
    "backend/app/routes/vi_tri.py:96"
   ]
  },
@@ -6650,7 +6782,7 @@
    "THIEU_TEN"
   ],
   "o": [
-   "backend/app/routes/tuyen.py:211"
+   "backend/app/routes/tuyen.py:243"
   ]
  },
  "Điểm {1}: {2} phải là số.": {
@@ -6660,7 +6792,7 @@
    "TOA_DO_SAI"
   ],
   "o": [
-   "backend/app/routes/tuyen.py:195"
+   "backend/app/routes/tuyen.py:208"
   ]
  },
  "Điểm {1}: {2} phải từ {3} đến {4}.": {
@@ -6670,7 +6802,7 @@
    "TOA_DO_SAI"
   ],
   "o": [
-   "backend/app/routes/tuyen.py:197"
+   "backend/app/routes/tuyen.py:210"
   ]
  },
  "Điểm đổ không xoá được (phiếu, phiếu đề nghị trỏ vào) — sửa và chọn Ngưng dùng.": {
@@ -6721,7 +6853,7 @@
    "KHONG_PHAI_PHIEU_CUA_BAN"
   ],
   "o": [
-   "backend/app/routes/phieu.py:255",
+   "backend/app/routes/phieu.py:256",
    "backend/app/routes/phieu_linh.py:283"
   ]
  },
@@ -6772,7 +6904,7 @@
    "SO_SAI"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1140"
+   "backend/app/routes/phieu.py:1146"
   ]
  },
  "Đơn giá mỗi tấn phải lớn hơn 0.": {
@@ -6803,6 +6935,16 @@
   ],
   "o": [
    "backend/app/services/kho_hang_dia.py:450"
+  ]
+ },
+ "Đường gửi lên quá dài để dò trạm.": {
+  "en": "The path sent is too long to search for toll stations.",
+  "lo": "ເສັ້ນທາງທີ່ສົ່ງມາຍາວເກີນໄປສຳລັບການຊອກດ່ານ.",
+  "ma": [
+   "DUONG_QUA_DAI"
+  ],
+  "o": [
+   "backend/app/routes/tram_thu_phi.py:132"
   ]
  },
  "Đến ngày": {
@@ -6863,7 +7005,7 @@
    "THIEU_XE"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1707"
+   "backend/app/routes/phieu.py:1718"
   ]
  },
  "Đổi xe phải ghi lý do — kế toán kiểm lại mục I sẽ đọc câu này.": {
@@ -6873,7 +7015,7 @@
    "THIEU_LY_DO"
   ],
   "o": [
-   "backend/app/routes/phieu.py:1723"
+   "backend/app/routes/phieu.py:1734"
   ]
  },
  "đơn giá": {
@@ -6883,7 +7025,7 @@
    "*chen"
   ],
   "o": [
-   "backend/app/routes/tuyen.py:160"
+   "backend/app/routes/tuyen.py:161"
   ]
  },
  "đọc danh mục kho": {

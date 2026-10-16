@@ -1,0 +1,3799 @@
+{
+"nguon": "© OpenStreetMap contributors (ODbL) — barrier=toll_booth của Lào và Việt Nam, tải qua Overpass 16/10/2026; điểm cùng trạm (mỗi chiều / mỗi làn) đã gộp",
+"tram": [
+{
+"ref": "node/297971367",
+"name": null,
+"lat": 20.459135,
+"lng": 104.173893,
+"country": "LA"
+},
+{
+"ref": "node/951343463",
+"name": null,
+"lat": 20.321994,
+"lng": 104.017082,
+"country": "LA"
+},
+{
+"ref": "node/8780727512",
+"name": null,
+"lat": 20.21448,
+"lng": 100.461324,
+"country": "LA"
+},
+{
+"ref": "node/2244554908 node/7252197866",
+"name": null,
+"lat": 20.18192,
+"lng": 101.933797,
+"country": "LA"
+},
+{
+"ref": "node/10682500072",
+"name": null,
+"lat": 20.052757,
+"lng": 102.215011,
+"country": "LA"
+},
+{
+"ref": "node/14278920043 node/14278920044",
+"name": null,
+"lat": 19.883511,
+"lng": 102.133244,
+"country": "LA"
+},
+{
+"ref": "node/14114066018 node/14114066019",
+"name": null,
+"lat": 19.875438,
+"lng": 102.137691,
+"country": "LA"
+},
+{
+"ref": "node/2775866837",
+"name": "10USD entry",
+"lat": 19.869046,
+"lng": 102.233217,
+"country": "LA"
+},
+{
+"ref": "node/10685198774",
+"name": null,
+"lat": 19.867718,
+"lng": 102.215923,
+"country": "LA"
+},
+{
+"ref": "node/10679585164",
+"name": null,
+"lat": 19.758866,
+"lng": 101.993089,
+"country": "LA"
+},
+{
+"ref": "node/297947683",
+"name": null,
+"lat": 19.643229,
+"lng": 103.480975,
+"country": "LA"
+},
+{
+"ref": "node/126211142",
+"name": null,
+"lat": 19.494909,
+"lng": 103.115571,
+"country": "LA"
+},
+{
+"ref": "node/14129153155 node/14129153157",
+"name": null,
+"lat": 19.390117,
+"lng": 102.14033,
+"country": "LA"
+},
+{
+"ref": "node/10692810549",
+"name": null,
+"lat": 18.9534,
+"lng": 102.454508,
+"country": "LA"
+},
+{
+"ref": "node/10288757800 node/10288975303",
+"name": null,
+"lat": 18.946278,
+"lng": 102.434628,
+"country": "LA"
+},
+{
+"ref": "node/10692569015",
+"name": "20k Kip",
+"lat": 18.945133,
+"lng": 102.333862,
+"country": "LA"
+},
+{
+"ref": "node/1465807174 node/3283584953",
+"name": null,
+"lat": 18.926334,
+"lng": 102.395749,
+"country": "LA"
+},
+{
+"ref": "node/247177166",
+"name": null,
+"lat": 18.913356,
+"lng": 102.444082,
+"country": "LA"
+},
+{
+"ref": "node/7124994090 node/8696672770",
+"name": null,
+"lat": 18.904802,
+"lng": 102.455912,
+"country": "LA"
+},
+{
+"ref": "node/6597460124",
+"name": null,
+"lat": 18.899014,
+"lng": 102.355293,
+"country": "LA"
+},
+{
+"ref": "node/6638680081",
+"name": null,
+"lat": 18.894134,
+"lng": 102.379256,
+"country": "LA"
+},
+{
+"ref": "node/13509284520 node/13509284521",
+"name": null,
+"lat": 18.776382,
+"lng": 102.409782,
+"country": "LA"
+},
+{
+"ref": "node/10302067540",
+"name": null,
+"lat": 18.721287,
+"lng": 102.132546,
+"country": "LA"
+},
+{
+"ref": "way/1041872474",
+"name": "Toll Barrier",
+"lat": 18.633972,
+"lng": 102.2815,
+"country": "LA"
+},
+{
+"ref": "node/8499146430",
+"name": "M.Hinherb",
+"lat": 18.63248,
+"lng": 102.319471,
+"country": "LA"
+},
+{
+"ref": "node/7124994776 node/7124994796",
+"name": "Phonhong",
+"lat": 18.492072,
+"lng": 102.402097,
+"country": "LA"
+},
+{
+"ref": "node/6228383586",
+"name": null,
+"lat": 18.432254,
+"lng": 102.540605,
+"country": "LA"
+},
+{
+"ref": "node/7124994855 node/7124994856",
+"name": "Phonkham (Ban Saka)",
+"lat": 18.363566,
+"lng": 102.421236,
+"country": "LA"
+},
+{
+"ref": "node/8255238242 node/8255238243",
+"name": "Boua",
+"lat": 18.250847,
+"lng": 102.479789,
+"country": "LA"
+},
+{
+"ref": "node/7124994978 node/7124994979",
+"name": "Nasone",
+"lat": 18.115244,
+"lng": 102.505707,
+"country": "LA"
+},
+{
+"ref": "node/7124995037 node/7124995038",
+"name": "Vientiane Toll Station",
+"lat": 18.050072,
+"lng": 102.525348,
+"country": "LA"
+},
+{
+"ref": "way/1503559761",
+"name": null,
+"lat": 17.958922,
+"lng": 104.754803,
+"country": "LA"
+},
+{
+"ref": "node/937418071 node/5262229020",
+"name": "Bridge toll",
+"lat": 16.599573,
+"lng": 104.753748,
+"country": "LA"
+},
+{
+"ref": "node/3548191746 node/6846743295",
+"name": null,
+"lat": 15.130059,
+"lng": 105.47395,
+"country": "LA"
+},
+{
+"ref": "node/6390115636 node/6644413464",
+"name": null,
+"lat": 15.096692,
+"lng": 105.789462,
+"country": "LA"
+},
+{
+"ref": "node/2808084923",
+"name": null,
+"lat": 15.089976,
+"lng": 105.788934,
+"country": "LA"
+},
+{
+"ref": "way/513098053",
+"name": null,
+"lat": 14.978337,
+"lng": 105.918705,
+"country": "LA"
+},
+{
+"ref": "node/2808129160",
+"name": null,
+"lat": 14.934854,
+"lng": 105.889059,
+"country": "LA"
+},
+{
+"ref": "node/3692921448",
+"name": null,
+"lat": 14.847789,
+"lng": 105.82747,
+"country": "LA"
+},
+{
+"ref": "node/4948010555",
+"name": null,
+"lat": 23.362818,
+"lng": 105.316454,
+"country": "VN"
+},
+{
+"ref": "node/7635206016",
+"name": "10k",
+"lat": 23.226082,
+"lng": 105.202745,
+"country": "VN"
+},
+{
+"ref": "way/1428517233",
+"name": null,
+"lat": 22.851136,
+"lng": 106.727598,
+"country": "VN"
+},
+{
+"ref": "node/12811314246 node/12811314254",
+"name": null,
+"lat": 22.680253,
+"lng": 106.20256,
+"country": "VN"
+},
+{
+"ref": "node/11141021752 node/11183842756",
+"name": null,
+"lat": 22.416791,
+"lng": 103.907196,
+"country": "VN"
+},
+{
+"ref": "node/11619047222 node/11619047225 node/11619047243 node/11619047244 node/12304058928 node/12304058931",
+"name": "Trạm Thu Phí Km237",
+"lat": 22.363828,
+"lng": 104.08221,
+"country": "VN"
+},
+{
+"ref": "node/8634026367",
+"name": null,
+"lat": 22.353404,
+"lng": 105.420058,
+"country": "VN"
+},
+{
+"ref": "node/6554701337 node/6554701338",
+"name": "Trạm Thu phí Xuân Giao (IC17)",
+"lat": 22.343325,
+"lng": 104.106053,
+"country": "VN"
+},
+{
+"ref": "node/13041522247",
+"name": null,
+"lat": 22.330904,
+"lng": 103.834023,
+"country": "VN"
+},
+{
+"ref": "node/991996647 node/11652975737",
+"name": null,
+"lat": 22.330448,
+"lng": 103.830214,
+"country": "VN"
+},
+{
+"ref": "node/12284645468 node/13955471075 node/13955474531",
+"name": "Trạm Thu phí Phố Lu",
+"lat": 22.315908,
+"lng": 104.178992,
+"country": "VN"
+},
+{
+"ref": "node/6554703289 node/6876877576",
+"name": "IC16",
+"lat": 22.152764,
+"lng": 104.343651,
+"country": "VN"
+},
+{
+"ref": "node/6876859119 node/6876859120",
+"name": "IC14",
+"lat": 21.878278,
+"lng": 104.675444,
+"country": "VN"
+},
+{
+"ref": "node/8444445536",
+"name": null,
+"lat": 21.800984,
+"lng": 104.149947,
+"country": "VN"
+},
+{
+"ref": "node/12756458055",
+"name": null,
+"lat": 21.793706,
+"lng": 104.153929,
+"country": "VN"
+},
+{
+"ref": "node/13467712794 node/13467712795",
+"name": "Trạm Thu Phí IC13",
+"lat": 21.699066,
+"lng": 104.841438,
+"country": "VN"
+},
+{
+"ref": "node/6837952271 node/6837952272 way/1482590225",
+"name": "Trạm Thu phí Km45+100",
+"lat": 21.686762,
+"lng": 106.627783,
+"country": "VN"
+},
+{
+"ref": "node/6880975494 node/6880975506 node/6880975513 node/6880975514",
+"name": null,
+"lat": 21.646856,
+"lng": 104.891208,
+"country": "VN"
+},
+{
+"ref": "way/1092096719 node/10001978672 node/10001978675",
+"name": "Trạm thu phí Thái Nguyên - Chợ Mới",
+"lat": 21.6441,
+"lng": 105.786245,
+"country": "VN"
+},
+{
+"ref": "way/1092093882 way/1092093886 node/10001910780 node/10001910785",
+"name": "Trạm thu phí Bờ Đậu",
+"lat": 21.636155,
+"lng": 105.771503,
+"country": "VN"
+},
+{
+"ref": "node/6838027391 node/6838027406 way/1482590226",
+"name": "Trạm Thu phí Quốc lộ 279",
+"lat": 21.620607,
+"lng": 106.558674,
+"country": "VN"
+},
+{
+"ref": "node/6554530141 node/6876788609 way/1326249269",
+"name": "IC11",
+"lat": 21.533138,
+"lng": 104.972538,
+"country": "VN"
+},
+{
+"ref": "node/8069201958 node/8069202011 way/1483440873",
+"name": "Trạm Thu phí Móng Cái",
+"lat": 21.5124,
+"lng": 107.94989,
+"country": "VN"
+},
+{
+"ref": "node/6837952502 node/6837952528 way/1482590228",
+"name": "Trạm Thu phí Hồ Sơn",
+"lat": 21.491024,
+"lng": 106.371481,
+"country": "VN"
+},
+{
+"ref": "node/10997783392 node/11860353642",
+"name": "Trạm Thu Phí Hải Hà",
+"lat": 21.465051,
+"lng": 107.705731,
+"country": "VN"
+},
+{
+"ref": "way/1483440872",
+"name": "Trạm Thu phí Hải Hà",
+"lat": 21.465049,
+"lng": 107.705738,
+"country": "VN"
+},
+{
+"ref": "node/5926090521 node/10206355878",
+"name": "Trạm Thu phí Km 93+160 Bắc Giang - Lạng Sơn",
+"lat": 21.457195,
+"lng": 106.295852,
+"country": "VN"
+},
+{
+"ref": "node/6554485169 node/6554485170",
+"name": null,
+"lat": 21.438807,
+"lng": 105.123394,
+"country": "VN"
+},
+{
+"ref": "node/6877650786 node/6877650787 way/698938660",
+"name": null,
+"lat": 21.423511,
+"lng": 105.230983,
+"country": "VN"
+},
+{
+"ref": "node/10907416202 node/10907416203",
+"name": null,
+"lat": 21.401676,
+"lng": 103.006617,
+"country": "VN"
+},
+{
+"ref": "node/4911856190 node/3992131737",
+"name": "Trạm thu phí Phù Ninh",
+"lat": 21.390516,
+"lng": 105.329995,
+"country": "VN"
+},
+{
+"ref": "node/6837953118 node/6837953137 way/1482590229",
+"name": "Trạm Thu phí Quốc lộ 37",
+"lat": 21.389159,
+"lng": 106.302209,
+"country": "VN"
+},
+{
+"ref": "node/4917239874 node/4965039224 way/1466147043",
+"name": "Trạm thu phí Việt Trì",
+"lat": 21.365357,
+"lng": 105.380252,
+"country": "VN"
+},
+{
+"ref": "node/3008931528 node/3008944938",
+"name": null,
+"lat": 21.357287,
+"lng": 105.606124,
+"country": "VN"
+},
+{
+"ref": "node/6554465772 node/6554465773",
+"name": null,
+"lat": 21.355089,
+"lng": 105.463971,
+"country": "VN"
+},
+{
+"ref": "node/10997726248 node/10997726249",
+"name": "Trạm Thu Phí Đầm Hà",
+"lat": 21.349213,
+"lng": 107.552929,
+"country": "VN"
+},
+{
+"ref": "way/1483440869",
+"name": "Trạm Thu phí Đầm Hà",
+"lat": 21.348686,
+"lng": 107.553137,
+"country": "VN"
+},
+{
+"ref": "node/12767896054 node/13551007098",
+"name": "Trạm Thu phí Nút giao Thị trấn Vôi - Nhánh 3",
+"lat": 21.340088,
+"lng": 106.271892,
+"country": "VN"
+},
+{
+"ref": "node/12767896053 node/13551007072",
+"name": "Trạm Thu phí Nút giao Thị trấn Vôi - Nhánh 2",
+"lat": 21.339397,
+"lng": 106.270337,
+"country": "VN"
+},
+{
+"ref": "node/12767896055 node/13551007070",
+"name": "Trạm Thu phí Nút giao Thị trấn Vôi - Nhánh 1",
+"lat": 21.335922,
+"lng": 106.272165,
+"country": "VN"
+},
+{
+"ref": "node/6837953446 node/6837953448 way/1482591106",
+"name": "Trạm Thu phí Km104",
+"lat": 21.316025,
+"lng": 106.259003,
+"country": "VN"
+},
+{
+"ref": "node/10997726246 node/10997759811",
+"name": "Trạm Thu Phí Tiên Yên",
+"lat": 21.308713,
+"lng": 107.476144,
+"country": "VN"
+},
+{
+"ref": "way/1483440868",
+"name": "Trạm Thu phí Tiên Yên",
+"lat": 21.308705,
+"lng": 107.476145,
+"country": "VN"
+},
+{
+"ref": "node/4910831731 node/4910831754",
+"name": "Trạm Thu Phí Hạc Trì",
+"lat": 21.294612,
+"lng": 105.449301,
+"country": "VN"
+},
+{
+"ref": "way/1182173344",
+"name": "Trạm thu phí Cầu Hạc Trì",
+"lat": 21.294582,
+"lng": 105.449262,
+"country": "VN"
+},
+{
+"ref": "node/6563222996 node/11155182564",
+"name": null,
+"lat": 21.285511,
+"lng": 105.404053,
+"country": "VN"
+},
+{
+"ref": "node/6970456533 node/6970456534 way/773158705",
+"name": "Trạm thu phí Bình Xuyên",
+"lat": 21.279308,
+"lng": 105.669257,
+"country": "VN"
+},
+{
+"ref": "way/1329842882",
+"name": "Trạm thu phí Nội Bài",
+"lat": 21.252734,
+"lng": 105.739601,
+"country": "VN"
+},
+{
+"ref": "node/4917239865 node/6554443561",
+"name": "Trạm Thu phí Km 6 Đường cao tốc Hà Nội - Lào Cai",
+"lat": 21.252685,
+"lng": 105.739595,
+"country": "VN"
+},
+{
+"ref": "way/1038124365",
+"name": "Trạm thu phí Tam Nông",
+"lat": 21.243292,
+"lng": 105.326039,
+"country": "VN"
+},
+{
+"ref": "node/9561565207 node/9561565208",
+"name": "Trạm Thu Phí Tam Nông",
+"lat": 21.243281,
+"lng": 105.326034,
+"country": "VN"
+},
+{
+"ref": "node/5018391215",
+"name": null,
+"lat": 21.238287,
+"lng": 105.681078,
+"country": "VN"
+},
+{
+"ref": "node/6539200010 node/14236731850 node/14236731851 way/528035498",
+"name": null,
+"lat": 21.217979,
+"lng": 105.786839,
+"country": "VN"
+},
+{
+"ref": "node/9034549651 node/9034549652 node/9034549653 node/12463230437 node/12463230438 node/12463230439 node/12463230440",
+"name": null,
+"lat": 21.215755,
+"lng": 105.79095,
+"country": "VN"
+},
+{
+"ref": "node/10690742378",
+"name": null,
+"lat": 21.21489,
+"lng": 105.794284,
+"country": "VN"
+},
+{
+"ref": "node/963363717 node/963363783 node/9244734581 node/10091658977 node/12741173740 node/12741173742 way/1102812573",
+"name": null,
+"lat": 21.21469,
+"lng": 105.798357,
+"country": "VN"
+},
+{
+"ref": "node/14070358203 node/10091658975 node/10091658976",
+"name": "Trạm phát vé lối vào ga nội địa sân bay Nội Bài",
+"lat": 21.213517,
+"lng": 105.802639,
+"country": "VN"
+},
+{
+"ref": "node/439439986 node/12369764927",
+"name": "Trạm Thu Phí Bắc Thăng Long - Nội Bài",
+"lat": 21.20336,
+"lng": 105.779859,
+"country": "VN"
+},
+{
+"ref": "way/1008863696",
+"name": "Trạm thu phí Bắc Thăng Long - Nội Bài",
+"lat": 21.20336,
+"lng": 105.779865,
+"country": "VN"
+},
+{
+"ref": "node/8340945249",
+"name": "Bến phà Thọ An",
+"lat": 21.159543,
+"lng": 105.647173,
+"country": "VN"
+},
+{
+"ref": "node/10845323674",
+"name": null,
+"lat": 21.145252,
+"lng": 105.645574,
+"country": "VN"
+},
+{
+"ref": "node/13602049336 node/13602049337 node/13602049338 node/13602049339 node/13602049340 node/13602049341 way/1483324509",
+"name": "Trạm Thu Phí Phả Lại",
+"lat": 21.116587,
+"lng": 106.27657,
+"country": "VN"
+},
+{
+"ref": "node/7192541661 node/7192541662",
+"name": null,
+"lat": 21.114782,
+"lng": 107.421065,
+"country": "VN"
+},
+{
+"ref": "node/6221325013 node/6221325028",
+"name": "Trạm Thu Phí Cẩm Y",
+"lat": 21.097356,
+"lng": 107.353474,
+"country": "VN"
+},
+{
+"ref": "way/1483425801",
+"name": "Trạm Thu phí Quốc lộ 18",
+"lat": 21.09733,
+"lng": 107.353509,
+"country": "VN"
+},
+{
+"ref": "way/1095628565",
+"name": "Trạm thu phí Hà Nội - Bắc Giang",
+"lat": 21.090346,
+"lng": 105.960453,
+"country": "VN"
+},
+{
+"ref": "node/8201927996 node/12269366786 node/12307394543 way/1351743508",
+"name": "Trạm Thu phí Hà Nội - Bắc Giang",
+"lat": 21.090272,
+"lng": 105.960123,
+"country": "VN"
+},
+{
+"ref": "node/5610214589 node/5610215373",
+"name": "Trạm Thu Phí Đoàn Kết",
+"lat": 21.082407,
+"lng": 107.392837,
+"country": "VN"
+},
+{
+"ref": "way/1316305913",
+"name": "Trạm Thu phí Đoàn Kết",
+"lat": 21.082407,
+"lng": 107.392833,
+"country": "VN"
+},
+{
+"ref": "way/1098279993",
+"name": "Trạm thu phí Quốc lộ 38",
+"lat": 21.080098,
+"lng": 106.092164,
+"country": "VN"
+},
+{
+"ref": "node/6862997895 node/6862997896 node/12288441185 node/12288441186 node/12309550425 node/12309550435",
+"name": "Trạm Thu Phí Bắc Ninh Hải Dương",
+"lat": 21.080089,
+"lng": 106.092166,
+"country": "VN"
+},
+{
+"ref": "node/6427220541 node/6427220542",
+"name": "Trạm Thu Phí Đồng Lá",
+"lat": 21.048547,
+"lng": 107.164808,
+"country": "VN"
+},
+{
+"ref": "way/1483425798",
+"name": "Trạm Thu phí Đồng Lá",
+"lat": 21.048514,
+"lng": 107.1648,
+"country": "VN"
+},
+{
+"ref": "node/13239252573 node/13239252587",
+"name": null,
+"lat": 21.013855,
+"lng": 105.527894,
+"country": "VN"
+},
+{
+"ref": "way/1371597727",
+"name": "Trạm thu phí Biên Cương",
+"lat": 21.008893,
+"lng": 107.354977,
+"country": "VN"
+},
+{
+"ref": "node/10206270291",
+"name": "Trạm thu phí BOT Biên Cương",
+"lat": 21.008875,
+"lng": 107.355004,
+"country": "VN"
+},
+{
+"ref": "node/12786478146 node/12786478147 node/12786478148 node/12786478149 node/12786478150",
+"name": "Trạm Thu Phí Cẩm Phả",
+"lat": 21.003084,
+"lng": 107.327427,
+"country": "VN"
+},
+{
+"ref": "way/1483324798",
+"name": "Trạm Thu phí Đồng Đăng",
+"lat": 20.992675,
+"lng": 106.987187,
+"country": "VN"
+},
+{
+"ref": "node/8878196305 node/8878196306",
+"name": "Trạm Thu Phí Đồng Đăng",
+"lat": 20.992651,
+"lng": 106.987157,
+"country": "VN"
+},
+{
+"ref": "node/6347268130 node/10206196463 node/12788166736 node/12788166737 node/12788166738 node/12788166739 node/12788166740 node/12788166741 node/12788166742 node/12788166743",
+"name": "Trạm Thu Phí Đại Yên",
+"lat": 20.986349,
+"lng": 106.903252,
+"country": "VN"
+},
+{
+"ref": "way/1381364457",
+"name": "Trạm thu phí Đại Yên",
+"lat": 20.986338,
+"lng": 106.903267,
+"country": "VN"
+},
+{
+"ref": "node/11656195631",
+"name": null,
+"lat": 20.976454,
+"lng": 105.76206,
+"country": "VN"
+},
+{
+"ref": "node/6221327319 node/6221327320",
+"name": "Trạm Thu phí Việt Hưng",
+"lat": 20.974542,
+"lng": 106.966011,
+"country": "VN"
+},
+{
+"ref": "way/1412663973",
+"name": "Trạm Thu Phí Việt Hưng",
+"lat": 20.97453,
+"lng": 106.966007,
+"country": "VN"
+},
+{
+"ref": "node/11656273657",
+"name": null,
+"lat": 20.973322,
+"lng": 105.758044,
+"country": "VN"
+},
+{
+"ref": "way/1105237556 node/10114180887 node/10114180888",
+"name": "Trạm thu phí BOT Đường Hòa Lạc - Hòa Bình",
+"lat": 20.965243,
+"lng": 105.398071,
+"country": "VN"
+},
+{
+"ref": "node/2174037722 node/10206196266",
+"name": "Trạm Thu Phí BOT Quốc Lộ 17B",
+"lat": 20.964813,
+"lng": 106.519152,
+"country": "VN"
+},
+{
+"ref": "node/12777064015",
+"name": null,
+"lat": 20.955615,
+"lng": 107.053347,
+"country": "VN"
+},
+{
+"ref": "node/4780704122",
+"name": "Trạm thu phí",
+"lat": 20.949375,
+"lng": 106.012482,
+"country": "VN"
+},
+{
+"ref": "way/1330415669",
+"name": "Trạm thu phí Quốc lộ 5",
+"lat": 20.949328,
+"lng": 106.012507,
+"country": "VN"
+},
+{
+"ref": "node/481837637 node/12309517555 node/12309517556 node/12309517557 node/12309517558 node/12309517563 node/12309517564",
+"name": "Trạm Thu Phí Quốc Lộ 5 Trạm số 1 Hưng Yên",
+"lat": 20.949326,
+"lng": 106.012515,
+"country": "VN"
+},
+{
+"ref": "node/5677851484 node/5677851485 way/1324667567",
+"name": null,
+"lat": 20.931651,
+"lng": 105.971474,
+"country": "VN"
+},
+{
+"ref": "node/13505908932 node/13505908933",
+"name": null,
+"lat": 20.923788,
+"lng": 106.990603,
+"country": "VN"
+},
+{
+"ref": "node/5860950311",
+"name": null,
+"lat": 20.916897,
+"lng": 106.989404,
+"country": "VN"
+},
+{
+"ref": "node/2488973632 node/10185562123",
+"name": "Trạm Thu Phí Quốc Lộ 5 Trạm số 2 Hải Phòng",
+"lat": 20.908504,
+"lng": 106.572726,
+"country": "VN"
+},
+{
+"ref": "node/6425378444 node/12307429052 way/1330194837",
+"name": "Trạm Thu Phí Pháp Vân",
+"lat": 20.907455,
+"lng": 105.861364,
+"country": "VN"
+},
+{
+"ref": "way/1484967644 way/1484967645",
+"name": "Trạm Thu phí Thường Tín",
+"lat": 20.870375,
+"lng": 105.879631,
+"country": "VN"
+},
+{
+"ref": "node/6880381075 node/6880381082 node/6880410841 node/6880410845",
+"name": "Trạm Thu Phí Thường Tín",
+"lat": 20.870355,
+"lng": 105.87962,
+"country": "VN"
+},
+{
+"ref": "node/13892995819",
+"name": "Trạm Thu Phí Xuân Mai Hòa Bình",
+"lat": 20.870354,
+"lng": 105.513802,
+"country": "VN"
+},
+{
+"ref": "way/1091279924",
+"name": "Trạm Thu phí Cầu Bạch Đằng",
+"lat": 20.862845,
+"lng": 106.7848,
+"country": "VN"
+},
+{
+"ref": "node/9524153629 node/9524153630 node/12323861335 node/12323861336 node/12323861337 node/12323861345 node/12323861346 node/12323861347",
+"name": "Trạm Thu Phí Cầu Bạch Đằng",
+"lat": 20.862837,
+"lng": 106.78481,
+"country": "VN"
+},
+{
+"ref": "way/1033801699",
+"name": "Trạm thu phí cầu Bạch Đằng",
+"lat": 20.862808,
+"lng": 106.784809,
+"country": "VN"
+},
+{
+"ref": "node/11276617927",
+"name": null,
+"lat": 20.858424,
+"lng": 106.98258,
+"country": "VN"
+},
+{
+"ref": "node/5930290765 node/5930291357",
+"name": "Trạm Thu Phí QL 38B",
+"lat": 20.856781,
+"lng": 106.294371,
+"country": "VN"
+},
+{
+"ref": "node/12600009197 node/12600009198",
+"name": "Trạm Thu phí Tân Phúc - Bãi Sậy",
+"lat": 20.855766,
+"lng": 106.120428,
+"country": "VN"
+},
+{
+"ref": "node/11946078822 node/11946078823",
+"name": "Trạm thu phí Bình Giang",
+"lat": 20.851017,
+"lng": 106.202562,
+"country": "VN"
+},
+{
+"ref": "node/4686546644 node/9934993387",
+"name": "Trạm thu phí Yên Mỹ",
+"lat": 20.849899,
+"lng": 106.027966,
+"country": "VN"
+},
+{
+"ref": "node/13956682360 node/14213888302",
+"name": "Trạm Cao Tốc Hà Nội Hải Phòng (Đình Vũ)",
+"lat": 20.839997,
+"lng": 106.751347,
+"country": "VN"
+},
+{
+"ref": "node/4911100479 node/10699151342",
+"name": null,
+"lat": 20.824386,
+"lng": 106.723988,
+"country": "VN"
+},
+{
+"ref": "node/267557983",
+"name": null,
+"lat": 20.817488,
+"lng": 106.914841,
+"country": "VN"
+},
+{
+"ref": "node/8630371595",
+"name": null,
+"lat": 20.804335,
+"lng": 106.903191,
+"country": "VN"
+},
+{
+"ref": "node/3878471036 node/3878471037 way/1483838042",
+"name": "Trạm Thu phí Quốc lộ 10",
+"lat": 20.799383,
+"lng": 106.523138,
+"country": "VN"
+},
+{
+"ref": "node/642099797 node/6864061670",
+"name": "Trạm thu phí Tiên Cựu",
+"lat": 20.776574,
+"lng": 106.508241,
+"country": "VN"
+},
+{
+"ref": "node/10156874568 node/10739323562 node/14191028358 way/1329847084",
+"name": "Trạm Thu Phí TL 353",
+"lat": 20.776138,
+"lng": 106.723968,
+"country": "VN"
+},
+{
+"ref": "node/6425386072 node/6425386073 node/6425386074 node/6425386075",
+"name": "Trạm Thu Phí Vạn Điểm",
+"lat": 20.772823,
+"lng": 105.908241,
+"country": "VN"
+},
+{
+"ref": "way/1484967646 way/1484967647 way/1484967648 way/1484967649",
+"name": "Trạm Thu phí Vạn Điểm",
+"lat": 20.772815,
+"lng": 105.908235,
+"country": "VN"
+},
+{
+"ref": "node/6385048398 node/6385048421 node/6971943639 node/8544582973",
+"name": "Trạm thu phí cao tốc Hà Nội - Hải Phòng - Dương Kính",
+"lat": 20.770597,
+"lng": 106.712758,
+"country": "VN"
+},
+{
+"ref": "way/1329847081",
+"name": "Trạm thu phí cao tốc Hà Nội - Hải Phòng",
+"lat": 20.770577,
+"lng": 106.712801,
+"country": "VN"
+},
+{
+"ref": "way/1036520346",
+"name": "Trạm thu phí Đại Xuyên 2",
+"lat": 20.701962,
+"lng": 105.912573,
+"country": "VN"
+},
+{
+"ref": "node/8344470069 node/8344470071",
+"name": "Trạm Thu Phí Đại Xuyên",
+"lat": 20.701915,
+"lng": 105.91261,
+"country": "VN"
+},
+{
+"ref": "node/1274537951 node/1785097877",
+"name": "Trạm Thu Phí Nam Cầu Giẽ",
+"lat": 20.66521,
+"lng": 105.916538,
+"country": "VN"
+},
+{
+"ref": "way/1182205263",
+"name": "Trạm thu phí Nam Cầu Giẽ",
+"lat": 20.665205,
+"lng": 105.916571,
+"country": "VN"
+},
+{
+"ref": "node/6611106749 node/10198957829",
+"name": null,
+"lat": 20.658898,
+"lng": 106.049033,
+"country": "VN"
+},
+{
+"ref": "node/2326748213 node/2326748231",
+"name": "Trạm Thu phí Vực Vòng",
+"lat": 20.647748,
+"lng": 105.93828,
+"country": "VN"
+},
+{
+"ref": "way/1099667677 way/1099667678 way/1099667679 way/1099667680",
+"name": "Trạm thu phí Vực Vòng",
+"lat": 20.646648,
+"lng": 105.938561,
+"country": "VN"
+},
+{
+"ref": "node/2326748263 node/4999564889",
+"name": "Trạm Thu Phí Vực Vòng",
+"lat": 20.645543,
+"lng": 105.938836,
+"country": "VN"
+},
+{
+"ref": "node/13338380132 node/13338380133",
+"name": "Trạm thu phí Cầu Thái Hà",
+"lat": 20.591023,
+"lng": 106.140417,
+"country": "VN"
+},
+{
+"ref": "way/1484976019 way/1484976020 way/1484976021 way/1484976022",
+"name": "Trạm Thu phí Phú Thứ",
+"lat": 20.576921,
+"lng": 105.950954,
+"country": "VN"
+},
+{
+"ref": "node/11941138570 node/11941138571 node/12095293543 node/12095293551",
+"name": "Trạm Thu Phí Phú Thứ",
+"lat": 20.576919,
+"lng": 105.950964,
+"country": "VN"
+},
+{
+"ref": "node/10198933877 node/10198933880",
+"name": "Trạm Thu Phí Đông Hưng",
+"lat": 20.558481,
+"lng": 106.367781,
+"country": "VN"
+},
+{
+"ref": "node/12725711251 node/12725730687 node/12725730708 node/12725730710 way/1374421266 way/1374421271 way/1374421272 way/1374421273",
+"name": "Trạm Thu Phí Liêm Tuyền",
+"lat": 20.53902,
+"lng": 105.947956,
+"country": "VN"
+},
+{
+"ref": "node/2581153384 node/2581153386",
+"name": "Trạm Thu Phí Mỹ Lộc",
+"lat": 20.447393,
+"lng": 106.11978,
+"country": "VN"
+},
+{
+"ref": "node/11951234946 node/11951234947 node/11951234948 node/11951234949",
+"name": "Trạm Thu Phí Liêm Sơn",
+"lat": 20.445718,
+"lng": 105.967465,
+"country": "VN"
+},
+{
+"ref": "node/13278939002 node/13954057025",
+"name": "Trạm thu phí BOT Thanh Nê",
+"lat": 20.391515,
+"lng": 106.430175,
+"country": "VN"
+},
+{
+"ref": "node/13954034387",
+"name": "Trạm thu phí BOT Thanh Nê số 1",
+"lat": 20.390894,
+"lng": 106.429316,
+"country": "VN"
+},
+{
+"ref": "node/13958095185",
+"name": "Trạm Thu Phí BOT Đường ven biển Thái Bình",
+"lat": 20.301361,
+"lng": 106.562298,
+"country": "VN"
+},
+{
+"ref": "node/12725730619 node/12725730624 way/1374419151",
+"name": "Trạm thu phí Cao Bồ",
+"lat": 20.291796,
+"lng": 106.011829,
+"country": "VN"
+},
+{
+"ref": "node/12725730575 node/12725730599 node/12725730671 node/12725730679 way/1374419141 way/1374419154",
+"name": "Trạm Thu Phí Cao Bồ",
+"lat": 20.288361,
+"lng": 106.013527,
+"country": "VN"
+},
+{
+"ref": "node/13603297964 node/13603297965",
+"name": "Trạm Thu Phí Nút Giao Khánh Hòa",
+"lat": 20.22372,
+"lng": 105.998806,
+"country": "VN"
+},
+{
+"ref": "node/12307791424 node/13603297966 node/13603297967 node/13603297968",
+"name": "Trạm thu phí Nút giao Mai Sơn",
+"lat": 20.187408,
+"lng": 105.954294,
+"country": "VN"
+},
+{
+"ref": "node/13664135930 node/13664135931",
+"name": "Trạm thu phí Nút giao Mai Sơn - nh 3",
+"lat": 20.183643,
+"lng": 105.946009,
+"country": "VN"
+},
+{
+"ref": "node/13603297969 node/13603297970 node/13603297971 node/13603297972",
+"name": "Trạm Thu Phí Nút giao Đồng Giao",
+"lat": 20.167132,
+"lng": 105.869558,
+"country": "VN"
+},
+{
+"ref": "node/13603297973 node/13603297974 node/13603297975 node/13603297976",
+"name": "Trạm Thu Phí Hà Trung",
+"lat": 20.082467,
+"lng": 105.81188,
+"country": "VN"
+},
+{
+"ref": "node/13603297981 node/13603297982 node/13603297983 node/13603297984",
+"name": "Trạm thu phí Tống Sơn (Hà Lĩnh cũ)",
+"lat": 19.999577,
+"lng": 105.77205,
+"country": "VN"
+},
+{
+"ref": "node/13603305907 node/13603305908",
+"name": "Trạm Thu Phí Nút giao Thiệu Giang",
+"lat": 19.923151,
+"lng": 105.73759,
+"country": "VN"
+},
+{
+"ref": "node/10907438877 node/10907438878",
+"name": "Trạm Thu phí Sân bay Thọ Xuân",
+"lat": 19.892253,
+"lng": 105.473645,
+"country": "VN"
+},
+{
+"ref": "node/13603305909 node/13603305910",
+"name": "Trạm Thu Phí Nút giao Đồng Xuân",
+"lat": 19.827927,
+"lng": 105.691738,
+"country": "VN"
+},
+{
+"ref": "node/13603305911 node/13603305912",
+"name": "Trạm Thu Phí Nút giao Đồng Thắng",
+"lat": 19.758519,
+"lng": 105.669281,
+"country": "VN"
+},
+{
+"ref": "node/12579076271 node/12579076280 node/13603305913 node/13603305914",
+"name": "Trạm Thu Phí Nút giao Vạn Thiện",
+"lat": 19.611225,
+"lng": 105.67384,
+"country": "VN"
+},
+{
+"ref": "node/4713812586 node/13603305915 node/13603305916 node/13603305917",
+"name": "Trạm Thu Phí Nút giao Nghi Sơn",
+"lat": 19.367585,
+"lng": 105.695202,
+"country": "VN"
+},
+{
+"ref": "node/9177681180 node/9177681181 way/1183845008",
+"name": "Trạm thu phí Hoàng Mai",
+"lat": 19.30188,
+"lng": 105.724194,
+"country": "VN"
+},
+{
+"ref": "node/13603305924 node/13603305925",
+"name": "Trạm Thu Phí Nút giao Quỳnh Vinh",
+"lat": 19.272248,
+"lng": 105.69435,
+"country": "VN"
+},
+{
+"ref": "node/13603305920 node/13603305921 node/13603305922 node/13603305923",
+"name": "Trạm Thu Phí Nút giao Quỳnh Lưu",
+"lat": 19.169499,
+"lng": 105.609072,
+"country": "VN"
+},
+{
+"ref": "node/13603305926 node/13603305927",
+"name": "Trạm Thu Phí Nút giao Diễn Cát",
+"lat": 18.96651,
+"lng": 105.559185,
+"country": "VN"
+},
+{
+"ref": "node/13906136880 node/13906136881",
+"name": "Trạm Thu Phí KM430+500",
+"lat": 18.95783,
+"lng": 105.561699,
+"country": "VN"
+},
+{
+"ref": "node/11938173242 node/11938173243 node/11938173244 node/11938173245",
+"name": "Trạm Thu Phí Nút giao Nghi Phương",
+"lat": 18.822577,
+"lng": 105.584251,
+"country": "VN"
+},
+{
+"ref": "node/10699182593",
+"name": null,
+"lat": 18.727486,
+"lng": 105.668049,
+"country": "VN"
+},
+{
+"ref": "node/8073522078",
+"name": null,
+"lat": 18.724213,
+"lng": 105.669441,
+"country": "VN"
+},
+{
+"ref": "node/12450564745 node/12450595927",
+"name": "Trạm Thu Phí Hưng Tây",
+"lat": 18.707205,
+"lng": 105.61387,
+"country": "VN"
+},
+{
+"ref": "node/13528665998",
+"name": null,
+"lat": 18.687679,
+"lng": 105.665216,
+"country": "VN"
+},
+{
+"ref": "node/10198878791 node/10198878792",
+"name": "Trạm Thu Phí Bến Thủy 1",
+"lat": 18.648637,
+"lng": 105.704603,
+"country": "VN"
+},
+{
+"ref": "node/10198877241 node/10198877242",
+"name": "Trạm Thu Phí Bến Thủy 2",
+"lat": 18.641024,
+"lng": 105.699004,
+"country": "VN"
+},
+{
+"ref": "node/12012508420 node/12012508421",
+"name": "Trạm Thu phí Quốc lộ 8A - nh 2",
+"lat": 18.536443,
+"lng": 105.654217,
+"country": "VN"
+},
+{
+"ref": "node/12600009195 node/12600009196",
+"name": "Trạm Thu Phí Nút giao QL8A",
+"lat": 18.534269,
+"lng": 105.658013,
+"country": "VN"
+},
+{
+"ref": "node/13603311068 node/13603311069",
+"name": "Trạm thu phí Nút giao Đường tỉnh 548 (Km494+548)",
+"lat": 18.423922,
+"lng": 105.731365,
+"country": "VN"
+},
+{
+"ref": "node/13603311070 node/13603311071",
+"name": "Trạm thu phí Nút giao ĐT.548 (Km494+548)",
+"lat": 18.423169,
+"lng": 105.727175,
+"country": "VN"
+},
+{
+"ref": "node/13603311072 node/13603311073",
+"name": "Trạm thu phí Nút giao ĐT.550 (Km509+852)",
+"lat": 18.335198,
+"lng": 105.830978,
+"country": "VN"
+},
+{
+"ref": "node/13603311074 node/13603311075",
+"name": "Trạm thu phí Nút giao Cẩm Quan (Km527+580)",
+"lat": 18.239365,
+"lng": 105.967759,
+"country": "VN"
+},
+{
+"ref": "node/8425606875 node/8425606889",
+"name": null,
+"lat": 18.211829,
+"lng": 106.109144,
+"country": "VN"
+},
+{
+"ref": "node/14205788273 node/14205788274",
+"name": "Trạm thu phí Nút giao Kỳ Trung (Km555+509)",
+"lat": 18.130788,
+"lng": 106.195681,
+"country": "VN"
+},
+{
+"ref": "node/14205783774 node/14205783775",
+"name": "Trạm thu phí Nút giao Quốc lộ 12C (Km568+126)",
+"lat": 18.046409,
+"lng": 106.260803,
+"country": "VN"
+},
+{
+"ref": "node/668714123 node/6761364760",
+"name": "Trạm Thu Phí Tasco Quảng Bình",
+"lat": 17.890196,
+"lng": 106.450976,
+"country": "VN"
+},
+{
+"ref": "node/14205856855 node/14205856856",
+"name": "Trạm thu phí Nút giao Tiến Châu Văn Hóa (Km597+900)",
+"lat": 17.828696,
+"lng": 106.359873,
+"country": "VN"
+},
+{
+"ref": "node/14205862498 node/14205862499",
+"name": "Trạm thu phí Nút giao Quốc lộ 12A (Km605+780)",
+"lat": 17.767246,
+"lng": 106.372483,
+"country": "VN"
+},
+{
+"ref": "node/7849693336",
+"name": "Phong Nha and Tien Son caves boat cruise",
+"lat": 17.612527,
+"lng": 106.305996,
+"country": "VN"
+},
+{
+"ref": "node/14205854114 node/14205854115",
+"name": "Trạm thu phí Nút giao Cự Nẫm (Km626+690)",
+"lat": 17.600549,
+"lng": 106.412469,
+"country": "VN"
+},
+{
+"ref": "node/13013629119",
+"name": null,
+"lat": 17.581243,
+"lng": 106.28246,
+"country": "VN"
+},
+{
+"ref": "node/13430532940",
+"name": null,
+"lat": 17.551383,
+"lng": 106.581544,
+"country": "VN"
+},
+{
+"ref": "node/3499283800",
+"name": null,
+"lat": 17.529707,
+"lng": 106.227164,
+"country": "VN"
+},
+{
+"ref": "node/10907454223 node/10907454224",
+"name": null,
+"lat": 17.511181,
+"lng": 106.589471,
+"country": "VN"
+},
+{
+"ref": "node/14205865580 node/14205865581",
+"name": "Trạm thu phí Nút giao Việt Trung (Km643+615)",
+"lat": 17.488456,
+"lng": 106.517873,
+"country": "VN"
+},
+{
+"ref": "node/14205947976 node/14205947977",
+"name": "Trạm thu phí Nút giao Nhật Lệ 2 (Km653+725)",
+"lat": 17.421977,
+"lng": 106.578015,
+"country": "VN"
+},
+{
+"ref": "way/1175282468",
+"name": "Trạm thu phí Quán Hàu",
+"lat": 17.391886,
+"lng": 106.646945,
+"country": "VN"
+},
+{
+"ref": "node/12508683078 node/12508683081",
+"name": "Trạm Thu Phí Quán Hàu",
+"lat": 17.391882,
+"lng": 106.646942,
+"country": "VN"
+},
+{
+"ref": "node/14162105475 node/14162105476",
+"name": "Trạm thu phí Nút giao Quốc lộ 9B (Km673+830)",
+"lat": 17.265727,
+"lng": 106.657351,
+"country": "VN"
+},
+{
+"ref": "node/14137791256 node/14137791257 node/14137791258 node/14137791259",
+"name": "Trạm thu phí Nút giao Quốc lộ 9C Km690+180",
+"lat": 17.161289,
+"lng": 106.750269,
+"country": "VN"
+},
+{
+"ref": "node/14003758427 node/14003758428 node/14003758429 node/14003758430",
+"name": "Nút giao Quốc lộ 9D (Km712+900)",
+"lat": 17.025875,
+"lng": 106.90706,
+"country": "VN"
+},
+{
+"ref": "node/14206036598 node/14206036599 node/14278678607 node/14278678608",
+"name": "Nút giao ĐT.75 (Km727+300)",
+"lat": 16.915739,
+"lng": 106.962999,
+"country": "VN"
+},
+{
+"ref": "node/14205978891 node/14205978892",
+"name": "Nút giao Quốc lộ 9A (Km740+380)",
+"lat": 16.805554,
+"lng": 107.017191,
+"country": "VN"
+},
+{
+"ref": "node/3516472469 node/3516472470",
+"name": "Trạm Thu Phí Đông Hà",
+"lat": 16.785241,
+"lng": 107.150053,
+"country": "VN"
+},
+{
+"ref": "node/10991814042 node/10991814043 node/6877158308 node/6877158309",
+"name": "Trạm Thu phí Sân bay Phú Bài",
+"lat": 16.394965,
+"lng": 107.698073,
+"country": "VN"
+},
+{
+"ref": "node/1025708650 node/6860166455",
+"name": "Trạm Thu Phí Phú Bài",
+"lat": 16.370459,
+"lng": 107.724874,
+"country": "VN"
+},
+{
+"ref": "node/668605383 node/6860231502",
+"name": "Trạm thu phí Bắc Hầm Hải Vân",
+"lat": 16.22855,
+"lng": 108.084674,
+"country": "VN"
+},
+{
+"ref": "node/12086678378 node/12086678379",
+"name": null,
+"lat": 16.057016,
+"lng": 108.20307,
+"country": "VN"
+},
+{
+"ref": "node/6524566171 node/6856306592 node/6856306593 node/6856313488",
+"name": "Trạm Thu phí Sân bay Đà Nẵng",
+"lat": 16.054383,
+"lng": 108.204568,
+"country": "VN"
+},
+{
+"ref": "node/6888345522 node/6888345523",
+"name": "Trạm Thu Phí Túy Loan",
+"lat": 15.972782,
+"lng": 108.162744,
+"country": "VN"
+},
+{
+"ref": "way/1321514102",
+"name": "Trạm thu phí Túy Loan",
+"lat": 15.972774,
+"lng": 108.162804,
+"country": "VN"
+},
+{
+"ref": "node/2237820586 node/5589299568",
+"name": "Trạm thu phí Điện Bàn",
+"lat": 15.930545,
+"lng": 108.228684,
+"country": "VN"
+},
+{
+"ref": "node/12725730524",
+"name": "Trạm Thu Phí Phong Thử",
+"lat": 15.890654,
+"lng": 108.173573,
+"country": "VN"
+},
+{
+"ref": "node/12725730529 way/1374419135",
+"name": "Trạm thu phí Phong Thử",
+"lat": 15.890618,
+"lng": 108.173715,
+"country": "VN"
+},
+{
+"ref": "node/12725719691 node/12725719694 way/1374419129",
+"name": "Trạm Thu Phí Hà Lam",
+"lat": 15.710295,
+"lng": 108.335365,
+"country": "VN"
+},
+{
+"ref": "node/6860284191 node/6860284192",
+"name": "Trạm Thu Phí Tam Kỳ",
+"lat": 15.548593,
+"lng": 108.518469,
+"country": "VN"
+},
+{
+"ref": "node/12725719664 node/12725719665 way/1374419123",
+"name": "Trạm Thu phí Tam Kỳ - KM64",
+"lat": 15.538272,
+"lng": 108.45376,
+"country": "VN"
+},
+{
+"ref": "node/12725719644 node/12725719649 way/1374419118",
+"name": "Trạm Thu Phí Chu Lai",
+"lat": 15.442212,
+"lng": 108.593143,
+"country": "VN"
+},
+{
+"ref": "node/13955498183",
+"name": "Trạm Thu phí Sân bay Chu Lai",
+"lat": 15.415465,
+"lng": 108.70352,
+"country": "VN"
+},
+{
+"ref": "node/10236670094 node/10236670095",
+"name": "Trạm thu phí Dung Quất",
+"lat": 15.352172,
+"lng": 108.734024,
+"country": "VN"
+},
+{
+"ref": "node/12723387254 node/12723387255 way/1374162310",
+"name": "Trạm Thu Phí Bắc Quảng Ngãi",
+"lat": 15.157866,
+"lng": 108.751661,
+"country": "VN"
+},
+{
+"ref": "node/5952153100 node/12452632185",
+"name": "Trạm Thu Phí Quảng Ngãi",
+"lat": 15.109506,
+"lng": 108.75767,
+"country": "VN"
+},
+{
+"ref": "way/1374419109",
+"name": "Trạm thu phí Quảng Ngãi - Đà Nẵng Km130",
+"lat": 15.109495,
+"lng": 108.757661,
+"country": "VN"
+},
+{
+"ref": "node/6860315447 node/6860315448",
+"name": "Trạm Thu Phí Tư Nghĩa",
+"lat": 15.063495,
+"lng": 108.839588,
+"country": "VN"
+},
+{
+"ref": "node/11395765196 node/11395765199 node/14100643429 node/14100643430",
+"name": "Trạm Thu Phí Nút giao ĐT624B (Km1069+300)",
+"lat": 14.984781,
+"lng": 108.833777,
+"country": "VN"
+},
+{
+"ref": "node/12901931817 node/14100602223",
+"name": "Trạm Thu Phí Nút giao QL24 (Km1084+320)",
+"lat": 14.872061,
+"lng": 108.900441,
+"country": "VN"
+},
+{
+"ref": "node/13201217152 node/13201217156",
+"name": "Trạm Thu Phí Nút giao Đức Phổ (Km1092+640)",
+"lat": 14.812549,
+"lng": 108.937381,
+"country": "VN"
+},
+{
+"ref": "node/14100619056 node/14100619057",
+"name": "Trạm Thu Phí Nút giao Sa Huỳnh (Km1099+820)",
+"lat": 14.760315,
+"lng": 108.977008,
+"country": "VN"
+},
+{
+"ref": "node/1968639795 node/6699888742",
+"name": null,
+"lat": 14.731542,
+"lng": 109.031566,
+"country": "VN"
+},
+{
+"ref": "node/14102359168 node/14102359169",
+"name": "Trạm Thu Phí Nút giao Hoài Nhơn (Km1129+00)",
+"lat": 14.507378,
+"lng": 109.027052,
+"country": "VN"
+},
+{
+"ref": "node/14102382425 node/14102382426 node/14102382427 node/14102382428",
+"name": "Trạm Thu Phí Nút giao ĐT.629 (Km1139+450)",
+"lat": 14.421927,
+"lng": 108.984641,
+"country": "VN"
+},
+{
+"ref": "node/8432045543 node/8432045544",
+"name": "Trạm Thu Phí Bắc Bình Định",
+"lat": 14.397231,
+"lng": 109.017854,
+"country": "VN"
+},
+{
+"ref": "node/12919540951 node/12919540952",
+"name": "Trạm Thu Phí Nút giao Phù Mỹ (Km1163+750)",
+"lat": 14.220006,
+"lng": 109.035752,
+"country": "VN"
+},
+{
+"ref": "node/14102390855 node/14102390856",
+"name": "Trạm Thu Phí Nút giao Phù Mỹ (Km1165+300)",
+"lat": 14.207994,
+"lng": 109.029471,
+"country": "VN"
+},
+{
+"ref": "node/13954067960",
+"name": "Trạm thu phí Km 124+720 Quốc lộ 19",
+"lat": 14.054655,
+"lng": 108.32958,
+"country": "VN"
+},
+{
+"ref": "node/14102458116 node/14102458117 node/14148124158 node/14148124159",
+"name": "Nút giao ĐT.634 (Km1183+000)",
+"lat": 14.04466,
+"lng": 109.025535,
+"country": "VN"
+},
+{
+"ref": "node/10907472853 node/10907472854",
+"name": "Trạm thu phí Sân bay Pleiku",
+"lat": 14.007195,
+"lng": 108.004824,
+"country": "VN"
+},
+{
+"ref": "node/13737496142",
+"name": "Trạm Thu phí Sân bay Phù Cát",
+"lat": 13.953954,
+"lng": 109.050272,
+"country": "VN"
+},
+{
+"ref": "node/14056223801 node/14056223802 node/14056223804 node/14056223805",
+"name": "Trạm Thu Phí Nút giao QL.19B (Km1193+550)",
+"lat": 13.94842,
+"lng": 109.006083,
+"country": "VN"
+},
+{
+"ref": "node/8938682367",
+"name": "Trạm thu phí Tây Sơn",
+"lat": 13.944512,
+"lng": 108.85775,
+"country": "VN"
+},
+{
+"ref": "node/7698662805 node/7698662812",
+"name": "Trạm Thu phí Km 49+550 Quốc lộ 19",
+"lat": 13.944511,
+"lng": 108.857744,
+"country": "VN"
+},
+{
+"ref": "node/10198842783 node/10198842784",
+"name": "Trạm Thu Phí Hàm Rồng",
+"lat": 13.874334,
+"lng": 108.008011,
+"country": "VN"
+},
+{
+"ref": "node/6950227536 node/6950227543",
+"name": "Trạm Thu Phí Nam Bình Định",
+"lat": 13.871409,
+"lng": 109.125413,
+"country": "VN"
+},
+{
+"ref": "node/13965007546 node/13965007547 node/13965007552 node/13965007553",
+"name": "Trạm Thu Phí Nút giao QL.19 (Km1207+900)",
+"lat": 13.855086,
+"lng": 109.07885,
+"country": "VN"
+},
+{
+"ref": "node/14102456260 node/14102456261",
+"name": "Trạm Thu Phí Nút giao QL19C (Km1218+608)",
+"lat": 13.766709,
+"lng": 109.114545,
+"country": "VN"
+},
+{
+"ref": "node/13961728297 node/13961728298",
+"name": "Trạm Thu phí Nút giao QL1 (Km1224+388)",
+"lat": 13.728163,
+"lng": 109.156648,
+"country": "VN"
+},
+{
+"ref": "way/1156958866 way/1156958867",
+"name": "Trạm thu phí Hầm Cù Mông",
+"lat": 13.703655,
+"lng": 109.174479,
+"country": "VN"
+},
+{
+"ref": "node/11266480548 node/11266480549",
+"name": "Hầm Cù Mông",
+"lat": 13.70365,
+"lng": 109.174454,
+"country": "VN"
+},
+{
+"ref": "node/7875122119",
+"name": null,
+"lat": 13.662921,
+"lng": 108.134887,
+"country": "VN"
+},
+{
+"ref": "node/14203329139 node/14203329140",
+"name": "Nam hầm Cù Mông Km1234+900",
+"lat": 13.644005,
+"lng": 109.181655,
+"country": "VN"
+},
+{
+"ref": "node/14203324494 node/14203324495",
+"name": "Nút giao QL.1 (Km1242+533)",
+"lat": 13.594283,
+"lng": 109.193529,
+"country": "VN"
+},
+{
+"ref": "node/14102509047 node/14203335105",
+"name": "Trạm Thu Phí Nút giao ĐT.644 (Km1256+059)",
+"lat": 13.476676,
+"lng": 109.183966,
+"country": "VN"
+},
+{
+"ref": "node/9921799660 node/9921799661",
+"name": "Trạm thu phí Cầu 110 (Chư Pưh)",
+"lat": 13.413596,
+"lng": 108.0929,
+"country": "VN"
+},
+{
+"ref": "node/6047646035",
+"name": null,
+"lat": 13.365169,
+"lng": 109.241565,
+"country": "VN"
+},
+{
+"ref": "node/8436783100 node/8436783101",
+"name": "Trạm Thu Phí An Dân (Thạch Bàn)",
+"lat": 13.349304,
+"lng": 109.208319,
+"country": "VN"
+},
+{
+"ref": "node/11968566110",
+"name": "Trạm Thu Phí Nút giao Chí Thạnh (Km1278+177)",
+"lat": 13.288042,
+"lng": 109.213358,
+"country": "VN"
+},
+{
+"ref": "node/13964986077 node/13964986078",
+"name": "Trạm Thu Phí Nút giao Nguyễn Hữu Thọ (Km1300+840)",
+"lat": 13.099312,
+"lng": 109.263207,
+"country": "VN"
+},
+{
+"ref": "node/10907428164",
+"name": "Trạm Thu phí Sân bay Tuy Hoà",
+"lat": 13.050671,
+"lng": 109.346338,
+"country": "VN"
+},
+{
+"ref": "node/13964986073 node/13964986074 node/13964986075 node/13964986076",
+"name": "Trạm Thu Phí Nút giao QL.29 (Km1312+466)",
+"lat": 12.997278,
+"lng": 109.294599,
+"country": "VN"
+},
+{
+"ref": "node/13961747201 node/13961747202",
+"name": "Trạm Thu phí Hòa Tâm",
+"lat": 12.947963,
+"lng": 109.346179,
+"country": "VN"
+},
+{
+"ref": "node/13961728299 node/13961728300",
+"name": "Trạm Thu Phí Nút giao QL.1 (Km1325+00)",
+"lat": 12.914926,
+"lng": 109.36354,
+"country": "VN"
+},
+{
+"ref": "node/6602333959 node/6860620361 way/1177157173",
+"name": "Trạm thu phí Hầm Đèo Cả",
+"lat": 12.903296,
+"lng": 109.365757,
+"country": "VN"
+},
+{
+"ref": "way/1317831003",
+"name": "Trạm thu phí BOT Quảng Đức",
+"lat": 12.830979,
+"lng": 108.24801,
+"country": "VN"
+},
+{
+"ref": "node/13077408418 node/13077408419",
+"name": "Trạm thu phí BOT Quang Đức QL14",
+"lat": 12.830905,
+"lng": 108.247999,
+"country": "VN"
+},
+{
+"ref": "node/668471135",
+"name": "Trạm Thu Phí Ea Đar Đắk Lắk",
+"lat": 12.812886,
+"lng": 108.511671,
+"country": "VN"
+},
+{
+"ref": "node/14206061811 node/14206061812",
+"name": "Nút giao QL1A Km1339+00",
+"lat": 12.809085,
+"lng": 109.349449,
+"country": "VN"
+},
+{
+"ref": "node/14214583932 node/14214583933",
+"name": "Trạm Thu Phí Nút giao (Km1344+500)",
+"lat": 12.787737,
+"lng": 109.29875,
+"country": "VN"
+},
+{
+"ref": "node/668471219",
+"name": null,
+"lat": 12.739388,
+"lng": 108.750168,
+"country": "VN"
+},
+{
+"ref": "node/14102479045 node/14102479046",
+"name": "Trạm Thu Phí Nút giao Vạn Giã (Km1353+812)",
+"lat": 12.727364,
+"lng": 109.240198,
+"country": "VN"
+},
+{
+"ref": "node/11299582212 node/11299582213",
+"name": null,
+"lat": 12.700689,
+"lng": 108.074782,
+"country": "VN"
+},
+{
+"ref": "node/2501412720 node/2501412741",
+"name": "Trạm Thu phí Sân bay Buôn Ma Thuột",
+"lat": 12.664264,
+"lng": 108.114967,
+"country": "VN"
+},
+{
+"ref": "node/10198600409 node/10198600410",
+"name": null,
+"lat": 12.561102,
+"lng": 107.82237,
+"country": "VN"
+},
+{
+"ref": "node/7311724609 node/10944187635",
+"name": "Trạm Thu Phí Ninh Xuân (Khánh Hòa)",
+"lat": 12.507275,
+"lng": 109.06879,
+"country": "VN"
+},
+{
+"ref": "way/1178115953 way/1178115954",
+"name": "Trạm thu phí Ninh Xuân",
+"lat": 12.507263,
+"lng": 109.068785,
+"country": "VN"
+},
+{
+"ref": "node/13595742128 node/13595742129 node/13595742130 node/13595742131",
+"name": "Trạm Thu Phí Nút giao QL.26 (Km1386+100)",
+"lat": 12.505316,
+"lng": 109.072355,
+"country": "VN"
+},
+{
+"ref": "node/4083168857 node/6860612354",
+"name": "Trạm Thu Phí Ninh An (Ninh Lộc)",
+"lat": 12.444312,
+"lng": 109.120589,
+"country": "VN"
+},
+{
+"ref": "node/11668326605",
+"name": null,
+"lat": 12.391242,
+"lng": 109.139582,
+"country": "VN"
+},
+{
+"ref": "node/12552995619",
+"name": null,
+"lat": 12.293519,
+"lng": 109.214935,
+"country": "VN"
+},
+{
+"ref": "node/12554251809",
+"name": null,
+"lat": 12.270883,
+"lng": 109.169472,
+"country": "VN"
+},
+{
+"ref": "node/3670321715",
+"name": null,
+"lat": 12.268168,
+"lng": 109.169673,
+"country": "VN"
+},
+{
+"ref": "node/12415269913 node/12415269915",
+"name": "Mien Phe",
+"lat": 12.256475,
+"lng": 109.170629,
+"country": "VN"
+},
+{
+"ref": "way/1482572092",
+"name": "Trạm Thu phí Diên Thọ",
+"lat": 12.254705,
+"lng": 109.023695,
+"country": "VN"
+},
+{
+"ref": "node/11910194124 node/11910194125",
+"name": "Trạm Thu Phí Diên Khánh",
+"lat": 12.254625,
+"lng": 109.023568,
+"country": "VN"
+},
+{
+"ref": "way/1482572093",
+"name": "Trạm Thu phí Km5+783",
+"lat": 12.252606,
+"lng": 109.021124,
+"country": "VN"
+},
+{
+"ref": "node/12944179554",
+"name": null,
+"lat": 12.202944,
+"lng": 108.921632,
+"country": "VN"
+},
+{
+"ref": "node/12754152528",
+"name": null,
+"lat": 12.19653,
+"lng": 109.213711,
+"country": "VN"
+},
+{
+"ref": "node/10826144162 node/10826144165",
+"name": "Trạm Thu Phí Đắk Song",
+"lat": 12.188378,
+"lng": 107.63762,
+"country": "VN"
+},
+{
+"ref": "node/12645469227 node/12645469228",
+"name": "Trạm Thu Phí Suối Dầu",
+"lat": 12.178819,
+"lng": 109.058906,
+"country": "VN"
+},
+{
+"ref": "way/1482474234",
+"name": "Trạm Thu phí Cam Lâm",
+"lat": 12.178785,
+"lng": 109.058937,
+"country": "VN"
+},
+{
+"ref": "way/1482474233",
+"name": "Trạm Thu phí Cam Lâm",
+"lat": 12.057254,
+"lng": 109.124685,
+"country": "VN"
+},
+{
+"ref": "node/11829703716",
+"name": "Trạm Thu Phí Cam Lâm",
+"lat": 12.057211,
+"lng": 109.124597,
+"country": "VN"
+},
+{
+"ref": "node/6856394511 node/6856394512 node/12397550006 way/1396496333",
+"name": null,
+"lat": 12.010996,
+"lng": 109.213664,
+"country": "VN"
+},
+{
+"ref": "node/13967446888",
+"name": null,
+"lat": 12.006833,
+"lng": 109.213176,
+"country": "VN"
+},
+{
+"ref": "node/10208878397 node/10208878402",
+"name": "Trạm Thu Phí Cai Chanh",
+"lat": 11.912149,
+"lng": 107.390652,
+"country": "VN"
+},
+{
+"ref": "way/1410065457 way/1410065458",
+"name": "Trạm thu phí BOT Đắk Nông",
+"lat": 11.912133,
+"lng": 107.390633,
+"country": "VN"
+},
+{
+"ref": "node/11829703708 node/11829703709",
+"name": "Trạm Thu Phí Cam Ranh",
+"lat": 11.880775,
+"lng": 109.096567,
+"country": "VN"
+},
+{
+"ref": "way/1482468510",
+"name": "Trạm Thu phí Cam Ranh",
+"lat": 11.880753,
+"lng": 109.096603,
+"country": "VN"
+},
+{
+"ref": "node/677353918 node/4086614472",
+"name": "Trạm Thu Phí Cam Thịnh",
+"lat": 11.872438,
+"lng": 109.108524,
+"country": "VN"
+},
+{
+"ref": "node/1403291172 node/1403291202 node/1403291272 node/1403291300",
+"name": "Trạm Thu Phí Định An",
+"lat": 11.859655,
+"lng": 108.457784,
+"country": "VN"
+},
+{
+"ref": "way/407605676",
+"name": "Trạm thu phí Định An",
+"lat": 11.859651,
+"lng": 108.457782,
+"country": "VN"
+},
+{
+"ref": "node/11829703710 node/11829703711",
+"name": "Trạm Thu Phí Du Long",
+"lat": 11.746823,
+"lng": 109.056622,
+"country": "VN"
+},
+{
+"ref": "way/1482468508",
+"name": "Trạm Thu phí Du Long",
+"lat": 11.746811,
+"lng": 109.056604,
+"country": "VN"
+},
+{
+"ref": "node/10699207070 node/10699207071",
+"name": "Trạm Thu phí Sân bay Liên Khương",
+"lat": 11.746734,
+"lng": 108.370186,
+"country": "VN"
+},
+{
+"ref": "node/10898426413 node/10898426414 way/1172933249",
+"name": "Trạm thu phí Bù Nho",
+"lat": 11.727515,
+"lng": 106.87504,
+"country": "VN"
+},
+{
+"ref": "node/9342995380 node/9342995387",
+"name": "Trạm Thu Phí Thanh Lương",
+"lat": 11.722786,
+"lng": 106.583238,
+"country": "VN"
+},
+{
+"ref": "way/1012698037",
+"name": "Trạm thu phí Thành Lương",
+"lat": 11.722782,
+"lng": 106.583239,
+"country": "VN"
+},
+{
+"ref": "node/11829703712 node/11829703713 node/11829703714 node/11829703715",
+"name": "Trạm Thu Phí Phan Rang",
+"lat": 11.629166,
+"lng": 108.897391,
+"country": "VN"
+},
+{
+"ref": "way/1482468506 way/1482468507",
+"name": "Trạm Thu phí Phan Rang",
+"lat": 11.629146,
+"lng": 108.897408,
+"country": "VN"
+},
+{
+"ref": "node/12757792917 node/12757792918",
+"name": null,
+"lat": 11.587799,
+"lng": 107.854241,
+"country": "VN"
+},
+{
+"ref": "way/1254808120 node/11664673965 node/11664675878",
+"name": "Trạm thu phí Thanh Phú",
+"lat": 11.577374,
+"lng": 106.894404,
+"country": "VN"
+},
+{
+"ref": "way/176792793",
+"name": "Trạm thu phí Tân Khai",
+"lat": 11.569849,
+"lng": 106.617332,
+"country": "VN"
+},
+{
+"ref": "node/9201409503 node/9201409504",
+"name": "Trạm Thu Phí Tân Khai",
+"lat": 11.569822,
+"lng": 106.617363,
+"country": "VN"
+},
+{
+"ref": "node/13955413679",
+"name": "Trạm thu phí Liên Đầm",
+"lat": 11.566448,
+"lng": 107.998814,
+"country": "VN"
+},
+{
+"ref": "node/1508894331 node/12460992510",
+"name": null,
+"lat": 11.564086,
+"lng": 106.95395,
+"country": "VN"
+},
+{
+"ref": "node/11291071236 node/11291071243 node/11291071250 node/11291071259",
+"name": null,
+"lat": 11.467302,
+"lng": 108.821048,
+"country": "VN"
+},
+{
+"ref": "way/1020149679",
+"name": "Trạm thu phí Tân Lập",
+"lat": 11.388156,
+"lng": 106.825618,
+"country": "VN"
+},
+{
+"ref": "node/3290081450 node/3290081451",
+"name": "Trạm Thu Phí Tân Lập",
+"lat": 11.388142,
+"lng": 106.825594,
+"country": "VN"
+},
+{
+"ref": "node/6860674126 node/6860674132",
+"name": "Trạm Thu Phí Cà Ná",
+"lat": 11.373622,
+"lng": 108.881116,
+"country": "VN"
+},
+{
+"ref": "node/9201724260 node/9201724261",
+"name": "Trạm Thu Phí Chơn Thành",
+"lat": 11.363929,
+"lng": 106.627679,
+"country": "VN"
+},
+{
+"ref": "way/993583970",
+"name": "Trạm thu phí Chơn Thành",
+"lat": 11.363902,
+"lng": 106.627669,
+"country": "VN"
+},
+{
+"ref": "node/6859696803 node/6859696804",
+"name": "Trạm thu phí Tân Phú",
+"lat": 11.359616,
+"lng": 107.524754,
+"country": "VN"
+},
+{
+"ref": "node/13594729844 node/13906102268",
+"name": "Trạm Thu Phí Km133+770",
+"lat": 11.313345,
+"lng": 108.724657,
+"country": "VN"
+},
+{
+"ref": "node/11865554272 node/11865554273 way/1482446034",
+"name": "Trạm Thu phí Vĩnh Hảo",
+"lat": 11.304385,
+"lng": 108.725043,
+"country": "VN"
+},
+{
+"ref": "node/10852800021 node/10852800032 node/13594729809 node/13594729820 way/1482446030 way/1482446031 way/1482446032 way/1482446033",
+"name": "Trạm Thu phí Chợ Lầu",
+"lat": 11.263873,
+"lng": 108.490342,
+"country": "VN"
+},
+{
+"ref": "node/10852800099 node/11866479440 node/11866479447 node/13594711891 way/1482446022 way/1482446023 way/1482446024 way/1482446025",
+"name": "Trạm Thu phí Đại Ninh",
+"lat": 11.2509,
+"lng": 108.345884,
+"country": "VN"
+},
+{
+"ref": "way/1096685801",
+"name": "Trạm thu phí Số 1 - ĐT.741",
+"lat": 11.221867,
+"lng": 106.725326,
+"country": "VN"
+},
+{
+"ref": "node/4094748407 node/4094748408",
+"name": "Trạm Thu Phí DT741",
+"lat": 11.22186,
+"lng": 106.725327,
+"country": "VN"
+},
+{
+"ref": "node/10198616915 node/10198616916",
+"name": "Trạm thu phí Sông Lũy",
+"lat": 11.203644,
+"lng": 108.326307,
+"country": "VN"
+},
+{
+"ref": "way/1244251420",
+"name": "Trạm thu phí Sử dụng Đường bộ Km1661+600",
+"lat": 11.203643,
+"lng": 108.326315,
+"country": "VN"
+},
+{
+"ref": "node/13594711865 node/13594711866 node/13594711877 node/13594711878 way/1482446019 way/1482446020 way/1482446021",
+"name": "Trạm Thu phí Ma Lâm",
+"lat": 11.091413,
+"lng": 108.131897,
+"country": "VN"
+},
+{
+"ref": "node/11692266162",
+"name": null,
+"lat": 11.056763,
+"lng": 106.794967,
+"country": "VN"
+},
+{
+"ref": "node/11692266163",
+"name": null,
+"lat": 11.056657,
+"lng": 106.800782,
+"country": "VN"
+},
+{
+"ref": "node/8344961329 node/11667995552",
+"name": null,
+"lat": 11.036608,
+"lng": 106.844773,
+"country": "VN"
+},
+{
+"ref": "node/9196084738 node/12736353964 way/1219911769",
+"name": "Trạm Thu phí Số 3A - ĐT768",
+"lat": 11.028303,
+"lng": 106.913026,
+"country": "VN"
+},
+{
+"ref": "node/10030773244 node/10030773245",
+"name": "Trạm Thu Phí Genimex trạm số 3",
+"lat": 11.027573,
+"lng": 106.774887,
+"country": "VN"
+},
+{
+"ref": "node/10015693414",
+"name": "Trạm Thu phí Số 3B - ĐT768",
+"lat": 11.023665,
+"lng": 106.899642,
+"country": "VN"
+},
+{
+"ref": "way/1065564949",
+"name": "Trạm thu phí số 3",
+"lat": 11.023655,
+"lng": 106.899668,
+"country": "VN"
+},
+{
+"ref": "way/1012928174 node/1410617877 node/1410617983",
+"name": "Trạm thu phí Suối Giữa",
+"lat": 11.005217,
+"lng": 106.645608,
+"country": "VN"
+},
+{
+"ref": "node/11115627566 node/11458540415 node/12712095479",
+"name": "Trạm Thu Phí Cầu Phú Cường",
+"lat": 10.983697,
+"lng": 106.643197,
+"country": "VN"
+},
+{
+"ref": "node/9945302974 way/1090402313",
+"name": "Trạm thu phí 2B",
+"lat": 10.980254,
+"lng": 106.847704,
+"country": "VN"
+},
+{
+"ref": "node/9322484527 node/9322484528",
+"name": null,
+"lat": 10.977881,
+"lng": 106.74489,
+"country": "VN"
+},
+{
+"ref": "node/9290026136 node/9301617876",
+"name": "Trạm Thu Phí Đường 768",
+"lat": 10.976945,
+"lng": 106.849338,
+"country": "VN"
+},
+{
+"ref": "way/1090402311 way/1090402312",
+"name": "Trạm thu phí 2A",
+"lat": 10.976917,
+"lng": 106.849337,
+"country": "VN"
+},
+{
+"ref": "node/9301612560 node/9301612561",
+"name": "Trạm Thu Phí Genimex trạm số 2",
+"lat": 10.973976,
+"lng": 106.771217,
+"country": "VN"
+},
+{
+"ref": "way/1029548822 way/1029548823 node/12945944575 node/12945944576",
+"name": "Trạm thu phí số 1",
+"lat": 10.972745,
+"lng": 106.800768,
+"country": "VN"
+},
+{
+"ref": "node/6859528658 node/6859528659",
+"name": "Trạm Thu Phí Trảng Bom",
+"lat": 10.945392,
+"lng": 107.057465,
+"country": "VN"
+},
+{
+"ref": "way/1093353487",
+"name": "Trạm thu phí Trảng Bom",
+"lat": 10.945379,
+"lng": 107.057453,
+"country": "VN"
+},
+{
+"ref": "node/10931263005 node/13459444107 node/13594672376 node/13594672377 way/1482439055 way/1482439056",
+"name": "Trạm Thu phí Ba Bàu",
+"lat": 10.933476,
+"lng": 107.972523,
+"country": "VN"
+},
+{
+"ref": "node/10818947015 node/10818947016",
+"name": null,
+"lat": 10.921397,
+"lng": 106.666384,
+"country": "VN"
+},
+{
+"ref": "way/1006324193",
+"name": "Trạm thu phí Dàu Giây",
+"lat": 10.918268,
+"lng": 107.16402,
+"country": "VN"
+},
+{
+"ref": "node/6425303961 node/6425303962",
+"name": "Trạm Thu Phí Dầu Giây",
+"lat": 10.918249,
+"lng": 107.16402,
+"country": "VN"
+},
+{
+"ref": "node/7732944931",
+"name": null,
+"lat": 10.915972,
+"lng": 107.992208,
+"country": "VN"
+},
+{
+"ref": "node/9326222155 node/9326222156 way/1010875691",
+"name": "Trạm Thu Phí Bình Thung",
+"lat": 10.907623,
+"lng": 106.791026,
+"country": "VN"
+},
+{
+"ref": "way/725253473 way/725253474 way/725253475",
+"name": "Trạm thu phí Cầu Đồng Nai",
+"lat": 10.903162,
+"lng": 106.843772,
+"country": "VN"
+},
+{
+"ref": "node/6859549566 node/6859549567",
+"name": "Trạm Thu Phí Cầu Ông Bố",
+"lat": 10.900786,
+"lng": 106.714273,
+"country": "VN"
+},
+{
+"ref": "way/1010875928",
+"name": "Trạm thu phí Lái Thiêu",
+"lat": 10.900785,
+"lng": 106.714286,
+"country": "VN"
+},
+{
+"ref": "node/13457949978 node/13457949979 way/1482439046",
+"name": "Trạm Thu phí Quốc lộ 1 Km63+000",
+"lat": 10.896337,
+"lng": 107.421571,
+"country": "VN"
+},
+{
+"ref": "node/6859613339",
+"name": "Trạm Thu Phí Lái Thiêu",
+"lat": 10.888732,
+"lng": 106.700714,
+"country": "VN"
+},
+{
+"ref": "way/1007900114 way/1007900115",
+"name": "Trạm thu phí Vĩnh Phú",
+"lat": 10.887699,
+"lng": 106.70036,
+"country": "VN"
+},
+{
+"ref": "node/6859613337 node/11921627309",
+"name": "Trạm Thu phí Vĩnh Phú",
+"lat": 10.887696,
+"lng": 106.700391,
+"country": "VN"
+},
+{
+"ref": "node/11304967563 node/11304967566 way/1482439042 way/1482439043 way/1482439044 way/1482439045",
+"name": "Trạm Thu phí Xuân Lộc",
+"lat": 10.886259,
+"lng": 107.367766,
+"country": "VN"
+},
+{
+"ref": "way/1518723000 way/1518723001",
+"name": "Trạm Thu phí Tân Cang",
+"lat": 10.879639,
+"lng": 106.911895,
+"country": "VN"
+},
+{
+"ref": "node/10823778102 node/10823778103",
+"name": "Trạm Thu Phí An Thuận Phát (Phước Tân)",
+"lat": 10.879634,
+"lng": 106.911891,
+"country": "VN"
+},
+{
+"ref": "way/1104336060",
+"name": "Trạm thu phí Sông Phan",
+"lat": 10.875247,
+"lng": 107.931387,
+"country": "VN"
+},
+{
+"ref": "node/1588276876 node/7755579004",
+"name": "Trạm Thu Phí Sông Phan",
+"lat": 10.875241,
+"lng": 107.931401,
+"country": "VN"
+},
+{
+"ref": "node/13594672353 node/13594672354 way/1482439051 way/1482439052",
+"name": "Trạm Thu phí Đường tỉnh 720 Km37+800",
+"lat": 10.863291,
+"lng": 107.647572,
+"country": "VN"
+},
+{
+"ref": "node/14208277441",
+"name": null,
+"lat": 10.861901,
+"lng": 106.67919,
+"country": "VN"
+},
+{
+"ref": "node/11813154462 node/11813154464",
+"name": "Trạm Thu phí Quốc lộ 55 Km27+400",
+"lat": 10.860712,
+"lng": 107.741956,
+"country": "VN"
+},
+{
+"ref": "way/1482439053 way/1482439054",
+"name": "Trạm Thu phí Quốc lộ 55",
+"lat": 10.860625,
+"lng": 107.741951,
+"country": "VN"
+},
+{
+"ref": "way/1004176875 node/9507817971 node/9507817972",
+"name": "Trạm thu phí T1",
+"lat": 10.86062,
+"lng": 106.925521,
+"country": "VN"
+},
+{
+"ref": "node/13457949976 node/13457949977",
+"name": "Trạm Thu phí Nút giao Quốc lộ 56 Km86+200",
+"lat": 10.859439,
+"lng": 107.235613,
+"country": "VN"
+},
+{
+"ref": "way/1482439040",
+"name": "Trạm Thu phí Nút giao Quốc lộ 56",
+"lat": 10.85941,
+"lng": 107.235547,
+"country": "VN"
+},
+{
+"ref": "node/8579215313 node/8579215378",
+"name": "Trạm Thu phí Đường Cao tốc Phan Thiết- Dầu Giây",
+"lat": 10.83896,
+"lng": 107.148048,
+"country": "VN"
+},
+{
+"ref": "way/1482439041",
+"name": "Trạm Thu phí Dầu Giây",
+"lat": 10.838908,
+"lng": 107.148124,
+"country": "VN"
+},
+{
+"ref": "node/13388343692 node/13388343693",
+"name": null,
+"lat": 10.834529,
+"lng": 106.744853,
+"country": "VN"
+},
+{
+"ref": "node/9315592460 node/9315592461",
+"name": "Trạm Thu phí Đường số 7",
+"lat": 10.825093,
+"lng": 106.601785,
+"country": "VN"
+},
+{
+"ref": "node/7068599752 node/7068599754",
+"name": "Trạm Thu phí Đường M1",
+"lat": 10.824634,
+"lng": 106.603681,
+"country": "VN"
+},
+{
+"ref": "way/360129134 way/360129135 way/723231514 way/723231517",
+"name": "Trạm thu phí Xa lộ Hà Nội",
+"lat": 10.821484,
+"lng": 106.758736,
+"country": "VN"
+},
+{
+"ref": "node/366367389 node/2028466031 node/2217852581 node/6775351396",
+"name": "Trạm Thu Phí Trạm Xa Lộ - Hà Nội",
+"lat": 10.821478,
+"lng": 106.758736,
+"country": "VN"
+},
+{
+"ref": "node/11655437437 node/11655437438",
+"name": "Trạm Thu phí Ngã tư Gò Mây",
+"lat": 10.81733,
+"lng": 106.601372,
+"country": "VN"
+},
+{
+"ref": "node/2072605341 node/2683778173 node/11409583443",
+"name": null,
+"lat": 10.815668,
+"lng": 106.66584,
+"country": "VN"
+},
+{
+"ref": "node/2074102532 node/2074102542 node/2074102558 node/2331829839 node/6859352789 node/11407995238 node/11407997072 node/11458650423 node/13137692075",
+"name": null,
+"lat": 10.813709,
+"lng": 106.663835,
+"country": "VN"
+},
+{
+"ref": "node/12856912484",
+"name": null,
+"lat": 10.811792,
+"lng": 106.656237,
+"country": "VN"
+},
+{
+"ref": "node/12738755479 node/12872710332 node/12901439443 node/12901439446 node/12901439449 node/12901439452 node/12901439454 way/1375824756",
+"name": null,
+"lat": 10.80936,
+"lng": 106.652886,
+"country": "VN"
+},
+{
+"ref": "way/299682420",
+"name": null,
+"lat": 10.801395,
+"lng": 106.618576,
+"country": "VN"
+},
+{
+"ref": "way/1148798178 way/1148798182 way/1148798225 way/1236948535",
+"name": null,
+"lat": 10.800363,
+"lng": 106.616292,
+"country": "VN"
+},
+{
+"ref": "way/1101467778",
+"name": "Trạm thu phí An Sương - An Lạc",
+"lat": 10.795024,
+"lng": 106.596637,
+"country": "VN"
+},
+{
+"ref": "node/2241417025 node/2241417026",
+"name": "Trạm Thu Phí An Sương - An Lạc",
+"lat": 10.795001,
+"lng": 106.596638,
+"country": "VN"
+},
+{
+"ref": "way/1015754768",
+"name": "Trạm thu phí Phú Hữu",
+"lat": 10.791557,
+"lng": 106.807463,
+"country": "VN"
+},
+{
+"ref": "node/9369335527 node/9369335528",
+"name": "Trạm Thu Phí Phú Hữu",
+"lat": 10.791551,
+"lng": 106.807469,
+"country": "VN"
+},
+{
+"ref": "node/11438719474 node/11438719481",
+"name": null,
+"lat": 10.79055,
+"lng": 106.640711,
+"country": "VN"
+},
+{
+"ref": "node/2256599102 node/12552548000",
+"name": "Trạm thu phí Tân Kỳ Tân Quý",
+"lat": 10.789695,
+"lng": 106.595813,
+"country": "VN"
+},
+{
+"ref": "node/12462757073 node/12462757074",
+"name": "Trạm Thu phí Vành Đai 3",
+"lat": 10.786725,
+"lng": 106.830865,
+"country": "VN"
+},
+{
+"ref": "way/1482917394",
+"name": "Trạm Thu phí Vành đai 3",
+"lat": 10.786683,
+"lng": 106.830861,
+"country": "VN"
+},
+{
+"ref": "node/2592830364 node/2592845362",
+"name": "Trạm Thu Phí Long Phước",
+"lat": 10.785837,
+"lng": 106.851881,
+"country": "VN"
+},
+{
+"ref": "way/631536968",
+"name": "Trạm thu phí Long Phước",
+"lat": 10.785821,
+"lng": 106.851875,
+"country": "VN"
+},
+{
+"ref": "node/10196742008 node/10198817951",
+"name": "Trạm Thu Phí Đức Hòa",
+"lat": 10.777558,
+"lng": 106.439526,
+"country": "VN"
+},
+{
+"ref": "way/1482120449",
+"name": "Trạm Thu phí 319-HLD",
+"lat": 10.776806,
+"lng": 106.92942,
+"country": "VN"
+},
+{
+"ref": "node/13592054118 node/13592054119",
+"name": "Trạm thu phí 319 KCN CNC Long Thành",
+"lat": 10.776791,
+"lng": 106.929411,
+"country": "VN"
+},
+{
+"ref": "node/3182308427 node/6754258686",
+"name": null,
+"lat": 10.768904,
+"lng": 106.591142,
+"country": "VN"
+},
+{
+"ref": "node/9754127695 node/9754127696",
+"name": "Trạm Thu Phí BOT 319",
+"lat": 10.768767,
+"lng": 106.922944,
+"country": "VN"
+},
+{
+"ref": "way/996180320",
+"name": "Trạm thu phí 319-HLD",
+"lat": 10.768753,
+"lng": 106.922946,
+"country": "VN"
+},
+{
+"ref": "way/1184370088",
+"name": null,
+"lat": 10.765916,
+"lng": 106.944537,
+"country": "VN"
+},
+{
+"ref": "node/2976056988 node/5964362021",
+"name": "Trạm Thu phí Quốc lộ 51",
+"lat": 10.765378,
+"lng": 106.961832,
+"country": "VN"
+},
+{
+"ref": "node/5606335895 node/5606336350 node/9249544956",
+"name": "Trạm Thu Phí Quốc Lộ 51",
+"lat": 10.765346,
+"lng": 106.956865,
+"country": "VN"
+},
+{
+"ref": "way/1006323690 way/1006323691 way/1014336620 way/1014336621 way/1014336622",
+"name": "Trạm thu phí Quốc lộ 51",
+"lat": 10.765331,
+"lng": 106.958853,
+"country": "VN"
+},
+{
+"ref": "way/1184364815",
+"name": null,
+"lat": 10.765024,
+"lng": 106.949069,
+"country": "VN"
+},
+{
+"ref": "node/11968451551",
+"name": null,
+"lat": 10.763308,
+"lng": 106.579145,
+"country": "VN"
+},
+{
+"ref": "node/11596377024 node/13906819840 node/14085862522",
+"name": "Nút giao Long Thành cao tốc Biên Hòa – Vũng Tàu",
+"lat": 10.761854,
+"lng": 106.974983,
+"country": "VN"
+},
+{
+"ref": "node/714480434 node/2274992956",
+"name": "Trạm Thu Phí Phú Mỹ",
+"lat": 10.760017,
+"lng": 106.764821,
+"country": "VN"
+},
+{
+"ref": "way/1098418720",
+"name": "Trạm thu phí Cầu Phú Mỹ",
+"lat": 10.759984,
+"lng": 106.764855,
+"country": "VN"
+},
+{
+"ref": "node/5599264336",
+"name": null,
+"lat": 10.758137,
+"lng": 106.78879,
+"country": "VN"
+},
+{
+"ref": "node/11577934838 node/11577934839",
+"name": null,
+"lat": 10.755049,
+"lng": 106.592159,
+"country": "VN"
+},
+{
+"ref": "node/6856403698",
+"name": null,
+"lat": 10.751503,
+"lng": 106.791057,
+"country": "VN"
+},
+{
+"ref": "node/13955396936",
+"name": "Trạm Thu phí Cầu Cái Vừng",
+"lat": 10.743929,
+"lng": 105.298154,
+"country": "VN"
+},
+{
+"ref": "way/289941976 way/289941977",
+"name": "Trạm thu phí Nguyễn Văn Linh",
+"lat": 10.728441,
+"lng": 106.694532,
+"country": "VN"
+},
+{
+"ref": "node/10127340287 node/10127340288 node/10127358444 node/10127358445",
+"name": "Trạm Thu phí Nguyễn Văn Linh",
+"lat": 10.728417,
+"lng": 106.694534,
+"country": "VN"
+},
+{
+"ref": "way/1007171310 way/1007171311",
+"name": "Trạm thu phí T2 - QL.51",
+"lat": 10.72352,
+"lng": 106.997276,
+"country": "VN"
+},
+{
+"ref": "node/11056022919 node/11056022920",
+"name": null,
+"lat": 10.718536,
+"lng": 106.632334,
+"country": "VN"
+},
+{
+"ref": "node/11056022917 node/11056022918",
+"name": null,
+"lat": 10.712454,
+"lng": 106.626682,
+"country": "VN"
+},
+{
+"ref": "node/13958360910 node/13958360911",
+"name": "Trạm Thu Phí Chợ Bình Điền",
+"lat": 10.69965,
+"lng": 106.608898,
+"country": "VN"
+},
+{
+"ref": "node/404465559 node/404729664 node/2209604823 node/2211069344",
+"name": "Trạm Thu phí Nguyễn Văn Linh",
+"lat": 10.695603,
+"lng": 106.615407,
+"country": "VN"
+},
+{
+"ref": "way/1010214897 way/1010214898",
+"name": "Trạm thu phí Nguyễn Văn Linh",
+"lat": 10.695591,
+"lng": 106.615416,
+"country": "VN"
+},
+{
+"ref": "node/1500090343 node/2214455546",
+"name": "Trạm Thu phí Chợ Đệm",
+"lat": 10.681777,
+"lng": 106.557416,
+"country": "VN"
+},
+{
+"ref": "way/560590840",
+"name": "Trạm thu phí Chợ Đệm",
+"lat": 10.681748,
+"lng": 106.557413,
+"country": "VN"
+},
+{
+"ref": "node/11949138224 node/11949138225 way/1288554747",
+"name": "Trạm Thu Phí 07",
+"lat": 10.675533,
+"lng": 107.019789,
+"country": "VN"
+},
+{
+"ref": "node/12165185610",
+"name": null,
+"lat": 10.67436,
+"lng": 106.789226,
+"country": "VN"
+},
+{
+"ref": "node/366384696 node/12165185611",
+"name": null,
+"lat": 10.674229,
+"lng": 106.766551,
+"country": "VN"
+},
+{
+"ref": "node/9865004497 node/9865004498",
+"name": "Trạm Thu Phí 1B",
+"lat": 10.669827,
+"lng": 106.549264,
+"country": "VN"
+},
+{
+"ref": "way/1288834243",
+"name": "Trạm Thu phí 1B",
+"lat": 10.669825,
+"lng": 106.549237,
+"country": "VN"
+},
+{
+"ref": "node/10779240467 node/10779240469 node/10779240471 node/10779240472",
+"name": "Trạm thu phí Bến Lức - BOT ĐT830",
+"lat": 10.666679,
+"lng": 106.457989,
+"country": "VN"
+},
+{
+"ref": "way/1159113709",
+"name": "Trạm thu phí Bến Lức",
+"lat": 10.666669,
+"lng": 106.457978,
+"country": "VN"
+},
+{
+"ref": "node/2645562974",
+"name": null,
+"lat": 10.665286,
+"lng": 106.775782,
+"country": "VN"
+},
+{
+"ref": "node/13453097869 node/13453097870 node/13453097871 node/13453097872",
+"name": "Trạm Thu Phí 06",
+"lat": 10.662442,
+"lng": 106.97001,
+"country": "VN"
+},
+{
+"ref": "way/1482394166 way/1482394167 way/1482394168 way/1482394169",
+"name": "Trạm Thu phí 06",
+"lat": 10.662438,
+"lng": 106.969997,
+"country": "VN"
+},
+{
+"ref": "way/1288834245 way/1288834246",
+"name": "Trạm Thu phí 2A",
+"lat": 10.661518,
+"lng": 106.55939,
+"country": "VN"
+},
+{
+"ref": "node/9697403773 node/9697403778",
+"name": "Trạm Thu Phí 2A",
+"lat": 10.661513,
+"lng": 106.559422,
+"country": "VN"
+},
+{
+"ref": "node/12103925331 node/12103925344 way/1306994084",
+"name": "Trạm thu phí 04",
+"lat": 10.660808,
+"lng": 106.723368,
+"country": "VN"
+},
+{
+"ref": "node/12866199542 node/12866199543 way/1386919000",
+"name": "Trạm Thu Phí 03",
+"lat": 10.660241,
+"lng": 106.654586,
+"country": "VN"
+},
+{
+"ref": "node/9865004504",
+"name": "Trạm Thu Phí 2B",
+"lat": 10.658403,
+"lng": 106.564574,
+"country": "VN"
+},
+{
+"ref": "node/9865004499 way/1288834247 way/1288834248",
+"name": "Trạm Thu phí 2B",
+"lat": 10.658057,
+"lng": 106.564326,
+"country": "VN"
+},
+{
+"ref": "node/2214428847 node/2214428862",
+"name": null,
+"lat": 10.656071,
+"lng": 106.473521,
+"country": "VN"
+},
+{
+"ref": "node/13453097923 node/13453097924",
+"name": null,
+"lat": 10.653635,
+"lng": 106.974449,
+"country": "VN"
+},
+{
+"ref": "node/11250157855",
+"name": null,
+"lat": 10.634861,
+"lng": 106.675989,
+"country": "VN"
+},
+{
+"ref": "node/11250157856",
+"name": null,
+"lat": 10.63261,
+"lng": 106.673607,
+"country": "VN"
+},
+{
+"ref": "node/12965577286",
+"name": null,
+"lat": 10.591086,
+"lng": 106.78853,
+"country": "VN"
+},
+{
+"ref": "node/12965577285",
+"name": null,
+"lat": 10.589797,
+"lng": 106.778393,
+"country": "VN"
+},
+{
+"ref": "node/10798300283",
+"name": null,
+"lat": 10.579569,
+"lng": 106.743849,
+"country": "VN"
+},
+{
+"ref": "node/2947312657",
+"name": null,
+"lat": 10.576383,
+"lng": 106.82463,
+"country": "VN"
+},
+{
+"ref": "node/10798300303 node/12964154540",
+"name": null,
+"lat": 10.572952,
+"lng": 106.749294,
+"country": "VN"
+},
+{
+"ref": "node/3945869699 node/5346500506",
+"name": "Trạm thu phí Tân An",
+"lat": 10.54734,
+"lng": 106.372284,
+"country": "VN"
+},
+{
+"ref": "way/1558134008",
+"name": "Trạm Thu phí Cảng Quốc tế Long An - Cổng A",
+"lat": 10.534559,
+"lng": 106.734635,
+"country": "VN"
+},
+{
+"ref": "node/13955451672",
+"name": "Trạm Thu phí Cầu Đình Bình Thủy",
+"lat": 10.516182,
+"lng": 105.321036,
+"country": "VN"
+},
+{
+"ref": "node/13958039761",
+"name": "Trạm Thu phí Cầu Mỹ Luông",
+"lat": 10.502527,
+"lng": 105.494514,
+"country": "VN"
+},
+{
+"ref": "way/498383115",
+"name": "Trạm phu phí T3 - QL.51",
+"lat": 10.5012,
+"lng": 107.096581,
+"country": "VN"
+},
+{
+"ref": "node/10898771282 node/10898771287",
+"name": "Trạm Thu phí Cầu Mỹ Lợi",
+"lat": 10.46285,
+"lng": 106.644169,
+"country": "VN"
+},
+{
+"ref": "way/1173001123",
+"name": "Trạm thu phí Cầu Mỹ Lợi",
+"lat": 10.462845,
+"lng": 106.644166,
+"country": "VN"
+},
+{
+"ref": "node/14103351523",
+"name": "Trạm Thu phí Cầu Long Kiếng - Long Giang",
+"lat": 10.452524,
+"lng": 105.449624,
+"country": "VN"
+},
+{
+"ref": "node/12511892748 node/12511892749 way/1482412310",
+"name": "Trạm Thu phí Thân Cửu Nghĩa",
+"lat": 10.442897,
+"lng": 106.302602,
+"country": "VN"
+},
+{
+"ref": "node/13008816153",
+"name": null,
+"lat": 10.438816,
+"lng": 105.610922,
+"country": "VN"
+},
+{
+"ref": "node/13008816154",
+"name": null,
+"lat": 10.436413,
+"lng": 105.60871,
+"country": "VN"
+},
+{
+"ref": "node/10997784001 node/10997784002",
+"name": "Trạm thu phí Thân Cửu Nghĩa - Km51",
+"lat": 10.435329,
+"lng": 106.295124,
+"country": "VN"
+},
+{
+"ref": "way/1308093769",
+"name": "Trạm thu phí Thân Cửu Nghĩa",
+"lat": 10.435317,
+"lng": 106.295123,
+"country": "VN"
+},
+{
+"ref": "node/2664649961 node/2664649964 node/9329863073",
+"name": "Trạm Thu phí Thân Cửu Nghĩa",
+"lat": 10.43128,
+"lng": 106.315455,
+"country": "VN"
+},
+{
+"ref": "way/1011246793 way/1011246794",
+"name": "Trạm thu phí Thân Cửu Nghĩa",
+"lat": 10.43116,
+"lng": 106.315612,
+"country": "VN"
+},
+{
+"ref": "way/1011246792 node/9329863076",
+"name": "Trạm Thu Phí Thân Cửu Nghĩa",
+"lat": 10.430892,
+"lng": 106.315944,
+"country": "VN"
+},
+{
+"ref": "node/10828855520 node/10828855521",
+"name": "Trạm Thu Phí Cai Lậy",
+"lat": 10.412165,
+"lng": 106.164845,
+"country": "VN"
+},
+{
+"ref": "way/1225570745",
+"name": "Trạm thu phí Cai Lậy",
+"lat": 10.412158,
+"lng": 106.164868,
+"country": "VN"
+},
+{
+"ref": "node/9196802342 node/9381053362",
+"name": "Trạm Thu Phí Cai Lậy - QL1",
+"lat": 10.410193,
+"lng": 106.060662,
+"country": "VN"
+},
+{
+"ref": "way/1017066822",
+"name": "Trạm thu phí Cai Lậy",
+"lat": 10.410185,
+"lng": 106.060657,
+"country": "VN"
+},
+{
+"ref": "node/10222717444 node/10222717445",
+"name": "Trạm Thu Phí Cái Bè",
+"lat": 10.407128,
+"lng": 106.032047,
+"country": "VN"
+},
+{
+"ref": "way/1482412311",
+"name": "Trạm Thu phí Cái Bè",
+"lat": 10.407115,
+"lng": 106.032053,
+"country": "VN"
+},
+{
+"ref": "node/13327483266",
+"name": null,
+"lat": 10.40653,
+"lng": 105.427242,
+"country": "VN"
+},
+{
+"ref": "node/13327483265",
+"name": null,
+"lat": 10.403263,
+"lng": 105.42395,
+"country": "VN"
+},
+{
+"ref": "way/1225571951 way/1225571956",
+"name": "Trạm thu phí Tuyến tránh Cai Lậy",
+"lat": 10.393256,
+"lng": 106.143201,
+"country": "VN"
+},
+{
+"ref": "node/11365543153 node/11365543157",
+"name": "Trạm Thu Phí Cai Lậy - Tuyến tránh",
+"lat": 10.393238,
+"lng": 106.143216,
+"country": "VN"
+},
+{
+"ref": "node/11572621763 node/11572621764",
+"name": "Trạm Thu phí Km 98+320",
+"lat": 10.334956,
+"lng": 105.896319,
+"country": "VN"
+},
+{
+"ref": "way/1482428683",
+"name": "Trạm Thu phí Km98+320",
+"lat": 10.334869,
+"lng": 105.896352,
+"country": "VN"
+},
+{
+"ref": "way/1025492401 node/1275931955 node/9455283274",
+"name": "Trạm thu phí T2 QL.91",
+"lat": 10.31748,
+"lng": 105.485956,
+"country": "VN"
+},
+{
+"ref": "way/1482428684 way/1482428685",
+"name": "Trạm Thu phí An Thái Trung",
+"lat": 10.317415,
+"lng": 105.882799,
+"country": "VN"
+},
+{
+"ref": "node/4585001580 node/8819705000",
+"name": "Trạm Thu Phí Cầu Rạch Miễu",
+"lat": 10.314731,
+"lng": 106.348361,
+"country": "VN"
+},
+{
+"ref": "way/1025088286",
+"name": "Trạm thu phí Cầu Rạch Miễu",
+"lat": 10.314729,
+"lng": 106.348377,
+"country": "VN"
+},
+{
+"ref": "node/11527819897",
+"name": null,
+"lat": 10.273333,
+"lng": 105.534006,
+"country": "VN"
+},
+{
+"ref": "node/13472623052",
+"name": null,
+"lat": 10.27287,
+"lng": 105.538674,
+"country": "VN"
+},
+{
+"ref": "node/12738444004",
+"name": null,
+"lat": 10.268496,
+"lng": 106.002932,
+"country": "VN"
+},
+{
+"ref": "node/13542494797",
+"name": "Trạm Thu phí Cầu Nguyễn Huệ",
+"lat": 10.266367,
+"lng": 105.874407,
+"country": "VN"
+},
+{
+"ref": "node/12738444003",
+"name": null,
+"lat": 10.259311,
+"lng": 106.000108,
+"country": "VN"
+},
+{
+"ref": "node/13670803804",
+"name": null,
+"lat": 10.245519,
+"lng": 106.22747,
+"country": "VN"
+},
+{
+"ref": "node/13670803803",
+"name": null,
+"lat": 10.237268,
+"lng": 106.223424,
+"country": "VN"
+},
+{
+"ref": "node/12673127629 node/12673127630 node/12673127625 node/14100343849",
+"name": "Trạm Thu phí Sân bay Phú Quốc",
+"lat": 10.159654,
+"lng": 103.997781,
+"country": "VN"
+},
+{
+"ref": "node/5003536551 node/10981892053",
+"name": null,
+"lat": 10.112033,
+"lng": 105.647877,
+"country": "VN"
+},
+{
+"ref": "node/8671472134 node/10701457612",
+"name": null,
+"lat": 10.078761,
+"lng": 105.713068,
+"country": "VN"
+},
+{
+"ref": "node/13179639560",
+"name": null,
+"lat": 10.059324,
+"lng": 105.797633,
+"country": "VN"
+},
+{
+"ref": "node/13179639559",
+"name": null,
+"lat": 10.052941,
+"lng": 105.787776,
+"country": "VN"
+},
+{
+"ref": "way/1011243028",
+"name": "Trạm thu phí Càu Cổ Chiên",
+"lat": 10.019911,
+"lng": 106.297466,
+"country": "VN"
+},
+{
+"ref": "node/9329719956",
+"name": "Trạm Thu Phí Cổ Chiên",
+"lat": 10.019906,
+"lng": 106.297467,
+"country": "VN"
+},
+{
+"ref": "node/8835625383 node/8835625398 node/12963734532 node/13733777757",
+"name": null,
+"lat": 10.006129,
+"lng": 105.771249,
+"country": "VN"
+},
+{
+"ref": "node/9381034606 node/9381034607",
+"name": "Trạm Thu Phí Cần Thơ - Phụng Hiệp",
+"lat": 9.972894,
+"lng": 105.740398,
+"country": "VN"
+},
+{
+"ref": "way/1017065303",
+"name": "Trạm thu phí BOT Cân Thơ - Phụ Hiệp",
+"lat": 9.972891,
+"lng": 105.740399,
+"country": "VN"
+},
+{
+"ref": "node/10907496354 node/10907496355",
+"name": "Trạm Thu phí Sân bay Rạch Giá",
+"lat": 9.960955,
+"lng": 105.133582,
+"country": "VN"
+},
+{
+"ref": "node/13954096374",
+"name": "Trạm thu phí Cầu Phú Hữu",
+"lat": 9.924362,
+"lng": 105.854118,
+"country": "VN"
+},
+{
+"ref": "node/13660229550",
+"name": null,
+"lat": 9.895105,
+"lng": 105.812183,
+"country": "VN"
+},
+{
+"ref": "node/12888026156",
+"name": null,
+"lat": 9.736015,
+"lng": 106.073216,
+"country": "VN"
+},
+{
+"ref": "node/12888026157",
+"name": null,
+"lat": 9.735818,
+"lng": 106.090758,
+"country": "VN"
+},
+{
+"ref": "node/8675816002 node/10198601713",
+"name": null,
+"lat": 9.65972,
+"lng": 105.931191,
+"country": "VN"
+},
+{
+"ref": "node/12888026154",
+"name": null,
+"lat": 9.636432,
+"lng": 106.14712,
+"country": "VN"
+},
+{
+"ref": "node/12888026155",
+"name": null,
+"lat": 9.632258,
+"lng": 106.136685,
+"country": "VN"
+},
+{
+"ref": "node/13955444481",
+"name": "Trạm Thu phí Cầu treo Tân Bằng",
+"lat": 9.460753,
+"lng": 105.044306,
+"country": "VN"
+},
+{
+"ref": "node/13955463826",
+"name": "Trạm Thu phí Cầu qua Sông Cái Tàu",
+"lat": 9.438065,
+"lng": 104.930923,
+"country": "VN"
+},
+{
+"ref": "node/10198627129 node/10198627130",
+"name": "Trạm Thu Phí Bạc Liêu",
+"lat": 9.374106,
+"lng": 105.712317,
+"country": "VN"
+},
+{
+"ref": "node/13955452713",
+"name": "Trạm Thu phí Cầu Qua Sông Cái Tàu - tuyến Thới Bình - U Minh",
+"lat": 9.314601,
+"lng": 105.017307,
+"country": "VN"
+},
+{
+"ref": "node/12798748633",
+"name": null,
+"lat": 9.244115,
+"lng": 105.07462,
+"country": "VN"
+},
+{
+"ref": "node/10907487952",
+"name": "Trạm Thu phí Sân bay Cà Mau",
+"lat": 9.175143,
+"lng": 105.175871,
+"country": "VN"
+},
+{
+"ref": "node/13955413695",
+"name": "Trạm Thu phí BOT Cầu Hoà Trung",
+"lat": 9.094684,
+"lng": 105.153285,
+"country": "VN"
+},
+{
+"ref": "node/13955465537",
+"name": "Trạm Thu phí Cầu Trần Văn Thời",
+"lat": 9.069025,
+"lng": 104.967939,
+"country": "VN"
+},
+{
+"ref": "node/13955438870",
+"name": "Trạm Thu phí BOT Cầu Chà Là",
+"lat": 8.95427,
+"lng": 105.101036,
+"country": "VN"
+},
+{
+"ref": "node/13955501663",
+"name": "Trạm Thu phí Sân bay Côn Đảo",
+"lat": 8.730297,
+"lng": 106.62845,
+"country": "VN"
+}
+]
+}

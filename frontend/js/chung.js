@@ -268,7 +268,9 @@
   };
   EPL.maBanChat = (loai, company) => company === 'joint' ? (loai === 'tam_ung' ? 'cong_no_chu_xe' : 'xuat_ban') : 'noi_bo';
   EPL.tag = (ma, khoa) => `<span class="tag ${esc(ma)}">${NN.h(khoa || ('s_' + ma))}</span>`;
-  EPL.khoanMuc = (d) => d.item_key ? NN.t(d.item_key) : (d.item_name || '—');
+  // Phí cao tốc theo TRẠM (16/10): «Phí cao tốc · Trạm thu phí Bến Thủy 1» — tên khoản kèm tên trạm
+  EPL.khoanMuc = (d) => d.item_key ? NN.t(d.item_key) + (d.item_name && ['x_toll', 'x_bridge'].includes(d.item_key) ? ' · ' + d.item_name : '')
+    : (d.item_name || '—');
 
   /* ================================================================ Hộp thoại & toast */
   EPL.toast = (chu, loai) => {
@@ -626,6 +628,10 @@
     { id: 'ty-gia',         nhom: 'mod_master',    nav: 'nav_rates', vai: ['acct', 'expacct', 'rev', 'treasury', 'cash'],
       ic: 'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' },
     { id: 'tuyen-duong',    nhom: 'mod_master',    nav: 'nav_routes',   ic: 'M6 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6M18 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6M6 9v3a3 3 0 0 0 3 3h6a3 3 0 0 1 3 3' },
+    // 16/10 (anh Hải: «anh đi đường container — tính trạm thu phí để phiếu xuất xe có sẵn phí»): danh mục trạm, giá một lượt cho xe EPL.
+    // Xem: vai làm phiếu; sửa: Bãi · kế toán · KT Chi phí (máy chủ routes/tram_thu_phi.SUA) — Bãi không thấy giá.
+    { id: 'tram-thu-phi',   nhom: 'mod_master',    nav: 'nav_tram_thu_phi', vai: ['yard', 'acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel'],
+      ic: 'M4 21V4M4 8h16M9 8l3 5M15 8l3 5M2 21h6' },
     // 08/10 (anh Khampla): điểm đổ mở lại ở đây (trang kế toán tạm 8031 đã bỏ) — kho dầu EPL chọn từ danh mục kho Web, trạm ngoài thêm tại
     // chỗ; khoản mục chi phí cấu hình được. Xem mọi vai làm phiếu; sửa theo quyền máy chủ (fuel-places/quyen · khoan-muc/danh-sach).
     { id: 'diem-do',        nhom: 'mod_master',    nav: 'nav_diem_do', vai: ['yard', 'acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel'],

@@ -56,7 +56,9 @@ def main():
     cu = next((r for r in tk if not r["cost_template"]), None)
     dung(cang["goi_y_nguon"] == "tuyen" and any(x["item_key"] == "x_chip_vn" and x.get("unit_price") == 1500000 for x in cang["goi_y"]),
          "Tuyến ra cảng có bộ riêng đúng Excel (chipping Việt 1.500.000)")
-    dung(not any(x["item_key"] == "x_toll" for x in cang["goi_y"]), "Phí cao tốc không nằm trong bộ gợi ý (là ô BOT của tuyến)")
+    # 16/10: phí cao tốc theo TRẠM thu phí của tuyến thì có trong gợi ý (mỗi trạm một dòng, mang toll_station_id); BOT cả tuyến thì không
+    dung(not any(x["item_key"] == "x_toll" and not x.get("toll_station_id") for x in cang["goi_y"]),
+         "Phí cao tốc BOT cả tuyến không nằm trong bộ gợi ý (chỉ dòng theo trạm thu phí)")
     if cu:
         dung(cu["goi_y_nguon"] == "chung" and len(cu["goi_y"]) >= 6, "Tuyến chưa có bộ riêng dùng bộ chung theo Excel", cu["name"])
     s, tb = goi("/api/routes", vai="thabok")

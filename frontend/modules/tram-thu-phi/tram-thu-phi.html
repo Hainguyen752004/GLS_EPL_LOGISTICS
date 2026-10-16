@@ -1,0 +1,29 @@
+<!-- Trạm thu phí — ດ່ານເກັບຄ່າທາງ (16/10). Danh mục trạm: giá MỘT lượt cho xe EPL (đầu kéo + rơ-moóc / container; bên Việt Nam xe loại 5),
+     thu một chiều hay hai chiều. Trạm vào danh mục khi màn Tuyến đường dò trạm trên đường xe đi (vị trí từ OpenStreetMap), hoặc thêm tay ở đây.
+     Trái: bảng trạm · phải: bản đồ — không xếp dọc dài. -->
+<div class="ttp" id="ttp">
+  <section class="card ttp-ds">
+    <div class="ttp-dau">
+      <input id="ttp-q" type="search" data-i18n-ph="search" autocomplete="off">
+      <div class="seg" id="ttp-nuoc">
+        <button type="button" data-nuoc="" class="on"><span data-i18n="all"></span><b></b></button>
+        <button type="button" data-nuoc="LA"><span>LA</span><b></b></button>
+        <button type="button" data-nuoc="VN"><span>VN</span><b></b></button>
+        <button type="button" data-nuoc="chua_gia" id="ttp-loc-gia"><span data-i18n="tuy_chua_gia"></span><b></b></button>
+      </div>
+      <div class="grow"></div>
+      <button class="btn primary sm" id="ttp-them" type="button">+ <span data-i18n="ttp_them"></span></button>
+    </div>
+    <div class="ttp-than">
+      <table class="tbl ttp-bang">
+        <thead><tr><th>#</th><th data-i18n="tuy_tram"></th><th class="num ttp-gia" data-i18n="tuy_gia_luot"></th><th data-i18n="tuy_mot_chieu"></th><th class="num" data-i18n="ttp_so_tuyen"></th><th data-i18n="status"></th><th></th></tr></thead>
+        <tbody id="ttp-than"></tbody>
+      </table>
+    </div>
+    <div class="small muted ttp-chu" data-i18n="ttp_hint"></div>
+  </section>
+  <section class="card ttp-ban-do">
+    <div class="ttp-map-o"><div class="ttp-map" id="ttp-map"></div><div class="ttp-map-bao" id="ttp-map-bao" hidden></div></div>
+    <div class="small muted ttp-nguon" data-i18n="ttp_nguon"></div>
+  </section>
+</div>

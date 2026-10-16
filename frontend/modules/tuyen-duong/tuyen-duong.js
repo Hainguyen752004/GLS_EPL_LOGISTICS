@@ -4,8 +4,12 @@
  * sửa trong một hộp nổi phải gõ vĩ độ / kinh độ bằng tay. Nay:
  *   · sửa NGAY TRONG khung (không hộp nổi), chặng hiện kiểu EPL_System: Điểm đi → Điểm đến · km khai · km đường bộ đo được;
  *   · vị trí điểm chấm trên bản đồ: bấm «Chấm» rồi bấm lên bản đồ, kéo chấm, tìm theo tên, hoặc dán toạ độ «18.44, 103.15»;
- *   · km đường bộ đo bằng máy chủ đo đường công khai (OSRM) — CHỈ để soát: km khai nuôi dầu, cước, lương nên không bị ghi đè;
+ *   · km đường bộ đo bằng máy chỉ đường công khai — CHỈ để soát: km khai nuôi dầu, cước, lương nên không bị ghi đè;
  *     muốn dùng số đo thì bấm «Dùng km đo được» rồi Lưu (như EPL_System);
+ *   · 16/10 (anh Hải: «anh không đi đường bộ, anh đi đường container — tính trạm thu phí để phiếu xuất xe có sẵn phí»): đường vẽ
+ *     theo chế độ XE TẢI (Valhalla, đầu kéo + rơ-moóc 40 tấn) thay cho chế độ xe con (OSRM); thẻ «Trạm thu phí»: dò trạm trên đường
+ *     xe đi (máy chủ: routes/tram_thu_phi.py), giá một lượt cho xe EPL, thu một chiều, lượt về — chọn tuyến trên phiếu là có mỗi trạm
+ *     một dòng phí cao tốc;
  *   · mất mạng: nền bản đồ, đo đường, tìm theo tên bỏ qua và nói ra; chặng, km, dán toạ độ vẫn làm được.
  * API giữ nguyên (/api/routes) — toạ độ vẫn là lat / lng của từng điểm như màn Theo dõi tuyến đang đọc.
  */
@@ -19,6 +23,8 @@
   let chamO = null;                 // chỉ số điểm đang chấm vị trí (null = không chấm)
   let DO = { khoa: '', legs: {} };  // kết quả đo đường bộ của bộ toạ độ đang hiện
   let henDo = null, henTen = null, theoDau = null;
+  let STS = [];                     // danh mục trạm thu phí (thêm trạm vào tuyến)
+  let ganTram = [], chamTram = false; // trạm gần đường (gợi ý sau lần dò) · đang chấm trạm mới trên bản đồ
   const DO_DEM = new Map();         // khoá toạ độ → kết quả đo (khỏi hỏi lại máy đo đường mỗi lần vẽ)
 
   const suaDuoc = () => AUTH.la('yard', 'acct');
@@ -30,7 +36,25 @@
     'duong': ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', 'Tiles © Esri'],
     've-tinh': ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', 'Tiles © Esri'],
   };
-  const OSRM = 'https://router.project-osrm.org/route/v1/driving/';
+  // Máy chỉ đường Valhalla công khai (FOSSGIS — máy openstreetmap.org đang dùng), chế độ xe tải. Cỡ xe: đầu kéo + rơ-moóc / container
+  // 40' chở đầy — đường cấm xe tải, cầu yếu thì máy tránh.
+  const VALHALLA = 'https://valhalla1.openstreetmap.de/route';
+  const XE = { length: 16.5, width: 2.55, height: 4.2, weight: 40, axle_load: 10 };
+  const TRAM_IC = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 14V3M2.5 6h11M5.5 6l2 3.2M9.5 6l2 3.2"/></svg>';
+  /** Giải mã đường kiểu polyline6 (Valhalla) → [[lat, lng], …] */
+  function giaiMa6(s) {
+    const ra = []; let i = 0, la = 0, lo = 0;
+    while (i < s.length) {
+      for (let k = 0; k < 2; k++) {
+        let sh = 0, r = 0, b;
+        do { b = s.charCodeAt(i++) - 63; r |= (b & 0x1f) << sh; sh += 5; } while (b >= 0x20);
+        const d = (r & 1) ? ~(r >> 1) : (r >> 1);
+        if (k === 0) la += d; else lo += d;
+      }
+      ra.push([la / 1e6, lo / 1e6]);
+    }
+    return ra;
+  }
   const TIM = 'https://nominatim.openstreetmap.org/search';
   const THUNG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>';
   const GHIM = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg>';
@@ -83,9 +107,10 @@
       name: r.name, toll_lak: r.toll_lak || '', return_km: r.return_km || '', note: r.note || '', active: !!r.active,
       stops: r.stops.map(s => ({ name: s.name, km_from_prev: s.km_from_prev, lat: s.lat, lng: s.lng })),
       cost: Array.isArray(r.cost_template) ? r.cost_template.map(x => ({ ...x })) : [],
-    } : { name: '', toll_lak: '', return_km: '', note: '', active: true, stops: [{ name: '' }, { name: '', km_from_prev: '' }], cost: [] };
+      tolls: (r.tram || []).map(saoTram),
+    } : { name: '', toll_lak: '', return_km: '', note: '', active: true, stops: [{ name: '' }, { name: '', km_from_prev: '' }], cost: [], tolls: [] };
     banDau = JSON.stringify(tam);
-    che = r ? 'sua' : 'moi'; chamO = null;
+    che = r ? 'sua' : 'moi'; chamO = null; ganTram = []; chamTram = false;
     veTatCa(true);
     const o = q('#tuy-f-name'); if (o && !r) o.focus();
   }
@@ -95,10 +120,10 @@
     const trong = !chon && che === 'xem';
     q('#tuy-trong').hidden = !trong;
     ['#tuy-dau', '#tuy-tom', '.tuy3-the'].forEach(s => { q(s).hidden = trong; });
-    root.querySelectorAll('[data-tab-noi]').forEach(o => { o.hidden = trong || o.dataset.tabNoi !== the; });
+    apThe(trong);
     q('#tuy-ws').classList.toggle('dang-sua', dangSua());
     if (trong) return;
-    veDau(); veTom(); veThe(); veChang(); veCp();
+    veDau(); veTom(); veThe(); veChang(); veTram(); veCp();
     veBanDo(canhLai);
     henDoDuong(0);
   }
@@ -131,7 +156,7 @@
       o.innerHTML = f('tuy_chieu_di', `<b>${so(chon.total_km, 1)} km</b>`)
         + f('km_ve', `<b>${chon.return_km ? so(chon.return_km, 1) + ' km' : '—'}</b>`)
         + f('km_ca_chuyen', `<b>${so(chon.round_km, 1)} km</b>`)
-        + f('toll_bot', `<b>${so(chon.toll_lak)} LAK</b>`)
+        + ((chon.tram || []).length ? f('tuy_phi_tram', `<b id="tuy-phi-tram">${phiTramHtml()}</b>`) : f('toll_bot', `<b>${so(chon.toll_lak)} LAK</b>`))
         + f('trips_count', `<b>${so(chon.so_phieu)}</b>`)
         + (chon.note ? f('note', `<b class="tuy3-ghi" lang="lo">${esc(chon.note)}</b>`, 'rong') : '');
       return;
@@ -141,11 +166,12 @@
       + f('km_ve', `<div class="tuy3-f-o"><input id="tuy-f-ve" class="num" inputmode="decimal" value="${esc(tam.return_km ?? '')}" title="${esc(NN.t('km_ve_hint'))}">
           <button type="button" class="btn sm quiet" id="tuy-f-ve-bang" title="${esc(NN.t('km_ve_hint'))}">= ${so(di, 1)} km</button></div>`)
       + f('km_ca_chuyen', `<b id="tuy-km-ca">${so(di + EPL.doc(tam.return_km), 1)} km</b>`)
-      + f('toll_bot', `<div class="tuy3-f-o"><input id="tuy-f-toll" class="num" inputmode="numeric" value="${esc(tam.toll_lak ?? '')}"><small>LAK</small></div>`)
+      + (tam.tolls.length ? f('tuy_phi_tram', `<b id="tuy-phi-tram">${phiTramHtml()}</b>`)
+        : f('toll_bot', `<div class="tuy3-f-o"><input id="tuy-f-toll" class="num" inputmode="numeric" value="${esc(tam.toll_lak ?? '')}"><small>LAK</small></div>`))
       + f('note', `<input id="tuy-f-note" lang="lo" value="${esc(tam.note || '')}">`, 'rong');
     q('#tuy-f-ve').addEventListener('input', e => { tam.return_km = e.target.value; capNhatTong(); });
     q('#tuy-f-ve-bang').addEventListener('click', () => { tam.return_km = Math.round(kmDi() * 10) / 10; q('#tuy-f-ve').value = tam.return_km; capNhatTong(); });
-    q('#tuy-f-toll').addEventListener('input', e => { tam.toll_lak = e.target.value; });
+    const bot = q('#tuy-f-toll'); if (bot) bot.addEventListener('input', e => { tam.toll_lak = e.target.value; });
     q('#tuy-f-note').addEventListener('input', e => { tam.note = e.target.value; });
   }
   // gõ km thì chỉ sửa mấy con số tổng, không vẽ lại ô đang gõ
@@ -157,20 +183,30 @@
     if (c) c.textContent = '= ' + so(di, 1) + ' km';
     if (t) t.textContent = so(di, 1);
     veDo();
+    veTram(); veTomTram();
   }
 
+  function apThe(trong) {
+    q('.tuy3-noi-chang').hidden = trong || the === 'cp';
+    q('.tuy3-noi-cp').hidden = trong || the !== 'cp';
+    root.querySelectorAll('.tuy3-trai [data-tab-noi]').forEach(o => { o.hidden = o.dataset.tabNoi !== the; });
+    q('#tuy-ws').dataset.the = the;
+  }
   function veThe() {
     root.querySelectorAll('#tuy-tab button').forEach(b => b.classList.toggle('on', b.dataset.tab === the));
-    root.querySelectorAll('[data-tab-noi]').forEach(o => { o.hidden = o.dataset.tabNoi !== the; });
-    const n = dangSua() ? tam.cost.length : (chon.goi_y || []).length;
+    apThe(false);
+    // bộ gợi ý chỉ xem có cả dòng phí theo trạm (máy chủ ghép vào) — đếm ở thẻ «Chi phí gợi ý» không tính các dòng đó
+    const n = dangSua() ? tam.cost.length : (chon.goi_y || []).filter(x => !x.toll_station_id).length;
     q('#tuy-cp-dem').textContent = n;
+    q('#tuy-tram-dem').textContent = dsTram().length;
     veThePhai();
-    if (the === 'chang' && MAP) setTimeout(() => MAP && MAP.invalidateSize(), 30);
+    if (the !== 'cp' && MAP) setTimeout(() => MAP && MAP.invalidateSize(), 30);
   }
 
   /** Góc phải hàng thẻ: số điểm đã chấm vị trí, km đường bộ đo được cả tuyến, nút «Dùng km đo được» khi đang sửa. */
   function veThePhai() {
     const o = q('#tuy-the-phai'); if (!o) return;
+    if (the === 'tram') { veThePhaiTram(o); return; }
     if (the !== 'chang') { o.innerHTML = ''; return; }
     const dd = diem(), co = dd.filter(coVT).length;
     let h = `<span class="tuy3-dem ${co === dd.length ? 'du' : ''}">${GHIM}${esc(NN.t('tuy_da_cham', { n: co, m: dd.length }))}</span>`;
@@ -263,7 +299,7 @@
 
   /* ------------------------------------------------------------------ chấm vị trí */
   function batCham(i) {
-    chamO = chamO === i ? null : i;
+    chamO = chamO === i ? null : i; chamTram = false;
     veChang(); veBanDo(false); vePick();
     if (chamO != null) { const d = tam.stops[i]; if (coVT(d) && MAP) MAP.setView([+d.lat, +d.lng], Math.max(MAP.getZoom(), 10)); }
   }
@@ -275,11 +311,19 @@
     doiDiem();
   }
   function khiBamBanDo(e) {
+    if (dangSua() && chamTram) { taoTramTai(e.latlng).catch(EPL.baoLoi); return; }
     if (!dangSua() || chamO == null) return;
     datViTri(chamO, e.latlng.lat, e.latlng.lng, true);
   }
   function vePick() {
     const o = q('#tuy-pick'); if (!o) return;
+    if (chamTram && dangSua()) {
+      o.hidden = false; q('#tuy-nen').hidden = true;
+      const m = q('#tuy-map'); if (m) m.classList.add('dang-cham');
+      o.innerHTML = `<div class="tuy3-pick-dau">${TRAM_IC}<span>${NN.h('tuy_cham_tram_hint')}</span><button type="button" class="x" id="tuy-pick-thoi" title="${esc(NN.t('cancel'))}">×</button></div>`;
+      q('#tuy-pick-thoi').addEventListener('click', () => { chamTram = false; vePick(); veThePhai(); });
+      return;
+    }
     const d = chamO != null && tam ? tam.stops[chamO] : null;
     o.hidden = !d; q('#tuy-nen').hidden = !!d;
     const m = q('#tuy-map'); if (m) m.classList.toggle('dang-cham', !!d);
@@ -358,6 +402,16 @@
       }).bindTooltip(`${i + 1}. ${esc(d.name || '…')}${i ? ' · +' + so(d.km_from_prev, 1) + ' km' : ''}`, { direction: 'top', offset: [0, -14] }).addTo(lopVe);
       if (dangSua()) mk.on('dragend', (e) => { const p = e.target.getLatLng(); datViTri(i, p.lat, p.lng, false); });
     });
+    dsTram().filter(t => t.lat != null && t.lng != null).forEach(t => {
+      L.marker([+t.lat, +t.lng], {
+        icon: L.divIcon({ className: 'tuy3-mk-o', html: `<span class="tuy3-tp${coGiaTram(t) ? '' : ' chua'}">${TRAM_IC}</span>`, iconSize: [20, 20], iconAnchor: [10, 10] }),
+        keyboard: false, zIndexOffset: -100,
+      }).bindTooltip(`${esc(t.name)}${thayGia() && coGiaTram(t) ? ' · ' + EPL.tien(EPL.doc(t.fee), t.currency) : ''}`, { direction: 'top', offset: [0, -10] }).addTo(lopVe);
+    });
+    if (dangSua()) ganTram.forEach(u => {
+      L.marker([u.lat, u.lng], { icon: L.divIcon({ className: 'tuy3-mk-o', html: `<span class="tuy3-tp goi-y">${TRAM_IC}</span>`, iconSize: [18, 18], iconAnchor: [9, 9] }), keyboard: false, zIndexOffset: -200 })
+        .bindTooltip(`${esc(u.name || NN.t('tuy_tram'))} · ${esc(NN.t('tuy_cach_m', { m: so(u.cach_m) }))}`, { direction: 'top', offset: [0, -9] }).addTo(lopVe);
+    });
     if (canhLai && co.length) MAP.fitBounds(L.latLngBounds(co.map(([d]) => [+d.lat, +d.lng])).pad(0.2), { maxZoom: 12 });
     baoBanDo(co.length, theoDuong);
     setTimeout(() => MAP && MAP.invalidateSize(), 60);
@@ -396,15 +450,18 @@
     DO = { khoa, legs: {}, dang: true }; veDo();
     let kq;
     try {
-      const ac = new AbortController(), h = setTimeout(() => ac.abort(), 10000);
-      const r = await fetch(OSRM + co.map(([d]) => (+d.lng).toFixed(6) + ',' + (+d.lat).toFixed(6)).join(';') + '?overview=full&geometries=geojson&steps=false', { signal: ac.signal });
+      const ac = new AbortController(), h = setTimeout(() => ac.abort(), 15000);
+      const yc = { locations: co.map(([d]) => ({ lat: +d.lat, lon: +d.lng })), costing: 'truck', costing_options: { truck: XE },
+        units: 'kilometers', directions_type: 'none' };
+      const r = await fetch(VALHALLA + '?json=' + encodeURIComponent(JSON.stringify(yc)), { signal: ac.signal });
       clearTimeout(h);
       const j = await r.json();
-      if (!r.ok || j.code !== 'Ok' || !j.routes || !j.routes[0]) throw new Error('osrm');
-      const rt = j.routes[0], legs = {};
+      if (!r.ok || !j.trip || j.trip.status !== 0) throw new Error('valhalla');
+      const legs = {};
       // chặng i = điểm i-1 → điểm i; chỉ gán khi hai điểm liền nhau đều có vị trí (bỏ một điểm giữa thì đoạn đo gộp hai chặng)
-      rt.legs.forEach((lg, k) => { const a = co[k][1], b = co[k + 1][1]; if (b === a + 1) legs[b] = Math.round(lg.distance / 100) / 10; });
-      kq = { khoa, legs, tong: Math.round(rt.distance / 100) / 10, du: co.length === dd.length, path: rt.geometry.coordinates.map(c => [c[1], c[0]]) };
+      j.trip.legs.forEach((lg, k) => { const a = co[k][1], b = co[k + 1][1]; if (b === a + 1) legs[b] = Math.round(lg.summary.length * 10) / 10; });
+      kq = { khoa, legs, tong: Math.round(j.trip.summary.length * 10) / 10, du: co.length === dd.length,
+        path: j.trip.legs.reduce((a, lg) => a.concat(giaiMa6(lg.shape)), []) };
       DO_DEM.set(khoa, kq);
     } catch (e) {
       kq = { khoa, legs: {}, loi: true };
@@ -414,7 +471,159 @@
     if (!dangSua()) veChang();
   }
 
-  /* ------------------------------------------------------------------ chi phí gợi ý (thẻ thứ hai) */
+  /* ------------------------------------------------------------------ trạm thu phí (thẻ thứ hai) */
+  // Mỗi trạm: giá MỘT lượt cho xe EPL (anh Hải 16/10). Lượt = 1, thêm lượt về khi tuyến có km chiều về và trạm thu cả hai chiều —
+  // cùng luật máy chủ (services/tram_thu_phi.luot). Bãi không thấy giá (anh Khampla A2).
+  const saoTram = (t) => ({ ...t, _goc: { fee: t.fee ?? null, one_way: !!t.one_way, currency: t.currency } });
+  const dsTram = () => dangSua() ? tam.tolls : ((chon && chon.tram) || []);
+  const luotTram = (t) => 1 + (EPL.doc(dangSua() ? tam.return_km : (chon && chon.return_km)) > 0 && !t.one_way ? 1 : 0);
+  const coGiaTram = (t) => t.fee != null && t.fee !== '';
+  function tongTram() {
+    const tong = {}; let chua = 0;
+    dsTram().forEach(t => { if (!coGiaTram(t)) { chua++; return; } tong[t.currency] = (tong[t.currency] || 0) + EPL.doc(t.fee) * luotTram(t); });
+    return { tong, chua };
+  }
+  function phiTramHtml() {
+    const { tong, chua } = tongTram(), n = dsTram().length;
+    if (!thayGia()) return esc(NN.t('tuy_n_tram', { n }));
+    return (Object.keys(tong).length ? esc(EPL.tienGop(tong)) : '—') + (chua ? ` <small class="tuy3-canh">· ${esc(NN.t('tuy_n_chua_gia', { n: chua }))}</small>` : '');
+  }
+  function veTomTram() { const o = q('#tuy-phi-tram'); if (o) o.innerHTML = phiTramHtml(); }
+
+  /** km của một điểm tính dọc đường xe đi đang vẽ (để xếp trạm thêm tay đúng thứ tự xe qua). Không có đường → null. */
+  function kmTren(lat, lng) {
+    const p = DO.path && DO.khoa === khoaDo() ? DO.path : null;
+    if (!p || p.length < 2 || lat == null || lng == null) return null;
+    const kx = Math.cos(lat * Math.PI / 180) * 111.32, ky = 110.54;
+    let tot = null, cong = 0;
+    for (let i = 1; i < p.length; i++) {
+      const ax = (p[i - 1][1] - lng) * kx, ay = (p[i - 1][0] - lat) * ky, bx = (p[i][1] - lng) * kx, by = (p[i][0] - lat) * ky;
+      const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy, dai = Math.sqrt(l2);
+      const t = l2 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / l2)) : 0;
+      const d = Math.hypot(ax + t * dx, ay + t * dy);
+      if (tot == null || d < tot[0]) tot = [d, cong + t * dai];
+      cong += dai;
+    }
+    return tot ? Math.round(tot[1] * 10) / 10 : null;
+  }
+  function xepTram() {
+    tam.tolls.forEach(t => { if (t.km == null) t.km = kmTren(t.lat, t.lng); });
+    tam.tolls.sort((a, b) => (a.km == null ? 1e9 : a.km) - (b.km == null ? 1e9 : b.km));
+  }
+
+  function veThePhaiTram(o) {
+    if (!dangSua()) {
+      o.innerHTML = dsTram().length ? `<span class="tuy3-do">${NN.h('tuy_phi_tram')}: <b>${phiTramHtml()}</b></span>` : '';
+      return;
+    }
+    const co = new Set(tam.tolls.map(t => t.id));
+    const them = STS.filter(s => s.active && !co.has(s.id));
+    o.innerHTML = `<button type="button" class="btn sm primary tuy3-nut-tram" id="tuy-tim-tram">${TRAM_IC}<span>${NN.h('tuy_tim_tram')}</span></button>
+      <button type="button" class="btn sm tuy3-nut-tram ${chamTram ? 'on' : ''}" id="tuy-cham-tram">+ <span>${NN.h('tuy_cham_tram')}</span></button>
+      ${them.length ? `<select id="tuy-them-tram" class="tuy3-them-tram"><option value="">+ ${esc(NN.t('tuy_them_tram'))}</option>${them.map(s => `<option value="${esc(s.id)}">${esc(s.name)} · ${esc(s.country)}</option>`).join('')}</select>` : ''}`;
+    q('#tuy-tim-tram').addEventListener('click', () => timTram().catch(EPL.baoLoi));
+    q('#tuy-cham-tram').addEventListener('click', () => { chamTram = !chamTram; chamO = null; veChang(); vePick(); veThePhai(); });
+    const sel = q('#tuy-them-tram');
+    if (sel) sel.addEventListener('change', () => {
+      const s = STS.find(x => x.id === sel.value); if (!s) return;
+      tam.tolls.push(saoTram(s)); xepTram(); veTram(); veThe(); veTom(); veBanDo(false);
+    });
+  }
+
+  /** Dò trạm trên đường xe tải đang vẽ: máy chủ so với trạm trong danh mục + trạm OpenStreetMap đóng gói, trạm mới thêm vào danh mục. */
+  async function timTram() {
+    if (!(DO.path && DO.khoa === khoaDo() && DO.path.length > 1)) { EPL.toast(NN.t(DO.dang ? 'tuy_dang_do' : 'tuy_can_duong'), 'loi'); return; }
+    const b = q('#tuy-tim-tram'); if (b) b.disabled = true;
+    try {
+      const ra = await API.post('/api/toll-stations/doc-tuyen', { duong: DO.path, ten_tuyen: tam.name || '' });
+      const kq = ra.tren || [];
+      ganTram = ra.gan || [];
+      const moi = kq.map(saoTram), da = new Set(moi.map(t => t.id));
+      tam.tolls = moi.concat(tam.tolls.filter(t => !da.has(t.id)));      // trạm thêm tay mà không nằm trên đường: giữ, xếp cuối
+      xepTram();
+      STS = await API.get('/api/toll-stations').catch(() => STS);
+      EPL.toast(NN.t(kq.length ? 'tuy_da_tim_tram' : 'tuy_khong_co_tram', { n: kq.length }), kq.length ? 'ok' : '');
+      veTram(); veThe(); veTom(); veBanDo(false);
+    } finally { if (b && b.isConnected) b.disabled = false; }
+  }
+
+  const tenTramMoi = (nuoc, km) => (nuoc === 'LA' ? 'ດ່ານເກັບຄ່າທາງ' : 'Trạm thu phí') + (km != null ? ' km ' + Math.round(km) : '');
+  async function themVaoTuyen(st) {
+    const t = saoTram(st); t.km = kmTren(t.lat, t.lng);
+    if (!tam.tolls.some(x => x.id === t.id)) tam.tolls.push(t);
+    xepTram();
+    STS = await API.get('/api/toll-stations').catch(() => STS);
+    veTram(); veThe(); veTom(); veBanDo(false);
+  }
+  /** Trạm gợi ý «gần đường»: trạm đã có trong danh mục thì dùng luôn; trạm OSM thì thêm vào danh mục (chưa có giá) rồi vào tuyến. */
+  async function themGan(k) {
+    const u = ganTram[k]; if (!u) return;
+    const st = u.id ? STS.find(s => s.id === u.id)
+      : await API.post('/api/toll-stations', { name: u.name || tenTramMoi(u.country, u.km), country: u.country, lat: u.lat, lng: u.lng, osm_ref: u.ref,
+        note: tam.name ? NN.t('tuy_them_khi_do', { ten: tam.name }) : null });
+    ganTram.splice(k, 1);
+    if (st) await themVaoTuyen(st);
+  }
+  /** «Chấm trạm mới»: bấm lên bản đồ đúng chỗ có trạm (đường Lào nhiều trạm chưa có trên OpenStreetMap). */
+  async function taoTramTai(ll) {
+    chamTram = false; vePick(); veThePhai();
+    const km = kmTren(ll.lat, ll.lng), nuoc = ll.lng > 105.0 ? 'VN' : 'LA';
+    const f = [
+      { id: 'name', label: 'tuy_tram', value: tenTramMoi(nuoc, km), lo: true, bat_buoc: true, rong: true },
+      { id: 'country', label: 'ttp_nuoc', type: 'select', value: nuoc, options: [['LA', 'LA — Lào / ລາວ'], ['VN', 'VN — Việt Nam / ຫວຽດນາມ'], ['TH', 'TH — Thái Lan / ໄທ']] },
+    ];
+    if (thayGia()) f.push({ id: 'fee', label: 'tuy_gia_luot', type: 'number', value: '', goi_y: 'ttp_gia_goi_y' },
+      { id: 'currency', label: 'cur', type: 'select', value: nuoc === 'VN' ? 'VND' : 'LAK', options: ['LAK', 'VND', 'THB', 'USD'].map(c => [c, c]) });
+    f.push({ id: 'one_way', label: 'tuy_mot_chieu', type: 'bat', value: false, nhan_bat: 'tuy_mot_chieu' });
+    const kq = await EPL.hopNhap(NN.t('ttp_them'), f, NN.t('add'), { cot: 2 });
+    if (!kq) return;
+    const body = { name: kq.name, country: kq.country, one_way: kq.one_way, lat: Math.round(ll.lat * 1e6) / 1e6, lng: Math.round(ll.lng * 1e6) / 1e6 };
+    if (thayGia()) { body.fee = kq.fee === '' ? null : kq.fee; body.currency = kq.currency; }
+    await themVaoTuyen(await API.post('/api/toll-stations', body));
+  }
+
+  function veTram() {
+    const o = q('#tuy-tram'); if (!o) return;
+    const dd = dsTram(), sua = dangSua(), gia = thayGia(), n = dd.length;
+    const { tong, chua } = tongTram();
+    const cot = 4 + (gia ? 2 : 0) + (sua ? 1 : 0);
+    const dong = dd.map((t, i) => `<tr>
+        <td>${i + 1}</td>
+        <td lang="lo"><b>${esc(t.name)}</b><span class="tuy3-phu"><span class="tuy3-nuoc">${esc(t.country)}</span>${t.km != null ? ' · km ' + so(t.km, 1) : ''}</span></td>
+        <td class="num">${luotTram(t)}</td>
+        ${gia ? `<td class="num tuy3-gia-o">${sua
+          ? `<div class="tuy3-f-o"><input class="num" data-i="${i}" data-f="fee" value="${esc(t.fee ?? '')}" inputmode="decimal" placeholder="${esc(NN.t('tuy_chua_gia'))}"><select data-i="${i}" data-f="currency">${['LAK', 'VND', 'THB', 'USD'].map(c => `<option ${c === t.currency ? 'selected' : ''}>${c}</option>`).join('')}</select></div>`
+          : (coGiaTram(t) ? EPL.tien(EPL.doc(t.fee), t.currency) : `<span class="tuy3-canh">${NN.h('tuy_chua_gia')}</span>`)}</td>
+        <td class="num" data-tt="${i}">${coGiaTram(t) ? EPL.tien(EPL.doc(t.fee) * luotTram(t), t.currency) : '—'}</td>` : ''}
+        <td class="tuy3-mot-chieu-o">${sua ? `<label class="tuy3-mot-chieu" title="${esc(NN.t('tuy_mot_chieu'))}"><input type="checkbox" data-i="${i}" data-f="one_way" ${t.one_way ? 'checked' : ''}></label>`
+          : (t.one_way ? `<span class="tuy3-co-mot" title="${esc(NN.t('tuy_mot_chieu'))}">✓</span>` : '')}</td>
+        ${sua ? `<td><button type="button" class="tuy3-xoa" data-xoa-tram="${i}" title="${esc(NN.t('delete'))}" aria-label="${esc(NN.t('delete'))}">${THUNG}</button></td>` : ''}</tr>`).join('');
+    o.innerHTML = `<div class="tbl-wrap"><table class="tbl tbl-compact tuy3-bang-tram"><thead><tr><th>#</th><th>${NN.h('tuy_tram')}</th><th class="num">${NN.h('tuy_luot')}</th>
+        ${gia ? `<th class="num">${NN.h('tuy_gia_luot')}</th><th class="num">${NN.h('tuy_thanh_tien')}</th>` : ''}<th title="${esc(NN.t('tuy_mot_chieu'))}">${NN.h('tuy_mot_chieu_ngan')}</th>${sua ? '<th></th>' : ''}</tr></thead>
+      <tbody>${dong || `<tr><td colspan="${cot}" class="empty">${NN.h(sua ? 'tuy_tram_trong_sua' : 'tuy_tram_trong')}</td></tr>`}</tbody>
+      ${n ? `<tfoot><tr><td></td><td>${NN.h('tuy_tong_tram', { n })}</td><td></td>${gia ? `<td></td><td class="num" id="tuy-tram-tong">${Object.keys(tong).length ? esc(EPL.tienGop(tong)) : '—'}</td>` : ''}<td colspan="${sua ? 2 : 1}"></td></tr></tfoot>` : ''}</table></div>
+      ${sua && ganTram.length ? `<div class="tuy3-gan"><div class="tuy3-gan-dau"><b>${NN.h('tuy_gan_duong')}</b><small class="muted">${NN.h('tuy_gan_duong_hint')}</small></div>
+        ${ganTram.map((u, k) => `<div class="tuy3-gan-dong"><span class="tuy3-tp goi-y">${TRAM_IC}</span><span class="grow" lang="lo"><b>${esc(u.name || NN.t('tuy_tram'))}</b>
+          <span class="tuy3-phu"><span class="tuy3-nuoc">${esc(u.country)}</span> · km ${so(u.km, 1)} · ${esc(NN.t('tuy_cach_m', { m: so(u.cach_m) }))}</span></span>
+          <button type="button" class="btn sm" data-them-gan="${k}">+ ${NN.h('add')}</button></div>`).join('')}</div>` : ''}
+      <div class="small muted tuy3-tram-chu">${NN.h('tuy_tram_hint')}${chua && gia ? ` <span class="tuy3-canh">${esc(NN.t('tuy_n_chua_gia', { n: chua }))}</span>` : ''}</div>`;
+    if (!sua) return;
+    o.querySelectorAll('[data-them-gan]').forEach(b => b.addEventListener('click', () => themGan(+b.dataset.themGan).catch(EPL.baoLoi)));
+    o.querySelectorAll('[data-f]').forEach(el => el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', () => {
+      const t = tam.tolls[+el.dataset.i], f = el.dataset.f;
+      t[f] = el.type === 'checkbox' ? el.checked : el.value;
+      if (f === 'one_way') { veTram(); veTomTram(); return; }
+      const tt = o.querySelector(`[data-tt="${el.dataset.i}"]`);
+      if (tt) tt.innerHTML = coGiaTram(t) ? EPL.tien(EPL.doc(t.fee) * luotTram(t), t.currency) : '—';
+      const tg = q('#tuy-tram-tong'), g = tongTram().tong; if (tg) tg.textContent = Object.keys(g).length ? EPL.tienGop(g) : '—';
+      veTomTram();
+    }));
+    o.querySelectorAll('[data-xoa-tram]').forEach(b => b.addEventListener('click', () => {
+      tam.tolls.splice(+b.dataset.xoaTram, 1); veTram(); veThe(); veTom(); veBanDo(false);
+    }));
+  }
+
+  /* ------------------------------------------------------------------ chi phí gợi ý (thẻ thứ ba) */
   function veCp() {
     const o = q('#tuy-cp'); if (!o) return;
     if (!dangSua()) { veGoiY(o, chon); return; }
@@ -489,6 +698,17 @@
         ...(thayGia() ? { unit_price: x.unit_price === '' || x.unit_price == null ? null : EPL.doc(x.unit_price), currency: x.currency || 'LAK' } : {}) })),
     };
     if (che === 'sua') body.active = !!tam.active;
+    body.tolls = tam.tolls.map(t => t.id);
+    // giá / thu một chiều của trạm sửa ngay trên bảng trạm → ghi vào danh mục trạm trước (giá của trạm dùng chung mọi tuyến)
+    for (const t of tam.tolls) {
+      const g = t._goc || {}, doi = {};
+      if (!!t.one_way !== !!g.one_way) doi.one_way = !!t.one_way;
+      if (thayGia()) {
+        if (String(t.fee ?? '') !== String(g.fee ?? '')) doi.fee = t.fee === '' || t.fee == null ? null : EPL.doc(t.fee);
+        if ((t.currency || '') !== (g.currency || '')) doi.currency = t.currency;
+      }
+      if (Object.keys(doi).length) await API.put('/api/toll-stations/' + t.id, doi);
+    }
     const moi = await (che === 'sua' ? API.put('/api/routes/' + chon.id, body) : API.post('/api/routes', body));
     EPL.toast(NN.t('saved'), 'ok');
     ds = await API.get('/api/routes');
@@ -511,12 +731,17 @@
     setTimeout(() => MAP && MAP.invalidateSize(), 60);
   }
   const khiDoiCo = () => caoKhung();
-  const khiPhim = (e) => { if (e.key === 'Escape' && chamO != null && root && root.isConnected) batCham(chamO); };
+  const khiPhim = (e) => {
+    if (e.key !== 'Escape' || !root || !root.isConnected) return;
+    if (chamTram) { chamTram = false; vePick(); veThePhai(); return; }
+    if (chamO != null) batCham(chamO);
+  };
 
   EPL.modules['tuyen-duong'] = {
     async init(r) {
       root = r; MAP = null; lopNen = lopVe = null; che = 'xem'; tam = null; chamO = null; chon = null; DO = { khoa: '', legs: {} };
-      [ds, KM, DIEM] = await Promise.all([API.get('/api/routes'), API.get('/api/khoan-muc'), API.get('/api/fuel-places').catch(() => [])]);
+      [ds, KM, DIEM, STS] = await Promise.all([API.get('/api/routes'), API.get('/api/khoan-muc'), API.get('/api/fuel-places').catch(() => []),
+        API.get('/api/toll-stations').catch(() => [])]);
       q('#tuy-q').addEventListener('input', veDanhSach);
       root.querySelectorAll('#tuy-loc button').forEach(b => b.addEventListener('click', () => { loc = b.dataset.loc; veDanhSach(); }));
       root.querySelectorAll('#tuy-tab button').forEach(b => b.addEventListener('click', () => { the = b.dataset.tab; veThe(); }));

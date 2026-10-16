@@ -15896,5 +15896,195 @@ window.EPL_TU_DIEN = {
   "vi": "Bỏ thay đổi",
   "lo": "ຍົກເລີກການປ່ຽນແປງ",
   "en": "Discard changes"
+ },
+ "nav_tram_thu_phi": {
+  "vi": "Trạm thu phí",
+  "lo": "ດ່ານເກັບຄ່າທາງ",
+  "en": "Toll stations"
+ },
+ "tuy_tab_tram": {
+  "vi": "Trạm thu phí",
+  "lo": "ດ່ານເກັບຄ່າທາງ",
+  "en": "Toll stations"
+ },
+ "tuy_tram": {
+  "vi": "Trạm thu phí",
+  "lo": "ດ່ານເກັບຄ່າທາງ",
+  "en": "Toll station"
+ },
+ "tuy_phi_tram": {
+  "vi": "Phí trạm thu phí",
+  "lo": "ຄ່າຜ່ານດ່ານ",
+  "en": "Toll fees"
+ },
+ "tuy_n_tram": {
+  "vi": "{n} trạm",
+  "lo": "{n} ດ່ານ",
+  "en": "{n} stations"
+ },
+ "tuy_n_chua_gia": {
+  "vi": "{n} trạm chưa có giá",
+  "lo": "{n} ດ່ານຍັງບໍ່ມີລາຄາ",
+  "en": "{n} stations without a fee"
+ },
+ "tuy_tong_tram": {
+  "vi": "Tổng {n} trạm",
+  "lo": "ລວມ {n} ດ່ານ",
+  "en": "Total of {n} stations"
+ },
+ "tuy_luot": {
+  "vi": "Lượt",
+  "lo": "ຖ້ຽວ",
+  "en": "Passes"
+ },
+ "tuy_gia_luot": {
+  "vi": "Giá một lượt",
+  "lo": "ລາຄາຕໍ່ຖ້ຽວ",
+  "en": "Fee per pass"
+ },
+ "tuy_thanh_tien": {
+  "vi": "Thành tiền",
+  "lo": "ເປັນເງິນ",
+  "en": "Amount"
+ },
+ "tuy_mot_chieu": {
+  "vi": "Chỉ thu một chiều",
+  "lo": "ເກັບທາງດຽວ",
+  "en": "One direction only"
+ },
+ "tuy_chua_gia": {
+  "vi": "Chưa có giá",
+  "lo": "ຍັງບໍ່ມີລາຄາ",
+  "en": "No fee yet"
+ },
+ "tuy_tim_tram": {
+  "vi": "Tìm trạm dọc tuyến",
+  "lo": "ຊອກດ່ານຕາມເສັ້ນທາງ",
+  "en": "Find stations on route"
+ },
+ "tuy_them_tram": {
+  "vi": "Thêm trạm từ danh mục",
+  "lo": "ເພີ່ມດ່ານຈາກລາຍການ",
+  "en": "Add a station from the list"
+ },
+ "tuy_can_duong": {
+  "vi": "Cần chấm vị trí các điểm (và có mạng) để vẽ đường xe đi trước khi tìm trạm.",
+  "lo": "ຕ້ອງປັກຕຳແໜ່ງຈຸດຕ່າງໆ (ແລະ ມີອິນເຕີເນັດ) ເພື່ອແຕ້ມເສັ້ນທາງລົດແລ່ນກ່ອນຊອກດ່ານ.",
+  "en": "Pin the stops (and be online) so the truck path is drawn before searching for stations."
+ },
+ "tuy_da_tim_tram": {
+  "vi": "Tìm thấy {n} trạm dọc tuyến — kiểm lại rồi bấm Lưu.",
+  "lo": "ພົບ {n} ດ່ານຕາມເສັ້ນທາງ — ກວດຄືນແລ້ວກົດ ບັນທຶກ.",
+  "en": "Found {n} stations on the route — check them, then press Save."
+ },
+ "tuy_khong_co_tram": {
+  "vi": "Không thấy trạm thu phí nào trên đường xe đi.",
+  "lo": "ບໍ່ພົບດ່ານເກັບຄ່າທາງໃດໆຕາມເສັ້ນທາງລົດແລ່ນ.",
+  "en": "No toll station found on the truck path."
+ },
+ "tuy_tram_trong": {
+  "vi": "Tuyến chưa khai trạm thu phí — phiếu dùng ô Phí cao tốc (BOT) cả tuyến như cũ.",
+  "lo": "ເສັ້ນທາງຍັງບໍ່ໄດ້ແຈ້ງດ່ານ — ໃບໃຊ້ຄ່າທາງດ່ວນທັງເສັ້ນຄືເກົ່າ.",
+  "en": "No toll stations on this route yet — slips use the route-wide toll (BOT) as before."
+ },
+ "tuy_tram_trong_sua": {
+  "vi": "Bấm «Tìm trạm dọc tuyến» (cần đường xe đi đã vẽ), hoặc thêm trạm từ danh mục.",
+  "lo": "ກົດ «ຊອກດ່ານຕາມເສັ້ນທາງ» (ຕ້ອງມີເສັ້ນທາງທີ່ແຕ້ມແລ້ວ), ຫຼື ເພີ່ມດ່ານຈາກລາຍການ.",
+  "en": "Press «Find stations on route» (the truck path must be drawn), or add a station from the list."
+ },
+ "tuy_tram_hint": {
+  "vi": "Giá là giá một lượt cho xe EPL (đầu kéo + rơ-moóc / container; bên Việt Nam xe loại 5), dùng chung mọi tuyến đi qua trạm. Tuyến có km chiều về thì cộng lượt về, trừ trạm chỉ thu một chiều. Chọn tuyến trên phiếu xuất xe là có mỗi trạm một dòng phí cao tốc.",
+  "lo": "ລາຄາແມ່ນລາຄາຕໍ່ຖ້ຽວສຳລັບລົດ EPL (ຫົວລາກ + ຫາງ / ຕູ້ຄອນເທນເນີ; ຝັ່ງຫວຽດນາມແມ່ນລົດປະເພດ 5), ໃຊ້ຮ່ວມທຸກເສັ້ນທາງທີ່ຜ່ານດ່ານ. ເສັ້ນທາງທີ່ມີ ກມ ກັບຄືນ ຈະບວກຖ້ຽວກັບ, ຍົກເວັ້ນດ່ານທີ່ເກັບທາງດຽວ. ເລືອກເສັ້ນທາງໃນໃບອອກລົດ ຈະມີແຖວຄ່າທາງດ່ວນແຕ່ລະດ່ານ.",
+  "en": "The fee is per pass for an EPL truck (tractor + trailer / container; class 5 in Vietnam) and is shared by every route through the station. Routes with return km add the return pass, except one-direction stations. Picking the route on a dispatch slip adds one toll line per station."
+ },
+ "ttp_them": {
+  "vi": "Thêm trạm",
+  "lo": "ເພີ່ມດ່ານ",
+  "en": "Add station"
+ },
+ "ttp_so_tuyen": {
+  "vi": "Số tuyến",
+  "lo": "ຈຳນວນເສັ້ນທາງ",
+  "en": "Routes"
+ },
+ "ttp_nuoc": {
+  "vi": "Nước",
+  "lo": "ປະເທດ",
+  "en": "Country"
+ },
+ "ttp_trong": {
+  "vi": "Chưa có trạm nào. Vào Tuyến đường → Sửa → thẻ «Trạm thu phí» → «Tìm trạm dọc tuyến», hoặc bấm Thêm trạm.",
+  "lo": "ຍັງບໍ່ມີດ່ານ. ໄປ ເສັ້ນທາງ → ແກ້ໄຂ → ແຖບ «ດ່ານເກັບຄ່າທາງ» → «ຊອກດ່ານຕາມເສັ້ນທາງ», ຫຼື ກົດ ເພີ່ມດ່ານ.",
+  "en": "No stations yet. Go to Routes → Edit → «Toll stations» tab → «Find stations on route», or press Add station."
+ },
+ "ttp_hint": {
+  "vi": "Giá một lượt cho xe EPL — kế toán nhập; đổi giá ở đây là đổi cho mọi tuyến đi qua trạm. Phiếu đã lập giữ giá lúc lập.",
+  "lo": "ລາຄາຕໍ່ຖ້ຽວສຳລັບລົດ EPL — ບັນຊີເປັນຜູ້ປ້ອນ; ປ່ຽນລາຄາຢູ່ນີ້ ແມ່ນປ່ຽນໃຫ້ທຸກເສັ້ນທາງທີ່ຜ່ານດ່ານ. ໃບທີ່ອອກແລ້ວໃຊ້ລາຄາຕອນອອກໃບ.",
+  "en": "Fee per pass for an EPL truck — entered by accounting; changing it here changes it for every route through the station. Slips already made keep their price."
+ },
+ "ttp_nguon": {
+  "vi": "Vị trí trạm: © OpenStreetMap contributors. Giá không lấy từ bản đồ.",
+  "lo": "ຕຳແໜ່ງດ່ານ: © OpenStreetMap contributors. ລາຄາບໍ່ໄດ້ເອົາຈາກແຜນທີ່.",
+  "en": "Station locations: © OpenStreetMap contributors. Fees are not taken from the map."
+ },
+ "ttp_gia_goi_y": {
+  "vi": "Giá một lượt cho xe đầu kéo + rơ-moóc / container của EPL. Để trống = chưa có giá.",
+  "lo": "ລາຄາຕໍ່ຖ້ຽວສຳລັບລົດຫົວລາກ + ຫາງ / ຕູ້ຄອນເທນເນີຂອງ EPL. ປະຫວ່າງ = ຍັງບໍ່ມີລາຄາ.",
+  "en": "Fee per pass for an EPL tractor + trailer / container. Empty = no fee yet."
+ },
+ "ttp_vi_tri_goi_y": {
+  "vi": "Dán toạ độ «vĩ độ, kinh độ» (chép từ Google Maps). Để trống được.",
+  "lo": "ວາງພິກັດ «ລາຕິຈູດ, ລອງຈິຈູດ» (ກ໊ອບຈາກ Google Maps). ປະຫວ່າງໄດ້.",
+  "en": "Paste coordinates «latitude, longitude» (copied from Google Maps). May be left empty."
+ },
+ "tuy_cham_tram": {
+  "vi": "Chấm trạm mới",
+  "lo": "ປັກດ່ານໃໝ່",
+  "en": "Pin a new station"
+ },
+ "tuy_cham_tram_hint": {
+  "vi": "Bấm lên bản đồ đúng chỗ có trạm thu phí để thêm trạm mới vào tuyến (đường Lào nhiều trạm chưa có trên bản đồ).",
+  "lo": "ກົດໃສ່ແຜນທີ່ບ່ອນທີ່ມີດ່ານເກັບຄ່າທາງ ເພື່ອເພີ່ມດ່ານໃໝ່ເຂົ້າເສັ້ນທາງ (ເສັ້ນທາງລາວຫຼາຍດ່ານຍັງບໍ່ມີໃນແຜນທີ່).",
+  "en": "Click the map exactly where the toll station is to add it to the route (many Lao stations are not on the map yet)."
+ },
+ "tuy_gan_duong": {
+  "vi": "Trạm gần đường xe đi",
+  "lo": "ດ່ານໃກ້ເສັ້ນທາງລົດແລ່ນ",
+  "en": "Stations near the truck path"
+ },
+ "tuy_gan_duong_hint": {
+  "vi": "Chưa nằm trên đường máy vẽ — máy chỉ đường có khi chọn đường tắt. Xe hay chạy qua trạm nào thì bấm Thêm, hoặc thêm điểm đi qua vào tuyến để đường vẽ đúng.",
+  "lo": "ຍັງບໍ່ຢູ່ເທິງເສັ້ນທາງທີ່ເຄື່ອງແຕ້ມ — ບາງເທື່ອເຄື່ອງເລືອກທາງລັດ. ລົດແລ່ນຜ່ານດ່ານໃດປະຈຳ ໃຫ້ກົດ ເພີ່ມ, ຫຼື ເພີ່ມຈຸດຜ່ານເຂົ້າເສັ້ນທາງເພື່ອໃຫ້ແຕ້ມຖືກ.",
+  "en": "Not on the drawn path — the router sometimes picks a shortcut. Add the stations the trucks really pass, or add a via stop to the route so the path is drawn right."
+ },
+ "tuy_cach_m": {
+  "vi": "cách đường {m} m",
+  "lo": "ຫ່າງເສັ້ນທາງ {m} ມ",
+  "en": "{m} m off the path"
+ },
+ "tuy_mot_chieu_ngan": {
+  "vi": "Một chiều",
+  "lo": "ທາງດຽວ",
+  "en": "One-way"
+ },
+ "tuy_them_khi_do": {
+  "vi": "Thêm khi dò tuyến {ten}",
+  "lo": "ເພີ່ມຕອນຊອກດ່ານເສັ້ນທາງ {ten}",
+  "en": "Added when searching route {ten}"
+ },
+ "title_tram_thu_phi": {
+  "vi": "Trạm thu phí<span class=\"sub\">Giá một lượt cho xe EPL · trạm dọc tuyến · thu một chiều</span>",
+  "lo": "ດ່ານເກັບຄ່າທາງ<span class=\"sub\">ລາຄາຕໍ່ຖ້ຽວສຳລັບລົດ EPL · ດ່ານຕາມເສັ້ນທາງ · ເກັບທາງດຽວ</span>",
+  "en": "Toll stations<span class=\"sub\">Fee per pass for EPL trucks · stations on routes · one-way</span>"
+ },
+ "ttp_xoa_hoi": {
+  "vi": "Xoá trạm «{ten}»?",
+  "lo": "ລຶບດ່ານ «{ten}» ບໍ?",
+  "en": "Delete station «{ten}»?"
+ },
+ "ttp_da_xoa": {
+  "vi": "Đã xoá trạm",
+  "lo": "ລຶບດ່ານແລ້ວ",
+  "en": "Station deleted"
  }
 };

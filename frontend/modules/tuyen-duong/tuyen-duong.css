@@ -156,3 +156,39 @@ i.tuy3-lech{display:inline}
   .tuy3-noi-chang,.tuy3-ws.dang-sua .tuy3-noi-chang{grid-template-columns:1fr}
   .tuy3-map-o{min-height:320px}
 }
+
+/* ---- trạm thu phí (16/10): bảng trạm bên trái, bản đồ bên phải dùng chung với thẻ chặng ---- */
+.tuy3-trai{min-height:0;display:flex;flex-direction:column}
+.tuy3-trai>.tuy3-chang{flex:1}
+.tuy3-ws[data-the="tram"] .tuy3-noi-chang{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)}
+.tuy3-ws.dang-sua[data-the="tram"] .tuy3-noi-chang{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr)}
+.tuy3-bang-tram td{vertical-align:middle}
+.tuy3-bang-tram td:nth-child(2){min-width:140px}
+#tuy-tram .tbl-wrap{overflow-x:auto}
+.tuy3-nuoc{display:inline-block;padding:0 6px;border-radius:4px;background:var(--bg-2);color:var(--ink-2);font-size:11px;font-weight:700;letter-spacing:.03em}
+.tuy3-gia-o input{width:88px;min-width:0;border:1px solid var(--line-2);border-radius:4px;padding:4px 6px;background:var(--paper)}
+.tuy3-gia-o select{border:1px solid var(--line-2);border-radius:4px;padding:3px 4px;background:var(--paper)}
+.tuy3-gia-o .tuy3-f-o{justify-content:flex-end}
+.tuy3-mot-chieu{display:inline-flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap;cursor:pointer}
+.tuy3-tram-chu{margin-top:6px;line-height:1.45}
+.tuy3-them-tram{height:28px;max-width:240px;border:1px solid var(--line-2);border-radius:var(--r);padding:0 6px;background:var(--paper);font-size:12.5px}
+.tuy3-nut-tram svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.tuy3-tp{display:grid;place-items:center;width:20px;height:20px;border-radius:5px;background:var(--amber);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45)}
+.tuy3-tp svg{width:12px;height:12px;fill:none;stroke:#fff;stroke-width:1.9;stroke-linecap:round}
+.tuy3-tp.chua{background:var(--paper);border-color:var(--amber)}
+.tuy3-tp.chua svg{stroke:var(--amber)}
+
+/* trạm gần đường (gợi ý sau lần dò) · nút chấm trạm mới */
+.tuy3-gan{margin-top:10px;border:1px dashed #E3CB98;border-radius:var(--r-lg);background:#FFFBF2;padding:8px 10px;display:flex;flex-direction:column;gap:4px}
+.tuy3-gan-dau{display:flex;flex-direction:column;gap:2px;margin-bottom:2px}
+.tuy3-gan-dong{display:flex;align-items:center;gap:8px;padding:4px 0;border-top:1px solid #F1E3C4}
+.tuy3-gan-dong:first-of-type{border-top:0}
+.tuy3-tp.goi-y{width:18px;height:18px;background:var(--paper);border:1.5px dashed var(--ink-3);box-shadow:none}
+.tuy3-tp.goi-y svg{stroke:var(--ink-3)}
+.tuy3-nut-tram.on{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+
+/* bảng trạm gọn (16/10): tiền một dòng, cột một chiều hẹp */
+.tuy3-bang-tram td.num{white-space:nowrap}
+.tuy3-mot-chieu-o{text-align:center}
+.tuy3-co-mot{color:var(--green);font-weight:700}
+.tuy3-ws[data-the="tram"] .tuy3-noi-chang{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)}

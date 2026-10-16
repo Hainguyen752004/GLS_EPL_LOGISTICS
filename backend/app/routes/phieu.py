@@ -46,6 +46,7 @@ from services import so_nhien_lieu as NL
 from services import tai_khoan as TK
 from services import de_nghi_thu as DNT
 from services import khoan_muc as KMC
+from services import tram_thu_phi as TP
 from services.tep import loi_co_tep, ten_tep, TEP_DIR, TEP_KIEU, TEP_TOI_DA
 from routes import hop_dong as HD
 from routes.tuyen import cach_tra_goi_y, gia_goi_y, goi_y_cua, km_ca_chuyen
@@ -201,7 +202,7 @@ def _xuat_dong(d, company=None):
             "item_name": d.item_name, "qty": d.qty, "unit_price": d.unit_price, "sale_price": d.sale_price, "currency": d.currency,
             "place": d.place, "place_id": d.place_id, "supplier_id": d.supplier_id, "paid_by_epl": d.paid_by_epl, "acct_code": TK.tk_dong(company, d), "source": d.source,
             "part_id": d.part_id, "stock_move_id": d.stock_move_id,
-            "toll_card_id": d.toll_card_id, "card_move_id": d.card_move_id,
+            "toll_card_id": d.toll_card_id, "card_move_id": d.card_move_id, "toll_station_id": d.toll_station_id,
             "ghi_no": bool(d.ghi_no), "note": d.note,
             # cách trả (Excel anh Khampla, 29/09) và dòng này có vào tiền mặt tài xế cầm đi không — màn tài xế dùng thẳng
             "pay_channel": d.pay_channel, "cach_tra": cach_tra(d, company) if d.section in ("travel", "other") else None,
@@ -633,6 +634,7 @@ def goi_y_chi(route_id: str, company: str = "EPL", db: Session = Depends(get_db)
     if r is None:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có tuyến này."})
     ds, nguon = goi_y_cua(db, r)
+    ds = list(ds) + TP.dong_phieu(db, r)          # 16/10: mỗi trạm thu phí trên tuyến một dòng phí cao tốc
     lien_ket = company == "joint"
     ra = []
     for x in ds:
@@ -641,7 +643,7 @@ def goi_y_chi(route_id: str, company: str = "EPL", db: Session = Depends(get_db)
             continue
         d = {"section": m, "item_key": x.get("item_key") or None, "item_name": x.get("item_name") or None, "qty": x.get("qty"),
              "unit_price": x.get("unit_price") or 0, "currency": x.get("currency") or "LAK", "place_id": x.get("place_id") or None,
-             "paid_by_epl": True, "pay_channel": x.get("pay_channel") or None}
+             "paid_by_epl": True, "pay_channel": x.get("pay_channel") or None, "toll_station_id": x.get("toll_station_id") or None}
         if m == "fuel":
             d["source"] = _nguon_theo_diem(db, d)
             if lien_ket:
@@ -947,9 +949,12 @@ def _gia_mac_dinh(db, p, m, source, d):
         return KK.gia_dau(db, d.get("place_id")), "LAK"                   # kho nhiên liệu ở trang kế toán (28/09)
     if m == "repair" and source == "kho" and d.get("part_id"):
         return KK.gia_phu_tung(db, d["part_id"]), "LAK"         # kho phụ tùng ở trang kế toán (28/09)
+    if m == "travel" and d.get("item_key") == "x_toll" and d.get("toll_station_id"):
+        g = TP.gia_tram(db, d.get("toll_station_id"))          # dòng phí theo trạm (16/10): giá trạm, chưa có giá → 0 để kế toán nhập
+        return g if g is not None else (0, "LAK")
     if m == "travel" and d.get("item_key") == "x_toll" and p.route_id:
         r = db.get(Route, p.route_id)
-        if r and (r.toll_lak or 0) > 0:
+        if r and (r.toll_lak or 0) > 0 and not TP.tram_cua(db, r):
             return r.toll_lak, "LAK"
     if m in ("fuel", "travel", "other") and p.route_id and source != "kho":
         # giá GỢI Ý của tuyến (30/09): kế toán thấy sẵn, sửa khi kiểm — Bãi vẫn không thấy, không nhập tiền
@@ -990,6 +995,7 @@ def _dong_tu_du_lieu(p, m, i, d, db=None, dat_gia=True, cu=None):
     return _gan_tk(p, TripExpense(
         trip_id=p.id, section=m, line_no=i,
         item_key=(d.get("item_key") or None), item_name=(d.get("item_name") or None),
+        toll_station_id=(d.get("toll_station_id") or None) if m == "travel" and d.get("item_key") == "x_toll" else None,
         qty=_so(d.get("qty"), "qty") or 0, unit_price=gia,
         currency=tien_te, place=d.get("place"),
         place_id=d.get("place_id") or None,
@@ -1253,11 +1259,16 @@ def lap_phieu(data: dict = Body(...), db: Session = Depends(get_db), user=Depend
     for m in MUC:
         db.add(TripSection(trip_id=p.id, section=m, status="wait"))
     dong = list(data.get("expenses") or [])
-    # BOT thuộc ĐƯỜNG: tuyến có phí cao tốc mà phiếu chưa có dòng x_toll → tự thêm
+    # BOT thuộc ĐƯỜNG: phiếu chưa có dòng x_toll → tự thêm theo tuyến. 16/10: tuyến đã khai TRẠM THU PHÍ thì mỗi trạm một dòng (giá
+    # trạm, số lượt có cả lượt về); tuyến chưa khai trạm thì một dòng BOT cả tuyến như cũ.
     if p.route_id:
         r = db.get(Route, p.route_id)
-        if r and (r.toll_lak or 0) > 0 and not any(d.get("item_key") == "x_toll" for d in dong):
-            dong.append({"section": "travel", "item_key": "x_toll", "qty": 1, "unit_price": r.toll_lak, "currency": "LAK"})
+        if r and not any(d.get("item_key") == "x_toll" for d in dong):
+            theo_tram = TP.dong_phieu(db, r)
+            if theo_tram:
+                dong.extend(theo_tram)
+            elif (r.toll_lak or 0) > 0:
+                dong.append({"section": "travel", "item_key": "x_toll", "qty": 1, "unit_price": r.toll_lak, "currency": "LAK"})
     _ap_dong_chi(db, p, dong, user, muc_tt)
     # Phiếu giao lấy hàng của lô: sổ kho hàng ở trang kế toán (đợt 5) — xuất ở bên đó trong cùng lần lưu; bên này
     # lưu hỏng thì phần xuất bên đó được trả lại.

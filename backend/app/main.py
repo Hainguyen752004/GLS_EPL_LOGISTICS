@@ -85,6 +85,7 @@ app.include_router(__import__("routes.tat_toan_doi_tac", fromlist=["router"]).ro
 app.include_router(__import__("routes.ban_giao_dau", fromlist=["router"]).router)   # Phiếu đề nghị xuất dầu → kho QLSX (05/10)
 app.include_router(__import__("routes.dong_bo_nen", fromlist=["router"]).router)   # Tình trạng tự đồng bộ nền với kế toán (06/10)
 app.include_router(__import__("routes.khoan_muc", fromlist=["router"]).router)   # Khoản mục chi phí (08/10)
+app.include_router(__import__("routes.tram_thu_phi", fromlist=["router"]).router)   # Trạm thu phí dọc tuyến (16/10)
 
 # Giao diện: / → index.html ; mọi tệp khác lấy thẳng từ thư mục frontend
 app.mount("/css", StaticFiles(directory=os.path.join(FRONTEND, "css")), name="css")

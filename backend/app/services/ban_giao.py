@@ -108,6 +108,11 @@ def _ten(db, d):
         pt = db.get(Part, d.part_id)
         if pt is not None and pt.name:
             return pt.name, pt.name
+    if d.item_name and d.item_key in ("x_toll", "x_bridge"):
+        # dòng phí cao tốc theo TRẠM (16/10): «Phí cao tốc · Trạm thu phí Bến Thủy 1» — tên khoản + tên trạm
+        t = _tu_dien().get(d.item_key) or {}
+        vi, lo = t.get("vi") or d.item_key, t.get("lo") or t.get("vi") or d.item_key
+        return "%s · %s" % (vi, d.item_name), "%s · %s" % (lo, d.item_name)
     if d.item_name:
         return d.item_name, d.item_name
     from services import khoan_muc

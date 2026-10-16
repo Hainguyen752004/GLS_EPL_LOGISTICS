@@ -557,6 +557,9 @@ class TripExpense(Base):
     # Phí cầu đường trả bằng THẺ (C6.1): trừ vào thẻ nào, và đã trừ chưa (chống trừ hai lần).
     toll_card_id = Column(String, ForeignKey("toll_cards.id"))
     card_move_id = Column(String)
+    # Dòng phí cao tốc theo TRẠM (16/10): trạm nào sinh ra dòng này — giá mặc định lấy theo trạm (Bãi không nhập tiền). Trống = dòng
+    # phí cao tốc gõ tay / BOT cả tuyến kiểu cũ.
+    toll_station_id = Column(String)
     # GHI NỢ TẠI TRẠM (C5.1, anh Khampla 22/09): tài xế đổ dầu ở Việt Nam mà KHÔNG trả tiền ngay —
     # trạm ghi sổ, cuối tháng EPL trả (hoặc cấn trừ với cước khách). Khác hẳn "tài xế trả tiền mặt
     # từ tiền tạm ứng": tiền chưa ra khỏi túi ai cả, nó là công nợ với trạm.
@@ -622,6 +625,37 @@ class RouteStop(Base):
     lat = Column(Float)
     lng = Column(Float)                    # km từ điểm trước
     note = Column(String)
+
+
+class TollStation(Base):
+    """TRẠM THU PHÍ — ດ່ານເກັບຄ່າທາງ (16/10, anh Hải: «anh đi đường container — tính trạm thu phí để phiếu xuất xe có sẵn phí»).
+
+    MỘT giá cho xe của EPL (đầu kéo + rơ-moóc / container; bên Việt Nam là xe loại 5) — anh Hải chọn 16/10. Vị trí trạm lấy từ
+    OpenStreetMap (barrier=toll_booth, đóng gói sẵn ở services/tram_thu_phi_osm.json) hoặc người dùng chấm; giá do kế toán nhập.
+    Tuyến đi qua trạm nào (bảng route_tolls) thì phiếu xuất xe có mỗi trạm MỘT dòng mục IV «Phí cao tốc · tên trạm», số lượt = 1,
+    cộng lượt về khi tuyến có km chiều về và trạm thu cả hai chiều (`one_way` = chỉ thu một chiều)."""
+    __tablename__ = "toll_stations"
+    id = Column(String, primary_key=True, default=ma_moi)
+    name = Column(String, nullable=False)
+    country = Column(String, nullable=False, default="LA")      # LA · VN · TH
+    lat = Column(Float)
+    lng = Column(Float)
+    fee = Column(Float)                                         # giá một lượt cho xe EPL; trống = chưa có giá
+    currency = Column(String, nullable=False, default="LAK")    # trạm Lào thu Kíp, trạm Việt Nam thu Đồng
+    one_way = Column(Boolean, nullable=False, default=False)    # chỉ thu một chiều → lượt về không tính
+    osm_ref = Column(String)                                    # "node/123 node/456" — các điểm OSM gộp thành trạm này
+    note = Column(String)
+    active = Column(Boolean, nullable=False, default=True)
+
+
+class RouteToll(Base):
+    """Một trạm thu phí trên tuyến, theo thứ tự xe đi qua (seq) trên chiều đi."""
+    __tablename__ = "route_tolls"
+    __table_args__ = (UniqueConstraint("route_id", "station_id", name="uq_route_toll"),)
+    id = Column(String, primary_key=True, default=ma_moi)
+    route_id = Column(String, ForeignKey("routes.id", ondelete="CASCADE"), nullable=False, index=True)
+    station_id = Column(String, ForeignKey("toll_stations.id", ondelete="CASCADE"), nullable=False, index=True)
+    seq = Column(Integer, nullable=False, default=1)
 
 
 SU_KIEN = ("arrive_stop", "incident", "repair", "refuel", "note", "change_truck")

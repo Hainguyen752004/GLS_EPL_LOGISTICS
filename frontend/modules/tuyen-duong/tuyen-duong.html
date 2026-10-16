@@ -29,13 +29,18 @@
     <div class="tuy3-the">
       <div class="seg" id="tuy-tab">
         <button type="button" data-tab="chang" class="on"><span data-i18n="tuy_tab_chang"></span></button>
+        <button type="button" data-tab="tram"><span data-i18n="tuy_tab_tram"></span><b id="tuy-tram-dem"></b></button>
         <button type="button" data-tab="cp"><span data-i18n="tuy_tab_cp"></span><b id="tuy-cp-dem"></b></button>
       </div>
       <div class="grow"></div>
       <div class="tuy3-the-phai" id="tuy-the-phai"></div>
     </div>
-    <div class="tuy3-noi tuy3-noi-chang" data-tab-noi="chang">
-      <div class="tuy3-chang" id="tuy-chang"></div>
+    <!-- bản đồ dùng chung cho thẻ «Chặng & bản đồ» và thẻ «Trạm thu phí» (16/10) — sửa trạm vẫn thấy trạm nằm đâu trên đường -->
+    <div class="tuy3-noi tuy3-noi-chang">
+      <div class="tuy3-trai">
+        <div class="tuy3-chang" id="tuy-chang" data-tab-noi="chang"></div>
+        <div class="tuy3-chang" id="tuy-tram" data-tab-noi="tram" hidden></div>
+      </div>
       <div class="tuy3-map-o">
         <div class="tuy3-map" id="tuy-map"></div>
         <div class="seg tuy3-nen" id="tuy-nen">
@@ -46,7 +51,7 @@
         <div class="tuy3-map-bao" id="tuy-map-bao" hidden></div>
       </div>
     </div>
-    <div class="tuy3-noi tuy3-noi-cp" data-tab-noi="cp" hidden><div id="tuy-cp"></div></div>
+    <div class="tuy3-noi tuy3-noi-cp" hidden><div id="tuy-cp"></div></div>
     <div class="tuy3-trong" id="tuy-trong" hidden><span data-i18n="tuy_chua_chon"></span></div>
   </section>
 </div>

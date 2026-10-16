@@ -10,7 +10,8 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import FuelPlace, Route, RouteStop, Trip
+from models import FuelPlace, Route, RouteStop, RouteToll, TollStation, Trip
+from services import tram_thu_phi as TP
 from services.bao_mat import can_vai, nguoi_hien_tai
 from services.phan_quyen import thay_tien_chi
 from services.tinh_toan import CACH_TRA
@@ -180,6 +181,18 @@ def xuat_tuyen(db, r, chi_tiet=False, vai=None, chung=None):
         ra["so_phieu"] = db.query(Trip).filter(Trip.route_id == r.id).count()
     goi_y, nguon = goi_y_cua(db, r, chung)
     mau = doc_mau(r)
+    # Trạm thu phí trên tuyến (16/10): mỗi trạm một dòng phí cao tốc trong bộ gợi ý — chọn tuyến trên phiếu là có sẵn
+    thay = vai is None or thay_tien_chi(vai)
+    tram = TP.tram_cua(db, r)
+    ra["tram"] = [dict(TP.xuat_tram(st, thay), seq=rt.seq, luot=TP.luot(r, st)) for rt, st in tram]
+    if thay:
+        tong = {}
+        for _rt, st in tram:
+            if st.fee is not None:
+                tong[st.currency] = tong.get(st.currency, 0) + st.fee * TP.luot(r, st)
+        ra["phi_tram"] = tong
+    ra["tram_chua_gia"] = sum(1 for _rt, st in tram if st.fee is None)
+    goi_y = list(goi_y) + TP.dong_phieu(db, r)
     if vai is not None and not thay_tien_chi(vai):       # Bãi không thấy tiền (anh Khampla A2)
         goi_y, mau = _bo_gia(goi_y), _bo_gia(mau)
     ra["cost_template"], ra["goi_y"], ra["goi_y_nguon"] = mau, goi_y, nguon
@@ -197,6 +210,25 @@ def _toa_do(v, nho_nhat, lon_nhat, ten, i):
         raise HTTPException(422, {"ma": "TOA_DO_SAI",
                                   "loi": "Điểm %d: %s phải từ %s đến %s." % (i, ten, nho_nhat, lon_nhat)})
     return x
+
+
+def _ghi_tram(db, r, ds):
+    """Thay danh sách trạm thu phí của tuyến: `tolls` = [mã trạm, …] theo thứ tự xe đi qua (16/10)."""
+    if ds is None:
+        return
+    if not isinstance(ds, list):
+        raise HTTPException(422, {"ma": "TRAM_SAI", "loi": "Danh sách trạm thu phí phải là danh sách mã trạm."})
+    db.query(RouteToll).filter(RouteToll.route_id == r.id).delete()
+    db.flush()
+    da = set()
+    for i, sid in enumerate(ds, 1):
+        sid = str((sid.get("id") if isinstance(sid, dict) else sid) or "").strip()
+        if not sid or sid in da:
+            continue
+        if not db.get(TollStation, sid):
+            raise HTTPException(422, {"ma": "TRAM_SAI", "loi": "Trạm thu phí thứ %d không có trong danh mục." % i})
+        da.add(sid)
+        db.add(RouteToll(route_id=r.id, station_id=sid, seq=len(da)))
 
 
 def _ghi_diem(db, r, stops):
@@ -247,6 +279,7 @@ def them(data: dict = Body(...), db: Session = Depends(get_db), user=Depends(SUA
     db.add(r); db.flush()
     _ghi_diem(db, r, data.get("stops"))
     _ghi_mau(db, r, data.get("cost_template"), user)
+    _ghi_tram(db, r, data.get("tolls"))
     db.commit()
     return xuat_tuyen(db, r, chi_tiet=True, vai=user.role)
 
@@ -264,5 +297,6 @@ def sua(rid: str, data: dict = Body(...), db: Session = Depends(get_db), user=De
     if "active" in data: r.active = bool(data["active"])
     if "stops" in data: _ghi_diem(db, r, data["stops"])
     if "cost_template" in data: _ghi_mau(db, r, data["cost_template"], user)
+    if "tolls" in data: _ghi_tram(db, r, data["tolls"])
     db.commit()
     return xuat_tuyen(db, r, chi_tiet=True, vai=user.role)
