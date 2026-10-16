@@ -1,46 +1,158 @@
-/* Tuyến đường */
-.td2-tim{min-width:240px}
-.tuy-hai{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(380px,1fr);gap:14px;align-items:start}
-.tuy-hai>*{min-width:0}
-/* khung chi tiết dính bên phải, cuộn trong khung của nó (30/09) — không kéo dài cả trang, không tràn ngang */
-.tuy-chi-tiet{position:sticky;top:0;max-height:calc(100vh / var(--ty-le, 1) - 150px);overflow:auto}
-.tuy-hai .tbl td{white-space:nowrap}
-.tuy-hai .tbl tbody tr{cursor:pointer}
-.tuy-chang{display:flex;flex-direction:column;gap:0;margin:4px 0 10px}
-.tuy-diem{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:8px 0}
-.tuy-diem .n{width:26px;height:26px;border-radius:50%;background:var(--green-2);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:700}
-.tuy-diem .ten{font-weight:600} .tuy-diem .km{font-size:12.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
-.tuy-noi{margin-left:12px;border-left:2px dashed var(--line-2);height:14px}
-/* chiều về: xe quay lại điểm đi — nét và chấm nhạt hơn chiều đi */
-.tuy-diem.ve .n{background:var(--bg-2);color:var(--ink-2);border:1px solid var(--line-2)}
-.tuy-diem.ve .ten{font-weight:500;color:var(--ink-2)}
-.tuy-ve-o{display:flex;gap:8px;align-items:center}
-.tuy-ve-o input{max-width:160px}
-/* Hộp sửa nằm TRONG .app (đã zoom theo --ty-le) mà .hop-thoai lại zoom thêm một lần — ở 1366 px chữ còn 73 %, bảng chi phí
-   9 cột ép ô chọn còn một chữ ("C", "LA"). Trả zoom của riêng hộp về 1 (vẫn co theo .app như hộp chung) và cho rộng hơn. */
-.tuy-hop{zoom:1;width:min(900px,calc(94vw / var(--ty-le, 1)))}
-.tuy-hop table input{border:1px solid var(--line-2);border-radius:4px;padding:4px 6px;width:100%}
-.tuy-hop .x{border:0;background:none;color:var(--red);font-size:16px}
-@media (max-width:1000px){.tuy-hai{grid-template-columns:1fr}}
+/* Tuyến đường — 16/10 làm lại theo màn cấu hình tuyến EPL_System: danh sách | khung làm việc (chặng cạnh bản đồ).
+   Chiều cao khung do tuyen-duong.js đo (caoKhung) cho vừa một màn hình; các khối bên trong tự cuộn trong khung của nó. */
+.tuy3{display:grid;grid-template-columns:330px minmax(0,1fr);gap:14px;height:calc(100vh / var(--ty-le,1) - 150px);min-height:460px}
+.tuy3>*{min-width:0;min-height:0}
+.tuy3 .x{border:0;background:none;color:var(--red);font-size:17px;line-height:1;padding:2px 6px;border-radius:4px}
+.tuy3 .x:hover{background:var(--red-soft)}
 
-/* chi phí gợi ý theo tuyến (30/09) */
-.tuy-cp{margin-top:14px}
-.tuy-cp-dau{margin-bottom:6px}
-.tuy-cp-bang{overflow-x:auto;margin-top:4px}
-.tuy-cp-bang select,.tuy-cp-bang input{min-width:0;width:100%}
+/* ---- danh sách tuyến ---- */
+.tuy3-ds{display:flex;flex-direction:column;overflow:hidden}
+.tuy3-ds-dau{display:flex;gap:8px;padding:12px 12px 10px}
+.tuy3-ds-dau input{flex:1;min-width:0;height:34px;border:1px solid var(--line-2);border-radius:var(--r);padding:0 10px;background:var(--paper)}
+.tuy3-ds-dau .btn{white-space:nowrap}
+.tuy3-loc{display:flex;margin:0 12px 10px}
+.tuy3-loc button{flex:1 1 0;justify-content:center;height:28px;padding:0 6px;gap:5px;font-size:12.5px;white-space:nowrap;min-width:0}
+.tuy3-ds-than{flex:1;min-height:0;overflow:auto;border-top:1px solid var(--line)}
+.tuy3-bang{width:100%}
+.tuy3-bang th,.tuy3-bang td{border-right:0}
+.tuy3-bang td{vertical-align:middle}
+.tuy3-bang tbody tr[data-id]{cursor:pointer}
+.tuy3-bang tbody tr.sel td{background:var(--green-soft)}
+.tuy3-bang tbody tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--green-2)}
+.tuy3-bang tr.kh-tat b{color:var(--ink-3)}
+.tuy3-phu{display:block;font-size:12px;color:var(--ink-3);font-weight:400;line-height:1.4}
+.tuy3-goi-y{padding:8px 12px 10px;border-top:1px solid var(--line);line-height:1.45}
+
+/* ---- khung làm việc ---- */
+.tuy3-ws{display:flex;flex-direction:column;overflow:hidden}
+.tuy3-dau{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.tuy3-ten{display:flex;align-items:center;gap:10px;min-width:0}
+.tuy3-ten h3{margin:0;font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tuy3-o-ten{display:flex;flex-direction:column;gap:3px;flex:1;max-width:560px}
+.tuy3-o-ten>span{font-size:11.5px;font-weight:600;color:var(--ink-3)}
+.tuy3-o-ten input{height:36px;border:1px solid var(--line-2);border-radius:var(--r);padding:0 10px;font-size:15px;font-weight:600}
+.tuy3-o-tt{display:flex;flex-direction:column;gap:3px}
+.tuy3-o-tt>span{font-size:11.5px;font-weight:600;color:var(--ink-3)}
+.tuy3-o-tt select{height:36px;border:1px solid var(--line-2);border-radius:var(--r);padding:0 8px;background:var(--paper)}
+
+/* dải số tóm tắt: nhãn nhỏ trên, số đậm dưới */
+.tuy3-tom{display:flex;flex-wrap:wrap;background:var(--bg);border-bottom:1px solid var(--line)}
+.tuy3-f{display:flex;flex-direction:column;justify-content:center;gap:3px;padding:8px 16px;border-right:1px solid var(--line);min-width:0}
+.tuy3-f>span{font-size:11.5px;font-weight:600;color:var(--ink-3);letter-spacing:.02em;white-space:nowrap}
+.tuy3-f>b{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tuy3-f.rong{flex:1 1 160px}
+.tuy3-f .tuy3-ghi{font-size:13px;font-weight:500;white-space:normal}
+.tuy3-f input,.tuy3-f select{height:30px;border:1px solid var(--line-2);border-radius:var(--r);padding:0 8px;background:var(--paper)}
+.tuy3-f input.num{width:120px}
+.tuy3-f.rong input{width:100%}
+.tuy3-f-o{display:flex;align-items:center;gap:6px}
+.tuy3-f-o small{color:var(--ink-3);font-weight:600}
+.tuy3-f-o .btn{white-space:nowrap}
+
+.tuy3-the{display:flex;align-items:center;gap:12px;padding:10px 16px;flex-wrap:wrap}
+.tuy3-the-phai{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:13px}
+.tuy3-dem{display:inline-flex;align-items:center;gap:5px;color:var(--amber);font-weight:600}
+.tuy3-dem.du{color:var(--green)}
+.tuy3-dem svg,.tuy3-vt svg,.tuy3-pick-dau svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;flex:none}
+.tuy3-do b{font-variant-numeric:tabular-nums}
+.tuy3-do i{font-style:normal;font-weight:600;margin-left:4px}
+
+.tuy3-noi{flex:1;min-height:0;padding:0 16px 14px}
+.tuy3-noi-chang{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:14px}
+.tuy3-ws.dang-sua .tuy3-noi-chang{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}
+.tuy3-noi-cp{overflow:auto}
+.tuy3-chang{min-height:0;overflow:auto;display:flex;flex-direction:column;gap:6px}
+.tuy3-chang .tbl-wrap{overflow:visible}
+.tuy3-trong{flex:1;display:grid;place-items:center;color:var(--ink-3);padding:40px}
+
+/* bảng chặng (xem): Điểm đi → Điểm đến */
+.tuy3-bang-chang td{vertical-align:middle}
+.tuy3-bang-chang tbody tr[data-chang]{cursor:pointer}
+.tuy3-bang-chang tbody tr.sel td{background:var(--green-soft)}
+.tuy3-bang-chang td:nth-child(2){line-height:1.5}
+.tuy3-p{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.tuy3-mui{color:var(--ink-3);margin:0 2px 0 4px}
+.tuy3-ve td{color:var(--ink-2);background:#F8FAF7}
+.tuy3-ve .tuy3-p{font-weight:500}
+
+/* số thứ tự điểm — cùng màu với chấm trên bản đồ */
+.tuy3-n{display:inline-grid;place-items:center;flex:none;width:22px;height:22px;border-radius:50%;font-size:11.5px;font-weight:700;color:#fff;background:var(--blue)}
+.tuy3-n.dau{background:var(--green)} .tuy3-n.cuoi{background:var(--ore)}
+.tuy3-n.chua{background:var(--paper);color:var(--ink-2);border:1.5px dashed var(--amber)}
+
+.tuy3-lech{display:block;font-size:11px;font-weight:600;font-style:normal;line-height:1.2}
+i.tuy3-lech{display:inline}
+.tuy3-lech.vua{color:var(--ink-3)} .tuy3-lech.lech{color:var(--amber)} .tuy3-lech.xa{color:var(--red)}
+
+/* bảng sửa điểm */
+.tuy3-sua td{vertical-align:middle}
+.tuy3-sua input{border:1px solid var(--line-2);border-radius:4px;padding:5px 7px;width:100%;min-width:0;background:var(--paper)}
+.tuy3-sua input:disabled{background:var(--bg)}
+.tuy3-sua td:nth-child(2){min-width:150px}
+.tuy3-km-o{min-width:96px}
+.tuy3-km-o input{min-width:72px}
+.tuy3-km-do{display:flex;justify-content:flex-end;align-items:baseline;gap:5px;margin-top:2px;font-size:11.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.tuy3-km-do small.tuy3-lech{display:inline}
+.tuy3-th-phu{display:block;font-size:11px;font-weight:500;color:var(--ink-3)}
+.tuy3-sua tr.cham td{background:var(--amber-soft)}
+.tuy3-vt-o{white-space:nowrap}
+.tuy3-vt{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line-2);background:var(--paper);color:var(--ink);border-radius:999px;
+  padding:3px 10px;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tuy3-vt.co{color:var(--green);border-color:#B7D8CB;background:var(--green-soft)}
+.tuy3-vt.chua{border-style:dashed;border-color:#E3CB98;color:var(--amber);background:var(--amber-soft);font-weight:600}
+.tuy3-vt.on{border-style:solid;border-color:var(--amber);box-shadow:0 0 0 2px var(--amber-soft);color:var(--amber);background:var(--paper)}
+.tuy3-sua-nut{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.tuy3-bo-vt{border:0;background:none;color:var(--ink-3);font-size:15px;line-height:1;padding:2px 5px;border-radius:4px}
+.tuy3-bo-vt:hover{background:var(--bg-2);color:var(--ink)}
+.tuy3-xoa{display:inline-grid;place-items:center;width:28px;height:28px;border:1px solid transparent;background:none;color:var(--red);border-radius:var(--r)}
+.tuy3-xoa:hover{background:var(--red-soft);border-color:#E3B4B4}
+.tuy3-xoa svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---- bản đồ: Leaflet thật. Trả riêng về tỷ lệ 1 vì Leaflet tính sai toạ độ chuột khi bị zoom (như Theo dõi tuyến) ---- */
+.tuy3-map-o{position:relative;min-height:260px;border:1px solid var(--line-2);border-radius:var(--r-lg);overflow:hidden;background:#DDE5E0}
+.tuy3-map{position:absolute;inset:0;zoom:calc(1 / var(--ty-le,1))}
+.tuy3-map.dang-cham,.tuy3-map.dang-cham.leaflet-grab{cursor:crosshair}
+.tuy3-map .leaflet-container,.tuy3-map.leaflet-container{font-family:var(--font)}
+.tuy3-mk-o{background:none;border:0}
+.tuy3-mk{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;font:700 13px/1 var(--font);color:#fff;background:var(--blue);
+  border:2px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.45)}
+.tuy3-mk.dau{background:var(--green)} .tuy3-mk.cuoi{background:var(--ore)}
+.tuy3-mk.on{box-shadow:0 0 0 3px var(--amber),0 1px 5px rgba(0,0,0,.45)}
+.tuy3-nen{position:absolute;top:10px;right:10px;z-index:560;background:rgba(255,255,255,.92)}
+.tuy3-nen button{height:26px;padding:0 10px;font-size:12px}
+.tuy3-map-bao{position:absolute;left:10px;right:10px;bottom:10px;z-index:550;background:rgba(255,255,255,.95);border:1px solid #E3CB98;
+  border-radius:var(--r);padding:6px 10px;font-size:12.5px;color:var(--amber);font-weight:600;line-height:1.4}
+
+/* khung chấm vị trí (nổi trên bản đồ) */
+.tuy3-pick{position:absolute;top:10px;left:54px;right:10px;z-index:600;background:var(--paper);border:1px solid var(--amber);
+  border-radius:var(--r-lg);box-shadow:0 6px 18px rgba(20,40,30,.18);padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.tuy3-pick-dau{display:flex;align-items:flex-start;gap:6px;font-size:13px;color:var(--ink-2);line-height:1.45}
+.tuy3-pick-dau svg{margin-top:3px;color:var(--amber)}
+.tuy3-pick-dau span{flex:1}
+.tuy3-pick-tim{display:flex;gap:6px;margin:0}
+.tuy3-pick-tim input{flex:1;min-width:0;height:32px;border:1px solid var(--line-2);border-radius:var(--r);padding:0 10px}
+.tuy3-pick-kq{display:flex;flex-direction:column;gap:2px;max-height:180px;overflow:auto}
+.tuy3-pick-kq:empty{display:none}
+.tuy3-pick-kq button{display:flex;flex-direction:column;align-items:flex-start;text-align:left;border:0;background:none;padding:5px 8px;border-radius:var(--r)}
+.tuy3-pick-kq button:hover{background:var(--bg)}
+.tuy3-pick-kq button span{font-size:12px;color:var(--ink-3)}
+.tuy3-canh{color:var(--amber);font-weight:600}
+
+/* ---- chi phí gợi ý (thẻ thứ hai) ---- */
+.tuy3-cp-dau{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.tuy-cp-bang{overflow-x:auto}
+.tuy-cp-bang table input,.tuy-cp-bang table select{border:1px solid var(--line-2);border-radius:4px;padding:4px 6px;min-width:0;width:100%;background:var(--paper)}
 /* ô chọn đủ rộng để đọc được ("Chi phí đi đường", "LAK") — trước đây co còn "Chi pl", "LA" (01/10) */
-.tuy-cp-bang [data-f="section"]{min-width:118px} .tuy-cp-bang [data-f="item_key"]{min-width:128px} .tuy-cp-bang [data-f="place_id"]{min-width:128px}
-.tuy-cp-bang [data-f="currency"]{min-width:62px} .tuy-cp-bang [data-f="pay_channel"]{min-width:96px}
-.tuy-cp-bang [data-f="qty"]{min-width:52px} .tuy-cp-bang [data-f="unit_price"]{min-width:80px}
-.tuy-cp-nut{display:flex;gap:8px;margin-top:4px}
-
-/* chi phí gợi ý: nhóm theo mục, một dòng mỗi khoản */
+.tuy-cp-bang [data-f="section"]{min-width:130px} .tuy-cp-bang [data-f="item_key"]{min-width:160px} .tuy-cp-bang [data-f="place_id"]{min-width:150px}
+.tuy-cp-bang [data-f="currency"]{min-width:66px} .tuy-cp-bang [data-f="pay_channel"]{min-width:120px}
+.tuy-cp-bang [data-f="qty"]{min-width:60px} .tuy-cp-bang [data-f="unit_price"]{min-width:100px}
 .tuy-cp-xem td,.tuy-cp-xem th{white-space:normal}
 .tuy-cp-xem tr.tuy-cp-nhom td{background:var(--bg);font-size:11.5px;font-weight:700;color:var(--ink-2);letter-spacing:.02em;padding-top:6px;padding-bottom:6px}
 .tuy-cp-xem td.num{white-space:nowrap}
-.tuy-hai .tbl thead th{white-space:normal;vertical-align:bottom}
 
-/* 01/10 — khung chi tiết (và danh sách tuyến khi nhiều tuyến) vừa đáy cửa sổ: trừ 150px thì đáy khung lọt dưới cửa sổ
-   ~25px ở kiểu thanh bên, ~95px ở kiểu thanh trên (thanh trên cao hơn ~96px) — phải cuộn cả trang mới thấy đáy */
-.tuy-chi-tiet,.tuy-hai>.card:first-child>.tbl-wrap{max-height:calc(100vh / var(--ty-le, 1) - 190px);overflow:auto}
-.app[data-view="top"] .tuy-chi-tiet,.app[data-view="top"] .tuy-hai>.card:first-child>.tbl-wrap{max-height:calc(100vh / var(--ty-le, 1) - 262px)}
+@media (max-width:1000px){
+  .tuy3{grid-template-columns:1fr;height:auto}
+  .tuy3-ds{max-height:320px}
+  .tuy3-noi-chang,.tuy3-ws.dang-sua .tuy3-noi-chang{grid-template-columns:1fr}
+  .tuy3-map-o{min-height:320px}
+}

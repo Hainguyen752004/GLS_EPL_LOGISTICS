@@ -15751,5 +15751,150 @@ window.EPL_TU_DIEN = {
   "vi": "mặc định",
   "lo": "ຕັ້ງຕົ້ນ",
   "en": "default"
+ },
+ "tuy_them_tuyen": {
+  "vi": "Thêm tuyến",
+  "lo": "ເພີ່ມເສັ້ນທາງ",
+  "en": "Add route"
+ },
+ "tuy_tab_chang": {
+  "vi": "Chặng & bản đồ",
+  "lo": "ຊ່ວງທາງ ແລະ ແຜນທີ່",
+  "en": "Legs & map"
+ },
+ "tuy_tab_cp": {
+  "vi": "Chi phí gợi ý",
+  "lo": "ລາຍຈ່າຍແນະນຳ",
+  "en": "Suggested costs"
+ },
+ "tuy_chang": {
+  "vi": "Chặng",
+  "lo": "ຊ່ວງທາງ",
+  "en": "Leg"
+ },
+ "tuy_km_khai": {
+  "vi": "Km khai",
+  "lo": "ກມ ທີ່ແຈ້ງ",
+  "en": "Declared km"
+ },
+ "tuy_km_do": {
+  "vi": "Đường bộ đo được",
+  "lo": "ໄລຍະທາງຖະໜົນທີ່ວັດໄດ້",
+  "en": "Measured by road"
+ },
+ "tuy_chieu_di": {
+  "vi": "Chiều đi",
+  "lo": "ຖ້ຽວໄປ",
+  "en": "Outbound"
+ },
+ "tuy_diem_den": {
+  "vi": "Điểm đến",
+  "lo": "ປາຍທາງ",
+  "en": "Destination"
+ },
+ "tuy_diem_n": {
+  "vi": "{n} điểm",
+  "lo": "{n} ຈຸດ",
+  "en": "{n} stops"
+ },
+ "tuy_vi_tri": {
+  "vi": "Vị trí trên bản đồ",
+  "lo": "ຕຳແໜ່ງໃນແຜນທີ່",
+  "en": "Map location"
+ },
+ "tuy_cham": {
+  "vi": "Chấm vị trí",
+  "lo": "ປັກຕຳແໜ່ງ",
+  "en": "Pin location"
+ },
+ "tuy_chua_cham": {
+  "vi": "Chưa chấm vị trí trên bản đồ",
+  "lo": "ຍັງບໍ່ໄດ້ປັກຕຳແໜ່ງໃນແຜນທີ່",
+  "en": "Not pinned on the map yet"
+ },
+ "tuy_da_cham": {
+  "vi": "Đã chấm {n}/{m} điểm",
+  "lo": "ປັກແລ້ວ {n}/{m} ຈຸດ",
+  "en": "{n}/{m} stops pinned"
+ },
+ "tuy_xoa_vi_tri": {
+  "vi": "Bỏ vị trí đã chấm",
+  "lo": "ລຶບຕຳແໜ່ງທີ່ປັກ",
+  "en": "Clear the pinned location"
+ },
+ "tuy_keo_doi": {
+  "vi": "Kéo chấm trên bản đồ để chỉnh vị trí.",
+  "lo": "ລາກໝຸດໃນແຜນທີ່ເພື່ອປັບຕຳແໜ່ງ.",
+  "en": "Drag a pin on the map to adjust it."
+ },
+ "tuy_pick_hint": {
+  "vi": "Bấm lên bản đồ để đặt vị trí điểm <b>{n} — {ten}</b>, hoặc tìm theo tên / dán toạ độ.",
+  "lo": "ກົດໃສ່ແຜນທີ່ເພື່ອປັກຕຳແໜ່ງຈຸດ <b>{n} — {ten}</b>, ຫຼື ຄົ້ນຫາຕາມຊື່ / ວາງພິກັດ.",
+  "en": "Click the map to place stop <b>{n} — {ten}</b>, or search by name / paste coordinates."
+ },
+ "tuy_tim_dia_diem": {
+  "vi": "Tên địa điểm, hoặc toạ độ như 18.44, 103.15",
+  "lo": "ຊື່ສະຖານທີ່ ຫຼື ພິກັດ ເຊັ່ນ 18.44, 103.15",
+  "en": "Place name, or coordinates like 18.44, 103.15"
+ },
+ "tuy_khong_tim_thay": {
+  "vi": "Không tìm thấy địa điểm này — bấm thẳng lên bản đồ hoặc dán toạ độ.",
+  "lo": "ບໍ່ພົບສະຖານທີ່ນີ້ — ກົດໃສ່ແຜນທີ່ໂດຍກົງ ຫຼື ວາງພິກັດ.",
+  "en": "Place not found — click the map directly or paste coordinates."
+ },
+ "tuy_can_mang": {
+  "vi": "Tìm theo tên cần có mạng — bấm thẳng lên bản đồ hoặc dán toạ độ.",
+  "lo": "ການຄົ້ນຫາຕາມຊື່ຕ້ອງມີອິນເຕີເນັດ — ກົດໃສ່ແຜນທີ່ໂດຍກົງ ຫຼື ວາງພິກັດ.",
+  "en": "Searching by name needs internet — click the map directly or paste coordinates."
+ },
+ "tuy_dang_do": {
+  "vi": "Đang đo đường bộ…",
+  "lo": "ກຳລັງວັດໄລຍະທາງ…",
+  "en": "Measuring by road…"
+ },
+ "tuy_dung_km_do": {
+  "vi": "Dùng km đo được",
+  "lo": "ໃຊ້ ກມ ທີ່ວັດໄດ້",
+  "en": "Use measured km"
+ },
+ "tuy_da_dung_km_do": {
+  "vi": "Đã điền km đo được cho {n} chặng — bấm Lưu để ghi.",
+  "lo": "ຕື່ມ ກມ ທີ່ວັດໄດ້ໃຫ້ {n} ຊ່ວງທາງແລ້ວ — ກົດ ບັນທຶກ ເພື່ອເກັບ.",
+  "en": "Filled in measured km for {n} legs — press Save to keep it."
+ },
+ "tuy_duong_thang": {
+  "vi": "Nét đứt là đường nối thẳng giữa các điểm, chưa phải đường bộ thật (cần mạng để vẽ theo đường).",
+  "lo": "ເສັ້ນຂາດແມ່ນເສັ້ນຊື່ລະຫວ່າງຈຸດ, ບໍ່ແມ່ນເສັ້ນທາງຈິງ (ຕ້ອງມີອິນເຕີເນັດເພື່ອແຕ້ມຕາມຖະໜົນ).",
+  "en": "The dashed line joins stops straight — it is not the real road (internet is needed to follow roads)."
+ },
+ "tuy_nen_loi": {
+  "vi": "Không tải được nền bản đồ (mất mạng?) — chặng và km vẫn xem, sửa được.",
+  "lo": "ໂຫຼດພື້ນແຜນທີ່ບໍ່ໄດ້ (ບໍ່ມີອິນເຕີເນັດ?) — ຍັງເບິ່ງ ແລະ ແກ້ໄຂຊ່ວງທາງ, ກມ ໄດ້.",
+  "en": "Map tiles did not load (offline?) — legs and km can still be viewed and edited."
+ },
+ "tuy_ban_do_trong": {
+  "vi": "Chưa điểm nào có vị trí. Bấm Sửa rồi «Chấm vị trí» từng điểm để vẽ tuyến lên bản đồ.",
+  "lo": "ຍັງບໍ່ມີຈຸດໃດມີຕຳແໜ່ງ. ກົດ ແກ້ໄຂ ແລ້ວ «ປັກຕຳແໜ່ງ» ແຕ່ລະຈຸດ ເພື່ອແຕ້ມເສັ້ນທາງໃສ່ແຜນທີ່.",
+  "en": "No stop has a location yet. Press Edit, then «Pin location» on each stop to draw the route."
+ },
+ "tuy_ban_do_sua": {
+  "vi": "Bấm «Chấm vị trí» ở một điểm, rồi bấm lên bản đồ.",
+  "lo": "ກົດ «ປັກຕຳແໜ່ງ» ຢູ່ຈຸດໃດໜຶ່ງ, ແລ້ວກົດໃສ່ແຜນທີ່.",
+  "en": "Press «Pin location» on a stop, then click the map."
+ },
+ "tuy_chua_chon": {
+  "vi": "Chọn một tuyến bên trái, hoặc bấm Thêm tuyến.",
+  "lo": "ເລືອກເສັ້ນທາງທາງຊ້າຍ, ຫຼື ກົດ ເພີ່ມເສັ້ນທາງ.",
+  "en": "Pick a route on the left, or press Add route."
+ },
+ "tuy_bo_thay_doi": {
+  "vi": "Tuyến đang sửa chưa lưu. Bỏ các thay đổi?",
+  "lo": "ເສັ້ນທາງທີ່ກຳລັງແກ້ໄຂຍັງບໍ່ໄດ້ບັນທຶກ. ຍົກເລີກການປ່ຽນແປງບໍ?",
+  "en": "The route being edited is not saved. Discard the changes?"
+ },
+ "tuy_bo": {
+  "vi": "Bỏ thay đổi",
+  "lo": "ຍົກເລີກການປ່ຽນແປງ",
+  "en": "Discard changes"
  }
 };

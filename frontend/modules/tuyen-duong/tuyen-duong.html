@@ -1,51 +1,52 @@
-<!-- Tuyến đường — ເສັ້ນທາງ. Chặng A → B → C, km từng chặng, BOT. Mang từ EPL_System, bỏ hình đường bộ / GPS / ETA. -->
-<div class="toolbar">
-  <div class="field td2-tim"><label data-i18n="search"></label><input id="tuy-q"></div>
-  <div class="grow"></div>
-  <span class="small muted" data-i18n="route_hint"></span>
-  <button class="btn primary" id="tuy-them"><span data-i18n="add"></span></button>
-</div>
-<div class="tuy-hai">
-  <div class="card">
-    <div class="tbl-wrap">
-      <table class="tbl">
-        <thead><tr><th>#</th><th data-i18n="route_name"></th><th class="num" data-i18n="stops"></th><th class="num" data-i18n="total_km"></th><th class="num" data-i18n="km_ve"></th><th class="num" data-i18n="toll_bot"></th><th data-i18n="status"></th></tr></thead>
+<!-- Tuyến đường — ເສັ້ນທາງ. Chặng A → B → C, km từng chặng, BOT.
+     16/10 làm lại theo màn cấu hình tuyến của EPL_System (anh Hải: «quá lỏ»): bỏ hộp sửa nổi; một khung làm việc — trái là danh
+     sách tuyến, phải là tuyến đang chọn: chặng Điểm đi → Điểm đến · km khai · km đường bộ đo được, cạnh bản đồ đánh số từng điểm.
+     Sửa ngay tại chỗ; vị trí điểm chấm trên bản đồ (bấm · kéo · tìm tên · dán toạ độ) thay cho gõ vĩ độ / kinh độ.
+     Chi phí gợi ý theo tuyến ở thẻ thứ hai — không xếp dọc dài. -->
+<div class="tuy3" id="tuy3">
+  <section class="card tuy3-ds">
+    <div class="tuy3-ds-dau">
+      <input id="tuy-q" type="search" data-i18n-ph="search" autocomplete="off">
+      <button class="btn primary sm" id="tuy-them" type="button">+ <span data-i18n="tuy_them_tuyen"></span></button>
+    </div>
+    <div class="seg tuy3-loc" id="tuy-loc">
+      <button type="button" data-loc="dang" class="on"><span data-i18n="active"></span><b></b></button>
+      <button type="button" data-loc="ngung"><span data-i18n="inactive"></span><b></b></button>
+      <button type="button" data-loc="tat"><span data-i18n="all"></span><b></b></button>
+    </div>
+    <div class="tuy3-ds-than">
+      <table class="tbl tuy3-bang">
+        <thead><tr><th>#</th><th data-i18n="route_name"></th><th class="num" data-i18n="total_km"></th></tr></thead>
         <tbody id="tuy-than"></tbody>
       </table>
     </div>
-  </div>
-  <div class="card tuy-chi-tiet" id="tuy-chi-tiet" hidden>
-    <div class="hd"><h3 id="tuy-ten"></h3><div class="grow"></div><button class="btn sm" id="tuy-sua" data-i18n="edit"></button></div>
-    <div class="bd">
-      <div class="tuy-chang" id="tuy-chang"></div>
-      <div class="small muted" id="tuy-tom"></div>
-      <!-- Chi phí gợi ý khi lập phiếu (30/09) -->
-      <div class="tuy-cp" id="tuy-cp"></div>
-    </div>
-  </div>
-</div>
+    <div class="small muted tuy3-goi-y" data-i18n="route_hint"></div>
+  </section>
 
-<!-- Hộp sửa tuyến: tên, BOT, danh sách điểm với km -->
-<dialog id="tuy-hop" class="hop-thoai tuy-hop">
-  <form method="dialog">
-    <h3 id="tuy-hop-tieu-de"></h3>
-    <div class="f-grid">
-      <div class="field w2"><label data-i18n="route_name"></label><input id="tuy-f-name" lang="lo"></div>
-      <div class="field"><label data-i18n="toll_bot"></label><input id="tuy-f-toll" class="num" inputmode="numeric"></div>
+  <section class="card tuy3-ws" id="tuy-ws">
+    <div class="tuy3-dau" id="tuy-dau"></div>
+    <div class="tuy3-tom" id="tuy-tom"></div>
+    <div class="tuy3-the">
+      <div class="seg" id="tuy-tab">
+        <button type="button" data-tab="chang" class="on"><span data-i18n="tuy_tab_chang"></span></button>
+        <button type="button" data-tab="cp"><span data-i18n="tuy_tab_cp"></span><b id="tuy-cp-dem"></b></button>
+      </div>
+      <div class="grow"></div>
+      <div class="tuy3-the-phai" id="tuy-the-phai"></div>
     </div>
-    <div class="field" style="margin-top:10px"><label data-i18n="stops"></label></div>
-    <table class="tbl tbl-compact" id="tuy-f-diem"><thead><tr><th>#</th><th data-i18n="stop"></th><th class="num" data-i18n="km_from_prev"></th><th class="num" data-i18n="st_lat"></th><th class="num" data-i18n="st_lng"></th><th></th></tr></thead><tbody></tbody></table>
-    <button type="button" class="btn quiet sm" id="tuy-f-them-diem">+ <span data-i18n="add_stop"></span></button>
-    <!-- Km chiều về (29/09): xe quay lại điểm đi. Nút "= … km" chép đúng tổng chiều đi -->
-    <div class="field tuy-ve" style="margin-top:10px"><label data-i18n="km_ve"></label>
-      <div class="tuy-ve-o"><input id="tuy-f-ve" class="num" inputmode="decimal"><button type="button" class="btn sm quiet" id="tuy-f-ve-bang"></button></div>
-      <small class="muted" data-i18n="km_ve_hint"></small></div>
-    <!-- Chi phí gợi ý (30/09): chọn tuyến trên phiếu thì mục III, IV, VI tự có các dòng này -->
-    <div class="field" style="margin-top:12px"><label data-i18n="cp_goi_y"></label><small class="muted" data-i18n="cp_goi_y_hint"></small></div>
-    <div class="tuy-cp-bang"><table class="tbl tbl-compact" id="tuy-f-cp"><thead><tr><th>#</th><th data-i18n="cp_muc"></th><th data-i18n="item"></th><th class="num" data-i18n="cp_sl"></th><th data-i18n="fill_place"></th><th class="num tuy-gia" data-i18n="gia_goi_y"></th><th class="tuy-gia" data-i18n="cur"></th><th data-i18n="owner_pay_mode"></th><th></th></tr></thead><tbody></tbody></table></div>
-    <div class="tuy-cp-nut"><button type="button" class="btn quiet sm" id="tuy-f-them-cp">+ <span data-i18n="add_row"></span></button><button type="button" class="btn quiet sm" id="tuy-f-chep-chung" data-i18n="cp_chep_chung"></button></div>
-    <div class="field" style="margin-top:8px"><label data-i18n="note"></label><input id="tuy-f-note"></div>
-    <div class="field" id="tuy-f-active-o" hidden><label data-i18n="status"></label><select id="tuy-f-active"><option value="1" data-i18n="active"></option><option value="0" data-i18n="inactive"></option></select></div>
-    <div class="ht-nut"><button class="btn" value="huy" data-i18n="cancel"></button><button class="btn primary" value="ok" data-i18n="save"></button></div>
-  </form>
-</dialog>
+    <div class="tuy3-noi tuy3-noi-chang" data-tab-noi="chang">
+      <div class="tuy3-chang" id="tuy-chang"></div>
+      <div class="tuy3-map-o">
+        <div class="tuy3-map" id="tuy-map"></div>
+        <div class="seg tuy3-nen" id="tuy-nen">
+          <button type="button" data-nen="duong" class="on"><span data-i18n="map_road"></span></button>
+          <button type="button" data-nen="ve-tinh"><span data-i18n="map_sat"></span></button>
+        </div>
+        <div class="tuy3-pick" id="tuy-pick" hidden></div>
+        <div class="tuy3-map-bao" id="tuy-map-bao" hidden></div>
+      </div>
+    </div>
+    <div class="tuy3-noi tuy3-noi-cp" data-tab-noi="cp" hidden><div id="tuy-cp"></div></div>
+    <div class="tuy3-trong" id="tuy-trong" hidden><span data-i18n="tuy_chua_chon"></span></div>
+  </section>
+</div>
