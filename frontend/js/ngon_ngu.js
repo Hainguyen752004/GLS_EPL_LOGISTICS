@@ -492,6 +492,16 @@ window.EPL_TU_DIEN = {
   "lo": "ບໍ່ມີໃບໃດລໍຖ້າທ່ານໃນໄລຍະນີ້.",
   "en": "Nothing is waiting for you in this period."
  },
+ "tdp_can_dau": {
+  "vi": "Đầu",
+  "lo": "ຕົ້ນທາງ",
+  "en": "Origin"
+ },
+ "tdp_can_cuoi": {
+  "vi": "Cuối",
+  "lo": "ປາຍທາງ",
+  "en": "Dest."
+ },
  "tdp_c_xe": {
   "vi": "Xe · biển số",
   "lo": "ລົດ · ທະບຽນ",

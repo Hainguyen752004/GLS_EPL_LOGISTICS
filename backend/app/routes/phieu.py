@@ -19,7 +19,7 @@ from collections import defaultdict
 
 from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse
-from sqlalchemy import func, inspect as sa_inspect, or_, text
+from sqlalchemy import func, inspect as sa_inspect, or_, select as db_select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, object_session
 
@@ -532,8 +532,12 @@ def loc_phieu(qs, q=None, thang=None, tu=None, den=None):
         qs = qs.filter(Trip.doc_date <= _ngay(den))
     if q and q.strip():
         t = "%" + q.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
-        # đúng biểu thức của chỉ mục trigram ix_trips_tim (database.py) — viết khác đi là PostgreSQL quét cả bảng
-        qs = qs.filter(text("(%s) ILIKE :tim ESCAPE '\\'" % BIEU_THUC_TIM_PHIEU).bindparams(tim=t))
+        # đúng biểu thức của chỉ mục trigram ix_trips_tim (database.py) — viết khác đi là PostgreSQL quét cả bảng.
+        # 20/10 (D21): HOẶC tài xế của phiếu có tên Latin / mã khớp (gõ "Bounmi", "TX-012") — hỏi bảng drivers (vài trăm dòng),
+        # phiếu lọc theo driver_id có chỉ mục; không thêm cột vào bảng phiếu.
+        from models import Driver
+        tx = Trip.driver_id.in_(db_select(Driver.id).where(func.concat_ws(" ", Driver.name_latin, Driver.driver_code).ilike(t, escape="\\")))
+        qs = qs.filter(or_(text("(%s) ILIKE :tim ESCAPE '\\'" % BIEU_THUC_TIM_PHIEU).bindparams(tim=t), tx))
     return qs
 
 

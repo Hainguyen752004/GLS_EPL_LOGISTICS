@@ -18,8 +18,11 @@
 .td-bang thead th{white-space:nowrap}
 /* ô hai dòng: dòng phụ nhỏ, nhạt (tên Latin của tài xế · biển đầu / rơ-moóc) */
 .td-bang td.td-hai small{display:block;font-size:11px;color:var(--ink-3);line-height:1.35;white-space:nowrap}
-.td-bang td.td-tuyen{min-width:150px;max-width:210px}
+.td-bang td.td-tuyen{min-width:104px;max-width:180px}   /* 20/10: hẹp hơn (xuống dòng như ô tài xế, xe) để bảng kế toán vừa khung 1366 */
 .td-bang td.td-khach{min-width:90px;max-width:170px}
+/* 20/10: chip trạng thái («Đã giao hàng», «Đã thanh toán») xuống dòng khi hẹp — ô tài xế, xe vốn đã hai dòng; giữ bảng kế toán vừa 1366 */
+.td-bang td.td-tt{max-width:104px}
+.td-bang td.td-tt .tag{white-space:normal;text-align:center;line-height:1.25}
 .td-bang td.td-quang{white-space:nowrap}
 
 /* phân trang (24/09, dữ liệu cả năm) */
@@ -80,7 +83,11 @@ table.tbl.td-bang{border-collapse:separate;border-spacing:0}   /* table.tbl (chu
 .td-bang th.td-sap{cursor:pointer;user-select:none}
 .td-bang th.td-sap:hover{color:var(--green)}
 .td-bang th.td-sap:focus-visible{outline:2px solid var(--green-2);outline-offset:-2px}
-.td-mui{display:inline-block;margin-left:4px;font-style:normal;font-size:9px;line-height:1;vertical-align:1px;color:var(--ink-3);opacity:.45}
+/* 20/10: mũi tên đặt CHỒNG ở mép phải ô tiêu đề (th đã sticky — là phần tử định vị), không chiếm bề rộng cột — mười mấy cột mỗi cột
+ * ~17 px làm bảng kế toán tràn khung 1366; cột chưa sắp thì mũi tên chỉ hiện khi rê chuột / đưa phím tới */
+.td-bang th.td-sap{padding-right:14px}
+.td-mui{position:absolute;right:3px;top:50%;transform:translateY(-50%);font-style:normal;font-size:9px;line-height:1;color:var(--ink-3);opacity:0}
+.td-bang th.td-sap:hover .td-mui,.td-bang th.td-sap:focus-visible .td-mui{opacity:.55}
 .td-mui::after{content:"▲▼";letter-spacing:-1px}
 .td-bang th.sap-tang .td-mui,.td-bang th.sap-giam .td-mui{opacity:1;color:var(--green);font-size:10px}
 .td-bang th.sap-tang .td-mui::after{content:"▲"}

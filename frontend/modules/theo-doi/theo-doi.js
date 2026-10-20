@@ -63,24 +63,29 @@
    * Nhóm phải liền nhau trong danh sách (tiêu đề tầng trên gộp các cột liền nhau cùng nhóm). */
   const NHOM = { so: { n: 'c_billno' }, can: { n: 'k3_khoi_luong' }, ban: { n: 'value_amt', tien: 'tien' }, lk: { n: 'co_joint', tien: 'tien' },
     chi: { n: 'expense', tien: 'tien-chi' }, tt: { n: 'status' } };
+  /* 20/10 (rà điều xe, bảng vừa khung 1366 cho kế toán): mỗi vai mở sẵn cột việc của mình — `an_vai` = vai ẨN SẴN cột đó (vẫn bật lại
+   * được bằng nút «Cột», Excel vẫn đủ cột). Bên thu không cần Tổng chi / Thu – Chi; bên chi không cần đơn giá / doanh thu / còn nợ;
+   * cột «Cty nhận» thay bằng nhãn «liên kết» ngay trong ô Xe. Bãi, Sếp giữ như cũ. */
+  const THU = ['acct', 'rev', 'treasury', 'cash'], CHI = ['expacct', 'fuel', 'repair'];
   const COT = [
     { k: 'stt', n: '#', khoa: true, lop: 'td-g1' },
     { k: 'ngay', n: 'c_date', nhom: 'so', sap: 'ngay', khoa: true, lop: 'td-g2 nowrap' },
     { k: 'so', n: 'doc_no', nhom: 'so', sap: 'so', khoa: true, lop: 'td-g3 nowrap mono' },
     { k: 'quang', n: 'c_orebill', sap: 'quang', an: true, lop: 'mono td-quang' },
     { k: 'tuyen', n: 'c_route', sap: 'tuyen', lop: 'td-tuyen' },
-    { k: 'loai', n: 'c_company', sap: 'loai' },
+    { k: 'loai', n: 'c_company', sap: 'loai', an_vai: [...THU, ...CHI] },
     { k: 'tai_xe', n: 'c_driver', sap: 'tai_xe', lop: 'td-hai' },
     { k: 'xe', n: 'tdp_c_xe', sap: 'xe', lop: 'td-hai nowrap' },
     { k: 'khach', n: 'c_customer', sap: 'khach', lop: 'td-khach' },
     { k: 'hang', n: 'c_goods', sap: 'hang', an: true },
-    { k: 'can_dau', n: 'c_w_origin', nhom: 'can', sap: 'can_dau', lop: 'num' },
-    { k: 'can_cuoi', n: 'c_w_dest', nhom: 'can', sap: 'can_cuoi', lop: 'num nowrap' },
+    // `ngan` (20/10): chữ tiêu đề ngắn trên màn — nhóm phía trên đã ghi «Khối lượng (tấn)»; Excel (XUAT_DU) vẫn ghi tên đầy đủ
+    { k: 'can_dau', n: 'c_w_origin', ngan: 'tdp_can_dau', nhom: 'can', sap: 'can_dau', lop: 'num' },
+    { k: 'can_cuoi', n: 'c_w_dest', ngan: 'tdp_can_cuoi', nhom: 'can', sap: 'can_cuoi', lop: 'num nowrap' },
     { k: 'ccy', n: 'c_ccy', nhom: 'ban', tien: 'tien', lop: 'mono td-ccy' },
-    { k: 'gia', n: 'c_price', nhom: 'ban', tien: 'tien', lop: 'num' },
-    { k: 'dt', n: 'c_value', nhom: 'ban', tien: 'tien', lop: 'num' },
+    { k: 'gia', n: 'c_price', nhom: 'ban', tien: 'tien', lop: 'num', an_vai: CHI },
+    { k: 'dt', n: 'c_value', nhom: 'ban', tien: 'tien', lop: 'num', an_vai: CHI },
     { k: 'thu', n: 'collected', nhom: 'ban', tien: 'tien', lop: 'num', an: true },
-    { k: 'con', n: 'remaining', nhom: 'ban', tien: 'tien', lop: 'num' },
+    { k: 'con', n: 'remaining', nhom: 'ban', tien: 'tien', lop: 'num', an_vai: CHI },
     { k: 'thue', n: 'c_joint_fee', nhom: 'lk', tien: 'tien', lop: 'num', an: true },
     { k: 'phi', n: 'c_fee2', nhom: 'lk', tien: 'tien', lop: 'num', an: true },
     { k: 'vuot', n: 'c_over', nhom: 'lk', tien: 'tien', lop: 'num', an: true },
@@ -88,15 +93,15 @@
     { k: 'c_di', n: 'c_travel', nhom: 'chi', tien: 'tien-chi', lop: 'num', an: true },
     { k: 'c_sua', n: 'c_repair', nhom: 'chi', tien: 'tien-chi', lop: 'num', an: true },
     { k: 'c_khac', n: 'c_other', nhom: 'chi', tien: 'tien-chi', lop: 'num', an: true },
-    { k: 'c_tong', n: 'c_totexp', nhom: 'chi', tien: 'tien-chi', lop: 'num' },
-    { k: 'lai', n: 'net', tien: 'tien', lop: 'num' },
-    { k: 'vc', n: 'c_st_t', nhom: 'tt', sap: 'vc' },
-    { k: 'tc', n: 'c_st_f', nhom: 'tt', sap: 'tc', an_bai: true },
+    { k: 'c_tong', n: 'c_totexp', nhom: 'chi', tien: 'tien-chi', lop: 'num', an_vai: THU },
+    { k: 'lai', n: 'net', tien: 'tien', lop: 'num', an_vai: THU },
+    { k: 'vc', n: 'c_st_t', nhom: 'tt', sap: 'vc', lop: 'td-tt' },
+    { k: 'tc', n: 'c_st_f', nhom: 'tt', sap: 'tc', an_bai: true, lop: 'td-tt' },
   ];
   /** Cột vai này được CHỌN ẩn / hiện: Bãi không có cột tiền (luôn giấu — CSS); cột khoá luôn hiện. */
   const chonDuoc = (c) => !c.khoa && !(c.tien && laBai());
   const K_COT = () => 'epl_lao_td_cot_' + (AUTH.role || 'x');
-  const macDinh = () => new Set(COT.filter(c => chonDuoc(c) && !c.an && !(c.an_bai && laBai())).map(c => c.k));
+  const macDinh = () => new Set(COT.filter(c => chonDuoc(c) && !c.an && !(c.an_bai && laBai()) && !(c.an_vai || []).includes(AUTH.role)).map(c => c.k));
   function docChon() {
     try { const v = JSON.parse(localStorage.getItem(K_COT()) || 'null'); if (Array.isArray(v)) return new Set(v); } catch (e) { /* bỏ qua */ }
     return macDinh();
@@ -203,7 +208,8 @@
       loai: p.company === 'joint' ? tag('plain', 'co_joint') : 'EPL',
       // tên Lào + tên đọc Latin (máy chủ gửi driver_latin, 20/10) — gõ "Bounmi" ở ô tìm thì thấy ngay dòng nào là Bounmi
       tai_xe: p.driver_name ? `<span lang="lo">${esc(p.driver_name)}</span>${p.driver_latin && !p.driver_name.includes(p.driver_latin) ? `<small>${esc(p.driver_latin)}</small>` : ''}` : d,
-      xe: p.truck_no || bien ? `<b lang="lo">${esc(p.truck_no) || '—'}</b>${bien ? `<small lang="lo">${bien}</small>` : ''}` : d,
+      xe: (p.truck_no || bien ? `<b lang="lo">${esc(p.truck_no) || '—'}</b>${bien ? `<small lang="lo">${bien}</small>` : ''}` : d)
+        + (p.company === 'joint' && !CHON.has('loai') && !XUAT_DU ? ' ' + tag('plain', 'co_joint') : ''),   // cột Cty nhận đang ẩn (20/10)
       khach: p.customer_name ? `<span lang="lo">${esc(p.customer_name)}</span>` : d,
       hang: tag('ore', p.goods_type || 'iron_ore'),
       can_dau: so(p.weight_origin, 2),
@@ -230,11 +236,12 @@
     const h1 = [], h2 = [];
     const th = (c, cao) => {
       const sap = c.sap ? (SAP === c.sap ? 'tang' : SAP === '-' + c.sap ? 'giam' : '') : '';
-      const chu = c.n === '#' ? '#' : NN.h(c.n);
+      const n = c.ngan && !XUAT_DU ? c.ngan : c.n;
+      const chu = c.n === '#' ? '#' : NN.h(n);
       const lop = [lopO(c), c.sap ? 'td-sap' : '', sap ? 'sap-' + sap : ''].join(' ').replace(/\s+/g, ' ').trim();
-      const nd = c.sap ? `<span data-i18n="${c.n}">${chu}</span><i class="td-mui" aria-hidden="true"></i>`
+      const nd = c.sap ? `<span data-i18n="${n}">${chu}</span><i class="td-mui" aria-hidden="true"></i>`
         : chu;
-      return `<th${cao ? ' rowspan="2"' : ''} class="${lop}"${c.sap ? ` data-sap="${c.sap}" tabindex="0" title="${esc(NN.t('tdp_sap_goi_y'))}"` + (sap ? ` aria-sort="${sap === 'tang' ? 'ascending' : 'descending'}"` : '') : (c.n !== '#' ? ` data-i18n="${c.n}"` : '')}>${nd}</th>`;
+      return `<th${cao ? ' rowspan="2"' : ''} class="${lop}"${c.sap ? ` data-sap="${c.sap}" tabindex="0" title="${esc(NN.t('tdp_sap_goi_y'))}"` + (sap ? ` aria-sort="${sap === 'tang' ? 'ascending' : 'descending'}"` : '') : (c.n !== '#' ? ` data-i18n="${n}"` : '')}>${nd}</th>`;
     };
     for (let i = 0; i < cot.length;) {
       const c = cot[i];
