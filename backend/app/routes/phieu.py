@@ -47,6 +47,7 @@ from services import tai_khoan as TK
 from services import de_nghi_thu as DNT
 from services import khoan_muc as KMC
 from services import tram_thu_phi as TP
+from services import giay_to as GTO
 from services.tep import loi_co_tep, ten_tep, TEP_DIR, TEP_KIEU, TEP_TOI_DA
 from routes import hop_dong as HD
 from routes.tuyen import cach_tra_goi_y, gia_goi_y, goi_y_cua, km_ca_chuyen
@@ -1221,6 +1222,14 @@ def _dong_hang_gom(db, p, user, gd=None, loai_cu=None):
                      if tan > 0 else [], user, gd)
 
 
+@router.get("/api/kiem-giay-to")
+def kiem_giay_to(vehicle_id: str = "", driver_id: str = "", ngay: str = "", db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Màn phiếu hỏi trước khi lưu (20/10): xe / tài xế vướng giấy tờ gì tại ngày phiếu → {ngay, chan: [...], nhac: [...]}. Mỗi mục:
+    doi_tuong (tai_xe · dau_keo · ro_mooc), ten, giay (bang_lai · dang_kiem · bao_hiem · phu_hieu), ly_do (thieu · khong_hieu_luc ·
+    het_han · lech_hang · sap_het), han, con_ngay. Luật: services/giay_to.py."""
+    return GTO.kiem(db, vehicle_id or None, driver_id or None, ngay or None)
+
+
 @router.post("/api/trips")
 def lap_phieu(data: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     if user.role not in ("yard", "admin"):
@@ -1237,6 +1246,9 @@ def lap_phieu(data: dict = Body(...), db: Session = Depends(get_db), user=Depend
     p.rate_vnd, p.rate_cny = tg.get("VND", 1.2), tg.get("CNY", 3000)
     _ap_truong(db, p, data, user)
     _chan_phieu_trang(p)
+    # 20/10 (theo EPL_System «điều phối chặn tài xế không đủ bằng lái»): tài xế / xe vướng giấy tờ tại ngày phiếu thì không lập được —
+    # Sếp lưu được kèm lý do (ghi nhật ký phiếu)
+    gt_bo_qua = GTO.chan(db, p.vehicle_id, p.driver_id, p.doc_date, user, data.get("bo_qua_giay_to"))
     # C4.2 (anh Khampla): phí, ngưỡng tấn, mức trừ quá tải, tiền thuê là ĐIỀU KHOẢN của từng chủ xe —
     # ô nào người lập không gửi thì lấy theo hồ sơ chủ xe, không lấy hằng số chung.
     if p.company == "joint" and p.owner_id:
@@ -1278,6 +1290,8 @@ def lap_phieu(data: dict = Body(...), db: Session = Depends(get_db), user=Depend
             _dong_hang_gom(db, p, user, gd)            # phiếu gom: dòng hàng từ Loại hàng + Cân tại mỏ (29/09)
         _doi_trang_thai_xe_tai_xe(db, p, "on_trip", "on_trip")
         _ghi_log(db, p, user, "a_create")
+        if gt_bo_qua:
+            _ghi_log(db, p, user, "gt_bo_qua:" + gt_bo_qua)
         db.flush(); _ghi_do(db, p, user)
     return xuat_phieu(db, p, vai=user.role)
 
@@ -1325,9 +1339,17 @@ def sua_phieu(tid: str, data: dict = Body(...), db: Session = Depends(get_db), u
         if db.query(Trip).filter(Trip.doc_no == str(data["doc_no"]).strip()).first():
             raise HTTPException(409, {"ma": "TRUNG_SO", "loi": "Số phiếu đã có."})
     loai_cu = p.goods_type
+    xe_cu_id, tx_cu_id = p.vehicle_id, p.driver_id
     _ap_truong(db, p, data, user, muc_tt)
     if "vehicle_id" in data or "driver_id" in data or "driver_name" in data:
         _chan_phieu_trang(p)        # sửa mà xoá xe / tài xế thì cũng chặn; sửa mục khác trên phiếu cũ thì không vướng
+        # 20/10: giấy tờ — chỉ xét xe / tài xế vừa đổi (phiếu cũ mà bằng hết hạn SAU chuyến thì sửa mục khác vẫn được)
+        doi_xe_id = p.vehicle_id if p.vehicle_id and p.vehicle_id != xe_cu_id else None
+        doi_tx_id = p.driver_id if p.driver_id and p.driver_id != tx_cu_id else None
+        if doi_xe_id or doi_tx_id:
+            ly = GTO.chan(db, doi_xe_id, doi_tx_id, p.doc_date, user, data.get("bo_qua_giay_to"))
+            if ly:
+                _ghi_log(db, p, user, "gt_bo_qua:" + ly)
     if "expenses" in data:
         _ap_dong_chi(db, p, data["expenses"], user, muc_tt)
     if p.company != "joint" and sa_inspect(p).attrs.company.history.deleted:
@@ -1732,6 +1754,8 @@ def doi_xe(tid: str, data: dict = Body(...), db: Session = Depends(get_db), user
     ly_do = (data.get("ly_do") or data.get("reason") or "").strip()
     if not ly_do:
         raise HTTPException(422, {"ma": "THIEU_LY_DO", "loi": "Đổi xe phải ghi lý do — kế toán kiểm lại mục I sẽ đọc câu này."})
+    # 20/10: xe mới (và tài xế mới nếu đổi) phải còn hạn giấy tờ HÔM NAY — lúc đổi xe; Sếp cho qua kèm lý do
+    gt_bo_qua = GTO.chan(db, xe_moi.id, str(data.get("driver_id") or "") or None, dt.date.today(), user, data.get("bo_qua_giay_to"))
     truoc_khoa = BTC.dau_khoa(db, p)        # phiếu đã khoá: đổi chủ xe là lệch bút toán thuê xe (02/10)
     xe_cu = db.get(Vehicle, p.vehicle_id) if p.vehicle_id else None
     cu_ten = p.truck_no or (xe_cu.truck_no if xe_cu else "")
@@ -1776,6 +1800,8 @@ def doi_xe(tid: str, data: dict = Body(...), db: Session = Depends(get_db), user
         _ghi_log(db, p, user, "sec_info:reopen")
     s.status = "entered"
     _ghi_log(db, p, user, "a_change_truck")
+    if gt_bo_qua:
+        _ghi_log(db, p, user, "gt_bo_qua:" + gt_bo_qua)
     BTC.chan_sua_sau_khoa(db, p, truoc_khoa)
     db.commit()
     return xuat_phieu(db, p, vai=user.role)

@@ -58,12 +58,16 @@ def main():
         s, g = goi(DX, "/api/dang-nhap", {"username": u, "password": "1234"}); TK[(DX, u)] = g["token"]
     s, xe = goi(DX, "/api/vehicles", vai="admin"); s, tx = goi(DX, "/api/drivers", vai="admin"); s, kh = goi(DX, "/api/customers", vai="admin")
     s, diem = goi(DX, "/api/fuel-places", vai="admin")
-    thue = [x for x in xe if x["owner_type"] == "joint" and x["truck_no"].startswith("ຮ່ວມ")]
+    # 20/10: lập phiếu chặn xe / tài xế hết hạn giấy tờ (services/giay_to.py) — bài chọn xe, tài xế còn hạn
+    def hop_le(**k):
+        s, g = goi(DX, "/api/kiem-giay-to?" + "&".join("%s=%s" % (a, b) for a, b in k.items()), vai="admin")
+        return s == 200 and not g["chan"]
+    thue = [x for x in xe if x["owner_type"] == "joint" and x["truck_no"].startswith("ຮ່ວມ") and hop_le(vehicle_id=x["id"])]
     xe_thue = next((x for x in thue if x["status"] == "available"), thue[0])      # bản Lào không chặn xe đang bận
-    xe_nha = next(x for x in xe if x["owner_type"] == "EPL" and x["truck_no"] in ("347", "348", "349"))
+    xe_nha = next(x for x in xe if x["owner_type"] == "EPL" and x["truck_no"] in ("347", "348", "349") and hop_le(vehicle_id=x["id"]))
     # kho Thà Bốc (trước đây: kho EPL đầu danh sách — có lúc rơi vào kho đang âm trên bản sao)
     kho = next((d for d in diem if d.get("code") == "KHO-TB"), None) or next(d for d in diem if d.get("owner_type") == "epl")
-    tai_xe = next(t for t in tx if t["name"] == "ທ້າວ ບົວພັນ") if any(t["name"] == "ທ້າວ ບົວພັນ" for t in tx) else tx[-1]
+    tai_xe = next((t for t in tx if t["name"] == "ທ້າວ ບົວພັນ" and hop_le(driver_id=t["id"])), None)         or next(t for t in reversed(tx) if hop_le(driver_id=t["id"]))
     hom_nay = time.strftime("%Y-%m-%d")
     print("✓ đăng nhập · xe thuê %s (chủ xe %s) · xe nhà %s · tài xế %s" % (xe_thue["truck_no"], xe_thue.get("owner_name"), xe_nha["truck_no"], tai_xe["name"]))
 

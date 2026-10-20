@@ -103,7 +103,10 @@ def main():
 
         # ---- Bãi lập phiếu KHÔNG gửi dòng phí cao tốc → máy thêm theo trạm
         s, xe = goi("/api/vehicles", vai="thabok"); s, tx = goi("/api/drivers", vai="thabok"); s, kh = goi("/api/customers", vai="thabok")
-        nha = next(x for x in xe if x["owner_type"] == "EPL" and x.get("active", True))
+        # 20/10: lập phiếu chặn xe / tài xế hết hạn giấy tờ — chọn xe, tài xế còn hạn
+        hop_le = lambda **k: not goi("/api/kiem-giay-to?" + "&".join("%s=%s" % (a, b) for a, b in k.items()), vai="ketoan")[1]["chan"]
+        nha = next(x for x in xe if x["owner_type"] == "EPL" and x.get("active", True) and hop_le(vehicle_id=x["id"]))
+        tx = [t for t in tx if hop_le(driver_id=t["id"])]
         s, p = goi("/api/trips", {"doc_no": "THU-TP-%s/EPL" % time.strftime("%H%M%S"), "kind": "gom", "vehicle_id": nha["id"], "driver_id": tx[0]["id"],
                                   "customer_id": kh[0]["id"], "route_id": di["id"], "doc_date": time.strftime("%Y-%m-%d"), "expenses": []}, "thabok")
         dung(s == 200, "Bãi lập phiếu theo tuyến có trạm", p)

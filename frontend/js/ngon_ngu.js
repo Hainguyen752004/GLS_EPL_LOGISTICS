@@ -16096,5 +16096,90 @@ window.EPL_TU_DIEN = {
   "vi": "Mã mặt hàng nhiên liệu ở Quản lý kho (EPLNL-…). Xuất kho, sổ nhiên liệu, giá vốn đi theo mã này — phải có sẵn mặt hàng bên kho.",
   "lo": "ລະຫັດສິນຄ້ານ້ຳມັນຢູ່ ການຈັດການສາງ (EPLNL-…). ການເບີກສາງ, ປຶ້ມນ້ຳມັນ, ລາຄາຕົ້ນທຶນ ຕາມລະຫັດນີ້ — ຕ້ອງມີສິນຄ້ານີ້ໃນສາງກ່ອນ.",
   "en": "Code of the fuel item in Warehouse management (EPLNL-…). Stock issues, the fuel ledger and cost follow this code — the item must exist in the warehouse."
+ },
+ "px_gt_ai_tai_xe": {
+  "vi": "Tài xế {ten}",
+  "lo": "ໂຊເຟີ {ten}",
+  "en": "Driver {ten}"
+ },
+ "px_gt_ai_dau_keo": {
+  "vi": "Xe {ten}",
+  "lo": "ລົດ {ten}",
+  "en": "Truck {ten}"
+ },
+ "px_gt_ai_ro_mooc": {
+  "vi": "Rơ-moóc {ten}",
+  "lo": "ຫາງ {ten}",
+  "en": "Trailer {ten}"
+ },
+ "px_gt_giay_bang_lai": {
+  "vi": "bằng lái",
+  "lo": "ໃບຂັບຂີ່",
+  "en": "driving licence"
+ },
+ "px_gt_giay_dang_kiem": {
+  "vi": "đăng kiểm",
+  "lo": "ການກວດກາເຕັກນິກ",
+  "en": "inspection"
+ },
+ "px_gt_giay_bao_hiem": {
+  "vi": "bảo hiểm",
+  "lo": "ປະກັນໄພ",
+  "en": "insurance"
+ },
+ "px_gt_giay_phu_hieu": {
+  "vi": "giấy phép lưu hành",
+  "lo": "ໃບອະນຸຍາດແລ່ນ",
+  "en": "road permit"
+ },
+ "px_gt_thieu": {
+  "vi": "{ai}: chưa khai bằng lái — không được xếp chạy",
+  "lo": "{ai}: ຍັງບໍ່ໄດ້ແຈ້ງໃບຂັບຂີ່ — ຈັດແລ່ນບໍ່ໄດ້",
+  "en": "{ai}: no driving licence on file — cannot be assigned"
+ },
+ "px_gt_khong_hieu_luc": {
+  "vi": "{ai}: bằng lái đang bị treo / thu hồi",
+  "lo": "{ai}: ໃບຂັບຂີ່ຖືກໂຈະ / ຖອນ",
+  "en": "{ai}: driving licence suspended / revoked"
+ },
+ "px_gt_het_han": {
+  "vi": "{ai}: {giay} hết hạn {han}",
+  "lo": "{ai}: {giay} ໝົດອາຍຸ {han}",
+  "en": "{ai}: {giay} expired on {han}"
+ },
+ "px_gt_sap_het": {
+  "vi": "{ai}: {giay} còn {n} ngày (hết hạn {han})",
+  "lo": "{ai}: {giay} ເຫຼືອ {n} ມື້ (ໝົດອາຍຸ {han})",
+  "en": "{ai}: {giay} expires in {n} days ({han})"
+ },
+ "px_gt_lech_hang": {
+  "vi": "{ai}: hạng trên hồ sơ {a} khác hạng trên bằng {b}",
+  "lo": "{ai}: ປະເພດໃນປະຫວັດ {a} ບໍ່ກົງກັບປະເພດໃນໃບຂັບຂີ່ {b}",
+  "en": "{ai}: class on file {a} differs from licence class {b}"
+ },
+ "px_gt_chan_hint": {
+  "vi": "Xe / tài xế này chưa đủ giấy tờ tại ngày phiếu — gia hạn ở màn Tài xế / Xe, hoặc chọn xe / tài xế khác.",
+  "lo": "ລົດ / ໂຊເຟີນີ້ ເອກະສານຍັງບໍ່ຄົບໃນວັນທີຂອງໃບ — ຕໍ່ອາຍຸຢູ່ໜ້າ ໂຊເຟີ / ລົດ, ຫຼື ເລືອກລົດ / ໂຊເຟີອື່ນ.",
+  "en": "This truck / driver lacks valid papers on the slip date — renew them in Drivers / Trucks, or pick another truck / driver."
+ },
+ "px_gt_chan_hint_sep": {
+  "vi": "Giấy tờ chưa đủ — Sếp vẫn lưu được: bấm Lưu rồi ghi lý do (lý do vào nhật ký phiếu).",
+  "lo": "ເອກະສານຍັງບໍ່ຄົບ — ຫົວໜ້າຍັງບັນທຶກໄດ້: ກົດ ບັນທຶກ ແລ້ວຂຽນເຫດຜົນ (ເຫດຜົນເຂົ້າປະຫວັດໃບ).",
+  "en": "Papers are not valid — the boss can still save: press Save and give a reason (logged on the slip)."
+ },
+ "px_gt_bo_qua_hoi": {
+  "vi": "Lưu dù giấy tờ chưa đủ?",
+  "lo": "ບັນທຶກ ເຖິງວ່າເອກະສານຍັງບໍ່ຄົບ?",
+  "en": "Save even though papers are not valid?"
+ },
+ "px_gt_ly_do": {
+  "vi": "Lý do Sếp cho qua",
+  "lo": "ເຫດຜົນທີ່ຫົວໜ້າອະນຸຍາດ",
+  "en": "Reason for the boss's override"
+ },
+ "px_gt_bo_qua_log": {
+  "vi": "Sếp cho qua giấy tờ chưa đủ",
+  "lo": "ຫົວໜ້າອະນຸຍາດ ເຖິງວ່າເອກະສານຍັງບໍ່ຄົບ",
+  "en": "Boss overrode missing papers"
  }
 };

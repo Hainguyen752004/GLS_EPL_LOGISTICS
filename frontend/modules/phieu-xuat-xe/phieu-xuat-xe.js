@@ -507,6 +507,7 @@
       try { const n = JSON.parse(a.slice(9)); return NN.t('ct_log', { n: n.dong, khoan: tenDongCT(n), cu: EPL.tien(n.cu, n.tien_te), moi: EPL.tien(n.moi, n.tien_te) }) + (n.ghi_chu ? ' · ' + n.ghi_chu : ''); }
       catch (e) { return a; }
     }
+    if (a.startsWith('gt_bo_qua:')) return NN.t('px_gt_bo_qua_log') + ' · ' + a.slice(10);      // 20/10: Sếp cho qua giấy tờ chưa đủ
     const m = a.match(/^sec_(\w+):(\w+)$/); if (m) return `${NN.t('sec' + (MUC.indexOf(m[1]) + 1))} → ${NN.t('a_' + m[2])}`;
     if (LOG_KHOA[a]) return NN.t(LOG_KHOA[a]);
     // ev_<việc>_<trạng thái> (đổ dầu dọc đường: tài xế báo · kế toán duyệt) → "Đổ dầu dọc đường · Chờ duyệt"
@@ -792,6 +793,7 @@
     if (!tabTay) tab = tabMacDinh();
     veTabs(); datTab(tab, false); NN.apDung(root); nhanCan();
     napChiThat();
+    kiemGiayTo();
   }
   /* ---- G6 (06/10): CHI THẬT mục IV sau khi đã chi tạm ứng. Tài xế về khai chi thật ít / nhiều hơn số đã ứng: KT Chi phí VC (và Sếp)
    * sửa SỐ CHI THẬT từng dòng tiền mặt tài xế cầm (xe nhà) tới khi kỳ tất toán tài xế chứa DO này chốt. Không đụng phiếu chi tạm ứng
@@ -931,7 +933,73 @@
     if (el) { el.classList.add('px-thieu'); el.focus(); el.addEventListener('input', () => el.classList.remove('px-thieu'), { once: true }); }
     EPL.toast(NN.t(khoa), 'loi');
   }
-  const baoLoiLuu = (e) => (e && LOI_O[e.ma] ? baoThieu(e.ma) : EPL.baoLoi(e));
+  const baoLoiLuu = (e) => {
+    if (e && e.ma === 'GIAY_TO_CHUA_DU') {            // giấy tờ chưa đủ: mở mục I, dòng đỏ dưới ô Xe / Tài xế nói rõ vướng gì
+      if (tab !== 'info' && tab !== 'all') datTab('info', true);
+      kiemGiayTo(true); EPL.toast(NN.t('px_gt_chan_hint'), 'loi'); return;
+    }
+    return e && LOI_O[e.ma] ? baoThieu(e.ma) : EPL.baoLoi(e);
+  };
+
+  /* ---- 20/10: GIẤY TỜ xe / tài xế (anh Hải chọn bổ sung theo EPL_System: «điều phối chặn tài xế không đủ bằng lái»). Máy chủ quyết
+   * (services/giay_to.py — cùng luật màn Tài xế · Xe); màn hỏi trước để báo ngay dưới ô chọn, khỏi đợi tới lúc Lưu. Đỏ = chặn lưu (Sếp
+   * lưu được kèm lý do, vào nhật ký phiếu), vàng = sắp hết hạn. */
+  let GT = null, GT_KHOA = '', henGT = null;
+  const TT_GT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 21h20L12 3zM12 10v5M12 18h.01"/></svg>';
+  function chuGiayTo(m) {
+    const ai = NN.t('px_gt_ai_' + m.doi_tuong, { ten: m.ten || '' });
+    const giay = NN.t('px_gt_giay_' + m.giay);
+    const tham = { ai, giay, han: EPL.ngay(m.han), n: m.con_ngay, a: m.hang_ho_so || '', b: m.hang_bang || '' };
+    return NN.t('px_gt_' + m.ly_do, tham);
+  }
+  const htmlGiayTo = (gt) => gt ? [...(gt.chan || []), ...(gt.nhac || [])].map(m =>
+    `<div class="px-gt ${m.muc}">${TT_GT}<span lang="lo">${esc(chuGiayTo(m))}</span></div>`).join('') : '';
+  function veGiayTo() {
+    const o = g('px-giay-to'); if (!o) return;
+    const chan = (GT && GT.chan) || [];
+    const h = htmlGiayTo(GT);
+    o.hidden = !h;
+    o.innerHTML = h + (chan.length ? `<small class="px-gt-chu">${NN.h(AUTH.role === 'admin' ? 'px_gt_chan_hint_sep' : 'px_gt_chan_hint')}</small>` : '');
+    const vX = chan.some(m => m.doi_tuong !== 'tai_xe'), vT = chan.some(m => m.doi_tuong === 'tai_xe');
+    const ex = g('f-vehicle_id'), et = g('f-driver_id');
+    if (ex) ex.classList.toggle('px-gt-vuong', vX);
+    if (et) et.classList.toggle('px-gt-vuong', vT);
+  }
+  /** Hỏi máy chủ giấy tờ của xe + tài xế đang chọn tại ngày phiếu (trùng lần trước thì vẽ lại thôi). `luon`: hỏi lại dù trùng. */
+  function kiemGiayTo(luon) {
+    clearTimeout(henGT);
+    henGT = setTimeout(async () => {
+      if (!P) return;
+      const khoa = [P.vehicle_id || '', P.driver_id || '', P.doc_date || ''].join('|');
+      if (!P.vehicle_id && !P.driver_id) { GT = null; GT_KHOA = khoa; veGiayTo(); return; }
+      if (khoa === GT_KHOA && !luon) { veGiayTo(); return; }
+      GT_KHOA = khoa;
+      try {
+        GT = await API.get(`/api/kiem-giay-to?vehicle_id=${encodeURIComponent(P.vehicle_id || '')}&driver_id=${encodeURIComponent(P.driver_id || '')}&ngay=${encodeURIComponent(P.doc_date || '')}`);
+      } catch (e) { GT = null; GT_KHOA = ''; }     // mất mạng: không báo gì — máy chủ vẫn chặn lúc lưu
+      if (GT_KHOA === khoa) veGiayTo();
+    }, 200);
+  }
+  /** Sếp lưu dù giấy tờ chưa đủ: hỏi lý do (vào nhật ký phiếu). Trả lý do hoặc null (bấm Huỷ / để trống). */
+  async function hoiLyDoGiayTo(gt) {
+    const v = await EPL.hopNhap(NN.t('px_gt_bo_qua_hoi'), [{ id: 'ly_do', label: 'px_gt_ly_do', type: 'textarea', value: '', lo: true, bat_buoc: true }],
+      NN.t('save'), { dau: `<div class="px-giay-to">${htmlGiayTo(gt)}</div>` });
+    const ly = v && String(v.ly_do || '').trim();
+    return ly || null;
+  }
+  /** Gửi phiếu. Máy chủ chặn giấy tờ (GIAY_TO_CHUA_DU): Sếp được hỏi lý do rồi gửi lại một lần; vai khác nhận lỗi như cũ. */
+  async function guiPhieu(body) {
+    const gui = () => (moi ? API.post('/api/trips', body) : API.put('/api/trips/' + P.id, body));
+    try { return await gui(); } catch (e) {
+      if (!e || e.ma !== 'GIAY_TO_CHUA_DU' || AUTH.role !== 'admin') throw e;
+      kiemGiayTo(true);
+      const gt = await API.get(`/api/kiem-giay-to?vehicle_id=${encodeURIComponent(P.vehicle_id || '')}&driver_id=${encodeURIComponent(P.driver_id || '')}&ngay=${encodeURIComponent(P.doc_date || '')}`).catch(() => null);
+      const ly = await hoiLyDoGiayTo(gt);
+      if (!ly) throw new EPL.LoiAPI(0, 'HUY', NN.t('cancel'));      // HUY: không báo lỗi gì thêm
+      body.bo_qua_giay_to = ly;
+      return await gui();
+    }
+  }
   async function luu() {
     docForm();
     if (suaDuoc('info')) {
@@ -960,7 +1028,7 @@
       return x;
     });
     try {
-      P = moi ? await API.post('/api/trips', body) : await API.put('/api/trips/' + P.id, body);
+      P = await guiPhieu(body);
       moi = false; HD_DOI = {}; NHAP = null; EPL.toast(NN.t('saved'), 'ok'); veHet(); napToKhoHang();   // lưu phiếu giao có lấy hàng → máy lập phiếu xuất kho hàng
       history.replaceState(null, '', '#/phieu-xuat-xe?id=' + P.id);
       // ô chọn phiếu nạp lại NGẦM sau khi đã báo "Đã lưu" — chờ nó thì nút Lưu chậm thêm 0,1–0,5 s (đo 01/10)
@@ -1123,9 +1191,19 @@
     ], NN.t('change_truck'));
     if (!v) return;
     if (!String(v.ly_do || '').trim()) return EPL.toast(NN.t('ct_ly_do') + '?', 'loi');
+    const than = { vehicle_id: v.vehicle_id, driver_id: v.driver_id || null, ly_do: v.ly_do, xe_cu_hong: v.xe_cu_hong === '1' };
     try {
-      P = await API.post(`/api/trips/${P.id}/doi-xe`, {
-        vehicle_id: v.vehicle_id, driver_id: v.driver_id || null, ly_do: v.ly_do, xe_cu_hong: v.xe_cu_hong === '1' });
+      try { P = await API.post(`/api/trips/${P.id}/doi-xe`, than); } catch (e) {
+        // 20/10: xe / tài xế mới chưa đủ giấy tờ HÔM NAY — Sếp cho qua kèm lý do, vai khác thấy rõ vướng gì
+        if (!e || e.ma !== 'GIAY_TO_CHUA_DU') throw e;
+        const gt = await API.get(`/api/kiem-giay-to?vehicle_id=${encodeURIComponent(v.vehicle_id || '')}&driver_id=${encodeURIComponent(v.driver_id || '')}`).catch(() => null);
+        if (AUTH.role !== 'admin') {
+          await EPL.hoi(NN.t('px_gt_chan_hint'), `<div class="px-giay-to">${htmlGiayTo(gt)}</div>`, NN.t('ok'));
+          return;
+        }
+        const ly = await hoiLyDoGiayTo(gt); if (!ly) return;
+        P = await API.post(`/api/trips/${P.id}/doi-xe`, { ...than, bo_qua_giay_to: ly });
+      }
       DS = await napDs(); DM.vehicles = await API.get('/api/vehicles');
       EPL.toast(NN.t('saved'), 'ok'); veHet(); napToKhoHang();
     } catch (e) { EPL.baoLoi(e); }
@@ -1329,6 +1407,7 @@
       // đầu vào mục I–II → cập nhật số ngay
       [...COT_INFO, ...COT_TRANS].forEach(c => { const el = g('f-' + c); if (!el) return; el.addEventListener('input', () => {
         P[c] = el.value === '' ? null : (SO.has(c) ? el.value : el.value);
+        if (c === 'vehicle_id' || c === 'driver_id' || c === 'doc_date') kiemGiayTo();
         if (c === 'company') { P.expenses.forEach(e => { e.acct_code = null; }); if (P.company === 'joint' && (P.hire_price == null || P.hire_price === '')) { P.hire_price = P.price; g('f-hire_price').value = P.price ?? ''; P.hire_ccy = maCuoc(); g('f-hire_ccy').value = P.hire_ccy; } q('#px-phieu').classList.toggle('is-joint', P.company === 'joint'); veChi(); }
         if (c === 'route_id') { const r = DM.routes.find(x => x.id === el.value); if (r) { g('f-origin').value = P.origin = r.origin; g('f-destination').value = P.destination = r.destination; dienGoiY(r); } }
         if (c === 'route_id' || c === 'customer_id') dienGiaHopDong();
