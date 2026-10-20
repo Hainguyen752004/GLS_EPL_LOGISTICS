@@ -175,7 +175,7 @@ def luot(ten, tid, muc, hd, vai, co_luu, chuan_bi=None, nguong=None):
         try:
             if co_luu:
                 R.sua_phieu(tid, body, db=db, user=u)
-            R.duyet_muc(tid, muc, hd, db=db, user=u)
+            R.duyet_muc(tid, muc, hd, data={"ly_do": "Thử tốc độ nút Trả lại"} if hd == "return" else {}, db=db, user=u)   # 20/10: trả lại bắt buộc lý do
         except HTTPException as e:
             loi = (e.detail or {}).get("ma") if isinstance(e.detail, dict) else e.detail
         tg = time.perf_counter() - t0

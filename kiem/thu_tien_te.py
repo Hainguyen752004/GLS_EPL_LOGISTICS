@@ -181,7 +181,7 @@ def chay(pid, TAN, tg):
     s, g = goi("/api/trips/%s/mo-khoa" % pid, {}, vai="ketoan"); phai(s, 200, "Chưa có SO → KT Thu/Chi mở khoá được", g)
     s, d = goi("/api/trips/%s/de-nghi-thu" % pid, vai="ketoan")
     assert not d["pdt"] and d["trang_thai"] == "cho_khoa", "mở khoá phải rút tờ đề nghị thu chưa có SO: %s" % d.get("pdt")
-    s, g = goi("/api/trips/%s/sections/trans/return" % pid, {}, vai="ketoan"); phai(s, 200, "Kế toán trả lại mục II để sửa cước", g)
+    s, g = goi("/api/trips/%s/sections/trans/return" % pid, {"ly_do": "Sửa cước (thử)"}, vai="ketoan"); phai(s, 200, "Kế toán trả lại mục II để sửa cước", g)
     s, g = goi("/api/trips/%s" % pid, {"price": 45, "price_ccy": "USD"}, vai="ketoan", method="PUT"); phai(s, 200, "Đổi cước 45 USD/t", g)
     s, g = goi("/api/trips/%s/sections/trans/send" % pid, {}, vai="thabok"); phai(s, 200, "Bãi gửi lại mục II", g)
     s, g = goi("/api/trips/%s/sections/trans/verify" % pid, {}, vai="ketoan"); phai(s, 200, "Kiểm lại mục II", g)

@@ -177,7 +177,7 @@ def main():
     s, tuyen = goi("/api/routes", vai="thabok"); r0 = tuyen[0]
     s, g = goi("/api/trips/%s" % P, {"route_id": r0["id"], "origin": "", "destination": ""}, vai="thabok", method="PUT")
     phai(s, 409, "Bãi gắn tuyến khi mục II đã kiểm → bị khoá", g)
-    s, g = goi("/api/trips/%s/sections/trans/return" % P, {}, vai="ketoan"); phai(s, 200, "Kế toán trả lại mục II để Bãi gắn tuyến", g)
+    s, g = goi("/api/trips/%s/sections/trans/return" % P, {"ly_do": "Gắn tuyến (thử)"}, vai="ketoan"); phai(s, 200, "Kế toán trả lại mục II để Bãi gắn tuyến", g)
     s, g = goi("/api/trips/%s" % P, {"route_id": r0["id"]}, vai="thabok", method="PUT"); phai(s, 200, "Bãi gắn tuyến %s" % r0["name"], g)
     assert len(g["route_stops"]) == r0["so_diem"], "phiếu phải mang đủ điểm của tuyến"
     s, g = goi("/api/trips/%s/sections/trans/send" % P, {}, vai="thabok"); s, g = goi("/api/trips/%s/sections/trans/verify" % P, {}, vai="ketoan")

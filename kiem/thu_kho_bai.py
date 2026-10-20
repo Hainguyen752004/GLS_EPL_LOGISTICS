@@ -42,6 +42,7 @@ from sqlalchemy import create_engine, text              # noqa: E402
 from sqlalchemy.orm import Session                      # noqa: E402
 
 import models as M                                      # noqa: E402
+from _giay_to_thu import cho_du                         # noqa: E402
 from database import get_db                             # noqa: E402
 from main import app                                    # noqa: E402
 from services import goi_ke_toan as KT                  # noqa: E402
@@ -97,6 +98,7 @@ def main():
         tx = db.query(M.Driver).order_by(M.Driver.id).all()
         kh = db.query(M.Customer).order_by(M.Customer.id).first()
         assert len(xe) >= 3 and len(tx) >= 3 and kh is not None, "d7 thiếu xe / tài xế / khách"
+        cho_du(db, M, xe, tx)                             # 20/10: lập phiếu chặn giấy tờ — bài không thử luật đó (rollback lúc xong)
         QUANG = "ແຮ່ເຫຼັກ (quặng sắt)"
 
         def lap(kind, i, **them):

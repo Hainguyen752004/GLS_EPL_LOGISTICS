@@ -112,8 +112,10 @@ def main():
         q = goi("quytb", "GET", "/api/trips/" + DA_KHOA)[1]["quyen"]
         dung(q["muc"]["travel"]["viec"] == [], "Quỹ tiền mặt: mục IV chi ở Kế toán → không nút Chi", q["muc"]["travel"])
         q = goi("admin", "GET", "/api/trips/" + DA_KHOA)[1]["quyen"]
-        dung("unlock" in q["muc"]["fuel"]["viec"] and "return" in q["muc"]["info"]["viec"] and q["tab_mac_dinh"] == "all",
-             "Sếp: mở khoá mục, trả lại được cả khi phiếu khoá, mở Toàn phiếu", (q["muc"]["fuel"]["viec"], q["muc"]["info"]["viec"]))
+        # 20/10: Sếp mở mục đầu tiên đang chờ duyệt (= JS tabMacDinh), không còn mở Toàn phiếu
+        dung("unlock" in q["muc"]["fuel"]["viec"] and "return" in q["muc"]["info"]["viec"]
+             and q["tab_mac_dinh"] in ("info", "trans", "fuel", "travel", "repair", "other"),
+             "Sếp: mở khoá mục, trả lại được cả khi phiếu khoá, mở mục đang chờ", (q["muc"]["fuel"]["viec"], q["muc"]["info"]["viec"], q["tab_mac_dinh"]))
 
         print("== 4. tính thử (không ghi)")
         p7 = db.get(M.Trip, DANG_CHAY)

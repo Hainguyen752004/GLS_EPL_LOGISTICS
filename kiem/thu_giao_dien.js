@@ -16,7 +16,7 @@ const GOC = process.argv[2] || 'http://127.0.0.1:8010';
 // 01/10: 'tat-toan' dựng lại (tiền ở hệ kế toán anh Tune). 30/09: 'de-nghi-chi', 'de-nghi-thu' tách từ màn chung-tu (nay là Đề nghị theo DO); 'kho-xem' — kho chỉ xem theo mặt hàng
 const MODULES = ['tong-quan', 'theo-doi', 'theo-doi-tuyen', 'phieu-xuat-xe', 'de-nghi-chi', 'de-nghi-xuat-kho', 'de-nghi-thu', 'chung-tu',
   'phieu-cua-toi', 'xe-lien-ket', 'tat-toan', 'tien-tai-xe', 'tat-toan-doi-tac', 'but-toan-cho', 'nha-cung-cap', 'kho-xem',
-  'khach-hang', 'xe', 'tai-xe', 'the-cao-toc', 'ty-gia', 'tuyen-duong', 'quy-trinh', 'tai-khoan'];
+  'khach-hang', 'xe', 'tai-xe', 'the-cao-toc', 'ty-gia', 'tuyen-duong', 'tram-thu-phi', 'diem-do', 'khoan-muc', 'quy-trinh', 'tai-khoan'];
 
 /** Chỉ tải tài nguyên từ máy chủ mình; Google Fonts và mọi thứ ngoài trả rỗng. */
 class ChiNoiBo extends ResourceLoader {
@@ -282,7 +282,15 @@ async function main() {
   assert.ok(the.length, 'cột trái phải liệt kê chuyến đang theo dõi');
   assert.ok(goc().querySelector('#tdt-xe').textContent.trim().length > 20, 'hồ sơ chuyến phải có nội dung');
   assert.strictEqual(goc().querySelectorAll('#tdt-xe .tdt2-ap').length, 6, 'hồ sơ chuyến phải hiện trạng thái sáu mục');
-  // mốc chặng và ba tab của bản mẫu
+  // mốc chặng và ba tab của bản mẫu — 20/10: chuyến đứng đầu có thể là phiếu thử chưa chọn tuyến (d7 còn T4-0006 «THỬ loại xe»):
+  // bấm lần lượt tới chuyến có tuyến rồi mới xét mốc
+  let theTuyen = goc().querySelector('#tdt-the-ds .tdt2-the.chon');
+  for (const t of [...goc().querySelectorAll('#tdt-the-ds .tdt2-the')].slice(0, 12)) {
+    if (goc().querySelectorAll('#tdt-moc .m').length >= 2) break;
+    t.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); theTuyen = t;
+    const t0 = Date.now(); while (Date.now() - t0 < 3000 && !goc().querySelector('#tdt-moc .m, #tdt-moc .tdt2-trong')) await cho(100);
+    await cho(300);
+  }
   assert.ok(goc().querySelectorAll('#tdt-moc .m').length >= 2, 'phải vẽ mốc chặng của tuyến');
   const tabs = [...goc().querySelectorAll('#tdt-tabs .tdt2-tab')].map(b => b.dataset.tab);
   assert.deepStrictEqual(tabs, ['dien-bien', 'chi-phi', 'chung-tu'], 'phải đủ ba tab: ' + tabs.join(','));
@@ -310,7 +318,10 @@ async function main() {
   goc().querySelector('#tdt-dong-hs').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
   await cho(150);
   assert.ok(!cols.classList.contains('mo-ho-so'), 'bấm × phải thu thanh xem nhanh');
-  goc().querySelector('#tdt-the-ds .tdt2-the').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  // bấm lại đúng chuyến có tuyến đã chọn ở trên (bản đồ bên dưới cần đường tuyến + chấm xe)
+  const maTuyen = theTuyen && theTuyen.dataset.c;
+  (goc().querySelector(`#tdt-the-ds .tdt2-the[data-c="${maTuyen}"]`) || goc().querySelector('#tdt-the-ds .tdt2-the'))
+    .dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
   await choDen(() => cols.classList.contains('mo-ho-so'), 'bấm lại một phiếu phải mở lại thanh xem nhanh', 6000);
   console.log('✓ theo dõi tuyến: 8 ô số · 3 cột · mốc chặng · 3 tab · %d chuyến · bấm ô lọc được (%d → %d)', soTruoc, soTruoc, soSau);
 
@@ -371,10 +382,16 @@ async function main() {
     assert.deepStrictEqual(hien, [dang], 'chỉ mục của tab đang mở được hiện: ' + hien);
     goc().querySelector('#px-tabs .px-tab[data-tab="all"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
     assert.strictEqual(goc().querySelectorAll('.px-muc.px-muc-hien').length, 6, 'Toàn phiếu phải hiện cả 6 mục');
-    assert.ok(goc().querySelector('#px-luu').hidden, 'Toàn phiếu là để xem — nút Lưu phải ẩn');
+    // 20/10 (rà điều xe A4, anh Hải chọn): ở Toàn phiếu ô nhập chỉ xem, nhưng ai còn sửa được một mục vẫn có nút Lưu; không sửa được
+    // gì mà còn việc ở một mục thì hiện dòng «Chọn một mục để sửa / duyệt» — không bao giờ cả hai cùng ẩn khi còn việc
+    {
+      const luuHien = !goc().querySelector('#px-luu').hidden, nhac = goc().querySelector('#px-luu-nhac');
+      assert.ok(luuHien || (nhac && !nhac.hidden) || !goc().querySelector('.px-tab .px-tab-viec, .px-tab.co-viec'),
+        'Toàn phiếu: còn sửa được thì có nút Lưu, không thì có dòng chọn mục');
+    }
     goc().querySelector('#px-tabs .px-tab[data-tab="fuel"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
     assert.deepStrictEqual([...goc().querySelectorAll('.px-muc.px-muc-hien')].map(x => x.dataset.muc), ['fuel'], 'bấm tab III chỉ còn mục III');
-    console.log('✓ phiếu dạng tab: Bãi mở sẵn tab %s · Toàn phiếu chỉ xem · đổi tab được', dang);
+    console.log('✓ phiếu dạng tab: Bãi mở sẵn tab %s · Toàn phiếu: nút Lưu / dòng chọn mục · đổi tab được', dang);
   }
   assert.ok(goc().querySelector('#v-odo_est'), 'phiếu phải có ô Km về ước tính');
   console.log('✓ vai Bãi: không thấy Tài khoản; nút thấy được: %s', nut.join(',') || '(không có)');
@@ -400,6 +417,7 @@ async function main() {
   await choDen(() => !d.getElementById('app').hidden, 'vào với vai KT Thu/Chi'); await w.EPL.sanSang;
   // Vai không lập phiếu vào màn phiếu không tham số: KHÔNG nạp sẵn tờ nào, chỉ ô chọn trống + câu nhắc.
   await di('#/phieu-xuat-xe');
+  await choDen(() => goc().querySelector('#px-chon'), 'màn phiếu nạp xong (kế toán)', 10000);   // 20/10: đổi vai xong màn nạp chậm một nhịp
   {
     assert.strictEqual(goc().querySelector('#px-chon').value, '', 'kế toán vào màn phiếu: ô chọn phải trống');
     assert.ok(goc().querySelector('#px-phieu').hidden, 'kế toán chưa chọn tờ nào thì thân phiếu phải giấu');

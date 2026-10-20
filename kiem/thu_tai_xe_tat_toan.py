@@ -54,6 +54,7 @@ from sqlalchemy import create_engine, text              # noqa: E402
 from sqlalchemy.orm import Session                      # noqa: E402
 
 import models as M                                      # noqa: E402
+from _giay_to_thu import cho_du                         # noqa: E402
 from database import get_db                             # noqa: E402
 from main import app                                    # noqa: E402
 from routes import vi_tri as VT                         # noqa: E402
@@ -127,6 +128,7 @@ def main():
         kho = db.query(M.FuelPlace).filter(M.FuelPlace.owner_type == "epl").first()
         tram = db.query(M.FuelPlace).filter(M.FuelPlace.owner_type != "epl").first()
         assert len(xe) >= 2 and kh is not None and kho is not None and tram is not None, "d7 thiếu xe / khách / kho / trạm"
+        cho_du(db, M, xe, [tai_xe])                       # 20/10: lập phiếu chặn giấy tờ — bài không thử luật đó (rollback lúc xong)
         bay_gio = dt.datetime.utcnow()
 
         def lap(i, ngay, kind="giao", **them):

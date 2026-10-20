@@ -42,12 +42,17 @@ def main():
         g = goi("/api/dang-nhap", {"username": u, "password": "1234"}); TK[u] = g["token"]
         if u == "tx01": tx = g["user"]
     xe = goi("/api/vehicles", vai="thabok"); kh = goi("/api/customers", vai="thabok"); tuyen = goi("/api/routes", vai="thabok")
-    nha = next(x for x in xe if x["owner_type"] != "joint")
+    # 20/10: lập phiếu chặn xe / tài xế vướng giấy tờ (services/giay_to.py) — chọn xe đủ giấy; tài xế phải là của tx01, vướng thì
+    # Sếp lập kèm lý do bỏ qua (luật cho Sếp)
+    vuong = lambda **k: goi("/api/kiem-giay-to?" + "&".join("%s=%s" % (a, b) for a, b in k.items()), vai="admin")["chan"]
+    nha = next(x for x in xe if x["owner_type"] != "joint" and not vuong(vehicle_id=x["id"]))
+    tx_vuong = bool(vuong(driver_id=tx["driver_id"]))
     ids = []
     for i in (1, 2):
         p = goi("/api/trips", {"doc_no": "THU-KYDT-%s-%d/EPL" % (time.strftime("%H%M%S"), i), "company": "EPL", "vehicle_id": nha["id"],
                                "driver_id": tx["driver_id"], "customer_id": kh[0]["id"], "route_id": tuyen[0]["id"],
-                               "doc_date": time.strftime("%Y-%m-%d"), "weight_origin": 40, "note": "thử ký điện thoại", "kind": "giao"}, "thabok")
+                               "doc_date": time.strftime("%Y-%m-%d"), "weight_origin": 40, "note": "thử ký điện thoại", "kind": "giao",
+                               **({"bo_qua_giay_to": "bài thử ký điện thoại"} if tx_vuong else {})}, "admin" if tx_vuong else "thabok")
         goi("/api/trips/%s/transport-status" % p["id"], {"status": "transit"}, "admin")
         ids.append(p)
     loi = []

@@ -320,7 +320,8 @@ class Khung:
 
     def tai_xe(self, ten, tai_khoan=False):
         """Tài xế thử; `tai_khoan=True` thì kèm tài khoản vai driver (tên đăng nhập trả về ở .username)."""
-        d = self.M.Driver(name=ten, name_latin="Thu " + ten[-6:], status="available")
+        # 20/10: lập phiếu chặn tài xế thiếu bằng (services/giay_to.py) — tài xế thử có bằng còn hiệu lực
+        d = self.M.Driver(name=ten, name_latin="Thu " + ten[-6:], status="available", license_no="THU-" + ten[-6:], license_status="active")
         self.db.add(d); self.db.flush()
         d.username = None
         if tai_khoan:
