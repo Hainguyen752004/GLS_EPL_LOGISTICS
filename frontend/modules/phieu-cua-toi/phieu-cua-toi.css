@@ -427,3 +427,89 @@
 .tx2 .tx-cho-ds{margin:6px 0 8px;padding-left:18px;font-size:13px;line-height:1.6}
 .tx2 .tx-cho-ds .x2-tag-sm{height:20px;padding:0 8px;font-size:11px;vertical-align:middle}
 .tx2 .offline-card .btn-outline{margin-top:4px}
+
+/* 20/10 (E23) — dải báo chuyến mới / đổi xe / chuyến bị rút khỏi mình (máy tự kiểm mỗi 2 phút, khi quay lại app, khi có mạng lại) */
+.tx2 .tx-moi { display: flex; flex-direction: column; gap: 8px; margin: 0 0 16px; }
+.tx2 .tx-moi-dong { display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 14px; border-radius: var(--radius-md); background: var(--mint); border: 1.5px solid var(--pine); color: var(--mint-ink); }
+.tx2 .tx-moi-dong.x2-danger { background: var(--red-bg); border-color: var(--red-line); color: var(--red-ink); }
+.tx2 .tx-moi-dong .action-ico { flex: none; background: var(--surface); }
+.tx2 .tx-moi-dong.x2-danger .action-ico { color: var(--red); }
+.tx2 .tx-moi-chu { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; line-height: 1.4; }
+.tx2 .tx-moi-dong .btn-primary { flex: none; }
+.tx2 .tx-moi-dong .icon-btn { flex: none; background: transparent; border-color: transparent; color: inherit; }
+
+/* 20/10 (E22) — app tài xế trên điện thoại (390 × 844; khung co theo --ty-le 0,85 nên 52 px CSS ≈ 44 px thật):
+   · khung menu xanh (một mục) + ô «Tìm chức năng… (Ctrl K)» chiếm ~280 px đầu trang → giấu, chỉ còn dòng người dùng (đăng xuất) và
+     dòng tiêu đề + chọn tiếng; thanh tiêu đề không dính nữa (dính thì ăn ~100 px mỗi lần cuộn)
+   · bốn ô số một hàng; sáu thẻ lưới 3 × 2 (trước tràn ngang 819 px trong 431 px, che «Tạm ứng…», «Nhiên liệu»)
+   · «Bước tiếp theo» lên ngay dưới đầu thẻ chuyến (trước ở y ≈ 1.307 px, phải cuộn 1,5 màn)
+   · mọi nút / liên kết bấm ≥ 44 px thật (trước «Ký nhận» 47 × 17, «Khai» 27 × 17) */
+@media (max-width: 900px) {
+  body.vai-driver.tx-man .side .brand, body.vai-driver.tx-man .side-tim, body.vai-driver.tx-man #nav, body.vai-driver.tx-man #btnThuGon { display: none; }
+  body.vai-driver.tx-man .side { padding: 2px 6px; }
+  body.vai-driver.tx-man .side-chan { height: 52px; border-top: 0; }
+  body.vai-driver.tx-man #topbar { position: static; flex-wrap: nowrap; gap: 8px; padding: 6px 14px; }
+  body.vai-driver.tx-man #pageTitle { flex: 1; min-width: 0; font-size: 17px; }
+  body.vai-driver.tx-man #pageTitle .sub { display: none; }
+}
+@media (max-width: 640px) {
+  .tx2 .hello { padding: 0 0 12px; gap: 10px; }
+  .tx2 .hello > div:first-child { width: 100%; }
+  .tx2 .hello h1 { font-size: 21px; margin: 0 0 8px; }
+  .tx2 .chips { gap: 6px; }
+  .tx2 .info-chip { height: 30px; padding: 0 10px; font-size: 13px; }
+  .tx2 .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .tx2 .stat { padding: 8px 8px 7px; }
+  .tx2 .stat + .stat { border-left: 1px solid var(--line-soft); }
+  .tx2 .stat:nth-child(n+3) { border-top: 0; }
+  .tx2 .stat span { font-size: 11.5px; line-height: 1.25; }
+  .tx2 .stat strong { font-size: 19px; }
+  .tx2 .tabs { position: static; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0 0 14px; border-bottom: 0; overflow: visible; }
+  .tx2 .tabs [role="tab"] { height: auto; min-height: 52px; padding: 6px; margin: 0; white-space: normal; justify-content: center; text-align: center; line-height: 1.2; font-size: 14px; gap: 6px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); }
+  .tx2 .tabs [role="tab"][aria-selected="true"] { background: var(--mint); border-color: var(--pine); }
+  .tx2 .tabs [role="tab"] .icon { display: none; }
+  .tx2 .tabs [role="tab"] { flex-wrap: wrap; align-content: center; }
+  .tx2 .tabs [role="tab"] .tab-n { order: 1; }
+  .tx2 .tabs [role="tab"] .lo-sub { order: 2; flex-basis: 100%; }          /* VI + ລາວ: dòng Lào nằm dưới, không chen ngang */
+  .tx2 .trip-date { display: none; }                                         /* ngày xe đi đã có trong bảng số bên dưới */
+  .tx2 .tx-chon { margin: 0 0 12px; gap: 4px 10px; font-size: 13px; }
+  .tx2 .tx-chon .select { min-width: 0; width: 100%; height: 52px; }
+  .tx2 .layout { gap: 14px; }
+  .tx2 .trip { display: flex; flex-direction: column; }
+  .tx2 .trip > .trip-band { order: 0; padding: 14px 16px; gap: 12px; }
+  .tx2 .trip > .next { order: 1; padding: 14px 16px 16px; gap: 10px; border-bottom: 1px solid var(--line-soft); }
+  .tx2 .trip > .steps { order: 2; padding: 14px 12px; }
+  .tx2 .trip > .facts { order: 3; padding: 14px 16px; gap: 12px 14px; border-bottom: 0; }
+  .tx2 .trip-id { gap: 6px 8px; }
+  .tx2 .trip-id .code { font-size: 16px; }
+  .tx2 .x2-route { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .tx2 .x2-route-end.to { align-items: flex-end; text-align: right; }
+  .tx2 .x2-route-end strong { font-size: 18px; }
+  .tx2 .next-label { font-size: 14px; }
+  .tx2 .next-row { gap: 10px; }
+  .tx2 .notice { padding: 10px 12px; gap: 10px; font-size: 14px; }
+  .tx2 .actions { gap: 8px; }
+  .tx2 .action { min-height: 64px; padding: 10px; gap: 10px; flex-direction: row; align-items: center; }
+  .tx2 .action .action-ico { width: 36px; height: 36px; }
+  .tx2 .action strong { font-size: 15px; }
+  .tx2 .action small { font-size: 12.5px; }
+  .tx2 .facts dd { font-size: 16px; }
+  .tx2 .x2-side .x2-card { padding: 16px; gap: 12px; }
+  .tx2 .log { padding: 4px 0; }
+  /* ô bấm ≥ 52 px CSS (≈ 44 px thật) */
+  .tx2 .link-btn { min-height: 52px; min-width: 52px; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; text-align: center; }
+  .tx2 .btn-outline, .tx2 .btn-outline.sm, .tx2 .select, .tx2 .chip, .tx2 .btn-primary { min-height: 52px; }
+  .tx2 .icon-btn, .tx2 .pager button { width: 52px; height: 52px; }
+  .tx2 .quick button { height: 52px; min-width: 64px; padding: 0 16px; }
+  .tx2 .x2-seg button { min-height: 52px; }
+  .tx2 .x2-seg.full { height: 60px; }
+  .tx2 .search input { height: 52px; }
+  .tx2 .search .icon { top: 16px; }
+  .tx2 .search-clear { top: 0; right: 0; width: 52px; height: 52px; }
+  .tx2 .tx-anh .a { width: 104px; height: 104px; }
+  .tx2 .tx-anh .x { top: 0; right: 0; width: 52px; height: 52px; border-radius: 0 12px 0 12px; font-size: 22px; }
+  /* tab Lịch sử: dải chip trạng thái cuộn ngang không có dấu hiệu (chip thứ 4–5 nằm khuất) → xuống dòng */
+  .tx2 .chip-group { flex-wrap: wrap; overflow: visible; }
+  .tx2 .tx-moi-dong { padding: 8px 6px 8px 12px; gap: 8px; }
+  .tx2 .tx-moi-chu { font-size: 14px; }
+}

@@ -209,3 +209,60 @@ body.vai-yard .tdt2-tien{display:none}
 /* 12/10 (rà VI + ລາວ ở 1366 × 657: thẻ cột giữa bị cắt, tab Diễn biến còn 120px) — thẻ cuộn thay vì cắt; thân tab tối thiểu 160px */
 .tdt2-card{overflow:auto}
 .tdt2-tab-than{min-height:160px}
+
+/* 20/10 (C13) — 1366 × 768: bản đồ chỉ ~575 × 210, thẻ chuyến cao ~197 px (thấy 2,6 thẻ), sáu ô số chiếm một dải 66 px, nút «Báo sự cố»
+   trong hồ sơ ở y = 771 (ngoài màn). Giờ: ô số một hàng chip, thẻ hai dòng, bản đồ ăn phần cao còn lại, nút hồ sơ ở chân thẻ. */
+.tdt2-tiles{flex-wrap:nowrap;gap:8px;overflow-x:auto;scrollbar-width:thin}
+.tdt2-tile{flex:0 1 auto;min-width:0;min-height:34px;flex-direction:row;align-items:center;justify-content:flex-start;gap:8px;
+  padding:4px 12px;border-radius:999px}
+.tdt2-tile .l{min-width:0;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tdt2-tile .l .lo-sub{overflow:hidden;text-overflow:ellipsis}
+.tdt2-tile .v{flex:none;font-size:16px;line-height:1.2}
+@media (max-width:1000px){.tdt2-tiles{flex-wrap:wrap}.tdt2-tile{flex:1 1 40%}}
+
+/* thẻ chuyến hai dòng; viền trái theo mức cảnh báo (đỏ: sự cố / đi lâu · vàng: chờ cấp dầu / thiếu GPS) */
+#tdt-the-ds{position:relative}
+.tdt2-the{gap:3px;padding:7px 12px 8px}
+.tdt2-the.do{border-left-color:var(--red)}
+.tdt2-the.vang{border-left-color:var(--amber)}
+.tdt2-the.chon{border-left-color:var(--blue)}
+.tdt2-the .d1{display:flex;align-items:center;gap:8px;min-width:0}
+.tdt2-the .d1 .mono{font-size:12px;font-weight:600;white-space:nowrap}
+.tdt2-the .d1-xe{flex:1;min-width:0;font-size:12px;font-weight:600;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tdt2-the .d1 .tag{flex:none}
+.tdt2-the .d2{display:flex;align-items:center;gap:6px;min-width:0;font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.tdt2-the .d2 .canh{flex:none}
+.tdt2-the .d2-chu{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+
+/* cột giữa: bản đồ giãn hết phần còn lại; mốc chặng gọn lại; ba tab cao cố định, tự cuộn bên trong */
+.tdt-map{flex:1 1 0;min-height:calc(200px * var(--ty-le,1))}
+.tdt2-moc{padding:8px 18px 4px}
+.tdt2-moc::before{top:21px}
+.tdt2-moc-chan{padding:0 18px 6px}
+.tdt2-cols>.tdt2-card:nth-child(2)>.tdt2-tab-than{flex:0 0 150px;min-height:0}
+
+/* hồ sơ: dòng gọn hơn; nút thao tác ở chân thẻ, ngoài vùng cuộn — hai cột, nút dài / lẻ cuối trải hết hàng */
+.tdt2-ho-so{gap:10px}
+.tdt2-kv{padding:4px 0}
+.tdt2-ho-so-chan{flex:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:10px 14px;
+  border-top:1px solid var(--line);background:var(--bg)}
+.tdt2-ho-so-chan[hidden]{display:none}
+.tdt2-ho-so-chan .tdt2-btn{width:100%;height:auto;min-height:34px;padding:6px 10px;white-space:normal;line-height:1.25;text-align:center}
+.tdt2-ho-so-chan .rong{grid-column:1/-1}
+.tdt2-btn.xanh{background:var(--green);border-color:var(--green);color:#fff}
+.tdt2-btn.xanh:hover{filter:brightness(.92)}
+
+/* hộp «Xe đã tới» */
+.hop-thoai.tdt-toi{width:min(560px,calc(94vw / var(--ty-le,1)))}
+.tdt-toi-phieu{margin:0 0 10px;font-size:13px;color:var(--ink-2)}
+.tdt-toi-loi{margin:0 0 10px;padding:8px 10px;border-radius:var(--r);background:var(--red-soft);color:var(--red);font-weight:600;font-size:13px;line-height:1.45}
+.tdt-toi-loi[hidden],.tdt-toi-luoi .field[hidden]{display:none}
+.tdt-toi-luoi{grid-template-columns:repeat(2,minmax(0,1fr))}
+.tdt-toi-tinh{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.tdt-toi-tinh>div{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.tdt-toi-tinh small{display:block;font-size:11.5px;color:var(--ink-3)}
+.tdt-toi-tinh b{font-size:14px;font-variant-numeric:tabular-nums}
+.tdt-toi-tinh .vuot{background:var(--amber-soft);border-color:var(--amber)}
+.tdt-toi-tinh .vuot b,.tdt-toi-tinh .vuot small{color:var(--amber)}
+.tdt-toi-sao{margin:10px 0 0;font-size:12px;color:var(--ink-3)}
+@media (max-width:640px){.tdt-toi-luoi{grid-template-columns:minmax(0,1fr)}.tdt-toi-luoi .w2{grid-column:auto}.tdt-toi-tinh{grid-template-columns:minmax(0,1fr)}}

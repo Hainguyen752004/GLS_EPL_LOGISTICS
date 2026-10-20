@@ -84,6 +84,8 @@
         </div>
       </div>
       <div class="tdt2-cuon tdt2-ho-so" id="tdt-xe"></div>
+      <!-- 20/10 (C13): nút thao tác nằm ở chân thẻ, ngoài vùng cuộn — trước ở cuối hồ sơ, 1366 × 768 «Báo sự cố» ở y = 771 (ngoài màn) -->
+      <div class="tdt2-ho-so-chan" id="tdt-xe-nut" hidden></div>
     </aside>
   </div>
 </div>
@@ -112,6 +114,33 @@
       </div>
     </div>
     <div class="ht-nut"><button class="btn" value="huy" data-i18n="cancel"></button><button class="btn primary" value="ok" data-i18n="save"></button></div>
+  </form>
+</dialog>
+
+<!-- 20/10 (C13): hộp «Xe đã tới» — đủ ô như hộp ở màn Phiếu xuất xe (DO gom: kho bãi nhận; DO giao: số POD, người ký nhận), cùng
+     tên trường gửi lên. Km về điền sẵn số tài xế đã báo (chưa báo: số ước tính chỉ là gợi ý mờ); * là ô bắt buộc — cân về trống / không
+     phải số thì chặn ngay trên hộp; km chạy + hao hụt tính ngay khi gõ. Máy chủ chặn thì câu lỗi hiện trong hộp, số đã gõ giữ nguyên. -->
+<dialog id="tdt-toi" class="hop-thoai tdt-toi">
+  <form method="dialog" novalidate>
+    <h3 data-i18n="mark_arrived"></h3>
+    <p class="tdt-toi-phieu" id="tdt-toi-phieu"></p>
+    <p class="tdt-toi-loi" id="tdt-toi-loi" role="alert" hidden></p>
+    <div class="f-grid tdt-toi-luoi">
+      <div class="field" id="tdt-toi-o-mo"><label for="tdt-toi-mo"><span data-i18n="w_origin_gom"></span> <span class="hn-sao" aria-hidden="true">*</span></label>
+        <input id="tdt-toi-mo" type="number" step="any" inputmode="decimal" autocomplete="off" required><small class="hn-loi" hidden></small></div>
+      <div class="field"><label for="tdt-toi-can"><span id="tdt-toi-can-nhan"></span> <span class="hn-sao" aria-hidden="true">*</span></label>
+        <input id="tdt-toi-can" type="number" step="any" inputmode="decimal" autocomplete="off" required><small class="hn-loi" hidden></small></div>
+      <div class="field w2" id="tdt-toi-o-kho"><label for="tdt-toi-kho" data-i18n="kb_kho_nhan"></label><select id="tdt-toi-kho"></select>
+        <small class="hn-goi-y" data-i18n="kb_kho_nhan_goi_y"></small></div>
+      <div class="field"><label for="tdt-toi-ngay" data-i18n="d_back"></label><input id="tdt-toi-ngay" type="date"></div>
+      <div class="field"><label for="tdt-toi-km" data-i18n="odo_back_prompt"></label>
+        <input id="tdt-toi-km" type="number" step="any" inputmode="decimal" autocomplete="off"><small class="hn-goi-y" id="tdt-toi-km-goi-y"></small><small class="hn-loi" hidden></small></div>
+      <div class="field" id="tdt-toi-o-pod"><label for="tdt-toi-pod" data-i18n="pod_no"></label><input id="tdt-toi-pod" autocomplete="off"></div>
+      <div class="field" id="tdt-toi-o-nhan"><label for="tdt-toi-nguoi" data-i18n="pod_receiver"></label><input id="tdt-toi-nguoi" lang="lo" autocomplete="off"></div>
+    </div>
+    <div class="tdt-toi-tinh" id="tdt-toi-tinh" aria-live="polite"></div>
+    <p class="tdt-toi-sao"><span class="hn-sao" aria-hidden="true">*</span> <span data-i18n="td_bat_buoc"></span></p>
+    <div class="ht-nut"><button class="btn" type="button" id="tdt-toi-huy" data-i18n="cancel"></button><button class="btn primary" type="submit" id="tdt-toi-ok" data-i18n="ok"></button></div>
   </form>
 </dialog>
 

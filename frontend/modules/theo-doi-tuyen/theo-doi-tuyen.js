@@ -59,7 +59,8 @@
     const k = (BANG && BANG.kpi) || {};
     q('#tdt-o-so').innerHTML = O_SO.filter(o => !(o.tien && chiBai())).map(o => {
       const n = k[o.id] || 0;
-      return `<button type="button" class="tdt2-tile ${o.mau || ''} ${locO === o.id ? 'chon' : ''}" data-o="${o.id}" title="${esc(NN.t('td_tile_hint'))}">
+      // 20/10 (C13): sáu / tám ô thành MỘT hàng chip (trước cao 66 px, bản đồ còn 210 px) — nhãn dài cắt "…", đủ chữ ở title
+      return `<button type="button" class="tdt2-tile ${o.mau || ''} ${locO === o.id ? 'chon' : ''}" data-o="${o.id}" title="${esc(NN.t(o.khoa) + ' — ' + NN.t('td_tile_hint'))}">
         <span class="l">${NN.h(o.khoa)}</span><span class="v ${n ? 'khac0' : ''}">${so(n)}</span></button>`;
     }).join('');
     q('#tdt-o-so').querySelectorAll('[data-o]').forEach(b => b.addEventListener('click', () => {
@@ -92,27 +93,37 @@
     const ds = loc();
     // "hiện / khớp": vượt 300 phiếu thì danh sách chỉ giữ phần mới nhất — số sau dấu / vẫn là số thật
     q('#tdt-dem').textContent = BANG ? `${ds.length} / ${so(BANG.so_khop ?? BANG.chuyen.length)}${BANG.so_khop_tran ? '+' : ''}` : '';
+    // 20/10 (C13): thẻ HAI dòng (~70 px; trước 6 dòng ~197 px, 1366 × 768 thấy 2,6 thẻ) — dòng 1 số phiếu · xe · trạng thái, dòng 2 cảnh
+    // báo gọn rồi tài xế · tuyến · khách (cắt "…"). Đủ chữ (khách, biển số, chặng, ngày, cảnh báo đầy đủ) ở title; chi tiết ở hồ sơ.
     q('#tdt-the-ds').innerHTML = ds.length ? ds.map(c => {
-      const canh = [];
-      if (c.su_co_mo) canh.push(`<span class="canh do">${NN.h('td_inc_open', { n: c.su_co_mo })}</span>`);
-      if (c.di_lau) canh.push(`<span class="canh do">${NN.h('td_days_out', { n: c.so_ngay_di })}</span>`);
-      if (c.cho_cap_phat) canh.push(`<span class="canh vang">${NN.h('td_iss_wait', { n: c.cho_cap_phat })}</span>`);
-      if (['dispatched', 'transit'].includes(c.transport_status) && (!c.gps || c.gps.cu)) {
-        canh.push(`<span class="canh vang">${NN.h('gps_missing')}</span>`);
-      } else if (c.gps) {
-        canh.push(`<span class="canh xanh">${NN.h('gps_age', { n: Math.round(c.gps.tuoi_phut) })}</span>`);
-      }
-      return `<button type="button" class="tdt2-the ${P && P.id === c.id ? 'chon' : ''}" data-c="${c.id}">
-        <span class="so"><span class="mono">${esc(c.doc_no)}</span>${tag(c.transport_status)}</span>
-        <span class="kh" lang="lo">${esc(c.customer_name || '—')}</span>
-        <span class="xe" lang="lo">${c.origin || c.destination ? `${esc(c.origin || '—')} → ${esc(c.destination || '—')}` : '—'}</span>
-        <span class="xe">${esc(c.truck_no || '')}${c.plate_head ? ' · <span lang="lo">' + esc(c.plate_head) + '</span>' : ''}${c.driver_name ? ' · <span lang="lo">' + esc(c.driver_name) + '</span>' : ''}</span>
-        ${canh.length ? `<span class="canh-ds">${canh.join('')}</span>` : ''}
-        <span class="chan"><span>${c.so_diem ? NN.h('td_legs', { toi: c.stop_reached, tong: c.so_diem }) : NN.h('no_route')}</span><span>${EPL.ngay(c.out_date)}</span></span>
+      const canh = [], du = [], T = NN.t;
+      const thieuGps = ['dispatched', 'transit'].includes(c.transport_status) && (!c.gps || c.gps.cu);
+      if (c.su_co_mo) { canh.push(`<span class="canh do">${esc(T('td_b_su_co', { n: c.su_co_mo }))}</span>`); du.push(T('td_inc_open', { n: c.su_co_mo })); }
+      if (c.di_lau) { canh.push(`<span class="canh do">${esc(T('td_days_out', { n: c.so_ngay_di }))}</span>`); du.push(T('td_days_out', { n: c.so_ngay_di })); }
+      if (c.cho_cap_phat) { canh.push(`<span class="canh vang">${esc(T('td_b_cap', { n: c.cho_cap_phat }))}</span>`); du.push(T('td_iss_wait', { n: c.cho_cap_phat })); }
+      if (thieuGps) { canh.push(`<span class="canh vang">${esc(T('td_b_gps'))}</span>`); du.push(T('gps_missing')); }
+      else if (c.gps) { canh.push(`<span class="canh xanh">GPS</span>`); du.push(T('gps_age', { n: Math.round(c.gps.tuoi_phut) })); }
+      const tuyen = c.origin || c.destination ? `${c.origin || '—'} → ${c.destination || '—'}` : '';
+      const phu = [c.driver_name, tuyen, c.customer_name].filter(Boolean).join(' · ');
+      const tieuDe = [c.doc_no + ' · ' + T('s_' + c.transport_status), c.customer_name, tuyen, [c.truck_no, c.plate_head, c.driver_name].filter(Boolean).join(' · '),
+        (c.so_diem ? T('td_legs', { toi: c.stop_reached, tong: c.so_diem }) : T('no_route')) + ' · ' + EPL.ngay(c.out_date), ...du].filter(Boolean).join('\n');
+      const muc = c.su_co_mo || c.di_lau ? 'do' : c.cho_cap_phat || thieuGps ? 'vang' : '';
+      return `<button type="button" class="tdt2-the ${muc} ${P && P.id === c.id ? 'chon' : ''}" data-c="${c.id}" title="${esc(tieuDe)}">
+        <span class="d1"><span class="mono">${esc(c.doc_no)}</span><span class="d1-xe">${esc(c.truck_no || '')}</span>${tag(c.transport_status)}</span>
+        <span class="d2">${canh.join('')}<span class="d2-chu" lang="lo">${esc(phu || '—')}</span></span>
       </button>`;
     }).join('') : `<div class="tdt2-trong">${NN.h('td_none_watch')}</div>`;
     q('#tdt-the-ds').querySelectorAll('[data-c]').forEach(b => b.addEventListener('click', () => mo(b.dataset.c)));
     if (cheDoBD === 'doi') veBanDo();
+  }
+  /** Thẻ đang chọn nằm ngoài phần đang thấy của danh sách (mở bằng ?id=, bấm chấm xe trên bản đồ đội xe) → cuộn tới, đặt giữa khung
+   *  (20/10). Bấm một thẻ đang thấy thì không cuộn. #tdt-the-ds là gốc định vị (CSS) nên offsetTop tính trong danh sách. */
+  function cuonToiThe() {
+    const ds = q('#tdt-the-ds'), the = ds && ds.querySelector('.tdt2-the.chon');
+    if (!the) return;
+    const y = the.offsetTop;
+    if (y >= ds.scrollTop && y + the.offsetHeight <= ds.scrollTop + ds.clientHeight) return;
+    ds.scrollTop = Math.max(0, y - (ds.clientHeight - the.offsetHeight) / 2);
   }
 
   /* ---------------------------------------------------------------- bản đồ
@@ -461,7 +472,7 @@
   const tenTT = (tt) => NN.t(!tt || tt === 'wait' ? 'stt_wait2' : 'stt_' + tt);
 
   function veHoSo() {
-    if (!P) { q('#tdt-xe').innerHTML = `<div class="tdt2-trong">${NN.h('td_pick')}</div>`; return; }
+    if (!P) { q('#tdt-xe').innerHTML = `<div class="tdt2-trong">${NN.h('td_pick')}</div>`; q('#tdt-xe-nut').hidden = true; return; }
     const c = (BANG && BANG.chuyen.find(x => x.id === P.id)) || {};
     const kv = (k, v, cls) => `<div class="tdt2-kv"><span>${NN.h(k)}</span><b class="${cls || ''}">${v == null || v === '' ? '—' : v}</b></div>`;
     const m = P.sections || {};
@@ -505,17 +516,27 @@
       <div class="tdt2-tien tien">
         <div><small>${NN.h('td_fare_est')}</small><b>${so(cuoc)} LAK</b></div>
         <div class="${P.finance_status === 'unpaid' ? 'no' : ''}"><small>${NN.h(nhanThu)}</small><b>${soThu}</b></div>
-      </div>
-      <div class="tdt2-thao-tac">
-        ${laBai() && tiep && P.transport_status !== 'arrived' && P.finance_status !== 'paid' ? `<button type="button" class="tdt2-btn dam" data-toi="${tiep.seq}">${NN.h('td_confirm_stop', { n: tiep.seq })}: <span lang="lo">${esc(tiep.name)}</span></button>` : ''}
-        ${c.cho_cap_phat ? `<button type="button" class="tdt2-btn tan" data-cap>${NN.h('td_issue_fuel')}</button>` : ''}
-        ${laBai() && P.finance_status !== 'paid' ? `<button type="button" class="tdt2-btn do" data-su-co>${NN.h('report_incident')}</button>` : ''}
       </div>`;
 
+    // 20/10 (C13): nút thao tác ở chân thẻ (ngoài vùng cuộn — luôn thấy). Thêm «Xe đã lăn bánh» / «Xe đã tới» đúng quyền như màn phiếu
+    // (Bãi · Sếp, phiếu chưa khoá) để khỏi mở phiếu. «Cấp dầu theo phiếu đề nghị» là việc của thủ kho — Bãi không thấy nút.
+    const nut = [];
+    if (laBai() && tiep && P.transport_status !== 'arrived' && P.finance_status !== 'paid') nut.push(`<button type="button" class="tdt2-btn dam rong" data-toi="${tiep.seq}">${NN.h('td_confirm_stop', { n: tiep.seq })}: <span lang="lo">${esc(tiep.name)}</span></button>`);
+    if (laBai() && !P.locked && P.transport_status === 'dispatched') nut.push(`<button type="button" class="tdt2-btn" data-lan-banh>${NN.h('mark_transit')}</button>`);
+    if (laBai() && !P.locked && P.transport_status !== 'arrived') nut.push(`<button type="button" class="tdt2-btn xanh" data-xe-toi>${NN.h('mark_arrived')}</button>`);
+    if (c.cho_cap_phat && !chiBai()) nut.push(`<button type="button" class="tdt2-btn tan" data-cap>${NN.h('td_issue_fuel')}</button>`);
+    if (laBai() && P.finance_status !== 'paid') nut.push(`<button type="button" class="tdt2-btn do" data-su-co>${NN.h('report_incident')}</button>`);
+    const chan = q('#tdt-xe-nut');
+    chan.innerHTML = nut.join(''); chan.hidden = !nut.length;
+    const le = [...chan.children].filter(b => !b.classList.contains('rong'));
+    if (le.length % 2) le[le.length - 1].classList.add('rong');           // hai cột; nút lẻ cuối trải hết hàng
+
     q('#tdt-xe').querySelectorAll('[data-muc]').forEach(b => b.addEventListener('click', () => EPL.di('phieu-xuat-xe', { id: P.id })));
-    const nutToi = q('#tdt-xe [data-toi]'); if (nutToi) nutToi.addEventListener('click', () => toiDiem(+nutToi.dataset.toi, diem.length));
-    const nutCap = q('#tdt-xe [data-cap]'); if (nutCap) nutCap.addEventListener('click', moKhoChungTu);   // G8 06/10: Web kho anh Tune, không còn /#/cap-phat kho tạm
-    const nutSC = q('#tdt-xe [data-su-co]'); if (nutSC) nutSC.addEventListener('click', moSuCo);
+    const nutToi = chan.querySelector('[data-toi]'); if (nutToi) nutToi.addEventListener('click', () => toiDiem(+nutToi.dataset.toi, diem.length));
+    const nutCap = chan.querySelector('[data-cap]'); if (nutCap) nutCap.addEventListener('click', moKhoChungTu);   // G8 06/10: Web kho anh Tune, không còn /#/cap-phat kho tạm
+    const nutSC = chan.querySelector('[data-su-co]'); if (nutSC) nutSC.addEventListener('click', moSuCo);
+    const nutLB = chan.querySelector('[data-lan-banh]'); if (nutLB) nutLB.addEventListener('click', lanBanh);
+    const nutXT = chan.querySelector('[data-xe-toi]'); if (nutXT) nutXT.addEventListener('click', moXeToi);
   }
 
   /* ---------------------------------------------------------------- vẽ cả màn chi tiết */
@@ -563,25 +584,122 @@
       if (luot !== luotMo || !root) return;
       P = p; VET = vet;
       CHUNG_TU = null; mocSang = 0;
-      veDanhSach(); ve(); moHoSo(true);
+      veDanhSach(); ve(); moHoSo(true); cuonToiThe();
     } catch (e) { if (luot === luotMo) EPL.baoLoi(e); }
     finally { if (luot === luotMo && cols) cols.classList.remove('dang-mo'); }
   }
   async function toiDiem(seq, tong) {
     try {
       P = await API.post(`/api/trips/${P.id}/events`, { kind: 'arrive_stop', stop_seq: seq });
-      if (seq === tong && P.transport_status !== 'arrived') {
-        // Phiếu gom một mặt hàng: hàng vào kho theo cân tại mỏ — hỏi luôn ô đó như màn phiếu (29/09)
-        const gom = P.kind === 'gom', hoiMo = gom && (P.goods || []).filter(x => x.loai !== 'hao_hut').length <= 1;
-        const v = await EPL.hopNhap(NN.t('mark_arrived'), [
-          ...(hoiMo ? [{ id: 'weight_origin', label: 'w_origin_gom', type: 'number', value: P.weight_origin ?? '' }] : []),
-          { id: 'weight_dest', label: gom ? 'w_dest_gom' : 'weight_dest_prompt', type: 'number', value: P.weight_dest ?? '' },
-          { id: 'odo_back', label: 'odo_back', type: 'number', value: P.odo_back ?? '' }, { id: 'back_date', label: 'd_back', type: 'date', value: P.back_date || EPL.homNay() }], NN.t('ok'));
-        if (v && hoiMo && !(EPL.doc(v.weight_origin) > 0)) EPL.toast(NN.t('w_origin_gom') + '?', 'loi');
-        else if (v) P = await API.post(`/api/trips/${P.id}/transport-status`, { status: 'arrived', ...v });
-      }
       await tai(true); ve();
+      // tới điểm cuối mà phiếu chưa ghi "đã tới" → mở luôn hộp «Xe đã tới» (20/10: hộp đủ ô — trước là EPL.hopNhap thiếu kho, POD)
+      if (seq === tong && P.transport_status !== 'arrived') moXeToi();
     } catch (e) { EPL.baoLoi(e); }
+  }
+
+  /* ---------------------------------------------------------------- «Xe đã lăn bánh» · «Xe đã tới» trong hồ sơ (20/10, C13)
+   * Cùng quyền, cùng đường gọi như màn Phiếu xuất xe (POST /transport-status) — Bãi khỏi phải mở phiếu. Hộp «Xe đã tới» gửi đúng tên
+   * trường như hộp ở màn phiếu: status · weight_origin (DO gom một mặt hàng) · weight_dest · kho_id (DO gom) · back_date · odo_back ·
+   * pod_no · pod_receiver (DO giao). Không có ô tiền nào (Bãi không thấy tiền). */
+  async function lanBanh() {
+    if (!P) return;
+    if (!await EPL.hoi(NN.t('mark_transit'), NN.h('td_hoi_lan_banh', { so: P.doc_no }), NN.t('mark_transit'))) return;
+    try { P = await API.post(`/api/trips/${P.id}/transport-status`, { status: 'transit' }); EPL.toast(NN.t('saved'), 'ok'); await tai(true); ve(); }
+    catch (e) { EPL.baoLoi(e); }
+  }
+  const hoiCanMo = () => !!P && P.kind === 'gom' && (P.goods || []).filter(x => x.loai !== 'hao_hut').length <= 1;
+  /** Ô số của hộp: { v } · { trong } · { sai } (gõ chữ vào ô số — trình duyệt trả value rỗng, validity.badInput). */
+  function soO(id) {
+    const el = q(id);
+    if (el.validity && el.validity.badInput) return { sai: true, v: null };
+    const s = el.value.trim();
+    if (s === '') return { trong: true, v: null };
+    const v = Number(s);
+    return isFinite(v) ? { v } : { sai: true, v: null };
+  }
+  /** Câu lỗi đỏ dưới một ô (kiểu hộp chung: hn-co-loi · hn-loi). Trả true khi ô hợp lệ. */
+  function loiToi(id, chu) {
+    const f = q(id).closest('.field'), l = f.querySelector('.hn-loi');
+    f.classList.toggle('hn-co-loi', !!chu);
+    q(id).setAttribute('aria-invalid', chu ? 'true' : 'false');
+    if (l) { l.hidden = !chu; l.textContent = chu || ''; }
+    return !chu;
+  }
+  /** Kiểm các ô và tính km chạy · hao hụt ngay khi gõ. `nop`: lúc bấm Đồng ý — ô bắt buộc còn trống cũng báo (lúc gõ thì chỉ báo
+   *  ô gõ sai, không đỏ cả hộp ngay khi vừa mở). */
+  function tinhToi(nop) {
+    const mo = hoiCanMo() ? soO('#tdt-toi-mo') : { v: P.weight_origin }, can = soO('#tdt-toi-can'), km = soO('#tdt-toi-km'), di = P.odo_out;
+    const canLoi = (x) => (x.sai ? NN.t('td_toi_phai_so') : (nop || !x.trong) && !(x.v > 0) ? NN.t('td_toi_can_trong') : '');
+    let ok = true;
+    if (hoiCanMo()) ok = loiToi('#tdt-toi-mo', canLoi(mo)) && ok;
+    ok = loiToi('#tdt-toi-can', canLoi(can)) && ok;
+    ok = loiToi('#tdt-toi-km', km.sai ? NN.t('td_toi_phai_so') : km.v != null && di != null && km.v < di ? NN.t('tx_km_nho_hon', { km: so(di) }) : '') && ok;
+    const kmChay = km.v != null && di != null && km.v >= di ? km.v - di : null;
+    const hao = mo.v > 0 && can.v > 0 ? mo.v - can.v : null, pt = hao != null ? hao / mo.v * 100 : null;
+    q('#tdt-toi-tinh').innerHTML = `
+      <div><small>${NN.h('tx_km_di')}</small><b>${di != null ? so(di) + ' km' : '—'}</b></div>
+      <div><small>${NN.h('odo_km')}</small><b>${kmChay != null ? so(kmChay) + ' km' : '—'}</b></div>
+      <div class="${pt != null && pt > 1.5 ? 'vuot' : ''}"><small>${NN.h('w_loss')}</small><b>${hao != null ? so(hao, 2) + ' t · ' + so(pt, 2) + ' %' : '—'}</b>${pt != null && pt > 1.5 ? `<small>${NN.h('td_toi_hao_vuot')}</small>` : ''}</div>`;
+    return ok;
+  }
+  async function moXeToi() {
+    if (!P) return;
+    const dlg = q('#tdt-toi'), gom = P.kind === 'gom';
+    NN.apDung(dlg);
+    q('#tdt-toi-phieu').innerHTML = `<b class="mono">${esc(P.doc_no)}</b> · ${esc(P.truck_no || '')} · <span lang="lo">${esc(P.origin || '—')} → ${esc(P.destination || '—')}</span>`;
+    q('#tdt-toi-loi').hidden = true;
+    q('#tdt-toi-o-mo').hidden = !hoiCanMo();
+    q('#tdt-toi-can').closest('.field').classList.toggle('w2', !hoiCanMo());       // không có ô cân mỏ: ô cân về trải hết hàng
+    q('#tdt-toi-mo').value = P.weight_origin ?? '';
+    q('#tdt-toi-can-nhan').innerHTML = NN.h(gom ? 'w_dest_gom' : 'weight_dest_prompt');
+    q('#tdt-toi-can').value = P.weight_dest ?? '';
+    q('#tdt-toi-ngay').value = P.back_date || EPL.homNay();
+    // km về: số tài xế đã báo («Báo đã về» trên điện thoại) điền sẵn; chưa báo thì số ước tính (km lúc đi + km cả tuyến) chỉ là gợi ý
+    // mờ trong ô — Bãi đọc công-tơ-mét rồi gõ, không gửi số ước tính lên làm km thật
+    const txBao = P.odo_back != null && (P.logs || []).some(l => l.action === 'drv_back');
+    q('#tdt-toi-km').value = P.odo_back ?? '';
+    q('#tdt-toi-km').placeholder = P.odo_back == null && P.odo_est ? String(Math.round(P.odo_est)) : '';
+    q('#tdt-toi-km-goi-y').innerHTML = txBao ? NN.h('td_toi_tx_bao') : P.odo_back == null && P.odo_est ? NN.h('td_toi_uoc', { km: so(Math.round(P.odo_est)) }) : '';
+    q('#tdt-toi-o-pod').hidden = q('#tdt-toi-o-nhan').hidden = gom;
+    q('#tdt-toi-pod').value = P.pod_no || ''; q('#tdt-toi-nguoi').value = P.pod_receiver || '';
+    // DO gom: chọn kho bãi nhận (12/10) — danh mục như màn phiếu, mặc định đứng đầu; không lấy được danh mục thì giấu ô (máy chủ dùng kho mặc định)
+    const oKho = q('#tdt-toi-o-kho'); oKho.hidden = true;
+    ['#tdt-toi-mo', '#tdt-toi-can', '#tdt-toi-km'].forEach(id => loiToi(id, ''));
+    tinhToi(false);
+    dlg.showModal();
+    q('#tdt-toi-can').focus();
+    if (gom) {
+      let kho = [];
+      try { kho = await API.get('/api/kho-hang/kho-bai'); } catch (e) { kho = []; }
+      if (!dlg.open || !kho.length) return;
+      const md = (kho.find(k => k.mac_dinh) || kho[0]).id;
+      q('#tdt-toi-kho').innerHTML = kho.map(k => `<option value="${esc(k.id)}" ${k.id === md ? 'selected' : ''}>${esc(k.ma + ' · ' + k.ten + (k.ten_lo ? ' · ' + k.ten_lo : ''))}</option>`).join('');
+      oKho.hidden = false;
+    }
+  }
+  async function guiXeToi() {
+    if (!P) return;
+    if (!tinhToi(true)) { const sai = q('#tdt-toi .hn-co-loi input'); if (sai) sai.focus(); return; }
+    const gom = P.kind === 'gom';
+    const body = { status: 'arrived', weight_dest: soO('#tdt-toi-can').v, back_date: q('#tdt-toi-ngay').value || EPL.homNay() };
+    if (hoiCanMo()) body.weight_origin = soO('#tdt-toi-mo').v;
+    if (gom && !q('#tdt-toi-o-kho').hidden && q('#tdt-toi-kho').value) body.kho_id = q('#tdt-toi-kho').value;
+    const km = soO('#tdt-toi-km'); if (km.v != null) body.odo_back = km.v;
+    if (!gom) {
+      const pod = q('#tdt-toi-pod').value.trim(), nguoi = q('#tdt-toi-nguoi').value.trim();
+      if (pod) body.pod_no = pod; if (nguoi) body.pod_receiver = nguoi;
+    }
+    const nut = q('#tdt-toi-ok'); nut.disabled = true;
+    try {
+      P = await API.post(`/api/trips/${P.id}/transport-status`, body);
+      q('#tdt-toi').close(); EPL.toast(NN.t('saved'), 'ok');
+      await tai(true); ve();
+    } catch (e) {
+      // máy chủ chặn (thiếu cân bãi / cân mỏ, kho sai, chưa nhận tạm ứng, mục II đã kiểm…): câu lỗi trong hộp, số đã gõ giữ nguyên
+      const l = q('#tdt-toi-loi'); l.textContent = e && e.message ? e.message : String(e); l.hidden = false;
+      const o = e && e.ma === 'THIEU_CAN_MO' && hoiCanMo() ? '#tdt-toi-mo' : e && e.ma === 'THIEU_CAN_BAI' ? '#tdt-toi-can' : e && e.ma === 'KHO_SAI' ? '#tdt-toi-kho' : null;
+      if (o) q(o).focus();
+    } finally { nut.disabled = false; }
   }
   async function ghiChu() {
     const v = await EPL.hopNhap(NN.t('add_note'), [{ id: 'note', label: 'note', value: '', lo: true }], NN.t('save'));
@@ -726,6 +844,10 @@
       q('#tdt-nen').addEventListener('change', e => { datNen(e.target.value); });
       root.querySelectorAll('.tdt-nguon button').forEach(b => b.addEventListener('click', () => datNguon(b.dataset.src)));
       q('#tdt-f-part').addEventListener('change', () => datNguon('kho'));
+      // hộp «Xe đã tới» (20/10): kiểm + tính lại khi gõ; Đồng ý thì kiểm đủ rồi mới gửi — hộp chỉ đóng khi máy chủ nhận
+      q('#tdt-toi form').addEventListener('submit', (e) => { e.preventDefault(); guiXeToi(); });
+      q('#tdt-toi-huy').addEventListener('click', () => q('#tdt-toi').close());
+      ['#tdt-toi-mo', '#tdt-toi-can', '#tdt-toi-km'].forEach(id => q(id).addEventListener('input', () => { if (P) tinhToi(false); }));
       window.addEventListener('resize', khiDoiCo);
       // đổi kiểu menu top ⇄ side (EPL.datKieuXem) không bắn resize: thanh đầu đổi cỡ thì đo lại — rà 01/10: sang thanh bên
       // xong ba cột hụt ~116 px dưới đáy, sang lại thanh trên thì cột lọt khỏi mép dưới
@@ -745,6 +867,7 @@
     },
     destroy() {
       clearInterval(dongHo); dongHo = null;
+      const toi = root && q('#tdt-toi'); if (toi && toi.open) toi.close();
       window.removeEventListener('resize', khiDoiCo);
       if (theoDau) { theoDau.disconnect(); theoDau = null; }
       if (MAP) { MAP.remove(); MAP = null; lopNen = lopVe = null; }
