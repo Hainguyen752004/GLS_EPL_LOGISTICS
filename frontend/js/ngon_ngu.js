@@ -4743,8 +4743,8 @@ window.EPL_TU_DIEN = {
   "en": "Requests by DO"
  },
  "title_chung_tu": {
-  "vi": "Đề nghị theo DO<span class=\"sub\">Hồ sơ DO hai bên · bên điều xe đề nghị gì ↔ bên kế toán đã lập chứng từ nào</span>",
-  "lo": "ໃບສະເໜີ ຕາມ DO<span class=\"sub\">ເອກະສານ DO ສອງຝ່າຍ · ຝ່າຍຈັດລົດສະເໜີຫຍັງ ↔ ຝ່າຍບັນຊີອອກເອກະສານໃດແລ້ວ</span>",
+  "vi": "Đề nghị theo DO<span class=\"sub\">Hồ sơ DO hai bên · bên vận tải đề nghị gì ↔ bên kế toán đã lập chứng từ nào</span>",
+  "lo": "ໃບສະເໜີ ຕາມ DO<span class=\"sub\">ເອກະສານ DO ສອງຝ່າຍ · ຝ່າຍຂົນສົ່ງສະເໜີຫຍັງ ↔ ຝ່າຍບັນຊີອອກເອກະສານໃດແລ້ວ</span>",
   "en": "Requests by DO<span class=\"sub\">Two-sided DO file · what dispatch requested ↔ which documents accounting has made</span>"
  },
  "voucher_payment": {
@@ -8148,8 +8148,8 @@ window.EPL_TU_DIEN = {
   "en": "Create key for the warehouse site"
  },
  "tk_lt_tao_hint": {
-  "vi": "Khoá mới thay khoá cũ ngay. Chép khoá hiện ra rồi dán vào Cài đặt → Liên thông trang điều xe bên kho tạm — khoá chỉ hiện một lần.",
-  "lo": "ກະແຈໃໝ່ແທນກະແຈເກົ່າທັນທີ. ສຳເນົາກະແຈທີ່ສະແດງ ແລ້ວວາງໃສ່ ຕັ້ງຄ່າ → ເຊື່ອມຕໍ່ໜ້າຈັດລົດ ຢູ່ສາງຊົ່ວຄາວ — ກະແຈສະແດງພຽງເທື່ອດຽວ.",
+  "vi": "Khoá mới thay khoá cũ ngay. Chép khoá hiện ra rồi dán vào Cài đặt → Liên thông Web kế toán – kho — khoá chỉ hiện một lần.",
+  "lo": "ກະແຈໃໝ່ແທນກະແຈເກົ່າທັນທີ. ສຳເນົາກະແຈທີ່ສະແດງ ແລ້ວວາງໃສ່ ຕັ້ງຄ່າ → ເຊື່ອມຕໍ່ເວັບບັນຊີ – ສາງ — ກະແຈສະແດງພຽງເທື່ອດຽວ.",
   "en": "A new key replaces the old one at once. Copy it into Settings → Link to the transport site on the temporary warehouse site — it is shown only once."
  },
  "tk_lt_co": {
@@ -11698,9 +11698,9 @@ window.EPL_TU_DIEN = {
   "en": "Advances are paid in the accounting system (from 01/10)"
  },
  "qt_b8_lam1": {
-  "vi": "KT Chi phí ghi sổ mục IV → máy lập phiếu chi \"Chi trước\" bên hệ kế toán anh Tune (chưa ghi sổ)",
-  "lo": "ບັນຊີລາຍຈ່າຍບັນທຶກບັນຊີໜ້າ IV → ເຄື່ອງສ້າງໃບຈ່າຍ \"ຈ່າຍກ່ອນ\" ຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune (ຍັງບໍ່ບັນທຶກ)",
-  "en": "The cost accountant books section IV → the system creates a \"Pay in advance\" payment voucher in Mr Tune's accounting system (not yet posted)"
+  "vi": "KT Chi phí ghi sổ mục IV → máy lập phiếu chi \"Chi trước\" bên Web kế toán – kho (chưa ghi sổ)",
+  "lo": "ບັນຊີລາຍຈ່າຍບັນທຶກບັນຊີໜ້າ IV → ເຄື່ອງສ້າງໃບຈ່າຍ \"ຈ່າຍກ່ອນ\" ຢູ່ເວັບບັນຊີ – ສາງ (ຍັງບໍ່ບັນທຶກ)",
+  "en": "The cost accountant books section IV → the system creates a \"Pay in advance\" payment voucher in the accounting – warehouse Web (not yet posted)"
  },
  "qt_b8_lam2": {
   "vi": "Thủ quỹ chi tiền mặt cho tài xế và GHI SỔ phiếu đó ngay trong hệ kế toán",
@@ -11728,9 +11728,9 @@ window.EPL_TU_DIEN = {
   "en": "Company truck: Dr 1601 employee advance / Cr 1011 cash — moved to expense at settlement"
  },
  "qt_b8_may4": {
-  "vi": "Trang điều xe hỏi lại hệ kế toán (lúc mở tờ, lúc tài xế bấm Xuất phát, nút Cập nhật): đã ghi sổ → mục IV \"Đã chi\", tờ tạm ứng \"Đã cấp\"",
-  "lo": "ໜ້າຈັດລົດຖາມລະບົບບັນຊີຄືນ (ຕອນເປີດໃບ, ຕອນໂຊເຟີກົດ ອອກລົດ, ປຸ່ມ ອັບເດດ): ບັນທຶກແລ້ວ → ໜ້າ IV \"ຈ່າຍແລ້ວ\", ໃບເງິນລ່ວງໜ້າ \"ເບີກແລ້ວ\"",
-  "en": "The dispatch site asks the accounting system again (when the sheet opens, when the driver presses Depart, the Refresh button): posted → section IV \"Paid\", advance sheet \"Issued\""
+  "vi": "Trang vận tải hỏi lại hệ kế toán (lúc mở tờ, lúc tài xế bấm Xuất phát, nút Cập nhật): đã ghi sổ → mục IV \"Đã chi\", tờ tạm ứng \"Đã cấp\"",
+  "lo": "ໜ້າຂົນສົ່ງຖາມລະບົບບັນຊີຄືນ (ຕອນເປີດໃບ, ຕອນໂຊເຟີກົດ ອອກລົດ, ປຸ່ມ ອັບເດດ): ບັນທຶກແລ້ວ → ໜ້າ IV \"ຈ່າຍແລ້ວ\", ໃບເງິນລ່ວງໜ້າ \"ເບີກແລ້ວ\"",
+  "en": "The transport page asks the accounting system again (when the sheet opens, when the driver presses Depart, the Refresh button): posted → section IV \"Paid\", advance sheet \"Issued\""
  },
  "qt_b8_may5": {
   "vi": "Gửi lại không tạo phiếu thứ hai: tìm phiếu đã có theo tài xế + số PTU trước",
@@ -11738,9 +11738,9 @@ window.EPL_TU_DIEN = {
   "en": "Resending never creates a second voucher: it first looks up the existing one by driver + PTU number"
  },
  "qt_b8_chan1": {
-  "vi": "Quỹ bấm Chi mục IV trên trang điều xe → chặn, chi ở hệ kế toán (Sếp vẫn chi tay được)",
-  "lo": "ຄັງເງິນກົດ ຈ່າຍ ໜ້າ IV ຢູ່ໜ້າຈັດລົດ → ກັ້ນ, ຈ່າຍຢູ່ລະບົບບັນຊີ (ຫົວໜ້າຍັງຈ່າຍເອງໄດ້)",
-  "en": "The cashier pressing Pay on section IV on the dispatch site → blocked, pay in the accounting system (the boss can still pay manually)"
+  "vi": "Quỹ bấm Chi mục IV trên trang vận tải → chặn, chi ở hệ kế toán (Sếp vẫn chi tay được)",
+  "lo": "ຄັງເງິນກົດ ຈ່າຍ ໜ້າ IV ຢູ່ໜ້າຂົນສົ່ງ → ກັ້ນ, ຈ່າຍຢູ່ລະບົບບັນຊີ (ຫົວໜ້າຍັງຈ່າຍເອງໄດ້)",
+  "en": "The cashier pressing Pay on section IV on the transport page → blocked, pay in the accounting system (the boss can still pay manually)"
  },
  "qt_b8_chan2": {
   "vi": "Thủ quỹ chưa ghi sổ bên kế toán → tài xế chưa xuất phát được",
@@ -11998,9 +11998,9 @@ window.EPL_TU_DIEN = {
   "en": "Checks: return odometer off the estimate by > 10 %, loss > 1.5 %, missing destination weight, missing return km, missing ore bill (neither photo nor number), sections with expenses not yet verified"
  },
  "qt_b15_may2": {
-  "vi": "Khoá xong máy tự lập PHIẾU ĐỀ NGHỊ THU cước (đúng tiền tệ của phiếu) — gửi bên công nợ (anh Tune) lập SO, hoá đơn, thu tiền",
-  "lo": "ລັອກແລ້ວເຄື່ອງສ້າງໃບສະເໜີຮັບເງິນຄ່າຂົນສົ່ງເອງ (ຕາມສະກຸນເງິນຂອງໃບ) — ສົ່ງໄປຝ່າຍໜີ້ (ອ້າຍ Tune) ສ້າງ SO, ໃບເກັບເງິນ, ເກັບເງິນ",
-  "en": "Once locked the system creates the freight COLLECTION REQUEST itself (in the slip's currency) — sent to receivables (Mr Tune) to create the SO, invoice and collect"
+  "vi": "Khoá xong máy tự lập PHIẾU ĐỀ NGHỊ THU cước (đúng tiền tệ của phiếu) — gửi kế toán công nợ (Web kế toán – kho) lập SO, hoá đơn, thu tiền",
+  "lo": "ລັອກແລ້ວເຄື່ອງສ້າງໃບສະເໜີຮັບເງິນຄ່າຂົນສົ່ງເອງ (ຕາມສະກຸນເງິນຂອງໃບ) — ສົ່ງໄປບັນຊີໜີ້ (ເວັບບັນຊີ – ສາງ) ສ້າງ SO, ໃບເກັບເງິນ, ເກັບເງິນ",
+  "en": "Once locked the system creates the freight COLLECTION REQUEST itself (in the slip's currency) — sent to receivables accounting (accounting – warehouse Web) to create the SO, invoice and collect"
  },
  "qt_b15_chan1": {
   "vi": "Còn cảnh báo mà chưa xác nhận → không khoá",
@@ -12033,19 +12033,19 @@ window.EPL_TU_DIEN = {
   "en": "Revenue"
  },
  "qt_b16_ten": {
-  "vi": "Hoá đơn vận chuyển — ở hệ kế toán anh Tune",
-  "lo": "ໃບເກັບເງິນຂົນສົ່ງ — ຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune",
-  "en": "Freight invoice — in Mr Tune's accounting system"
+  "vi": "Hoá đơn vận chuyển — ở Web kế toán – kho",
+  "lo": "ໃບເກັບເງິນຂົນສົ່ງ — ຢູ່ເວັບບັນຊີ – ສາງ",
+  "en": "Freight invoice — in the accounting – warehouse Web"
  },
  "qt_b16_lam1": {
-  "vi": "Phiếu đề nghị thu của DO gửi sang hệ kế toán anh Tune thành SO; hoá đơn lập bên đó theo SO",
-  "lo": "ໃບສະເໜີຮັບເງິນຂອງ DO ສົ່ງໄປລະບົບບັນຊີຂອງອ້າຍ Tune ເປັນ SO; ໃບເກັບເງິນອອກຢູ່ຝ່າຍນັ້ນຕາມ SO",
-  "en": "The DO's collection request goes to Mr Tune's accounting system as an SO; the invoice is issued there from the SO"
+  "vi": "Phiếu đề nghị thu của DO gửi sang Web kế toán – kho thành SO; hoá đơn lập bên đó theo SO",
+  "lo": "ໃບສະເໜີຮັບເງິນຂອງ DO ສົ່ງໄປເວັບບັນຊີ – ສາງ ເປັນ SO; ໃບເກັບເງິນອອກຢູ່ຝ່າຍນັ້ນຕາມ SO",
+  "en": "The DO's collection request goes to the accounting – warehouse Web as an SO; the invoice is issued there from the SO"
  },
  "qt_b16_lam2": {
-  "vi": "Màn Phiếu đề nghị thu bên trang điều xe xem trạng thái gửi · SO",
-  "lo": "ໜ້າ ໃບສະເໜີຮັບເງິນ ຢູ່ໜ້າຈັດລົດ ເບິ່ງສະຖານະການສົ່ງ · SO",
-  "en": "The Collection requests screen on the dispatch site shows the sending status · SO"
+  "vi": "Màn Phiếu đề nghị thu bên trang vận tải xem trạng thái gửi · SO",
+  "lo": "ໜ້າ ໃບສະເໜີຮັບເງິນ ຢູ່ໜ້າຂົນສົ່ງ ເບິ່ງສະຖານະການສົ່ງ · SO",
+  "en": "The Collection requests screen on the transport page shows the sending status · SO"
  },
  "qt_b16_may1": {
   "vi": "Tiền = cân (tấn tới hoặc trọn chuyến) × đơn giá, theo tiền tệ của hợp đồng — tính trên phiếu đề nghị thu",
@@ -12073,14 +12073,14 @@ window.EPL_TU_DIEN = {
   "en": "Invoiced · Unpaid"
  },
  "qt_b17_ten": {
-  "vi": "Thu tiền khách (nhiều lần, nhiều tiền) · cấn trừ cuối tháng — ở hệ kế toán anh Tune",
-  "lo": "ເກັບເງິນລູກຄ້າ (ຫຼາຍເທື່ອ, ຫຼາຍສະກຸນ) · ຫັກລົບທ້າຍເດືອນ — ຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune",
-  "en": "Customer collection (several times, several currencies) · month-end offsetting — in Mr Tune's accounting system"
+  "vi": "Thu tiền khách (nhiều lần, nhiều tiền) · cấn trừ cuối tháng — ở Web kế toán – kho",
+  "lo": "ເກັບເງິນລູກຄ້າ (ຫຼາຍເທື່ອ, ຫຼາຍສະກຸນ) · ຫັກລົບທ້າຍເດືອນ — ຢູ່ເວັບບັນຊີ – ສາງ",
+  "en": "Customer collection (several times, several currencies) · month-end offsetting — in the accounting – warehouse Web"
  },
  "qt_b17_lam1": {
-  "vi": "Ghi từng lần thu ở hệ kế toán anh Tune: số tiền, tiền tệ, tỷ giá, tiền mặt / chuyển khoản",
-  "lo": "ບັນທຶກແຕ່ລະເທື່ອທີ່ຮັບຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune: ຈຳນວນເງິນ, ສະກຸນເງິນ, ອັດຕາແລກປ່ຽນ, ເງິນສົດ / ໂອນ",
-  "en": "Record each receipt in Mr Tune's accounting system: amount, currency, exchange rate, cash / transfer"
+  "vi": "Ghi từng lần thu ở Web kế toán – kho: số tiền, tiền tệ, tỷ giá, tiền mặt / chuyển khoản",
+  "lo": "ບັນທຶກແຕ່ລະເທື່ອທີ່ຮັບຢູ່ເວັບບັນຊີ – ສາງ: ຈຳນວນເງິນ, ສະກຸນເງິນ, ອັດຕາແລກປ່ຽນ, ເງິນສົດ / ໂອນ",
+  "en": "Record each receipt in the accounting – warehouse Web: amount, currency, exchange rate, cash / transfer"
  },
  "qt_b17_lam2": {
   "vi": "Cuối tháng: cấn trừ phần khách đã trả hộ (thẻ cao tốc của khách, trạm dầu Việt Nam ghi nợ) — bên hệ kế toán",
@@ -12113,9 +12113,9 @@ window.EPL_TU_DIEN = {
   "en": "Joint trucks and period end"
  },
  "qt_b18_ten": {
-  "vi": "Trả chủ xe liên kết — đề nghị ở trang điều xe, chi ở hệ kế toán anh Tune",
-  "lo": "ຈ່າຍເຈົ້າຂອງລົດຮ່ວມ — ສະເໜີຢູ່ໜ້າຈັດລົດ, ຈ່າຍຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune",
-  "en": "Paying joint-truck owners — requested on the dispatch site, paid in Mr Tune's accounting system"
+  "vi": "Trả chủ xe liên kết — đề nghị ở trang vận tải, chi ở Web kế toán – kho",
+  "lo": "ຈ່າຍເຈົ້າຂອງລົດຮ່ວມ — ສະເໜີຢູ່ໜ້າຂົນສົ່ງ, ຈ່າຍຢູ່ເວັບບັນຊີ – ສາງ",
+  "en": "Paying joint-truck owners — requested on the transport page, paid in the accounting – warehouse Web"
  },
  "qt_b18_lam1": {
   "vi": "KT Thu/Chi VC: màn Xe liên kết → \"Trả qua kế toán\" của chủ xe → chọn các phiếu đã khoá chưa trả → lập đề nghị trả",
@@ -12123,9 +12123,9 @@ window.EPL_TU_DIEN = {
   "en": "Vientiane receipts & payments accountant: Joint trucks screen → the owner's \"Pay via accounting\" → choose locked unpaid slips → create the payment request"
  },
  "qt_b18_lam2": {
-  "vi": "Thủ quỹ chi và ghi sổ phiếu chi \"Chi khác\" đứng tên chủ xe ở hệ kế toán anh Tune",
-  "lo": "ຄັງເງິນຈ່າຍ ແລະ ບັນທຶກໃບຈ່າຍ \"ລາຍຈ່າຍອື່ນ\" ໃນນາມເຈົ້າຂອງລົດ ຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune",
-  "en": "The cashier pays and posts an \"Other expense\" payment voucher in the owner's name in Mr Tune's accounting system"
+  "vi": "Thủ quỹ chi và ghi sổ phiếu chi \"Chi khác\" đứng tên chủ xe ở Web kế toán – kho",
+  "lo": "ຄັງເງິນຈ່າຍ ແລະ ບັນທຶກໃບຈ່າຍ \"ລາຍຈ່າຍອື່ນ\" ໃນນາມເຈົ້າຂອງລົດ ຢູ່ເວັບບັນຊີ – ສາງ",
+  "en": "The cashier pays and posts an \"Other expense\" payment voucher in the owner's name in the accounting – warehouse Web"
  },
  "qt_b18_may1": {
   "vi": "Phải trả = tiền thuê − phí % − trừ vượt tấn − mọi khoản EPL đã ứng (dầu kho, đi đường…) — chủ xe tự trả thì không trừ",
@@ -12168,9 +12168,9 @@ window.EPL_TU_DIEN = {
   "en": "Owner: Paid"
  },
  "qt_b19_ten": {
-  "vi": "Tất toán tài xế theo tháng — tiền chi bù / thu lại ở hệ kế toán anh Tune",
-  "lo": "ສະສາງໂຊເຟີລາຍເດືອນ — ເງິນຈ່າຍເພີ່ມ / ຮັບຄືນ ຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune",
-  "en": "Monthly driver settlement — top-up / refund money in Mr Tune's accounting system"
+  "vi": "Tất toán tài xế theo tháng — tiền chi bù / thu lại ở Web kế toán – kho",
+  "lo": "ສະສາງໂຊເຟີລາຍເດືອນ — ເງິນຈ່າຍເພີ່ມ / ຮັບຄືນ ຢູ່ເວັບບັນຊີ – ສາງ",
+  "en": "Monthly driver settlement — top-up / refund money in the accounting – warehouse Web"
  },
  "qt_b19_lam1": {
   "vi": "Đối: đã ứng bao nhiêu, chi thật bao nhiêu → Chốt",
@@ -12223,9 +12223,9 @@ window.EPL_TU_DIEN = {
   "en": "Requests by DO screen → Voucher register tab: print, view each sheet and its Dr / Cr entry"
  },
  "qt_b20_lam2": {
-  "vi": "Đối chiếu tờ với hệ kế toán anh Tune rồi đánh dấu \"đã đối chiếu\" (bỏ dấu được)",
-  "lo": "ທຽບໃບກັບລະບົບບັນຊີຂອງອ້າຍ Tune ແລ້ວໝາຍ \"ທຽບແລ້ວ\" (ເອົາໝາຍອອກໄດ້)",
-  "en": "Reconcile each sheet with Mr Tune's accounting system, then mark it \"reconciled\" (the mark can be removed)"
+  "vi": "Đối chiếu tờ với Web kế toán – kho rồi đánh dấu \"đã đối chiếu\" (bỏ dấu được)",
+  "lo": "ທຽບໃບກັບເວັບບັນຊີ – ສາງ ແລ້ວໝາຍ \"ທຽບແລ້ວ\" (ເອົາໝາຍອອກໄດ້)",
+  "en": "Reconcile each sheet with the accounting – warehouse Web, then mark it \"reconciled\" (the mark can be removed)"
  },
  "qt_b20_may1": {
   "vi": "Mỗi công đoạn ở trên tự bỏ tờ của nó vào sổ, kèm định khoản gợi ý",
@@ -12233,9 +12233,9 @@ window.EPL_TU_DIEN = {
   "en": "Each step above files its own sheet into the register, with a suggested entry"
  },
  "qt_b20_may2": {
-  "vi": "Sổ không gửi đi đâu — tiền thật chỉ ở hệ kế toán anh Tune (phiếu đề nghị thu, phiếu chi tạm ứng, trả chủ xe, trả nhà cung cấp, tất toán)",
-  "lo": "ປຶ້ມບໍ່ສົ່ງໄປໃສ — ເງິນແທ້ມີຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune ເທົ່ານັ້ນ (ໃບສະເໜີຮັບເງິນ, ໃບຈ່າຍເງິນລ່ວງໜ້າ, ຈ່າຍເຈົ້າຂອງລົດ, ຈ່າຍຜູ້ສະໜອງ, ສະສາງ)",
-  "en": "The register is not sent anywhere — real money lives only in Mr Tune's accounting system (collection requests, advance payments, owner payments, supplier payments, settlements)"
+  "vi": "Sổ không gửi đi đâu — tiền thật chỉ ở Web kế toán – kho (phiếu đề nghị thu, phiếu chi tạm ứng, trả chủ xe, trả nhà cung cấp, tất toán)",
+  "lo": "ປຶ້ມບໍ່ສົ່ງໄປໃສ — ເງິນແທ້ມີຢູ່ເວັບບັນຊີ – ສາງ ເທົ່ານັ້ນ (ໃບສະເໜີຮັບເງິນ, ໃບຈ່າຍເງິນລ່ວງໜ້າ, ຈ່າຍເຈົ້າຂອງລົດ, ຈ່າຍຜູ້ສະໜອງ, ສະສາງ)",
+  "en": "The register is not sent anywhere — real money lives only in the accounting – warehouse Web (collection requests, advance payments, owner payments, supplier payments, settlements)"
  },
  "qt_b20_chan1": {
   "vi": "Chỉ các vai kế toán, hai quỹ và Sếp đánh dấu đối chiếu — KT kho xăng dầu, thủ kho chỉ xem; vai khác không vào sổ",
@@ -12548,9 +12548,9 @@ window.EPL_TU_DIEN = {
   "en": "Deleting a collection slip whose goods have been taken → blocked"
  },
  "qt_bt4_ten": {
-  "vi": "Cước riêng từng chặng · hoá đơn gộp tháng — ở hệ kế toán anh Tune",
-  "lo": "ຄ່າຂົນສົ່ງແຍກແຕ່ລະຂາ · ໃບເກັບເງິນລວມເດືອນ — ຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune",
-  "en": "Separate freight per leg · monthly combined invoice — in Mr Tune's accounting system"
+  "vi": "Cước riêng từng chặng · hoá đơn gộp tháng — ở Web kế toán – kho",
+  "lo": "ຄ່າຂົນສົ່ງແຍກແຕ່ລະຂາ · ໃບເກັບເງິນລວມເດືອນ — ຢູ່ເວັບບັນຊີ – ສາງ",
+  "en": "Separate freight per leg · monthly combined invoice — in the accounting – warehouse Web"
  },
  "qt_bt4_lam1": {
   "vi": "Phiếu gom có cước riêng thì có phiếu đề nghị thu như phiếu giao",
@@ -12613,9 +12613,9 @@ window.EPL_TU_DIEN = {
   "en": "Month end: pay the station, or offset against the customer's freight (step 17)"
  },
  "qt_bc3_ten": {
-  "vi": "Trả nhà cung cấp theo đợt — phiếu chi ở hệ kế toán anh Tune",
-  "lo": "ຈ່າຍຜູ້ສະໜອງເປັນງວດ — ໃບຈ່າຍຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune",
-  "en": "Paying suppliers in instalments — payment voucher in Mr Tune's accounting system"
+  "vi": "Trả nhà cung cấp theo đợt — phiếu chi ở Web kế toán – kho",
+  "lo": "ຈ່າຍຜູ້ສະໜອງເປັນງວດ — ໃບຈ່າຍຢູ່ເວັບບັນຊີ – ສາງ",
+  "en": "Paying suppliers in instalments — payment voucher in the accounting – warehouse Web"
  },
  "qt_bc3_lam1": {
   "vi": "Chọn nhà cung cấp, số tiền, cách chi",
@@ -12658,14 +12658,14 @@ window.EPL_TU_DIEN = {
   "en": "Lock / unlock slips"
  },
  "qt_viec8": {
-  "vi": "Hoá đơn, ghi thu, cấn trừ — ở hệ kế toán anh Tune",
-  "lo": "ໃບເກັບເງິນ, ບັນທຶກຮັບ, ຫັກລົບ — ຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune",
-  "en": "Invoices, receipts, offsetting — in Mr Tune's accounting system"
+  "vi": "Hoá đơn, ghi thu, cấn trừ — ở Web kế toán – kho",
+  "lo": "ໃບເກັບເງິນ, ບັນທຶກຮັບ, ຫັກລົບ — ຢູ່ເວັບບັນຊີ – ສາງ",
+  "en": "Invoices, receipts, offsetting — in the accounting – warehouse Web"
  },
  "qt_viec9": {
-  "vi": "Trả chủ xe liên kết: lập đề nghị trả (chi ở hệ kế toán anh Tune)",
-  "lo": "ຈ່າຍເຈົ້າຂອງລົດຮ່ວມ: ສ້າງໃບສະເໜີຈ່າຍ (ຈ່າຍຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune)",
-  "en": "Paying joint-truck owners: create the payment request (paid in Mr Tune's accounting system)"
+  "vi": "Trả chủ xe liên kết: lập đề nghị trả (chi ở Web kế toán – kho)",
+  "lo": "ຈ່າຍເຈົ້າຂອງລົດຮ່ວມ: ສ້າງໃບສະເໜີຈ່າຍ (ຈ່າຍຢູ່ເວັບບັນຊີ – ສາງ)",
+  "en": "Paying joint-truck owners: create the payment request (paid in the accounting – warehouse Web)"
  },
  "qt_viec10": {
   "vi": "Điều khoản chủ xe (phí, ngưỡng, cách trả)",
@@ -12688,9 +12688,9 @@ window.EPL_TU_DIEN = {
   "en": "Create sales sheets"
  },
  "qt_viec14": {
-  "vi": "Thu tiền bán hàng — ở hệ kế toán anh Tune",
-  "lo": "ເກັບເງິນຂາຍສິນຄ້າ — ຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune",
-  "en": "Collect sales money — in Mr Tune's accounting system"
+  "vi": "Thu tiền bán hàng — ở Web kế toán – kho",
+  "lo": "ເກັບເງິນຂາຍສິນຄ້າ — ຢູ່ເວັບບັນຊີ – ສາງ",
+  "en": "Collect sales money — in the accounting – warehouse Web"
  },
  "qt_viec15": {
   "vi": "Lệnh sửa chữa: lập · kiểm/ghi sổ · chi",
@@ -12698,14 +12698,14 @@ window.EPL_TU_DIEN = {
   "en": "Repair orders: create · verify/book · pay"
  },
  "qt_viec16": {
-  "vi": "Tất toán tài xế — tiền ở hệ kế toán anh Tune",
-  "lo": "ສະສາງໂຊເຟີ — ເງິນຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune",
-  "en": "Driver settlement — money in Mr Tune's accounting system"
+  "vi": "Tất toán tài xế — tiền ở Web kế toán – kho",
+  "lo": "ສະສາງໂຊເຟີ — ເງິນຢູ່ເວັບບັນຊີ – ສາງ",
+  "en": "Driver settlement — money in the accounting – warehouse Web"
  },
  "qt_viec17": {
-  "vi": "Trả nhà cung cấp — ở hệ kế toán anh Tune",
-  "lo": "ຈ່າຍຜູ້ສະໜອງ — ຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune",
-  "en": "Paying suppliers — in Mr Tune's accounting system"
+  "vi": "Trả nhà cung cấp — ở Web kế toán – kho",
+  "lo": "ຈ່າຍຜູ້ສະໜອງ — ຢູ່ເວັບບັນຊີ – ສາງ",
+  "en": "Paying suppliers — in the accounting – warehouse Web"
  },
  "qt_viec18": {
   "vi": "Thẻ cao tốc: lập thẻ · nạp tiền",
@@ -12943,14 +12943,14 @@ window.EPL_TU_DIEN = {
   "en": "in the interim stock system"
  },
  "qt_o_tune": {
-  "vi": "tiền ở hệ kế toán anh Tune",
-  "lo": "ເງິນຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune",
-  "en": "money in Mr Tune's accounting system"
+  "vi": "tiền ở Web kế toán – kho",
+  "lo": "ເງິນຢູ່ເວັບບັນຊີ – ສາງ",
+  "en": "money in the accounting – warehouse Web"
  },
  "qt_ben_de_nghi": {
-  "vi": "phiếu đề nghị · trang điều xe lập",
-  "lo": "ໃບສະເໜີ · ໜ້າຈັດລົດສ້າງ",
-  "en": "request · made by the dispatch site"
+  "vi": "phiếu đề nghị · trang vận tải lập",
+  "lo": "ໃບສະເໜີ · ໜ້າຂົນສົ່ງສ້າງ",
+  "en": "request · made by the transport page"
  },
  "qt_ben_kho": {
   "vi": "bên kho lập theo đề nghị",
@@ -13668,13 +13668,13 @@ window.EPL_TU_DIEN = {
   "en": "Search DO no., truck, driver, customer, owner…"
  },
  "hs_gioi_thieu": {
-  "vi": "<b>Màn này để đối chiếu hai bên theo từng DO.</b> Mỗi DO: bên điều xe đã đề nghị chi, xuất kho, thu những gì — và bên kế toán (hệ anh Tune) đã lập chứng từ nào (phiếu chi, SO, bút toán), trạng thái ra sao. Bảy ô màu = bảy nhóm; bấm một DO để xem từng cặp chứng từ.",
-  "lo": "<b>ໜ້ານີ້ໃຊ້ທຽບສອງຝ່າຍຕາມແຕ່ລະ DO.</b> ແຕ່ລະ DO: ຝ່າຍຈັດລົດສະເໜີຈ່າຍ, ເບີກສາງ, ຮັບເງິນຫຍັງແດ່ — ແລະ ຝ່າຍບັນຊີ (ລະບົບຂອງອ້າຍ Tune) ອອກເອກະສານໃດແລ້ວ (ໃບຈ່າຍ, SO, ບັນທຶກບັນຊີ), ສະຖານະເປັນແນວໃດ. ເຈັດຫ້ອງສີ = ເຈັດກຸ່ມ; ກົດ DO ເພື່ອເບິ່ງແຕ່ລະຄູ່ເອກະສານ.",
-  "en": "<b>This screen lines up both sides, DO by DO.</b> For each DO: what dispatch requested to pay, issue from stock and collect — and which documents accounting (Tune's system) has made (payment vouchers, SO, journal entries) and their status. Seven coloured cells = seven groups; click a DO to see each pair of documents."
+  "vi": "<b>Màn này để đối chiếu hai bên theo từng DO.</b> Mỗi DO: bên vận tải đã đề nghị chi, xuất kho, thu những gì — và bên kế toán (Web kế toán – kho) đã lập chứng từ nào (phiếu chi, SO, bút toán), trạng thái ra sao. Bảy ô màu = bảy nhóm; bấm một DO để xem từng cặp chứng từ.",
+  "lo": "<b>ໜ້ານີ້ໃຊ້ທຽບສອງຝ່າຍຕາມແຕ່ລະ DO.</b> ແຕ່ລະ DO: ຝ່າຍຂົນສົ່ງສະເໜີຈ່າຍ, ເບີກສາງ, ຮັບເງິນຫຍັງແດ່ — ແລະ ຝ່າຍບັນຊີ (ເວັບບັນຊີ – ສາງ) ອອກເອກະສານໃດແລ້ວ (ໃບຈ່າຍ, SO, ບັນທຶກບັນຊີ), ສະຖານະເປັນແນວໃດ. ເຈັດຫ້ອງສີ = ເຈັດກຸ່ມ; ກົດ DO ເພື່ອເບິ່ງແຕ່ລະຄູ່ເອກະສານ.",
+  "en": "<b>This screen lines up both sides, DO by DO.</b> For each DO: what transport requested to pay, issue from stock and collect — and which documents accounting (the accounting – warehouse Web) has made (payment vouchers, SO, journal entries) and their status. Seven coloured cells = seven groups; click a DO to see each pair of documents."
  },
  "hs_loc_em": {
-  "vi": "Bên điều xe còn việc",
-  "lo": "ຝ່າຍຈັດລົດຍັງມີວຽກ",
+  "vi": "Bên vận tải còn việc",
+  "lo": "ຝ່າຍຂົນສົ່ງຍັງມີວຽກ",
   "en": "Dispatch still to do"
  },
  "hs_loc_kt": {
@@ -13698,8 +13698,8 @@ window.EPL_TU_DIEN = {
   "en": "Not applicable"
  },
  "hs_m_chua": {
-  "vi": "Bên điều xe chưa xong",
-  "lo": "ຝ່າຍຈັດລົດຍັງບໍ່ແລ້ວ",
+  "vi": "Bên vận tải chưa xong",
+  "lo": "ຝ່າຍຂົນສົ່ງຍັງບໍ່ແລ້ວ",
   "en": "Dispatch not done yet"
  },
  "hs_m_cho_gui": {
@@ -13853,9 +13853,9 @@ window.EPL_TU_DIEN = {
   "en": "Hire − fee − overload − advance − supplier debt − unpaid fuel → TCX request → \"Other payment\" voucher in the partner's name."
  },
  "hs_ben_em": {
-  "vi": "Bên điều xe",
-  "lo": "ຝ່າຍຈັດລົດ",
-  "en": "Dispatch side"
+  "vi": "Bên vận tải",
+  "lo": "ຝ່າຍຂົນສົ່ງ",
+  "en": "Transport side"
  },
  "hs_ben_kt": {
   "vi": "Bên kế toán",
@@ -13978,8 +13978,8 @@ window.EPL_TU_DIEN = {
   "en": "The \"Advance payment\" voucher is made when cost accounting posts section IV."
  },
  "hs_c_chi_tai_quy": {
-  "vi": "Đã chi tại quỹ trang điều xe (trước 01/10) — đối soát, không lập lại.",
-  "lo": "ຈ່າຍຢູ່ຄັງເງິນໜ້າຈັດລົດແລ້ວ (ກ່ອນ 01/10) — ກວດທຽບ, ບໍ່ອອກຊ້ຳ.",
+  "vi": "Đã chi tại quỹ trang vận tải (trước 01/10) — đối soát, không lập lại.",
+  "lo": "ຈ່າຍຢູ່ຄັງເງິນໜ້າຂົນສົ່ງແລ້ວ (ກ່ອນ 01/10) — ກວດທຽບ, ບໍ່ອອກຊ້ຳ.",
   "en": "Paid at the dispatch-site cash desk (before 1 Oct) — reconcile, do not redo."
  },
  "hs_c_cho_ghi_so_v": {
@@ -14188,13 +14188,13 @@ window.EPL_TU_DIEN = {
   "en": "Pending journal entries — items with NO cash movement"
  },
  "btc_gt_d": {
-  "vi": "Thuê xe 621/4022, nợ nhà cung cấp 625 · 614/4021, xuất kho nội bộ 625 · 614/1371, giá vốn xuất bán 607/1371, quyết toán tạm ứng 625/1601… Trang điều xe ghi lúc khoá phiếu / chốt tất toán, rồi gửi sang hệ anh Tune thành chứng từ Tổng hợp; kế toán bên đó ghi sổ chính thức.",
-  "lo": "ຄ່າເຊົ່າລົດ 621/4022, ໜີ້ຜູ້ສະໜອງ 625 · 614/4021, ເບີກສາງພາຍໃນ 625 · 614/1371, ລາຄາທຶນຂາຍ 607/1371, ສະສາງເງິນລ່ວງໜ້າ 625/1601… ໜ້າຈັດລົດບັນທຶກຕອນລັອກໃບ / ປິດການສະສາງ, ແລ້ວສົ່ງໄປລະບົບຂອງອ້າຍ Tune ເປັນເອກະສານລວມ; ບັນຊີຢູ່ນັ້ນລົງບັນຊີທາງການ.",
-  "en": "Truck hire 621/4022, supplier payable 625 · 614/4021, internal stock issue 625 · 614/1371, cost of sales 607/1371, advance clearing 625/1601… The dispatch site records them at lock / settlement close, then sends them to Tune's system as general vouchers; accounting there posts them officially."
+  "vi": "Thuê xe 621/4022, nợ nhà cung cấp 625 · 614/4021, xuất kho nội bộ 625 · 614/1371, giá vốn xuất bán 607/1371, quyết toán tạm ứng 625/1601… Trang vận tải ghi lúc khoá phiếu / chốt tất toán, rồi gửi sang Web kế toán – kho thành chứng từ Tổng hợp; kế toán bên đó ghi sổ chính thức.",
+  "lo": "ຄ່າເຊົ່າລົດ 621/4022, ໜີ້ຜູ້ສະໜອງ 625 · 614/4021, ເບີກສາງພາຍໃນ 625 · 614/1371, ລາຄາທຶນຂາຍ 607/1371, ສະສາງເງິນລ່ວງໜ້າ 625/1601… ໜ້າຂົນສົ່ງບັນທຶກຕອນລັອກໃບ / ປິດການສະສາງ, ແລ້ວສົ່ງໄປເວັບບັນຊີ – ສາງ ເປັນເອກະສານລວມ; ບັນຊີຢູ່ນັ້ນລົງບັນຊີທາງການ.",
+  "en": "Truck hire 621/4022, supplier payable 625 · 614/4021, internal stock issue 625 · 614/1371, cost of sales 607/1371, advance clearing 625/1601… The transport page records them at lock / settlement close, then sends them to the accounting – warehouse Web as general vouchers; accounting there posts them officially."
  },
  "btc_tt_cho_gui_d": {
-  "vi": "đã ghi ở trang điều xe, chưa sang kế toán (chưa bật gửi, hoặc lần gửi lỗi)",
-  "lo": "ບັນທຶກຢູ່ໜ້າຈັດລົດແລ້ວ, ຍັງບໍ່ໄປບັນຊີ (ຍັງບໍ່ເປີດສົ່ງ, ຫຼື ສົ່ງບໍ່ສຳເລັດ)",
+  "vi": "đã ghi ở trang vận tải, chưa sang kế toán (chưa bật gửi, hoặc lần gửi lỗi)",
+  "lo": "ບັນທຶກຢູ່ໜ້າຂົນສົ່ງແລ້ວ, ຍັງບໍ່ໄປບັນຊີ (ຍັງບໍ່ເປີດສົ່ງ, ຫຼື ສົ່ງບໍ່ສຳເລັດ)",
   "en": "recorded here, not yet with accounting (sending off, or the last send failed)"
  },
  "btc_tt_da_gui_d": {
