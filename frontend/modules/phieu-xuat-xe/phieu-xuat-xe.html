@@ -1,17 +1,32 @@
 <!-- Phiếu xuất xe đi vận chuyển — ໃບເບີກລົດອອກໄປຂົນສົ່ງ. Tờ giấy duy nhất họ làm việc: 6 mục, mỗi mục một trạng thái duyệt. -->
 <div class="toolbar no-print px-thanh">
-  <button class="btn quiet" id="px-ve">← <span data-i18n="back_list"></span></button>
+  <button class="btn quiet" id="px-ve">← <span id="px-ve-chu" data-i18n="back_list"></span></button>
+  <!-- 20/10 (D16): mở từ một danh sách (sessionStorage epl_ds_phieu) → đi phiếu trước / sau trong danh sách đó -->
+  <div class="px-dh" id="px-dh" hidden>
+    <button type="button" class="btn quiet sm" id="px-truoc">‹ <span data-i18n="px_dh_truoc"></span></button>
+    <b class="px-dh-so" id="px-dh-so"></b>
+    <button type="button" class="btn quiet sm" id="px-sau"><span data-i18n="px_dh_sau"></span> ›</button>
+  </div>
   <!-- Một năm ~365.000 phiếu: ô chọn chỉ nạp 50 phiếu mới nhất; gõ vào ô tìm thì máy chủ tìm trên TOÀN BỘ phiếu -->
   <div class="field"><label data-i18n="doc_no"></label><div class="px-chon-hang"><input id="px-tim" type="search" autocomplete="off" data-i18n-ph="td_search"><select id="px-chon"></select></div></div>
   <button class="btn" id="px-moi">+ <span data-i18n="new_slip"></span></button>
   <div class="grow"></div>
-  <button class="btn" onclick="window.print()"><span data-i18n="print"></span></button>
+  <button type="button" class="btn ok" id="px-ke-tiep" hidden><span data-i18n="px_dh_ke_tiep"></span> →</button>
+  <!-- 20/10 (A3): In = tờ in riêng một trang A4 (#px-to-in), không in màn nhập liệu -->
+  <button class="btn" id="px-in" type="button"><span data-i18n="print"></span></button>
+  <span class="small muted px-luu-nhac" id="px-luu-nhac" data-i18n="px_chon_muc_de_sua" hidden></span>
   <button class="btn primary" id="px-luu"><span data-i18n="save"></span></button>
 </div>
 
 <!-- Dàn ngang (30/09): tờ phiếu bên trái, cột điều khiển dính bên phải. -->
 <div class="px-khung">
 <div class="px-trai">
+<!-- 20/10 (A2): nháp phiếu MỚI giữ ở máy (localStorage theo tài khoản) — F5 / mở lại thì hỏi, không tự đổ vào -->
+<div class="px-nhap-dai no-print" id="px-nhap-dai" hidden>
+  <span id="px-nhap-chu"></span><div class="grow"></div>
+  <button type="button" class="btn sm ok" id="px-nhap-dung"><span data-i18n="px_nhap_dung"></span></button>
+  <button type="button" class="btn sm" id="px-nhap-bo"><span data-i18n="px_nhap_bo"></span></button>
+</div>
 <div class="card px-phieu" id="px-phieu">
   <div class="px-dau">
     <div><h3 data-i18n="doc_dispatch"></h3><p class="small muted">SAMKET VILLAGE, SIKHOTTABONG DISTRICT, VIENTIANE LAO · Tel 020 5889 9983</p></div>
@@ -23,6 +38,8 @@
     <button type="button" data-loai="gom"><span class="px-cl-nhan gom" data-i18n="dn_gom"></span><b data-i18n="do_gom"></b><span class="d" data-i18n="px_loai_gom_d"></span></button>
     <button type="button" data-loai="giao"><span class="px-cl-nhan giao" data-i18n="dn_giao"></span><b data-i18n="do_giao"></b><span class="d" data-i18n="px_loai_giao_d"></span></button>
   </div>
+  <!-- 20/10 (B9): đã chọn Gom / Giao thì hai thẻ lớn thu thành một chip nhỏ — bấm chip để đổi loại -->
+  <div class="px-loai-chip no-print" id="px-loai-chip" hidden></div>
 
   <!-- I -->
   <section class="px-muc" data-muc="info">
@@ -32,20 +49,23 @@
       <div class="field"><label data-i18n="truck_type"></label><select id="f-company"><option value="EPL" data-i18n="co_epl"></option><option value="joint" data-i18n="co_joint"></option></select></div>
       <div class="field px-lk"><label data-i18n="owner"></label><input id="f-owner_name" lang="lo"></div>
       <!-- ô tìm trên ô chọn xe / tài xế (anh Khampla 08/10: hơn 500 xe) — gõ số xe, biển, tên, mã → ô chọn chỉ còn dòng khớp -->
-      <div class="field"><label data-i18n="truck_no"></label><div class="px-tim-o"><input type="search" data-loc="f-vehicle_id" data-i18n-ph="px_tim_xe" autocomplete="off"><select id="f-vehicle_id"></select></div></div>
+      <!-- 20/10 (B6): dòng vàng dưới ô khi xe / tài xế đang chạy phiếu khác, đang sửa, đang nghỉ — chỉ nhắc, không chặn -->
+      <div class="field"><label data-i18n="truck_no"></label><div class="px-tim-o"><input type="search" data-loc="f-vehicle_id" data-i18n-ph="px_tim_xe" autocomplete="off"><select id="f-vehicle_id"></select></div><small class="px-dang-ban" id="px-xe-ban" hidden></small></div>
       <div class="field"><label data-i18n="brand_model"></label><input id="f-brand_model"></div>
       <div class="field"><label data-i18n="plate_head"></label><input id="f-plate_head" lang="lo"></div>
       <div class="field"><label data-i18n="plate_trailer"></label><input id="f-plate_trailer" lang="lo"></div>
-      <div class="field"><label data-i18n="driver"></label><div class="px-tim-o"><input type="search" data-loc="f-driver_id" data-i18n-ph="px_tim_tai_xe" autocomplete="off"><select id="f-driver_id"></select></div></div>
+      <div class="field"><label data-i18n="driver"></label><div class="px-tim-o"><input type="search" data-loc="f-driver_id" data-i18n-ph="px_tim_tai_xe" autocomplete="off"><select id="f-driver_id"></select></div><small class="px-dang-ban" id="px-tx-ban" hidden></small><small class="px-khi-ve" id="px-tu-dien" hidden></small></div>
       <!-- 20/10: giấy tờ xe / tài xế tại ngày phiếu (bằng lái, đăng kiểm, bảo hiểm, phù hiệu) — đỏ = máy chặn lưu, vàng = sắp hết hạn -->
       <div class="px-giay-to" id="px-giay-to" hidden></div>
       <div class="field"><label data-i18n="d_issue"></label><input type="date" id="f-doc_date"></div>
       <div class="field"><label data-i18n="d_out"></label><input type="date" id="f-out_date"></div>
-      <div class="field"><label data-i18n="d_back"></label><input type="date" id="f-back_date"><small class="px-khi-ve" data-i18n="khi_xe_ve" hidden></small></div>
-      <div class="field"><label data-i18n="odo_out"></label><input class="num" id="f-odo_out" inputmode="decimal"><small class="px-khi-ve" id="px-odo-nhac" data-i18n="odo_tu_dien" hidden></small></div>
+      <!-- 20/10 (B9): ô .px-ve-sau điền KHI XE VỀ — lúc lập phiếu mới gập thành một dòng (nút .px-ve-sau-mo) -->
+      <div class="field px-ve-sau"><label data-i18n="d_back"></label><input type="date" id="f-back_date"><small class="px-khi-ve" data-i18n="khi_xe_ve" hidden></small></div>
+      <div class="field"><label data-i18n="px_odo_di_cm"></label><input class="num" id="f-odo_out" inputmode="decimal"><small class="px-khi-ve" id="px-odo-nhac" data-i18n="odo_tu_dien" hidden></small></div>
       <div class="field"><label data-i18n="odo_est"></label><div class="ro num" id="v-odo_est" data-i18n-title="odo_est_hint">—</div></div>
-      <div class="field"><label data-i18n="odo_back"></label><input class="num" id="f-odo_back" inputmode="decimal"><small class="px-khi-ve" data-i18n="khi_xe_ve" hidden></small></div>
-      <div class="field"><label data-i18n="odo_km"></label><div class="ro num" id="v-odo_km">—</div></div>
+      <div class="field px-ve-sau"><label data-i18n="px_odo_ve_cm"></label><input class="num" id="f-odo_back" inputmode="decimal"><small class="px-khi-ve" data-i18n="khi_xe_ve" hidden></small></div>
+      <div class="field px-ve-sau"><label data-i18n="odo_km"></label><div class="ro num" id="v-odo_km">—</div></div>
+      <button type="button" class="px-ve-sau-mo no-print" data-ve-sau hidden></button>
     </div>
   </section>
 
@@ -60,9 +80,9 @@
         <div class="field"><label data-i18n="hd_van_chuyen"></label><div class="px-hd" id="px-hd"></div></div>
         <div class="field px-chi-lk"><label data-i18n="hd_thue_xe"></label><div class="px-hd" id="px-hd-thue"></div></div>
         <div class="field"><label data-i18n="goods_type"></label><select id="f-goods_type"><option value="iron_ore" data-i18n="iron_ore"></option><option value="other_goods" data-i18n="other_goods"></option></select></div>
-        <div class="field"><label data-i18n="ore_bill_no"></label><input id="f-ore_bill_no"><small class="muted px-chi-bai" data-i18n="ore_bill_by_acct"></small></div>
-        <div class="field"><label data-i18n="ore_bill_date"></label><input type="date" id="f-ore_bill_date"></div>
-        <div class="field px-tep-o"><label data-i18n="attach_ore"></label><div class="px-tep" id="px-tep"></div></div>
+        <div class="field px-ve-sau"><label data-i18n="ore_bill_no"></label><input id="f-ore_bill_no"><small class="muted px-chi-bai" data-i18n="ore_bill_by_acct"></small></div>
+        <div class="field px-ve-sau"><label data-i18n="ore_bill_date"></label><input type="date" id="f-ore_bill_date"></div>
+        <div class="field px-tep-o px-ve-sau"><label data-i18n="attach_ore"></label><div class="px-tep" id="px-tep"></div></div>
         <div class="field"><label data-i18n="origin"></label><input id="f-origin" lang="lo"></div>
         <div class="field"><label data-i18n="dest"></label><input id="f-destination" lang="lo"></div>
         <div class="field px-hang-o">
@@ -75,10 +95,11 @@
           <p class="small muted" id="px-hang-nhac"></p>
         </div>
         <div class="field"><label data-i18n="w_origin"></label><input class="num" id="f-weight_origin" inputmode="decimal"><small class="px-khi-ve" id="px-can-mo-nhac" data-i18n="can_mo_nhac" hidden></small></div>
-        <div class="field"><label data-i18n="w_dest"></label><input class="num" id="f-weight_dest" inputmode="decimal"><small class="px-khi-ve" data-i18n="khi_xe_toi" hidden></small></div>
-        <div class="field"><label data-i18n="w_loss"></label><div class="ro num" id="v-hao">—</div></div>
+        <div class="field px-ve-sau"><label data-i18n="w_dest"></label><input class="num" id="f-weight_dest" inputmode="decimal"><small class="px-khi-ve" data-i18n="khi_xe_toi" hidden></small></div>
+        <div class="field px-ve-sau"><label data-i18n="w_loss"></label><div class="ro num" id="v-hao">—</div></div>
+        <button type="button" class="px-ve-sau-mo no-print" data-ve-sau hidden></button>
         <!-- POD — Biên bản giao nhận hàng · ໃບເຊັນຮັບສິນຄ້າ: bằng chứng chuyến này đã giao. Nhập tay hoặc ảnh, không bắt buộc ảnh -->
-        <div class="field px-pod-o">
+        <div class="field px-pod-o px-ve-sau">
           <label data-i18n="pod_title"></label>
           <div class="px-pod">
             <div class="field"><label data-i18n="pod_no"></label><input id="f-pod_no"></div>
@@ -154,10 +175,15 @@
     <div class="px-ben-loai" id="px-ben-loai"></div>
     <div class="px-ben-so" id="px-ben-so"></div>
     <div class="px-ben-tt" id="px-ben-tt"></div>
+    <!-- 20/10 (B7): phiếu MỚI điền sẵn loại, tuyến, khách, loại hàng, chi phí gợi ý — không chép xe, tài xế, cân, km, ngày, tiền -->
+    <button type="button" class="btn sm quiet px-giong" id="px-giong" hidden>⧉ <span data-i18n="px_giong"></span></button>
   </div>
   <div class="px-tabs" id="px-tabs" role="tablist"></div>
   <!-- phần dưới: màn thấp quá thì riêng phần này cuộn — đầu cột và sáu mục ở trên luôn thấy (01/10) -->
   <div class="px-ben-duoi">
+  <!-- 20/10 (D18): KT Thu/Chi mở phiếu là thấy NGAY chỗ còn chặn khoá (GET /api/trips/{id}/kiem-lai) — đứng đầu phần dưới cho khỏi
+       khuất; nút Khoá (ở «Trạng thái phiếu» bên dưới) mờ tới khi hết chặn -->
+  <div class="px-ben-khoi px-chan-khoa" id="px-chan-khoa" hidden></div>
   <div class="px-ben-tien px-tien" id="px-ben-tien"></div>
   <div class="px-ben-khoi"><h5 data-i18n="px_de_nghi"></h5>
     <div class="px-ben-nut">
@@ -189,3 +215,5 @@
   </div>
 </aside>
 </div>
+<!-- 20/10 (A3): tờ in phiếu xuất xe — MỘT trang A4, dựng lại ngay trước khi in (nút In, nút PDF, Ctrl+P). Màn nhập liệu không in. -->
+<div class="px-to-in" id="px-to-in" aria-hidden="true"></div>

@@ -210,10 +210,15 @@ def quyen(p, vai, moi=False):
         tab = "info"
     else:
         cua = [m for m in MUC if m in q["edit"] or m in q["verify"] or m in q["book"] or m in q["pay"]]
-        if not cua or admin:
+        rong = lambda m: m in ("repair", "other") and not co_dong(m)                             # noqa: E731
+        if not cua:
             tab = "all"
+        elif admin:
+            # 20/10 (= JS tabMacDinh, rà điều xe A4): Sếp mở mục đầu tiên đang CHỜ DUYỆT, không còn thì mục đầu chưa xong, xong hết thì mục I
+            xong = lambda m: st(m) in ("verified", "booked", "paid") and (m not in MUC_CHI or st(m) == "paid")      # noqa: E731
+            cho = lambda m: st(m) in ("entered", "booked") or (m in MUC_CHI and st(m) == "verified")                  # noqa: E731
+            tab = next((m for m in MUC if not rong(m) and cho(m)), None) or next((m for m in MUC if not rong(m) and not xong(m)), "info")
         else:
-            rong = lambda m: m in ("repair", "other") and not co_dong(m)                         # noqa: E731
             tab = next((m for m in cua if not rong(m) and co_viec(m, st(m))), cua[0])
     return {"vai": vai, "moi": moi, "bi_khoa": bi_khoa, "thay_tien_ban": tien_ban, "thay_tien_chi": PQ.thay_tien_chi(vai),
             "thay_gia_kho": PQ.thay_gia_kho(vai), "o": o, "muc": muc, "phieu": phieu, "tab_mac_dinh": tab, "hang": hang,

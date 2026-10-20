@@ -707,10 +707,13 @@ def tinh_thu(data: dict = Body(...), db: Session = Depends(get_db), user=Depends
                 gia_hd.update(hire_price=p.hire_price, hire_ccy=p.hire_ccy)
     if p.vehicle_id and (goc is None or "vehicle_id" in data):
         x = db.get(Vehicle, p.vehicle_id)
-        if x is not None and x.owner_type == "joint":            # như _ap_truong: xe của chủ xe liên kết → phiếu xe liên kết
-            if "company" not in data:
-                p.company = "joint"
+        # như _ap_truong (20/10, A1): loại xe theo xe trong danh mục, không theo `company` gửi lên — xe thuê → xe liên kết + chủ xe,
+        # xe nhà → xe nhà, bỏ chủ xe
+        if x is not None and x.owner_type == "joint":
+            p.company = "joint"
             p.owner_id = x.owner_id or p.owner_id
+        elif x is not None:
+            p.company, p.owner_id = "EPL", None
     p.company = p.company if p.company in ("EPL", "joint") else "EPL"
     if p.company == "joint" and p.owner_id:                       # điều khoản chủ xe cho ô còn trống (như lap_phieu)
         o = db.get(Owner, p.owner_id)
@@ -792,7 +795,7 @@ def _chan_phieu_trang(p):
 
 def _ap_truong(db, p, data, user, muc_tt=None):
     """Ghi các trường vào phiếu. Khi sửa, chỉ ghi trường của mục còn được sửa."""
-    kh_cu, chu_cu = p.customer_id, p.owner_id
+    kh_cu, chu_cu, xe_cu = p.customer_id, p.owner_id, p.vehicle_id
     for c in COT_PHIEU:
         if c not in data:
             continue
@@ -853,9 +856,14 @@ def _ap_truong(db, p, data, user, muc_tt=None):
             # Xe của chủ xe liên kết thì phiếu là phiếu xe liên kết — không bắt người lập chọn lại. Chủ xe theo xe kể cả khi màn
             # gửi kèm số xe (giữ biển người lập sửa tay): trước 08/10 khối này nằm trong nhánh "không gửi truck_no" → màn phiếu
             # (luôn gửi truck_no) lập phiếu xe thuê không có owner_id — không tự điền hợp đồng thuê, điều khoản chủ xe.
-            if "company" not in data: p.company = "joint"
-            if not p.owner_name: p.owner_name = x.owner_name
+            # 20/10 (rà điều xe A1): loại xe LẤY THEO xe trong danh mục, không tin `company` màn gửi — trước đây màn gửi kèm
+            # company thì giữ của màn: đổi xe thuê sang xe nhà, phiếu vẫn "xe thuê" mang chủ xe cũ.
+            p.company = "joint"
+            if not p.owner_name or p.vehicle_id != xe_cu: p.owner_name = x.owner_name
             if x.owner_id: p.owner_id = x.owner_id
+        elif x:
+            # 20/10 (A1): xe nhà (EPL) → phiếu xe nhà, bỏ chủ xe / hợp đồng thuê của xe thuê cũ (_ap_hop_dong dọn hợp đồng theo owner_id)
+            p.company, p.owner_id, p.owner_name = "EPL", None, None
     if p.driver_id and not data.get("driver_name"):
         d = db.get(Driver, p.driver_id)
         if d: p.driver_name = d.name
@@ -1456,7 +1464,9 @@ def qua_chi_ton(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
 
 
 @router.post("/api/trips/{tid}/sections/{muc}/{hanh_dong}")
-def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+def duyet_muc(tid: str, muc: str, hanh_dong: str, data: dict = Body(default={}), db: Session = Depends(get_db),
+              user=Depends(nguoi_hien_tai)):
+    """Thân (20/10): `ly_do` — BẮT BUỘC khi trả lại (return); ghi nhật ký phiếu "tra_lai:<mục>:<lý do>" để người nhập mục đọc."""
     db.expire_on_commit = HET_HAN_SAU_COMMIT
     p = db.get(Trip, tid)
     if not p:
@@ -1473,6 +1483,10 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
     # Hỏi QUYỀN trước, hỏi nội dung sau: vai không được đụng mục này thì phải nghe "không có quyền",
     # chứ nghe "mục còn trống" là câu trả lời của người khác — họ sẽ đi nhập cho đầy rồi vẫn bị chặn.
     moi_trang_thai = chuyen_muc(user.role, muc, s.status, hanh_dong)
+    # 20/10 (rà điều xe D20): trả lại mục phải ghi LÝ DO — trước đây chỉ hỏi "Xác nhận?", Bãi nhận mục bị trả mà không biết sửa gì
+    ly_tra = str((data if isinstance(data, dict) else {}).get("ly_do") or "").strip() if hanh_dong == "return" else ""
+    if hanh_dong == "return" and not ly_tra:
+        raise HTTPException(422, {"ma": "THIEU_LY_DO_TRA", "loi": "Trả lại mục phải ghi lý do — người nhập mục đó đọc câu này để sửa."})
     if muc == "travel" and hanh_dong == "pay" and user.role != "admin" and CHI.chi_o_ke_toan():
         raise HTTPException(409, {"ma": "CHI_O_KE_TOAN", "loi": CHI.cau_chan_chi(db, p)})
     if muc == "travel" and hanh_dong == "pay" and CHI.chi_o_ke_toan():
@@ -1581,6 +1595,8 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
                        by_user=user.full_name, mo_ta="Chi mục %s phiếu %s" % ({"repair": "V sửa chữa", "other": "VI khác"}[muc], p.doc_no),
                        payload={"lines": [{"item": d.item_key or d.item_name, "qty": d.qty, "unit_price": d.unit_price,
                                            "currency": d.currency, "acct_code": TK.tk_dong(p.company, d)} for d in dong]})
+        if ly_tra:
+            _ghi_log(db, p, user, "tra_lai:%s:%s" % (muc, ly_tra[:500]))      # ghi TRƯỚC dòng sec_…:return (màn đọc cặp này)
         _ghi_log(db, p, user, "sec_%s:%s" % (muc, hanh_dong))
         if tu_qua_chi:
             # nhật ký nói rõ vì sao tự qua bước Chi: mục III chỉ lấy kho (G11) · mục IV không có tạm ứng tiền mặt (cùng lương)
@@ -1820,6 +1836,15 @@ def bao_ve(tid: str, data: dict = Body(...), db: Session = Depends(get_db), user
     if user.role not in ("driver", "yard", "admin"):
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ tài xế của phiếu (hoặc Bãi) báo xe về."})
     _cua_tai_xe(db, p, user)
+    # 20/10 (rà điều xe A2): «Báo đã về» bấm lúc MẤT MẠNG nằm trong hàng đợi máy tài xế (kèm `ma_gui` + `luc`, như «Xuất phát»).
+    # Gửi lại vì mất phản hồi (đã có nhật ký drv_back đúng giờ máy đó) hoặc gửi muộn khi Bãi đã bấm «Xe đã tới» → trả nguyên,
+    # không ghi trùng, không báo lỗi cho tài xế. `luc` hợp lệ thì nhật ký ghi theo giờ bấm thật.
+    from routes.vi_tri import luc_thao_tac
+    co_ma = bool((data.get("ma_gui") or "").strip())
+    luc = luc_thao_tac(data, p) if co_ma else None
+    if co_ma and (p.transport_status == "arrived" or (luc is not None and db.query(TripLog.id).filter(
+            TripLog.trip_id == p.id, TripLog.action == "drv_back", TripLog.ts == luc).first())):
+        return xuat_phieu(db, p, vai=user.role)
     _chan_khoa(p, user)
     if p.transport_status == "arrived":
         raise HTTPException(409, {"ma": "PHIEU_DA_TOI", "loi": "Phiếu đã ghi xe tới nơi rồi."})
@@ -1838,7 +1863,7 @@ def bao_ve(tid: str, data: dict = Body(...), db: Session = Depends(get_db), user
         if not db.query(TripEvent).filter(TripEvent.trip_id == p.id, TripEvent.kind == "arrive_stop", TripEvent.stop_seq == cuoi).count():
             db.add(TripEvent(trip_id=p.id, kind="arrive_stop", stop_seq=cuoi, by_user=user.full_name,
                              note="Tài xế báo đã về · km %s" % (round(km) if km is not None else "—")))
-    _ghi_log(db, p, user, "drv_back")
+    _ghi_log(db, p, user, "drv_back", ts=luc)
     db.commit()
     return xuat_phieu(db, p, vai=user.role)
 

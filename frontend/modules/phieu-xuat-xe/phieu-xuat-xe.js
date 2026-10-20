@@ -35,6 +35,8 @@
   let root, P = null, DS = [], KM = null, DM = { customers: [], vehicles: [], drivers: [], routes: [], parts: [], places: [], the: [] }, moi = false, ty_gia = {};
   // Phiếu mới mà người lập TỰ GÕ số phiếu: đổi Gom / Giao không lấy số gợi ý đè lên nữa (rà 01/10 — trước đây bấm thẻ là mất số đã gõ)
   let soGoTay = false;
+  // 20/10 (B9): phiếu mới — người lập đã bấm chọn Gom / Giao (hai thẻ lớn thu thành chip) · đã mở phần "điền khi xe về"
+  let loaiDaChon = false, moVeSau = false;
   /** Định khoản mặc định của một dòng chi — SOI GƯƠNG services/tai_khoan.dinh_khoan_dong (rà 30/09). Mã lấy từ máy chủ
    *  (KM.acct_rule), ở đây chỉ chọn vế: Nợ theo loại xe và mục; Có theo CÁCH TRẢ — lấy kho → kho · ghi nợ trạm / NCC / thẻ /
    *  sửa ngoài theo đợt (khoản mục NCC theo dõi nợ, KM.ncc_items) → phải trả NCC · sửa ngoài quỹ trả ngay → 1011 tiền mặt
@@ -144,9 +146,27 @@
     g('px-chon').innerHTML = (moi ? `<option value="">— ${NN.t('new_slip')} —</option>` : '') + dongChon();
     if (moi) g('px-chon').value = '';
   }
+  /* 20/10 (rà điều xe B6): trạng thái xe / tài xế ngay trong ô chọn — «Rảnh» / «Đang chạy G4-0007» / «Đang sửa» / «Nghỉ» (danh mục
+   * /api/vehicles · /api/drivers đã có status + phieu_hien_tai = phiếu chưa tới nơi gần nhất). Phiếu đang mở không tính là "bận" của
+   * chính nó. Rảnh xếp lên đầu; chọn xe / người đang bận thì dòng vàng dưới ô — chỉ nhắc, không chặn (anh Hải chốt). */
+  function banCua(x, laXe) {
+    const cuaPhieu = !!(P && P.id && (laXe ? P.vehicle_id : P.driver_id) === x.id);     // xe / người của chính phiếu đang mở
+    const dang = x.phieu_hien_tai && x.phieu_hien_tai !== (P && P.doc_no) ? x.phieu_hien_tai : null;
+    if (dang) return { muc: 1, ma: 'chay', do: dang };
+    if (cuaPhieu) return { muc: 0, ma: 'nay' };                                          // đang chạy chính chuyến này: không ghi gì
+    if (x.status === 'on_trip') return { muc: 1, ma: 'chay', do: '' };
+    if (laXe && x.status === 'maintenance') return { muc: 2, ma: 'sua' };
+    if (!laXe && x.status === 'leave') return { muc: 2, ma: 'nghi' };
+    if (x.status === 'inactive' || x.active === false) return { muc: 3, ma: 'ngung' };
+    return { muc: 0, ma: 'ranh' };
+  }
+  const chuBan = (b, laXe) => b.ma === 'nay' ? '' : ' · ' + (b.ma === 'chay' ? NN.t('v_on_trip') + (b.do ? ' ' + b.do : '') : b.ma === 'sua' ? NN.t('v_maintenance')
+    : b.ma === 'nghi' ? NN.t('d_leave') : b.ma === 'ngung' ? NN.t('v_inactive') : NN.t(laXe ? 'v_available' : 'd_available'));
+  /** Xếp theo độ rảnh (giữ thứ tự danh mục trong cùng một nhóm). */
+  const xepBan = (ds, laXe) => ds.map((x, i) => ({ x, i, b: banCua(x, laXe) })).sort((a, c) => a.b.muc - c.b.muc || a.i - c.i);
   function veDanhMuc() {
-    g('f-vehicle_id').innerHTML = `<option value="">—</option>` + DM.vehicles.filter(x => x.active || x.id === P.vehicle_id).map(x => `<option value="${x.id}" ${x.id === P.vehicle_id ? 'selected' : ''} data-tim="${esc([x.plate_trailer, x.brand_model, x.owner_name].filter(Boolean).join(' '))}">${esc(x.truck_no)} · ${esc(x.plate_head || '')}${x.owner_type === 'joint' ? ' · ' + NN.t('co_joint') : ''}</option>`).join('');
-    g('f-driver_id').innerHTML = `<option value="">—</option>` + DM.drivers.filter(x => x.active || x.id === P.driver_id).map(x => `<option value="${x.id}" ${x.id === P.driver_id ? 'selected' : ''} data-tim="${esc([x.driver_code, x.phone].filter(Boolean).join(' '))}">${esc(EPL.tenTaiXe(x))}</option>`).join('');
+    g('f-vehicle_id').innerHTML = `<option value="">—</option>` + xepBan(DM.vehicles.filter(x => x.active || x.id === P.vehicle_id), true).map(({ x, b }) => `<option value="${x.id}" ${x.id === P.vehicle_id ? 'selected' : ''} data-tim="${esc([x.plate_trailer, x.brand_model, x.owner_name].filter(Boolean).join(' '))}" data-xuat="${esc(x.truck_no + ' · ' + (x.plate_head || '') + (x.owner_type === 'joint' ? ' · ' + NN.t('co_joint') : ''))}">${esc(x.truck_no)} · ${esc(x.plate_head || '')}${x.owner_type === 'joint' ? ' · ' + NN.t('co_joint') : ''}${esc(chuBan(b, true))}</option>`).join('');
+    g('f-driver_id').innerHTML = `<option value="">—</option>` + xepBan(DM.drivers.filter(x => x.active || x.id === P.driver_id), false).map(({ x, b }) => `<option value="${x.id}" ${x.id === P.driver_id ? 'selected' : ''} data-tim="${esc([x.driver_code, x.phone].filter(Boolean).join(' '))}" data-xuat="${esc(EPL.tenTaiXe(x))}">${esc(EPL.tenTaiXe(x))}${esc(chuBan(b, false))}</option>`).join('');
     root.querySelectorAll('[data-loc]').forEach(inp => locChon(inp, false));   // ô tìm còn chữ thì lọc lại danh sách vừa dựng
     g('f-route_id').innerHTML = `<option value="">—</option>` + DM.routes.filter(x => x.active || x.id === P.route_id).map(x => `<option value="${x.id}" ${x.id === P.route_id ? 'selected' : ''}>${esc(x.name)} · ${so(x.total_km, 1)} km${x.return_km ? ' · ↩ ' + so(x.return_km, 1) + ' km' : ''}</option>`).join('');
     g('f-customer_id').innerHTML = `<option value="">—</option>` + DM.customers.filter(x => x.active || x.id === P.customer_id).map(x => `<option value="${x.id}" ${x.id === P.customer_id ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
@@ -247,7 +267,18 @@
     tb.querySelectorAll('input, select').forEach(el => el.addEventListener('input', () => {
       const g = P.goods[+el.dataset.i]; if (!g) return;
       g[el.dataset.f] = el.dataset.f === 'qty_t' ? EPL.doc(el.value) : el.value;
-      if (el.dataset.f === 'qty_t') { const t = (P.goods || []).filter(x => x.loai !== 'hao_hut').reduce((a, x) => a + EPL.doc(x.qty_t), 0); P.weight_origin = t; g0('f-weight_origin', t); veSo(); }
+      delete g._macDinh;                       // dòng mặc định của phiếu giao mới đã được đụng tới → gửi khi Lưu
+      if (el.dataset.f === 'qty_t') g._tuDien = false;
+      // 20/10 (B8): chọn lô → số tấn = min(tồn lô còn lại, tải trọng xe nếu có); người lập đã tự gõ số tấn thì không đè. Vẫn sửa được.
+      if (el.dataset.f === 'tu_phieu_id') {
+        const lo = LO.find(x => x.lo_trip_id === el.value), xe = DM.vehicles.find(v => v.id === P.vehicle_id);
+        if (lo && (g._tuDien || !EPL.doc(g.qty_t))) {
+          const tai = xe && EPL.doc(xe.capacity_t) > 0 ? EPL.doc(xe.capacity_t) : Infinity;
+          g.qty_t = +Math.max(0, Math.min(EPL.doc(lo.con_t), tai)).toFixed(3); g._tuDien = true;
+          const o = tb.querySelector(`input[data-i="${el.dataset.i}"][data-f="qty_t"]`); if (o) o.value = g.qty_t;
+        }
+      }
+      if (el.dataset.f === 'qty_t' || el.dataset.f === 'tu_phieu_id') { const t = (P.goods || []).filter(x => x.loai !== 'hao_hut').reduce((a, x) => a + EPL.doc(x.qty_t), 0); P.weight_origin = t; g0('f-weight_origin', t); veSo(); }
     }));
     tb.querySelectorAll('[data-xoa-hang]').forEach(b => b.addEventListener('click', () => { P.goods.splice(+b.dataset.xoaHang, 1); veHang(); }));
   }
@@ -441,6 +472,14 @@
       }
       const e = sec.querySelector('.px-stt'); const k = tuyChon ? 'na' : st;
       e.className = 'px-stt ' + k; e.innerHTML = NN.h(khoaTT(m, k));
+      // 20/10 (D20): mục vừa bị trả lại — người nhập mục (và Sếp) thấy lý do ngay dưới đầu mục (dải đỏ một dòng, không chen vào hàng tiêu đề)
+      const ly = thayTraLai(m) ? lyDoTra(m) : null;
+      let tl = sec.querySelector('.px-tra-lai');
+      if (ly !== null) {
+        if (!tl) { tl = document.createElement('div'); tl.className = 'px-tra-lai no-print'; sec.querySelector('.px-muc-dau').after(tl); }
+        tl.innerHTML = `<b>${NN.h('px_bi_tra')}</b>${ly ? ' · <span lang="lo"></span>' : ''}`;
+        if (ly) tl.querySelector('span').textContent = ly;
+      } else if (tl) tl.remove();
       const nut = []; const p = perm();
       if (!moi && !tuyChon) {
         if (st === 'wait' && (p.edit.includes(m) || vai() === 'admin')) nut.push(['ok', 'send', 'a_send']);
@@ -471,7 +510,11 @@
     // hành động mức phiếu
     const ta = [];
     if (!moi) {
-      if (AUTH.la('acct') && P.transport_status === 'arrived' && !P.locked) ta.push(`<button class="btn sm ok" data-hd-phieu="khoa">🔒 ${NN.h('a_lock')}</button>`);
+      // 20/10 (D18): nút Khoá hiện cả khi còn chặn (xe chưa về, dầu kho chưa cấp…) nhưng MỜ — lý do ở khối «Chưa khoá được vì…» bên dưới
+      if (AUTH.la('acct') && !P.locked && (P.transport_status === 'arrived' || vai() === 'acct')) {
+        const chan = chanKhoa();
+        ta.push(`<button class="btn sm ok" data-hd-phieu="khoa" ${chan.length ? `disabled title="${esc(NN.t('px_ck_nut_mo'))}"` : ''}>🔒 ${NN.h('a_lock')}</button>`);
+      }
       if (AUTH.la('acct') && P.locked && (!P.da_tao_so || vai() === 'admin')) ta.push(`<button class="btn sm" data-hd-phieu="mo-khoa">${NN.h('a_unlock_slip')}</button>`);
       // Trả chủ xe (01/10): KHÔNG còn nút sang trang kế toán tạm — tiền đi qua hệ kế toán anh Tune: KT Thu/Chi lập đề nghị trả ở
       // màn Xe liên kết ("Trả qua kế toán"), thủ quỹ chi và ghi sổ bên đó; phiếu bên này chỉ còn thẻ "Đã trả chủ xe"
@@ -490,6 +533,12 @@
     hd.innerHTML = ta.length ? `<span class="small muted">${NN.h('trip_status')}:</span> ${ta.join(' ')}` : '';
     root.querySelectorAll('[data-tt]').forEach(b => b.addEventListener('click', () => doiTrangThai(b.dataset.tt)));
     root.querySelectorAll('[data-hd-phieu]').forEach(b => b.addEventListener('click', () => b.dataset.hdPhieu === 'xoa' ? xoaPhieu() : b.dataset.hdPhieu === 'khoa' ? khoaPhieu() : b.dataset.hdPhieu === 'doi-xe' ? doiXe() : hanhDongPhieu(b.dataset.hdPhieu)));
+    // 20/10 (A1): xe trong danh mục quyết loại xe (máy chủ cũng lấy theo xe) — ô Loại xe chỉ còn chọn được khi chưa chọn xe
+    const oLoai = g('f-company');
+    if (oLoai && P.vehicle_id && DM.vehicles.some(v => v.id === P.vehicle_id)) { oLoai.disabled = true; oLoai.title = NN.t('px_loai_theo_xe'); }
+    else if (oLoai) oLoai.title = '';
+    const giong = g('px-giong'); if (giong) giong.hidden = moi || !P.id || !AUTH.la('yard');      // B7: người lập phiếu (Bãi, Sếp)
+    veChanKhoa();
     veTep();
     veBen();
     veButToan();
@@ -508,6 +557,9 @@
       catch (e) { return a; }
     }
     if (a.startsWith('gt_bo_qua:')) return NN.t('px_gt_bo_qua_log') + ' · ' + a.slice(10);      // 20/10: Sếp cho qua giấy tờ chưa đủ
+    // 20/10 (D20): "tra_lai:<mục>:<lý do>" — lý do người kiểm trả lại mục (máy chủ bắt buộc ghi)
+    const tl = a.match(/^tra_lai:(\w+):([\s\S]*)$/);
+    if (tl) return NN.t('px_tra_log', { muc: SO_LA_MA[MUC.indexOf(tl[1])] || tl[1] }) + ': ' + tl[2];
     const m = a.match(/^sec_(\w+):(\w+)$/); if (m) return `${NN.t('sec' + (MUC.indexOf(m[1]) + 1))} → ${NN.t('a_' + m[2])}`;
     if (LOG_KHOA[a]) return NN.t(LOG_KHOA[a]);
     // ev_<việc>_<trạng thái> (đổ dầu dọc đường: tài xế báo · kế toán duyệt) → "Đổ dầu dọc đường · Chờ duyệt"
@@ -523,14 +575,21 @@
       || (pq.book.includes(m) && st === 'verified') || (pq.pay.includes(m) && st === 'booked' && !(m === 'travel' && ivKhongTienMat()));
   }
   /** Tab mở sẵn theo vai: mục đầu tiên vai này có việc; không có việc thì mục đầu tiên vai này phụ trách;
-   *  vai chỉ xem (doanh thu, Sếp, tài xế) thì Toàn phiếu. */
+   *  vai chỉ xem (doanh thu, tài xế) thì Toàn phiếu. */
   function tabMacDinh() {
     if (moi) return 'info';
     const s = P.sections || {}, pq = perm();
     const cua = MUC.filter(m => pq.edit.includes(m) || pq.verify.includes(m) || pq.book.includes(m) || pq.pay.includes(m));
-    if (!cua.length || vai() === 'admin') return 'all';
+    if (!cua.length) return 'all';
     // mục V / VI chưa có dòng nào là "Không phát sinh" — không tính là việc (Bãi mở phiếu từng rơi vào tab VI trống)
     const rong = (m) => (m === 'repair' || m === 'other') && !(P.expenses || []).some(d => d.section === m);
+    if (vai() === 'admin') {
+      // 20/10 (rà điều xe A4): Sếp từng mặc định Toàn phiếu (cao ~2.900 px, không có nút duyệt) — nay mở mục đầu tiên đang CHỜ DUYỆT
+      // (đã nhập chờ kiểm · đã kiểm chờ ghi sổ · đã ghi sổ chờ chi); không có thì mục đầu tiên chưa xong; xong hết thì mục I.
+      const xong = (m) => ['verified', 'booked', 'paid'].includes(s[m]) && (!MUC_CHI.includes(m) || s[m] === 'paid');
+      const cho = (m) => s[m] === 'entered' || s[m] === 'booked' || (MUC_CHI.includes(m) && s[m] === 'verified');
+      return MUC.find(m => !rong(m) && cho(m)) || MUC.find(m => !rong(m) && !xong(m)) || 'info';
+    }
     return cua.find(m => !rong(m) && coViec(m, s[m] || 'wait')) || cua[0];
   }
   function datTab(t, tay) {
@@ -546,10 +605,16 @@
   function capNhatNutLuu() {
     const luu = g('px-luu'); if (!luu) return;
     const hien = (el) => el.getClientRects().length > 0;
-    const coO = !!P && tab !== 'all' && ((g('px-doc-no') && !g('px-doc-no').disabled)
-      || [...root.querySelectorAll(['input', 'select', 'textarea', '.px-acct', '[data-pay]', '.px-them', '#px-hang-them'].map(s => '.px-muc.px-muc-hien ' + s).join(', '))]
-        .some(el => !el.disabled && !el.hidden && el.type !== 'file' && hien(el)));
+    // 20/10 (A4): ở Toàn phiếu ô nhập chỉ xem, nhưng người còn sửa được một mục (phiếu mới gõ dở rồi bấm Toàn phiếu xem lại) vẫn phải
+    // Lưu được — trước đây nút Lưu biến mất ở đây. Không sửa được gì mà còn việc ở một mục → dòng «Chọn một mục để sửa / duyệt».
+    const coO = !!P && (tab === 'all'
+      ? moi || MUC.some(m => suaDuoc(m) || (MUC_CHI.includes(m) && coGiaDeGui(m))) || (COT_TIEN.some(c => { const el = g('f-' + c); return el && !el.disabled; }))
+      : ((g('px-doc-no') && !g('px-doc-no').disabled)
+        || [...root.querySelectorAll(['input', 'select', 'textarea', '.px-acct', '[data-pay]', '.px-them', '#px-hang-them'].map(s => '.px-muc.px-muc-hien ' + s).join(', '))]
+          .some(el => !el.disabled && !el.hidden && el.type !== 'file' && hien(el))));
     luu.hidden = !coO;
+    const nhac = g('px-luu-nhac');
+    if (nhac) nhac.hidden = !(P && !moi && tab === 'all' && !coO && MUC.some(m => coViec(m, (P.sections || {})[m] || 'wait')));
   }
   /** Chữ trạng thái một mục. Mục I, II không có bước ghi sổ / chi — "đã kiểm" là xong, đừng ghi "chờ ghi sổ" (rà 01/10). */
   // 06/10 (điều phối, G4-0006): mục IV xe nhà KHÔNG có tạm ứng tiền mặt (mọi khoản EPL ứng trả cùng lương / nợ NCC / thẻ — máy chủ
@@ -560,14 +625,67 @@
   const ivCungLuong = () => (P.expenses || []).some(d => d.section === 'travel' && d.paid_by_epl && d.cach_tra === 'luong');
   const khoaTT = (m, st) => (m === 'travel' && ['booked', 'paid'].includes(st) && ivKhongTienMat()) ? (ivCungLuong() ? 'stt_iv_luong' : 'stt_iv_khong_tm')
     : st === 'wait' ? 'stt_wait2' : (st === 'verified' && !MUC_CHI.includes(m)) ? 'stt_verified_12' : 'stt_' + st;
+  /* ---- 20/10 (rà điều xe D20): mục BỊ TRẢ LẠI và lý do. Máy chủ ghi hai dòng nhật ký cạnh nhau: "tra_lai:<mục>:<lý do>" rồi
+   * "sec_<mục>:return" (P.logs mới nhất trước). Mục còn chờ / đã nhập mà lượt sec_<mục>:… gần nhất là return → bị trả lại; người nhập
+   * gửi kiểm lại (sec_<mục>:send) là hết. Lý do: dòng tra_lai cùng mục đứng sát dòng return. null = không bị trả. */
+  function lyDoTra(m) {
+    if (!P || moi || !['wait', 'entered'].includes((P.sections || {})[m] || 'wait')) return null;
+    const ds = P.logs || [], tien = 'sec_' + m + ':', tra = 'tra_lai:' + m + ':';
+    const i = ds.findIndex(l => String(l.action || '').startsWith(tien));
+    if (i < 0 || ds[i].action !== tien + 'return') return null;
+    for (let k = Math.max(0, i - 3); k <= Math.min(ds.length - 1, i + 3); k++) {
+      const a = String(ds[k].action || ''); if (a.startsWith(tra)) return a.slice(tra.length);
+    }
+    return '';                              // lượt trả lại trước 20/10 — chưa có lý do
+  }
+  // ai thấy dải «Bị trả lại»: người nhập mục đó (Bãi mục I–IV, VI · tổ sửa chữa mục V) và Sếp
+  const thayTraLai = (m) => vai() === 'admin' || perm().edit.includes(m);
+
+  /* ---- 20/10 (D18): CHỖ CHẶN KHOÁ hiện cố định cho KT Thu/Chi VC — hỏi GET /api/trips/{id}/kiem-lai (đường sẵn có của hộp Khoá) mỗi lần
+   * phiếu vẽ lại; chỉ đọc, không khoá. Xe chưa về cũng là chỗ chặn (máy chủ trả XE_CHUA_VE lúc khoá). */
+  let KIEM_LAI = null, henKL = null;
+  function chanKhoa() {
+    if (!P || moi || P.locked) return [];
+    const ds = [];
+    if (P.transport_status !== 'arrived') ds.push(NN.t('px_ck_xe_chua_ve'));
+    if (KIEM_LAI && KIEM_LAI.trip === P.id) (KIEM_LAI.chan || []).forEach(x => ds.push(chuMay(x)));
+    return ds;
+  }
+  function veChanKhoa() {
+    const o = g('px-chan-khoa'); if (!o) return;
+    const hien = !!P && !moi && !P.locked && AUTH.la('acct') && (vai() === 'acct' || P.transport_status === 'arrived');
+    o.hidden = !hien;
+    if (!hien) return;
+    const chan = chanKhoa(), cb = KIEM_LAI && KIEM_LAI.trip === P.id ? (KIEM_LAI.canh_bao || []).length : 0;
+    o.classList.toggle('ok', !chan.length);
+    o.innerHTML = chan.length
+      ? `<h5>${NN.h('px_ck_tieu')}</h5><ul>${chan.map(c => `<li lang="lo">${esc(c)}</li>`).join('')}</ul>${cb ? `<div class="px-cb-dem">${NN.h('px_ck_xem', { n: cb })}</div>` : ''}`
+      : `<h5>✓ ${NN.h('px_ck_san_sang')}</h5>${cb ? `<div class="px-cb-dem">${NN.h('px_ck_xem', { n: cb })}</div>` : ''}`;
+  }
+  function napKiemLai() {
+    clearTimeout(henKL);
+    if (!P || moi || P.locked || !AUTH.la('acct')) return;
+    const id = P.id;
+    henKL = setTimeout(async () => {
+      let k; try { k = await API.get(`/api/trips/${encodeURIComponent(id)}/kiem-lai`); } catch (e) { return; }
+      if (!P || P.id !== id || !root || !root.isConnected) return;
+      const cu = JSON.stringify(KIEM_LAI && KIEM_LAI.trip === id ? [KIEM_LAI.chan, KIEM_LAI.canh_bao] : null);
+      KIEM_LAI = { trip: id, chan: k.chan || [], canh_bao: k.canh_bao || [] };
+      if (cu === JSON.stringify([KIEM_LAI.chan, KIEM_LAI.canh_bao])) return;
+      const nut = root.querySelector('[data-hd-phieu="khoa"]'), chan = chanKhoa();    // nút Khoá mờ / sáng theo chỗ chặn
+      if (nut) { nut.disabled = !!chan.length; nut.title = chan.length ? NN.t('px_ck_nut_mo') : ''; }
+      veChanKhoa();
+    }, 150);
+  }
   function veTabs() {
     const s = (P && P.sections) || {};
     q('#px-tabs').innerHTML = MUC.map((m, i) => {
       const st = moi ? 'wait' : (s[m] || 'wait');
       const tuyChon = (m === 'repair' || m === 'other') && !moi && !P.expenses.some(d => d.section === m);
-      return `<button type="button" class="px-tab ${tab === m ? 'active' : ''} ${coViec(m, st) ? 'viec' : ''}" data-tab="${m}" title="${esc(NN.t(khoaTT(m, tuyChon ? 'na' : st)))}">
+      const ly = !moi && thayTraLai(m) ? lyDoTra(m) : null;          // 20/10 (D20): mục bị trả lại → chữ đỏ «Bị trả lại», rê chuột đọc lý do
+      return `<button type="button" class="px-tab ${tab === m ? 'active' : ''} ${coViec(m, st) ? 'viec' : ''}" data-tab="${m}" title="${esc(ly !== null ? NN.t('px_bi_tra') + (ly ? ' · ' + ly : '') : NN.t(khoaTT(m, tuyChon ? 'na' : st)))}">
         <b>${SO_LA_MA[i]}</b><span>${NN.h('sec' + (i + 1))}</span><i class="stt ${tuyChon ? 'na' : st}"></i>
-        <em class="st-chu ${tuyChon ? 'na' : st}">${NN.h(khoaTT(m, tuyChon ? 'na' : st))}</em></button>`;
+        <em class="st-chu ${ly !== null ? 'tra' : tuyChon ? 'na' : st}">${NN.h(ly !== null ? 'px_bi_tra' : khoaTT(m, tuyChon ? 'na' : st))}</em></button>`;
     }).join('') + `<button type="button" class="px-tab tat-ca ${tab === 'all' ? 'active' : ''}" data-tab="all"><span>${NN.h('px_tab_all')}</span></button>`;
     root.querySelectorAll('#px-tabs .px-tab').forEach(b => b.addEventListener('click', () => datTab(b.dataset.tab, true)));
   }
@@ -714,6 +832,101 @@
 <script>window.onload=function(){setTimeout(function(){window.print()},400)}<\/script>
 </body></html>`;
   }
+  /* ---------------------------------------------------------------- TỜ IN phiếu xuất xe (20/10, rà điều xe A3)
+   * Trước đây In = in nguyên màn nhập liệu: 2–3 trang A4, lộ ô "Tìm số xe…", mũi tên ô chọn, ô xám, câu nhắc, băng giấy tờ, tuyến bị cắt.
+   * Nay một tờ riêng (#px-to-in, cùng kiểu tờ đề nghị tạm ứng / phiếu kho hàng: đầu tờ logo + số phiếu, tiêu đề giữa, ô thông tin, bảng,
+   * bốn chỗ ký), dựng lại NGAY TRƯỚC KHI IN từ phiếu đang mở (kể cả chữ chưa lưu) — nút In, nút PDF thanh trên, Ctrl+P đều ra tờ này.
+   * Không in: ô trống điền khi xe về, ghi chú, nhật ký, mục không phát sinh (gộp một dòng). Tờ dài thì tự thu nhỏ cho vừa MỘT trang.
+   * Bãi (và vai không thấy tiền): KHÔNG có cột / dòng tiền nào — máy chủ cũng không gửi số tiền cho vai đó. */
+  function htmlToIn() {
+    if (!P) return '';
+    const T = (k, p) => NN.h(k, p);
+    const tienBan = thayTienBan(), tienChi = thayChi(), lk = P.company === 'joint', gom = laGom();
+    const co = (v) => v !== null && v !== undefined && String(v).trim() !== '';
+    const o = (k, v, lo, cls) => co(v) ? `<div${cls ? ` class="${cls}"` : ''}><span>${T(k)}</span><b${lo ? ' lang="lo"' : ''}>${esc(v)}</b></div>` : '';
+    const tenDM = (ds, id, f) => { const x = (ds || []).find(z => z.id === id); return x ? f(x) : ''; };
+    const xe = tenDM(DM.vehicles, P.vehicle_id, x => x.truck_no) || P.truck_no;
+    const taiXe = tenDM(DM.drivers, P.driver_id, x => EPL.tenTaiXe(x, false)) || P.driver_name;
+    const tuyen = tenDM(DM.routes, P.route_id, x => x.name + ' · ' + so(x.total_km, 1) + ' km');
+    const khach = tenDM(DM.customers, P.customer_id, x => x.name) || P.customer_name;
+    const st = P.sections || {};
+    const trangThai = (m) => moi ? '' : `<small>${NN.h(khoaTT(m, st[m] || 'wait'))}</small>`;
+    const kmChay = co(P.odo_out) && co(P.odo_back) ? so(Math.abs(EPL.doc(P.odo_back) - EPL.doc(P.odo_out))) + ' km' : '';
+    const k = tinh();
+    const hao = k.hao === null ? '' : `${so(EPL.doc(P.weight_origin) - EPL.doc(P.weight_dest), 2)} t (${k.hao.toFixed(1)}%)`;
+    const muc1 = `<section class="pi-muc"><h4>I. ${T('sec1')}${trangThai('info')}</h4><div class="pi-luoi">
+        ${o('truck_no', xe)}${o('plate_head', [P.plate_head, P.plate_trailer].filter(co).join(' / '), true)}${o('brand_model', P.brand_model)}
+        ${o('driver', taiXe, true)}${o('d_issue', P.doc_date ? EPL.ngay(P.doc_date) : '')}${o('d_out', P.out_date ? EPL.ngay(P.out_date) : '')}
+        ${lk ? o('owner', P.owner_name, true) : ''}${o('px_odo_di_cm', co(P.odo_out) ? so(P.odo_out) : '')}${o('px_odo_ve_cm', co(P.odo_back) ? so(P.odo_back) : '')}
+        ${o('odo_km', kmChay)}${o('d_back', P.back_date ? EPL.ngay(P.back_date) : '')}</div></section>`;
+    const hang = (P.goods || []).filter(x => x.loai !== 'hao_hut' && !dongHangTrong(x));
+    const loCua = (id) => { const l = LO.find(x => x.lo_trip_id === id); return l ? l.doc_no : ''; };
+    const bangHang = !gom && hang.length ? `<table class="pi-bang"><thead><tr><th>${T('goods_name')}</th><th>${T('from_lot')}</th><th class="num">${T('qty_t')}</th></tr></thead>
+        <tbody>${hang.map(x => `<tr><td lang="lo">${esc(x.goods_name || '')}</td><td class="mono">${esc(loCua(x.tu_phieu_id))}</td><td class="num">${so(x.qty_t, 2)}</td></tr>`).join('')}</tbody></table>` : '';
+    const giaCuoc = tienBan && EPL.doc(P.price) > 0 ? t2(EPL.doc(P.price), maCuoc()) + (khoan() ? ' · ' + NN.t('pm_chuyen') : '/t') : '';
+    const muc2 = `<section class="pi-muc"><h4>II. ${T('sec2')}${trangThai('trans')}</h4><div class="pi-luoi">
+        ${o('pick_route', tuyen, true, 'rong')}${o('customer', khach, true)}
+        ${o('origin', P.origin, true)}${o('dest', P.destination, true)}${o('goods_type', P.goods_type ? NN.t(P.goods_type) : '')}
+        ${o('hd_van_chuyen', P.contract_no)}${lk ? o('hd_thue_xe', P.hire_contract_no) : ''}${o('ore_bill_no', P.ore_bill_no)}${o('ore_bill_date', P.ore_bill_date ? EPL.ngay(P.ore_bill_date) : '')}
+        ${o(gom ? 'w_origin_gom' : 'w_origin_giao', co(P.weight_origin) && EPL.doc(P.weight_origin) ? so(P.weight_origin, 2) + ' t' : '')}
+        ${o(gom ? 'w_dest_gom' : 'w_dest_giao', co(P.weight_dest) ? so(P.weight_dest, 2) + ' t' : '')}${o('w_loss', hao)}
+        ${!gom ? o('pod_no', P.pod_no) + o('pod_date', P.pod_date ? EPL.ngay(P.pod_date) : '') + o('pod_receiver', P.pod_receiver, true) : ''}
+        ${giaCuoc ? o(khoan() ? 'price_trip' : 'price_usd', giaCuoc) + o('value_usd', t2(k.dt, k.ma)) : ''}</div>${bangHang}</section>`;
+    // III–VI: mục có dòng → bảng gọn; mục không phát sinh → gộp MỘT dòng cuối
+    const khong = [];
+    const mucChi = MUC_CHI.map(m => {
+      const i = MUC.indexOf(m), ds = (P.expenses || []).filter(d => d.section === m);
+      if (!ds.length) { khong.push(SO_LA_MA[i] + '. ' + NN.t('sec' + (i + 1))); return ''; }
+      const coGia = tienChi && ds.some(d => d.unit_price !== undefined);
+      const nguon = (d) => m === 'fuel' ? tenDM(DM.places, d.place_id, x => x.name) || NN.t(nguonCuaDiem(d) === 'kho' ? 'src_kho' : 'src_mua')
+        : m === 'repair' ? NN.t(d.source === 'kho' ? 'src_kho' : 'src_mua') + (d.part_id ? ' · ' + tenDM(DM.parts, d.part_id, x => x.name) : '')
+        : ['x_toll', 'x_bridge'].includes(d.item_key) ? (d.toll_card_id ? tenDM(DM.the, d.toll_card_id, x => x.card_no) : NN.t('tct_tien_mat'))
+        : !tienChi ? '' : (() => { const c = d.pay_channel || (KM.pay_default || {})[d.item_key] || 'tien_mat';      // cách trả — Bãi không thấy (08/10)
+          return NN.t(lk && c === 'luong' ? 'pm_on_dispatch' : c === 'luong' ? 'pm_trip_salary' : c === 'ncc' ? 'pm_supplier' : 'pm_on_dispatch'); })();
+      const tongSl = ds.reduce((a, d) => a + EPL.doc(d.qty), 0);
+      const ng = ds.map(nguon), coCot = m === 'fuel' || m === 'repair' || ng.some(Boolean);      // cột cách trả trống hết (Bãi) thì bỏ cột
+      return `<section class="pi-muc"><h4>${SO_LA_MA[i]}. ${T('sec' + (i + 1))}${trangThai(m)}</h4><table class="pi-bang"><thead><tr><th style="width:18px">#</th><th>${T('item')}</th>
+          <th class="num">${T(m === 'fuel' ? 'qty_l' : m === 'repair' ? 'qty' : 'qty_lan')}</th>${coGia ? `<th class="num">${T('unit_price')}</th><th class="num">${T('amount_lak')}</th>` : ''}
+          ${coCot ? `<th>${T(m === 'fuel' ? 'fill_place' : m === 'repair' ? 'source' : 'cx_cach_tra')}</th>` : ''}${lk ? `<th>${T('who_pays')}</th>` : ''}${coGia ? `<th>${T('acct_code')}</th>` : ''}</tr></thead>
+        <tbody>${ds.map((d, n) => `<tr><td>${n + 1}</td><td lang="lo">${esc(EPL.khoanMuc(d))}</td><td class="num">${so(d.qty, Number.isInteger(EPL.doc(d.qty)) ? 0 : 2)}</td>
+          ${coGia ? `<td class="num">${anGia(d) || d.unit_price === undefined ? '—' : so(EPL.doc(giaDong(d)), EPL.leTien(d.currency)) + (d.currency && d.currency !== 'LAK' ? ' ' + esc(d.currency) : '')}</td><td class="num">${anGia(d) ? '—' : so(tienDong(d))}</td>` : ''}
+          ${coCot ? `<td lang="lo">${esc(ng[n])}</td>` : ''}${lk ? `<td>${esc(NN.t(d.paid_by_epl ? 'pay_epl' : 'pay_own'))}</td>` : ''}${coGia ? `<td class="mono">${esc(tkHien(d) || '')}</td>` : ''}</tr>`).join('')}</tbody>
+        <tfoot><tr><td></td><td>${T('total')}</td><td class="num">${so(tongSl, Number.isInteger(tongSl) ? 0 : 2)}</td>${coGia ? `<td></td><td class="num">${ds.some(anGia) ? '—' : so(k.chi[m])}</td>` : ''}${coCot ? '<td></td>' : ''}${lk ? '<td></td>' : ''}${coGia ? '<td></td>' : ''}</tr></tfoot></table></section>`;
+    }).join('');
+    const tong = !thayGiaKho() ? '' : !tienBan ? `<div class="pi-tong"><span>${T('sum_exp')}: <b>${so(k.tongChi)} LAK</b></span></div>`
+      : lk ? `<div class="pi-tong"><span>${T('do_money')}: <b>${t2(k.dt, k.ma)}</b></span><span>${T('st_hire')}: <b>${t2(k.thue, k.mh)}</b></span><span>${T('st_net_owner')}: <b>${t2(k.traChu, k.mh)}</b></span></div>`
+      : `<div class="pi-tong"><span>${T('sum_rev')}: <b>${so(k.dtLak)} LAK</b></span><span>${T('sum_exp')}: <b>${so(k.tongChi)} LAK</b></span><span>${T('sum_net')}: <b>${k.laiLak < 0 ? '−' : ''}${so(Math.abs(k.laiLak))} LAK</b></span></div>`;
+    const ky = [['sg_driver', 'sg_driver_d', taiXe], ['sg_issuer', 'sg_issuer_d', ''], ['sg_verify', 'sg_verify_d', ''], ['sg_payer', 'sg_payer_d', '']]
+      .map(([a, b, ten]) => `<div><div class="line"></div><b>${T(a)}</b><small>${T(b)}</small>${ten ? `<small lang="lo">${esc(ten)}</small>` : ''}</div>`).join('');
+    const bay = new Date();
+    return `<div class="pi-dau"><div><img src="img/logo-epl.jpg" alt="EPL" class="pi-logo"><div><b>EPL TRANSPORT</b><div class="pi-dc">SAMKET VILLAGE, SIKHOTTABONG DISTRICT, VIENTIANE LAO · ໂທລະສັບ/Tel: 020 5889 9983</div></div></div>
+        <div class="pi-so">${T('doc_no')}<b>${esc(P.doc_no || '—')}</b>${P.doc_date ? EPL.ngay(P.doc_date) : ''}</div></div>
+      <div class="pi-tieu">${T('doc_dispatch')}</div>
+      <div class="pi-phu">ໃບເບີກລົດອອກໄປຂົນສົ່ງ · Truck dispatch slip</div>
+      <div class="pi-loai"><span>${T(gom ? 'do_gom' : 'do_giao')}</span><span>${lk ? T('co_joint') + (P.owner_name ? ' · <span lang="lo">' + esc(P.owner_name) + '</span>' : '') : T('co_epl')}</span></div>
+      ${muc1}${muc2}${mucChi}
+      ${khong.length ? `<div class="pi-khong">${T('stt_na')}: ${khong.map(esc).join(' · ')}</div>` : ''}
+      ${tong}
+      <div class="pi-ky">${ky}</div>
+      <div class="pi-chan"><span>${esc(NN.t('px_in_luc', { luc: bay.toLocaleDateString('en-GB') + ' ' + bay.toTimeString().slice(0, 5), ai: (AUTH.user && AUTH.user.full_name) || '' }))}</span><span>${esc(P.doc_no || '')}</span></div>`;
+  }
+  /** Dựng tờ in + đo cho vừa một trang A4 (190 × 279 mm vùng in: lề 9 × 10 mm) — đo bản sao ngoài màn ở đúng bề ngang giấy rồi đặt
+   *  --px-in-zoom (< 1 thì thu nhỏ cả tờ). Gắn @page A4 dọc lúc in, gỡ sau khi in (đặt ở CSS thì áp cả lúc in màn khác). */
+  let trangIn = null;
+  function chuanBiIn() {
+    const o = root && root.isConnected && g('px-to-in'); if (!o) return;
+    o.innerHTML = htmlToIn();
+    NN.apDung(o);
+    const do_ = document.createElement('div'); do_.className = 'px-in-do'; do_.innerHTML = o.innerHTML;
+    document.body.appendChild(do_);
+    const cao = do_.getBoundingClientRect().height, vua = 279 * 96 / 25.4 - 6;      // px CSS ở 96 dpi
+    do_.remove();
+    o.style.setProperty('--px-in-zoom', cao > vua ? (Math.floor(vua / cao * 1000) / 1000).toString() : '1');
+    if (!trangIn) { trangIn = document.createElement('style'); trangIn.textContent = '@page{size:A4 portrait;margin:9mm 10mm}'; document.head.appendChild(trangIn); }
+  }
+  function xongIn() { if (trangIn) { trangIn.remove(); trangIn = null; } }
+  const khiIn = () => { if (P && root && root.isConnected) chuanBiIn(); };
+
   /** Cột bên dính NGAY DƯỚI thanh đầu trang (01/10). Thanh menu trên (.tbar) và thanh tiêu đề (.topbar) đều dính ở đỉnh;
    *  cao bao nhiêu tuỳ kiểu menu, ngôn ngữ, dòng nút xuống hàng — đo thật rồi đặt --px-dinh (px trong khung đã zoom, nên
    *  chia --ty-le). Theo dõi bằng ResizeObserver: đổi kiểu menu, đổi tiếng, co cửa sổ là đo lại; rời màn thì thôi theo dõi. */
@@ -752,7 +965,8 @@
         // ô xe / tài xế bọc trong .px-tim-o cùng ô tìm (08/10) — đọc ô chọn, bỏ ô tìm
         const o = f.querySelector(':scope > select, :scope > .px-tim-o > select, :scope > input, :scope > .ro, :scope > .px-hd');
         if (!o) return undefined;
-        if (o.tagName === 'SELECT') return o.value === '' ? '' : (o.options[o.selectedIndex] || {}).text || '';
+        // 20/10: ô chọn xe / tài xế có đuôi trạng thái («· Rảnh», «· Đang chạy …») — Excel lấy chữ gốc ở data-xuat
+        if (o.tagName === 'SELECT') { const op = o.options[o.selectedIndex] || {}; return o.value === '' ? '' : (op.dataset && op.dataset.xuat) || op.text || ''; }
         if (o.tagName === 'INPUT') return o.type === 'date' ? EPL.oNgay(o.value) : (X ? X.sangO(o.value) : o.value);
         return X ? X.sangO(o.innerText.replace(/\s+/g, ' ')) : o.innerText.trim();
       };
@@ -787,13 +1001,38 @@
     q('#px-phieu').classList.toggle('is-gom', laGom());
     q('#px-phieu').classList.toggle('is-giao', !laGom());
     veChon(); veDanhMuc(); doTruong(); veChi(); veHang(); veVaiVaTrangThai();
-    // phiếu mới: hai thẻ lớn chọn Gom / Giao
-    const cl = g('px-chon-loai'); cl.hidden = !moi;
+    // phiếu mới: hai thẻ lớn chọn Gom / Giao — đã bấm chọn thì thu thành chip nhỏ (20/10, B9), bấm chip là mở lại hai thẻ
+    const cl = g('px-chon-loai'); cl.hidden = !moi || loaiDaChon;
     cl.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.loai === (P.kind || 'giao')));
+    const chip = g('px-loai-chip'); chip.hidden = !moi || !loaiDaChon;
+    if (moi && loaiDaChon) {
+      const gom = laGom();
+      chip.innerHTML = `<button type="button" title="${esc(NN.t('px_loai_doi'))}"><span class="px-cl-nhan ${gom ? 'gom' : 'giao'}">${NN.h(gom ? 'dn_gom' : 'dn_giao')}</span><b>${NN.h(gom ? 'do_gom' : 'do_giao')}</b> · <span class="muted">${NN.h('px_loai_doi')}</span></button>`;
+      chip.querySelector('button').onclick = () => { loaiDaChon = false; veHet(); };
+    }
+    // 20/10 (B9): lúc LẬP phiếu mới, các ô điền khi xe về gập thành một dòng «Phần điền khi xe về (bấm để mở)»
+    q('#px-phieu').classList.toggle('px-gap-ve', moi && !moVeSau);
+    root.querySelectorAll('[data-ve-sau]').forEach(b => { b.hidden = !moi; b.innerHTML = (moVeSau ? '▾ ' : '▸ ') + NN.h(moVeSau ? 'px_ve_sau_dong' : 'px_ve_sau_mo'); });
     if (!tabTay) tab = tabMacDinh();
     veTabs(); datTab(tab, false); NN.apDung(root); nhanCan();
+    veBan();
+    veDieuHuong();
+    veDaiNhap();
     napChiThat();
+    napKiemLai();
     kiemGiayTo();
+  }
+  /** 20/10 (B6): dòng vàng dưới ô xe / tài xế đang chọn khi họ đang chạy phiếu khác / đang sửa / đang nghỉ — chỉ nhắc. */
+  function veBan() {
+    [['f-vehicle_id', 'px-xe-ban', DM.vehicles, true], ['f-driver_id', 'px-tx-ban', DM.drivers, false]].forEach(([oId, nId, ds, laXe]) => {
+      const sel = g(oId), n = g(nId); if (!sel || !n) return;
+      const x = P && (ds || []).find(z => z.id === (laXe ? P.vehicle_id : P.driver_id));
+      const b = x && !sel.disabled ? banCua(x, laXe) : null;
+      const co = b && (b.muc === 1 || b.muc === 2);
+      n.hidden = !co;
+      if (!co) { n.textContent = ''; return; }
+      n.textContent = NN.t(b.ma === 'chay' ? 'px_ban_chay' : b.ma === 'sua' ? 'px_ban_sua' : 'px_ban_nghi', { do: b.do ? ' ' + b.do : '' });
+    });
   }
   /* ---- G6 (06/10): CHI THẬT mục IV sau khi đã chi tạm ứng. Tài xế về khai chi thật ít / nhiều hơn số đã ứng: KT Chi phí VC (và Sếp)
    * sửa SỐ CHI THẬT từng dòng tiền mặt tài xế cầm (xe nhà) tới khi kỳ tất toán tài xế chứa DO này chốt. Không đụng phiếu chi tạm ứng
@@ -867,21 +1106,26 @@
 
   /* ---------------------------------------------------------------- dữ liệu */
   function phieuTrong() {
-    return { id: null, doc_no: '', kind: 'giao', goods: [], company: 'EPL', goods_type: 'iron_ore', doc_date: EPL.homNay(), out_date: EPL.homNay(), fee_pct: 2, over_limit_t: 40, over_price: 1, price_ccy: 'USD', price_mode: 'ton',
+    return { id: null, doc_no: '', kind: 'giao', goods: [dongHangMacDinh()], company: 'EPL', goods_type: 'iron_ore', doc_date: EPL.homNay(), out_date: EPL.homNay(), fee_pct: 2, over_limit_t: 40, over_price: 1, price_ccy: 'USD', price_mode: 'ton',
       rate_usd: ty_gia.USD || 22000, rate_thb: ty_gia.THB || 700, rate_vnd: ty_gia.VND || 1.2, rate_cny: ty_gia.CNY || 3000, transport_status: 'dispatched', finance_status: 'unpaid', invoiced: false,
       sections: {}, expenses: [], logs: [] };
   }
-  async function moPhieu(id) { moi = false; tabTay = false; HD_DOI = {}; soGoTay = false; xoaTim(); P = await API.get('/api/trips/' + id); await napLo(P.id); anPhieu(false); veHet(); napToKhoHang(); }
+  /** 20/10 (B8): phiếu GIAO mới có sẵn một dòng hàng (chọn lô là điền số tấn). Dòng chưa ai đụng (_macDinh, không lô, 0 t) không gửi khi
+   *  Lưu — phiếu giao chở thẳng không lấy hàng ở bãi vẫn lưu được như cũ (máy chủ chặn dòng giao thiếu lô: THIEU_LO). */
+  const dongHangMacDinh = () => ({ loai: 'hang', goods_name: NN.t('iron_ore'), qty_t: 0, tu_phieu_id: '', _macDinh: true });
+  const dongHangTrong = (x) => x.loai !== 'hao_hut' && x._macDinh && !x.tu_phieu_id && !EPL.doc(x.qty_t);
+  async function moPhieu(id) { moi = false; tabTay = false; HD_DOI = {}; soGoTay = false; xoaTim(); anKeTiep(); P = await API.get('/api/trips/' + id); await napLo(P.id); anPhieu(false); veHet(); napToKhoHang(); }
   /** Chưa chọn tờ nào: giấu thân phiếu và dải bước, hiện câu nhắc; ô chọn có dòng trống đứng đầu. */
   function chuaChon() {
     P = null; moi = false;
     g('px-chon').innerHTML = `<option value="" selected>— ${NN.t('px_chon_phieu')} —</option>` + dongChon();
     g('px-moi').hidden = !AUTH.la('yard');
-    anPhieu(true);
+    const ti = g('px-to-in'); if (ti) ti.innerHTML = '';          // 20/10 (A3): chưa chọn phiếu thì không còn tờ in của phiếu trước
+    anPhieu(true); veDieuHuong(); anKeTiep();
   }
   function anPhieu(an) {
     q('#px-phieu').hidden = an; const b = q('.px-buoc'); if (b) b.hidden = an;
-    ['px-luu', 'px-chung-tu', 'px-phieu-linh', 'px-hoa-don'].forEach(id => { const el = g(id); if (el) el.disabled = an; });
+    ['px-luu', 'px-chung-tu', 'px-phieu-linh', 'px-hoa-don', 'px-in'].forEach(id => { const el = g(id); if (el) el.disabled = an; });
     let nhac = g('px-chua-chon');
     if (an) {
       if (!nhac) { nhac = document.createElement('div'); nhac.id = 'px-chua-chon'; nhac.className = 'card'; q('#px-phieu').before(nhac); }
@@ -894,10 +1138,95 @@
     try { LO = await API.get('/api/kho-hang/lo' + (truPhieu ? '?tru_phieu=' + encodeURIComponent(truPhieu) : '')); }
     catch (e) { LO = []; }
   }
-  async function phieuMoi() { moi = true; tabTay = false; HD_DOI = {}; soGoTay = false; xoaTim(); P = phieuTrong(); anNhacOdo(); await napLo();
+  async function phieuMoi() { moi = true; tabTay = false; HD_DOI = {}; soGoTay = false; loaiDaChon = false; moVeSau = false; xoaTim(); anKeTiep(); P = phieuTrong(); anNhacOdo(); await napLo();
     // công-tơ-mét của xe đổi mỗi lần một chuyến về tới (Xe đã tới) — nạp lại để ô Lúc đi điền đúng số mới nhất
     DM.vehicles = await API.get('/api/vehicles').catch(() => DM.vehicles); const s = await API.get('/api/trips-so-moi').catch(() => ({ doc_no: '' })); P.doc_no = s.doc_no; anPhieu(false); veHet(); }
-  function anNhacOdo() { const o = g('f-odo_out'); if (o) delete o.dataset.tuDien; const n = g('px-odo-nhac'); if (n) n.hidden = true; }
+  function anNhacOdo() { const o = g('f-odo_out'); if (o) delete o.dataset.tuDien; const n = g('px-odo-nhac'); if (n) n.hidden = true; const t = g('px-tu-dien'); if (t) t.hidden = true; }
+  /** Dòng nhỏ dưới ô tài xế: "đã tự điền … — đổi được" (B5). Chuỗi rỗng = ẩn. */
+  function nhacTuDien(chu) { const t = g('px-tu-dien'); if (!t) return; t.textContent = chu; t.hidden = !chu; }
+  /** 20/10 (rà điều xe A1): LOẠI XE theo xe vừa chọn — mỗi lần đổi xe, không chỉ khi xe thuê. Trước đây đổi xe thuê → xe nhà, phiếu vẫn
+   *  "Xe thuê ngoài" mang chủ xe cũ (định khoản 4022, trừ chủ xe sai). Xe nhà: bỏ chủ xe; đổi loại thì tính lại các cột theo loại xe —
+   *  ai trả (xe nhà: EPL trả hết · xe thuê: dầu / phụ tùng kho EPL ứng = xuất bán, khoản đi đường gợi ý = chủ xe tự trả, như dienGoiY),
+   *  định khoản về mặc định — rồi vẽ lại bảng chi, cột bên. Máy chủ cũng lấy loại xe theo xe (routes/phieu._ap_truong). */
+  function datLoaiTheoXe(x) {
+    const loai = x.owner_type === 'joint' ? 'joint' : 'EPL', doi = loai !== P.company;
+    P.company = loai; g('f-company').value = loai;
+    if (loai === 'joint') { P.owner_name = x.owner_name || ''; P.owner_id = x.owner_id || null; }
+    else { P.owner_name = null; P.owner_id = null; }
+    g('f-owner_name').value = P.owner_name || '';
+    q('#px-phieu').classList.toggle('is-joint', loai === 'joint');
+    if (!doi) { veBen(); return; }
+    P.expenses.forEach(e => {
+      e.acct_code = null;
+      if (loai === 'EPL') e.paid_by_epl = true;
+      else if (e.section === 'fuel') e.paid_by_epl = nguonCuaDiem(e) === 'kho';
+      else if (e.section === 'repair' && e.source === 'kho') e.paid_by_epl = true;
+      else if (e._goiY) e.paid_by_epl = false;
+    });
+    if (loai === 'joint' && (P.hire_price == null || P.hire_price === '') && P.price != null && P.price !== '') {
+      P.hire_price = P.price; g0('f-hire_price', P.price); P.hire_ccy = maCuoc(); g0('f-hire_ccy', P.hire_ccy);
+    }
+    veChi(); veBen();
+  }
+
+  /* ---- 20/10 (rà điều xe D16): ĐI GIỮA CÁC PHIẾU của danh sách vừa mở. Hợp đồng với các màn danh sách (Theo dõi phiếu, Việc chờ tôi…):
+   * mở phiếu từ danh sách thì danh sách ghi sessionStorage["epl_ds_phieu"] = {"ids": [mã phiếu theo thứ tự], "ve": "#/<màn>?<bộ lọc>",
+   * "nhan": "<chữ của danh sách>"}. Phiếu đang mở có trong `ids` → «‹ Phiếu trước · 3/12 · Phiếu sau ›»; Quay lại về đúng `ve` (giữ bộ lọc).
+   * Thiếu / hỏng → như cũ (Theo dõi phiếu), không hiện gì. */
+  function dsDieuHuong() {
+    let d = null;
+    try { d = JSON.parse(sessionStorage.getItem('epl_ds_phieu') || 'null'); } catch (e) { d = null; }
+    if (!d || !Array.isArray(d.ids)) return null;
+    const ids = d.ids.map(String), ve = typeof d.ve === 'string' && /^#\/[\w-]+/.test(d.ve) ? d.ve : null;
+    return { ids, ve, nhan: typeof d.nhan === 'string' ? d.nhan.slice(0, 60) : '', i: P && P.id ? ids.indexOf(String(P.id)) : -1 };
+  }
+  function veDieuHuong() {
+    const dh = dsDieuHuong(), o = g('px-dh'); if (!o) return;
+    const co = !!(dh && dh.i >= 0 && !moi);
+    o.hidden = !co;
+    if (co) {
+      g('px-dh-so').textContent = (dh.i + 1) + '/' + dh.ids.length;
+      g('px-truoc').disabled = dh.i <= 0; g('px-sau').disabled = dh.i >= dh.ids.length - 1;
+      g('px-dh-so').title = dh.nhan || '';
+    }
+    const chu = g('px-ve-chu');                         // nút Quay lại mang tên danh sách vừa mở («← Việc chờ tôi»)
+    if (chu) { if (dh && dh.ve && dh.nhan) { delete chu.dataset.i18n; chu.textContent = dh.nhan; } else { chu.dataset.i18n = 'back_list'; chu.innerHTML = NN.h('back_list'); } }
+  }
+  async function diPhieu(buoc) {
+    const dh = dsDieuHuong(); if (!dh || dh.i < 0) return;
+    const id = dh.ids[dh.i + buoc];
+    if (!id) return EPL.toast(NN.t('px_dh_het'), 'ok');
+    try { await moPhieu(id); if (P && P.id) history.replaceState(null, '', '#/phieu-xuat-xe?id=' + P.id); } catch (e) { EPL.baoLoi(e); }
+  }
+  function quayLai() {
+    const dh = dsDieuHuong();
+    if (dh && dh.ve) { if (location.hash === dh.ve) EPL.di('theo-doi'); else location.hash = dh.ve; return; }
+    EPL.di('theo-doi');
+  }
+
+  /* ---- 20/10 (B7): «Lập phiếu giống phiếu này» — phiếu MỚI điền sẵn loại Gom / Giao, tuyến (điểm đi / đến), khách, loại hàng và chi phí GỢI Ý
+   * của tuyến (bộ gợi ý, như khi chọn tuyến). KHÔNG chép: xe, tài xế, cân, km, ngày, số phiếu, POD, phiếu quặng, tiền đã kiểm (đơn giá cước
+   * máy chủ / bảng giá điền lại; hợp đồng máy tự điền theo khách lúc Lưu). Chỉ chạy khi người dùng bấm. */
+  async function lapGiong() {
+    if (!P || moi || !AUTH.la('yard')) return;
+    const goc = P;
+    await phieuMoi();
+    if (!moi) return;
+    const kind = goc.kind || 'giao';
+    Object.assign(P, { kind, customer_id: goc.customer_id || null, route_id: goc.route_id || null, goods_type: goc.goods_type || 'iron_ore',
+      origin: goc.origin || null, destination: goc.destination || null });
+    P.goods = kind === 'giao' ? [dongHangMacDinh()] : [];
+    loaiDaChon = true;
+    const s = await API.get('/api/trips-so-moi?kind=' + encodeURIComponent(kind)).catch(() => null);
+    if (s && s.doc_no && !soGoTay) P.doc_no = s.doc_no;
+    const r = DM.routes.find(x => x.id === P.route_id);
+    veHet();
+    if (r) dienGoiY(r);
+    dienGiaHopDong();
+    history.replaceState(null, '', '#/phieu-xuat-xe');
+    EPL.toast(NN.t('px_giong_xong', { so: goc.doc_no || '' }), 'ok');
+    henGhiNhap();
+  }
   /* PHIẾU ĐANG LẬP DỞ (rà 01/10: "không mất dữ liệu khi chuyển qua lại"). Bãi đang gõ phiếu mới mà bấm sang màn khác xem
    * tuyến, xem kho rồi quay lại — trước đây ra tờ trắng, mất hết chữ đã gõ. Rời màn lúc phiếu mới có nội dung thì giữ bản
    * nháp trong bộ nhớ (chỉ trong phiên này, đúng tài khoản này); vào lại bằng menu là mở lại đúng tờ đó, kèm câu báo. Nút
@@ -908,15 +1237,69 @@
     if (!moi || !P) return false;
     return ['vehicle_id', 'driver_id', 'customer_id', 'route_id', 'odo_out', 'weight_origin', 'brand_model', 'plate_head', 'plate_trailer',
       'ore_bill_no', 'origin', 'destination'].some(c => P[c] != null && P[c] !== '')
-      || (P.expenses || []).some(d => !d._goiY) || (P.goods || []).length > 0 || soGoTay;
+      || (P.expenses || []).some(d => !d._goiY) || (P.goods || []).some(x => !dongHangTrong(x)) || soGoTay;
   }
-  function giuNhap() { if (coNoiDung()) NHAP = { uid: uidNay(), P: JSON.parse(JSON.stringify(P)), tab, soGoTay }; }
-  async function moNhap() {
-    const n = NHAP; NHAP = null;
-    moi = true; tabTay = true; HD_DOI = {}; soGoTay = n.soGoTay; P = n.P; tab = n.tab || 'info'; anNhacOdo(); await napLo();
+  /** Bản nháp: phiếu + mục đang mở. Bãi KHÔNG thấy tiền (anh Khampla A2) — nháp của vai không thấy tiền chi bỏ hết ô tiền. */
+  function banNhap() {
+    const p = JSON.parse(JSON.stringify(P));
+    if (!thayChi()) {
+      COT_TIEN.filter(c => !COT_KE_TOAN.includes(c)).forEach(c => { delete p[c]; });
+      (p.expenses || []).forEach(d => { delete d.unit_price; delete d.sale_price; });
+    }
+    return { uid: uidNay(), P: p, tab, soGoTay, loaiDaChon, luc: Date.now() };
+  }
+  function giuNhap() { if (coNoiDung()) { NHAP = banNhap(); ghiNhapMay(); } }
+  async function moNhap(n) {
+    n = n || NHAP; NHAP = null;
+    moi = true; tabTay = true; HD_DOI = {}; soGoTay = !!n.soGoTay; loaiDaChon = n.loaiDaChon !== false; moVeSau = false; anKeTiep();
+    P = Object.assign(phieuTrong(), n.P); tab = n.tab || 'info'; anNhacOdo(); await napLo();
     // số gợi ý có thể đã có người dùng trong lúc rời màn — xin lại số mới (trừ khi người lập tự gõ số)
     if (!soGoTay) { const s = await API.get('/api/trips-so-moi?kind=' + encodeURIComponent(P.kind || 'giao')).catch(() => null); if (s && s.doc_no) P.doc_no = s.doc_no; }
     anPhieu(false); veHet(); EPL.toast(NN.t('px_nhap_mo_lai'), 'ok');
+  }
+  /* ---- 20/10 (rà điều xe A2): NHÁP Ở MÁY. Bản nháp trong bộ nhớ (ở trên) mất khi F5 / đóng thẻ / mất điện — nay ghi thêm vào
+   * localStorage theo TÀI KHOẢN ("epl_px_nhap_<uid>"), ghi ngầm sau mỗi lần sửa phiếu mới (0,6 s) và lúc rời trang. Vào màn mà bộ nhớ
+   * không có nháp thì KHÔNG tự đổ vào (luật "vào màn nhập liệu không tự mở bản ghi cũ") — dải «Có bản nháp chưa lưu · Dùng / Bỏ».
+   * Dải đang chờ trả lời thì không ghi đè nháp cũ bằng tờ đang gõ. Lưu thành công / bấm Bỏ là xoá. Mọi lần đọc / ghi bọc try/catch
+   * (trình duyệt chặn bộ nhớ thì thôi, màn vẫn chạy). */
+  const khoaNhap = () => 'epl_px_nhap_' + uidNay();
+  let nhapCho = null, henNhap = null;              // nhapCho: bản nháp ở máy đang chờ người dùng chọn Dùng / Bỏ
+  function docNhapMay() {
+    try { const n = JSON.parse(localStorage.getItem(khoaNhap()) || 'null'); return n && n.uid === uidNay() && n.P ? n : null; } catch (e) { return null; }
+  }
+  function ghiNhapMay() {
+    if (nhapCho || !uidNay()) return;
+    try { if (moi && coNoiDung()) localStorage.setItem(khoaNhap(), JSON.stringify(banNhap())); } catch (e) { /* bộ nhớ đầy / bị chặn */ }
+  }
+  function xoaNhapMay() { try { localStorage.removeItem(khoaNhap()); } catch (e) { /* bỏ qua */ } }
+  const henGhiNhap = () => { clearTimeout(henNhap); henNhap = setTimeout(ghiNhapMay, 600); };
+  let phimLuu = null, khiRoiTrang = null;          // bộ nghe Ctrl+S (B10) · rời trang (A2) — gắn ở init, gỡ ở destroy
+  /** "+ Phiếu mới": tờ mới đang gõ dở thì cất vào máy trước (dải nháp trên tờ trắng hỏi Dùng / Bỏ — bấm nhầm vẫn lấy lại được). */
+  async function giuNhapMayRoiMoi() {
+    if (moi) { clearTimeout(henNhap); ghiNhapMay(); }
+    nhapCho = AUTH.la('yard') ? docNhapMay() : null;
+    await phieuMoi();
+  }
+  /** B9 (20/10): ô số của tờ phiếu (lớp .num / inputmode decimal) chỉ nhận chữ số, dấu chấm thập phân (một) và dấu phẩy ngăn nghìn. */
+  function locSo(e) {
+    const el = e.target;
+    if (!el || el.tagName !== 'INPUT' || ['search', 'number', 'date', 'checkbox', 'file'].includes(el.type)) return;
+    if (!(el.classList.contains('num') || el.inputMode === 'decimal')) return;
+    const v = el.value; let t = v.replace(/[^\d.,]/g, '');
+    const i = t.indexOf('.'); if (i >= 0) t = t.slice(0, i + 1) + t.slice(i + 1).replace(/\./g, '');
+    if (t === v) return;
+    const vt = el.selectionStart;
+    el.value = t;
+    try { const c = Math.max(0, (vt == null ? t.length : vt) - (v.length - t.length)); el.setSelectionRange(c, c); } catch (x) { /* ô không hỗ trợ con trỏ */ }
+    el.classList.add('px-so-sai'); clearTimeout(el._henSo); el._henSo = setTimeout(() => el.classList.remove('px-so-sai'), 800);
+  }
+  function veDaiNhap() {
+    const o = g('px-nhap-dai'); if (!o) return;
+    o.hidden = !(moi && nhapCho);
+    if (o.hidden) return;
+    const n = nhapCho.P || {}, xe = (DM.vehicles.find(v => v.id === n.vehicle_id) || {}).truck_no || n.truck_no || '—';
+    const d = new Date(nhapCho.luc || 0);
+    g('px-nhap-chu').innerHTML = NN.h('px_nhap_co', { so: n.doc_no || '—', xe, luc: isNaN(d) ? '' : d.toLocaleDateString('en-GB') + ' ' + d.toTimeString().slice(0, 5) });
   }
   function docForm() {
     P.doc_no = g('px-doc-no').value.trim();
@@ -1020,7 +1403,7 @@
     // hợp đồng: chỉ gửi khi kế toán TỰ ĐỔI ô chọn — không thì máy chủ tự điền theo khách / chủ xe
     Object.entries(HD_DOI).forEach(([k, v]) => { body[k] = v || null; });
     // chỉ gửi dòng chi của mục còn sửa được — mục khoá gửi lên là máy chủ từ chối cả phiếu
-    if (suaDuoc('trans') && !gomMotDong()) body.goods = (P.goods || []).filter(g => g.loai !== 'hao_hut')
+    if (suaDuoc('trans') && !gomMotDong()) body.goods = (P.goods || []).filter(g => g.loai !== 'hao_hut' && !dongHangTrong(g))
       .map(g => ({ loai: 'hang', goods_name: g.goods_name, qty_t: EPL.doc(g.qty_t), tu_phieu_id: g.tu_phieu_id || null, note: g.note || null }));
     body.expenses = P.expenses.filter(e => guiMuc(e.section)).map(e => {
       const x = { ...e, qty: EPL.doc(e.qty), acct_code: tkDong(e) || null };
@@ -1028,8 +1411,12 @@
       return x;
     });
     try {
+      const laMoi = moi;
       P = await guiPhieu(body);
-      moi = false; HD_DOI = {}; NHAP = null; EPL.toast(NN.t('saved'), 'ok'); veHet(); napToKhoHang();   // lưu phiếu giao có lấy hàng → máy lập phiếu xuất kho hàng
+      // 20/10 (A2): phiếu mới lưu xong → bỏ nháp ở máy (dải nháp cũ đang chờ chọn thì giữ — đó là tờ khác)
+      if (laMoi) { clearTimeout(henNhap); if (!nhapCho) xoaNhapMay(); }
+      moi = false; HD_DOI = {}; NHAP = null; EPL.toast(NN.t('saved'), 'ok'); veHet(); napToKhoHang();
+      if (EPL.lamMoiDem) EPL.lamMoiDem();                              // 20/10 (D16): phiếu mới / sửa đổi việc chờ của người khác   // lưu phiếu giao có lấy hàng → máy lập phiếu xuất kho hàng
       history.replaceState(null, '', '#/phieu-xuat-xe?id=' + P.id);
       // ô chọn phiếu nạp lại NGẦM sau khi đã báo "Đã lưu" — chờ nó thì nút Lưu chậm thêm 0,1–0,5 s (đo 01/10)
       napDs().then(() => { if (P) veChon(); }).catch(() => {});
@@ -1093,8 +1480,65 @@
       EPL.toast(NN.t(r.status === 'da_chi' ? 'ck_da_chi_toast' : r.status === 'da_gui' ? 'ck_cho_chi' : 'ck_loi_ngan'), r.status === 'loi' ? 'loi' : 'ok');
     } catch (e) { EPL.baoLoi(e); }
   }
+  /** 20/10 (rà điều xe D19): bấm Kiểm một mục chi còn dòng EPL trả mà đơn giá 0 → chặn NGAY trên màn (trước khi Lưu / gửi): mở mục, đặt
+   *  con trỏ vào ô đơn giá của dòng đầu tiên, câu báo nói rõ dòng nào. Cùng luật máy chủ (THIEU_DON_GIA lúc kiểm) — máy chủ vẫn chặn. */
+  function chanGiaKhong(m) {
+    const ds = (P.expenses || []).map((d, i) => ({ d, i })).filter(x => x.d.section === m);
+    const k = ds.findIndex(({ d }) => d.paid_by_epl !== false && EPL.doc(d.qty) > 0 && !(EPL.doc(d.unit_price) > 0) && d.unit_price !== undefined);
+    if (k < 0) return false;
+    const { d, i } = ds[k];
+    if (tab !== m) datTab(m, true);
+    const o = root.querySelector(`table[data-bang="${m}"] input[data-i="${i}"][data-f="unit_price"]`);
+    if (o && !o.disabled) { o.classList.add('px-thieu'); o.focus(); if (o.select) o.select(); o.addEventListener('input', () => o.classList.remove('px-thieu'), { once: true }); }
+    EPL.toast(NN.t(nguonKho(m, d) ? 'px_thieu_gia_kho' : 'px_thieu_gia', { muc: SO_LA_MA[MUC.indexOf(m)], n: k + 1, khoan: EPL.khoanMuc(d) }), 'loi');
+    return true;
+  }
+  /** Hộp nhập có kiểm NGAY trong hộp: `kiem(v)` trả { id ô: câu lỗi } — còn lỗi thì nút Đồng ý không đóng hộp, câu đỏ dưới đúng ô
+   *  (20/10 — trả lại phải có lý do D20, hộp «Xe đã tới» B13). Dùng EPL.hopNhap sẵn có; chỉ chặn lượt bấm Đồng ý khi còn lỗi. */
+  async function hopKiem(tieuDe, fields, nhanOk, kiem, tuy, sauMo) {
+    const hop = EPL.hopNhap(tieuDe, fields, nhanOk, tuy);         // hộp mở ngay khi gọi
+    const ok = document.getElementById('ht-ok');
+    // ô số gõ chữ: trình duyệt trả value '' kèm validity.badInput — đánh dấu '?' để `kiem` báo "phải là số" thay câu tiếng Anh của trình duyệt
+    const docO = () => Object.fromEntries(fields.filter(f => f.type !== 'nhom').map(f => { const el = document.getElementById('hn-' + f.id);
+      return [f.id, !el ? undefined : el.validity && el.validity.badInput ? '?' : el.value]; }));
+    const veLoi = (loi) => {
+      fields.forEach(f => {
+        const el = document.getElementById('hn-' + f.id); if (!el) return;
+        let n = el.parentElement.querySelector('.px-xt-loi');
+        if (loi[f.id]) {
+          if (!n) { n = document.createElement('small'); n.className = 'px-xt-loi'; n.setAttribute('role', 'alert'); el.after(n); }
+          n.textContent = loi[f.id]; el.classList.add('px-thieu'); el.setAttribute('aria-invalid', 'true');
+        } else { if (n) n.remove(); el.classList.remove('px-thieu'); el.removeAttribute('aria-invalid'); }
+      });
+    };
+    const chan = (e) => {
+      const loi = kiem(docO()) || {};
+      if (!Object.keys(loi).length) return;
+      e.preventDefault(); e.stopImmediatePropagation(); veLoi(loi);
+      const dau = document.getElementById('hn-' + Object.keys(loi)[0]); if (dau) dau.focus();
+    };
+    ok.addEventListener('click', chan, true);
+    // sửa ô đang báo lỗi → câu đỏ của ô đó tắt ngay (bấm Đồng ý lại thì kiểm lại cả hộp)
+    fields.forEach(f => { const el = document.getElementById('hn-' + f.id); if (el) el.addEventListener('input', () => {
+      const n = el.parentElement.querySelector('.px-xt-loi'); if (n) n.remove(); el.classList.remove('px-thieu'); el.removeAttribute('aria-invalid'); }); });
+    if (sauMo) sauMo();
+    try { return await hop; } finally { ok.removeEventListener('click', chan, true); }
+  }
+  /** Phiếu kế tiếp trong danh sách vừa mở (D16) — sau Kiểm / Khoá / Trả lại thành công. */
+  function hienKeTiep() { const b = g('px-ke-tiep'), dh = dsDieuHuong(); if (b) b.hidden = !(dh && dh.i >= 0 && dh.i < dh.ids.length - 1); }
+  function anKeTiep() { const b = g('px-ke-tiep'); if (b) b.hidden = true; }
   async function duyet(m, hd) {
     if (moi) return EPL.toast(NN.t('save') + '?', 'loi');
+    if (hd === 'verify' && MUC_CHI.includes(m) && chanGiaKhong(m)) return;
+    let lyDo = '';
+    if (hd === 'return') {
+      // 20/10 (D20): trả lại phải ghi LÝ DO (hộp của ứng dụng, chặn Đồng ý khi trống) — máy chủ ghi nhật ký, người nhập mục đọc
+      const v = await hopKiem(NN.t('px_tra_tieu', { muc: SO_LA_MA[MUC.indexOf(m)] + '. ' + NN.t('sec' + (MUC.indexOf(m) + 1)) }),
+        [{ id: 'ly_do', label: 'px_tra_ly_do', type: 'textarea', value: '', lo: true, bat_buoc: true, dong: 3 }], NN.t('a_return'),
+        (x) => (String(x.ly_do || '').trim() ? {} : { ly_do: NN.t('px_tra_thieu') }));
+      lyDo = v && String(v.ly_do || '').trim();
+      if (!lyDo) return;
+    }
     if (hd === 'send' && suaDuoc(m)) { await luu(); if (moi) return; }
     // kế toán gõ đơn giá rồi bấm Kiểm: lưu giá trước, không thì máy chủ thấy dòng giá 0 và chặn
     if (hd === 'verify' && MUC_CHI.includes(m) && coGiaDeGui(m)) { if (!await luu()) return; }
@@ -1103,8 +1547,12 @@
     else if (hd === 'verify' && (m === 'info' ? COT_INFO : m === 'trans' ? COT_TRANS : []).some(c => { const el = g('f-' + c); return el && !el.disabled; })) {
       if (!await luu()) return;            // lưu hỏng thì thôi kiểm — kiểm tiếp là vẽ lại từ máy chủ, mất chữ đang gõ
     }
-    if (hd === 'return' || hd === 'unlock') { if (!await EPL.hoi(NN.t('a_' + hd), NN.t('confirm_action'))) return; }
-    try { P = await API.post(`/api/trips/${P.id}/sections/${m}/${hd}`); veHet(); } catch (e) { EPL.baoLoi(e); }
+    if (hd === 'unlock') { if (!await EPL.hoi(NN.t('a_' + hd), NN.t('confirm_action'))) return; }
+    try {
+      P = await API.post(`/api/trips/${P.id}/sections/${m}/${hd}`, hd === 'return' ? { ly_do: lyDo } : {}); veHet();
+      if (hd === 'verify' || hd === 'return') hienKeTiep();          // D16: xong việc ở phiếu này → «Phiếu kế tiếp →»
+      if (EPL.lamMoiDem) EPL.lamMoiDem();                              // 20/10 (D16): số việc chờ trên menu đổi ngay, không đợi 60 giây
+    } catch (e) { EPL.baoLoi(e); }
   }
   async function doiTrangThai(tt) {
     if (tt === 'arrived') return baoXeToi();
@@ -1122,21 +1570,63 @@
     const khoMd = (kho.find(k => k.mac_dinh) || kho[0] || {}).id || '';
     let cu = { weight_origin: P.weight_origin ?? '', weight_dest: P.weight_dest ?? '', back_date: P.back_date || EPL.homNay(), odo_back: P.odo_back ?? '',
       pod_no: P.pod_no || '', pod_receiver: P.pod_receiver || '', kho_id: khoMd }, loi = '';
+    /* 20/10 (rà điều xe B13) — KHUÔN HỘP «Xe đã tới» (theo-doi-tuyen làm theo):
+     *  · Km về: điền sẵn số TÀI XẾ ĐÃ BÁO (P.odo_back — nút «Báo đã về»); chưa báo thì để trống, số ước tính (km lúc đi + km cả tuyến)
+     *    chỉ hiện làm chữ mờ trong ô + dòng gợi ý, KHÔNG điền.
+     *  · Dấu * ở ô bắt buộc: cân cuối (gom: cân tại bãi · giao: cân nơi giao), ngày về, cân tại mỏ (DO gom một mặt hàng).
+     *  · Chặn ngay trong hộp (nút Đồng ý không đóng): ô bắt buộc trống · ô số không phải số / âm · km về nhỏ hơn km lúc đi.
+     *  · Km chạy (về − đi) và hao hụt (gom: mỏ − bãi · giao: lấy khỏi kho − nơi giao, kèm %) tính ngay khi gõ, trong hộp. */
+    const tuyen = (DM.routes || []).find(x => x.id === P.route_id);
+    const kmCa = tuyen ? EPL.doc(tuyen.total_km) + EPL.doc(tuyen.return_km || 0) : 0;
+    const uoc = P.odo_est || (P.odo_out && kmCa ? EPL.doc(P.odo_out) + kmCa : null);
+    const txBao = P.odo_back != null && P.odo_back !== '' && (P.logs || []).some(l => l.action === 'drv_back');
+    const laSo = (s) => /^\s*\d[\d,]*(\.\d+)?\s*$/.test(String(s)) || /^\s*\.\d+\s*$/.test(String(s));
+    const kiemXeToi = (v) => {
+      const l = {};
+      const batBuoc = (id, s) => { if (String(s ?? '').trim() === '') l[id] = NN.t('px_xt_can_trong'); else if (!laSo(s)) l[id] = NN.t('px_xt_khong_so');
+        else if (!(EPL.doc(s) > 0)) l[id] = NN.t('px_xt_can_duong'); };
+      if (hoiMo) batBuoc('weight_origin', v.weight_origin);
+      batBuoc('weight_dest', v.weight_dest);
+      if (!String(v.back_date || '').trim()) l.back_date = NN.t('px_xt_ngay_trong');
+      if (String(v.odo_back ?? '').trim() !== '') {
+        if (!laSo(v.odo_back)) l.odo_back = NN.t('px_xt_khong_so');
+        else if (P.odo_out && EPL.doc(v.odo_back) < EPL.doc(P.odo_out)) l.odo_back = NN.t('px_xt_km_nho', { km: so(P.odo_out) });
+      }
+      return l;
+    };
+    const veTinh = () => {
+      const o = document.getElementById('px-xt-tinh'); if (!o) return;
+      const doc = (id) => { const el = document.getElementById('hn-' + id); return el ? el.value : ''; };
+      const kmVe = doc('odo_back'), goc = hoiMo ? doc('weight_origin') : P.weight_origin, cuoi = doc('weight_dest');
+      const km = P.odo_out && laSo(kmVe) ? EPL.doc(kmVe) - EPL.doc(P.odo_out) : null;
+      const hao = laSo(goc) && laSo(cuoi) && EPL.doc(goc) > 0 ? EPL.doc(goc) - EPL.doc(cuoi) : null;
+      o.innerHTML = `<div><span>${NN.h('odo_km')}</span><b class="${km !== null && km < 0 ? 'neg' : ''}">${km === null ? '—' : so(km) + ' km'}</b></div>
+        <div><span>${NN.h('w_loss')}</span><b class="${hao !== null && hao / EPL.doc(goc) * 100 > 1.5 ? 'neg' : ''}">${hao === null ? '—' : so(hao, 2) + ' t (' + (hao / EPL.doc(goc) * 100).toFixed(1) + '%)'}</b></div>`;
+    };
     for (;;) {
-      const hop = EPL.hopNhap(NN.t('mark_arrived'), [
-        ...(hoiMo ? [{ id: 'weight_origin', label: 'w_origin_gom', type: 'number', value: cu.weight_origin }] : []),
-        { id: 'weight_dest', label: laGom() ? 'w_dest_gom' : 'weight_dest_prompt', type: 'number', value: cu.weight_dest },
+      const truong = [
+        ...(hoiMo ? [{ id: 'weight_origin', label: 'w_origin_gom', type: 'number', value: cu.weight_origin, bat_buoc: true }] : []),
+        { id: 'weight_dest', label: laGom() ? 'w_dest_gom' : 'weight_dest_prompt', type: 'number', value: cu.weight_dest, bat_buoc: true },
         ...(laGom() && kho.length ? [{ id: 'kho_id', label: 'kb_kho_nhan', type: 'select', value: cu.kho_id, goi_y: 'kb_kho_nhan_goi_y',
           options: kho.map(k => [k.id, k.ma + ' · ' + k.ten + (k.ten_lo ? ' · ' + k.ten_lo : '')]) }] : []),
-        { id: 'back_date', label: 'd_back', type: 'date', value: cu.back_date },
-        { id: 'odo_back', label: 'odo_back_prompt', type: 'number', value: cu.odo_back },
+        { id: 'back_date', label: 'd_back', type: 'date', value: cu.back_date, bat_buoc: true },
+        { id: 'odo_back', label: 'odo_back_prompt', type: 'number', value: cu.odo_back,
+          placeholder: uoc && (cu.odo_back === '' || cu.odo_back == null) ? so(uoc) : '',
+          goi_y: txBao && String(cu.odo_back) === String(P.odo_back) ? 'px_xt_tx_bao' : (uoc && (cu.odo_back === '' || cu.odo_back == null) ? 'px_xt_goi_y_km' : null) },
         ...(laGom() ? [] : [{ id: 'pod_no', label: 'pod_no', value: cu.pod_no },
           { id: 'pod_receiver', label: 'pod_receiver', value: cu.pod_receiver }]),
-      ], NN.t('ok'));
-      if (loi) baoLoiTrongHop(loi, 'weight_dest');           // hộp đã hiện (EPL.hoi mở hộp ngay khi gọi)
-      const v = await hop;
+      ];
+      const v = await hopKiem(NN.t('mark_arrived'), truong, NN.t('ok'), kiemXeToi, { dau: '' }, () => {
+        // dòng gợi ý km ước tính mang số; khung km chạy / hao hụt dưới các ô; tính lại mỗi lần gõ
+        const gy = document.querySelector('#hn-odo_back + .hn-goi-y, #hn-odo_back ~ .hn-goi-y');
+        if (gy && !txBao && uoc) gy.innerHTML = NN.h('px_xt_goi_y_km', { km: so(uoc) });
+        const nd = document.getElementById('ht-noi-dung');
+        if (nd) { const t = document.createElement('div'); t.id = 'px-xt-tinh'; t.className = 'px-xt-tinh'; nd.appendChild(t); }
+        ['weight_origin', 'weight_dest', 'odo_back'].forEach(id => { const el = document.getElementById('hn-' + id); if (el) el.addEventListener('input', veTinh); });
+        veTinh();
+        if (loi) baoLoiTrongHop(loi, 'weight_dest');           // máy chủ vừa chặn (THIEU_CAN_BAI · KHO_SAI): câu ở đầu hộp
+      });
       if (!v) return;
-      if (hoiMo && !(EPL.doc(v.weight_origin) > 0)) return EPL.toast(NN.t('w_origin_gom') + '?', 'loi');
       const body = { status: 'arrived', weight_dest: v.weight_dest, back_date: v.back_date };
       if (hoiMo) body.weight_origin = v.weight_origin;
       if (v.kho_id) body.kho_id = v.kho_id;
@@ -1221,6 +1711,8 @@
         : `<p>${NN.h('lock_ok')}</p>`, NN.t('a_lock'));
       if (!ok) return;
       P = await API.post(`/api/trips/${P.id}/khoa`, { xac_nhan: true }); DS = await napDs(); EPL.toast(NN.t('saved'), 'ok'); veHet();
+      hienKeTiep();                                                    // 20/10 (D16)
+      if (EPL.lamMoiDem) EPL.lamMoiDem();
     } catch (e) { EPL.baoLoi(e); }
   }
   /* ---- hợp đồng trên phiếu (chốt 24/09): máy chủ tự điền theo khách / chủ xe; kế toán đổi được bằng ô chọn ---- */
@@ -1370,9 +1862,39 @@
         API.get('/api/vehicles'), API.get('/api/drivers'), API.get('/api/routes'), API.get('/api/parts'),
         API.get('/api/fuel-places'), API.get('/api/the-cao-toc')]);
       EPL.themTu(KM.names);              // tên khoản mục thêm ở màn Khoản mục chi phí (08/10) — NN.t(item_key) như khoản có sẵn
-      g('px-ve').addEventListener('click', () => EPL.di('theo-doi'));
-      g('px-moi').addEventListener('click', () => { NHAP = null; phieuMoi().catch(EPL.baoLoi); });
+      g('px-ve').addEventListener('click', quayLai);                  // 20/10 (D16): về đúng danh sách vừa mở (giữ bộ lọc)
+      g('px-truoc').addEventListener('click', () => diPhieu(-1));
+      g('px-sau').addEventListener('click', () => diPhieu(1));
+      g('px-ke-tiep').addEventListener('click', () => diPhieu(1));
+      // "+ Phiếu mới" bỏ nháp TRONG BỘ NHỚ như cũ; nháp Ở MÁY (A2) vẫn còn — dải «Có bản nháp chưa lưu» hỏi Dùng / Bỏ
+      g('px-moi').addEventListener('click', () => { NHAP = null; giuNhapMayRoiMoi().catch(EPL.baoLoi); });
       g('px-luu').addEventListener('click', luu);
+      g('px-luu').title = 'Ctrl+S';
+      g('px-in').addEventListener('click', () => { if (!P) return; chuanBiIn(); window.print(); });
+      g('px-giong').addEventListener('click', () => lapGiong().catch(EPL.baoLoi));
+      g('px-nhap-dung').addEventListener('click', () => { const n = nhapCho; nhapCho = null; if (n) moNhap(n).then(() => EPL.toast(NN.t('px_nhap_dung_xong'), 'ok')).catch(EPL.baoLoi); });
+      g('px-nhap-bo').addEventListener('click', () => { nhapCho = null; xoaNhapMay(); veDaiNhap(); EPL.toast(NN.t('px_nhap_da_bo'), 'ok'); henGhiNhap(); });
+      // 20/10 (A2): ghi nháp phiếu mới ngầm sau mỗi lần sửa (gõ, chọn, thêm / xoá dòng, bấm EPL ứng…)
+      q('#px-phieu').addEventListener('input', henGhiNhap);
+      q('#px-phieu').addEventListener('click', henGhiNhap);
+      // 20/10 (B9): ô SỐ không nhận chữ — bỏ ký tự lạ NGAY khi gõ (chạy trước bộ nghe của từng ô: pha bắt), ô chớp đỏ một nhịp
+      root.addEventListener('input', locSo, true);
+      if (khiRoiTrang) window.removeEventListener('pagehide', khiRoiTrang);
+      if (phimLuu) document.removeEventListener('keydown', phimLuu);
+      khiRoiTrang = () => { if (root && root.isConnected) ghiNhapMay(); };
+      window.addEventListener('pagehide', khiRoiTrang);
+      window.addEventListener('beforeprint', khiIn); window.addEventListener('afterprint', xongIn);
+      // 20/10 (B10): Ctrl+S = Lưu — chỉ khi đang ở màn này (rời màn là gỡ), hộp thoại đang mở thì thôi
+      phimLuu = (e) => {
+        if (!(e.ctrlKey || e.metaKey) || e.altKey || String(e.key).toLowerCase() !== 's') return;
+        if (!root || !root.isConnected) return;
+        e.preventDefault();
+        const hop = document.getElementById('hop-thoai');
+        if ((hop && hop.open) || !P) return;
+        const nut = g('px-luu');
+        if (nut && !nut.hidden && !nut.disabled) { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); luu(); }
+      };
+      document.addEventListener('keydown', phimLuu);
       // Phiếu đề nghị thu (30/09): khoá phiếu là máy lập — nút mở màn Phiếu đề nghị thu đúng phiếu này. Chỉ vai thấy tiền bán.
       g('px-hoa-don').hidden = !AUTH.la('acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel');
       // lập tờ đề nghị tạm ứng / xuất nhiên liệu: đúng các vai máy chủ cho lập (POST /api/trips/{id}/vouchers)
@@ -1381,8 +1903,10 @@
       g('px-hoa-don').addEventListener('click', () => P && P.id && EPL.di('de-nghi-thu', { id: P.id, thang: String(P.doc_date || '').slice(0, 7) }));
       root.querySelectorAll('#px-chon-loai button').forEach(b => b.addEventListener('click', () => {
         const el = g('f-kind'); if (!el || el.disabled) return;
-        el.value = b.dataset.loai; el.dispatchEvent(new Event('input', { bubbles: true }));
+        loaiDaChon = true;                     // 20/10 (B9): đã chọn → hai thẻ lớn thu thành chip nhỏ
+        el.value = b.dataset.loai; el.dispatchEvent(new Event('input', { bubbles: true }));     // → ô Loại phiếu vẽ lại cả tờ (veHet)
       }));
+      root.querySelectorAll('[data-ve-sau]').forEach(b => b.addEventListener('click', () => { moVeSau = !moVeSau; veHet(); }));
       // Phiếu đề nghị tạm ứng: lập (hoặc cập nhật) tờ tạm ứng rồi mở màn in — không có khoản tiền mặt nào thì vẫn mở màn (màn
       // tự ghi "không có khoản tạm ứng"). Tờ tạm ứng KHÔNG có mã QR (chủ dự án đồng ý 01/10): tài xế lĩnh tiền ở quỹ kế toán
       // bằng số DO; chỉ tờ đề nghị xuất kho nhiên liệu còn QR cho thủ kho quét.
@@ -1418,6 +1942,11 @@
           // mới vẽ — lô không phụ thuộc loại DO và đã nạp lúc mở phiếu, nên bỏ hẳn lần nạp đó. Số gợi ý theo loại lấy
           // ngầm, về tới thì chỉ điền ô số phiếu và cột bên — kèm loại lúc hỏi, bấm qua lại nhanh thì bỏ kết quả cũ.
           const loaiHoi = P.kind || 'giao';
+          // 20/10 (B8): phiếu mới — giao có sẵn một dòng hàng, gom thì bỏ dòng mặc định chưa ai đụng (gom một mặt hàng không có bảng)
+          if (moi) {
+            P.goods = (P.goods || []).filter(x => !dongHangTrong(x));
+            if (loaiHoi === 'giao' && !P.goods.some(x => x.loai !== 'hao_hut')) P.goods.push(dongHangMacDinh());
+          }
           if (moi && !soGoTay) API.get('/api/trips-so-moi?kind=' + encodeURIComponent(loaiHoi)).then(s => {
             if (!s || !s.doc_no || !moi || soGoTay || (P.kind || 'giao') !== loaiHoi) return;
             P.doc_no = s.doc_no; const o = g('px-doc-no'); if (o) o.value = s.doc_no; veBen();
@@ -1435,7 +1964,33 @@
             g('px-odo-nhac').hidden = !km;
           }
         }
-        if (c === 'vehicle_id') { const x = DM.vehicles.find(v => v.id === el.value); if (x) { g('f-brand_model').value = P.brand_model = x.brand_model || ''; g('f-plate_head').value = P.plate_head = x.plate_head || ''; g('f-plate_trailer').value = P.plate_trailer = x.plate_trailer || ''; if (x.owner_type === 'joint') { P.company = 'joint'; g('f-company').value = 'joint'; g('f-owner_name').value = P.owner_name = x.owner_name || ''; q('#px-phieu').classList.add('is-joint'); veChi(); } } }
+        if (c === 'vehicle_id') {
+          const x = DM.vehicles.find(v => v.id === el.value);
+          if (x) {
+            g('f-brand_model').value = P.brand_model = x.brand_model || ''; g('f-plate_head').value = P.plate_head = x.plate_head || ''; g('f-plate_trailer').value = P.plate_trailer = x.plate_trailer || '';
+            datLoaiTheoXe(x);
+            // 20/10 (B5): ô tài xế còn trống → tài xế thường lái xe này (hồ sơ tài xế: xe thường lái). Vẫn đổi được; giấy tờ kiểm ngay.
+            const tx = !P.driver_id && DM.drivers.find(d => d.default_vehicle_id === x.id && d.active !== false && d.status !== 'inactive');
+            const o = g('f-driver_id');
+            if (tx && o && !o.disabled) {
+              o.value = tx.id; P.driver_id = tx.id; nhacTuDien(NN.t('px_tu_dien_tx'));
+            } else if (!el.dataset.tuDien) nhacTuDien('');
+          } else nhacTuDien('');
+          // ô Loại xe: có xe trong danh mục → theo xe (khoá); bỏ chọn xe → mở lại cho người được sửa mục I
+          const oLoai = g('f-company');
+          if (oLoai) { oLoai.disabled = !!x || !suaDuoc('info'); oLoai.title = x ? NN.t('px_loai_theo_xe') : ''; }
+          veBan();
+        }
+        if (c === 'driver_id') {
+          // 20/10 (B5): ô xe còn trống → xe thường lái của tài xế (điền như chọn tay: biển, loại xe, km lúc đi). Vẫn đổi được.
+          const tx = DM.drivers.find(d => d.id === el.value), o = g('f-vehicle_id');
+          const xe = tx && !P.vehicle_id && tx.default_vehicle_id && DM.vehicles.find(v => v.id === tx.default_vehicle_id && v.active !== false);
+          if (xe && o && !o.disabled) {
+            o.value = xe.id; o.dataset.tuDien = '1'; o.dispatchEvent(new Event('input', { bubbles: true })); delete o.dataset.tuDien;
+            nhacTuDien(NN.t('px_tu_dien_xe', { xe: xe.truck_no }));
+          } else nhacTuDien('');              // người dùng tự chọn tài xế → bỏ dòng "tự điền"
+          veBan();
+        }
         veSo();
       }); });
       // Số phiếu và ba ô POD cũng ghi NGAY vào P như các ô mục I–II (rà 01/10): veHet() — đổi tiếng, bấm thẻ Gom / Giao, đổi
@@ -1450,6 +2005,8 @@
       // tài xế; mở từ hồ sơ một xe / một tài xế là muốn tờ mới cho đúng xe / người đó.
       if (NHAP && NHAP.uid !== uidNay()) NHAP = null;
       const moLaiNhap = NHAP && AUTH.la('yard') && !t.id && !t.xe && !t.tai_xe;
+      // 20/10 (A2): nháp ở máy (F5, đóng thẻ, mở lại hôm sau) — chỉ HỎI bằng dải trên tờ phiếu mới, không tự đổ vào
+      nhapCho = !moLaiNhap && AUTH.la('yard') ? docNhapMay() : null;
       if (moLaiNhap) await moNhap(); else if (t.moi) await phieuMoi(); else if (t.id) await moPhieu(t.id); else if (AUTH.la('yard')) await phieuMoi(); else chuaChon();
       // Mở từ màn Xe (nút "Tạo phiếu xuất xe" ở hồ sơ một chiếc): chọn sẵn chiếc đó.
       if (t.moi && t.xe && DM.vehicles.some(v => v.id === t.xe)) {
@@ -1465,6 +2022,12 @@
     },
     onLang() { if (P) veHet(); else if (root) chuaChon(); },
     xuatExcel: (r) => xuatExcelPhieu(r),
-    destroy() { giuNhap(); if (theoDinh) { theoDinh.disconnect(); theoDinh = null; } },
+    destroy() {
+      giuNhap(); if (theoDinh) { theoDinh.disconnect(); theoDinh = null; }
+      clearTimeout(henNhap); clearTimeout(henKL);
+      if (phimLuu) { document.removeEventListener('keydown', phimLuu); phimLuu = null; }
+      if (khiRoiTrang) { window.removeEventListener('pagehide', khiRoiTrang); khiRoiTrang = null; }
+      window.removeEventListener('beforeprint', khiIn); window.removeEventListener('afterprint', xongIn); xongIn();
+    },
   };
 })();

@@ -477,6 +477,51 @@ window.EPL_TU_DIEN = {
   "lo": "ແຕ່ລະບິນຄິດຕາມສະກຸນເງິນຂອງສັນຍາບິນນັ້ນ — ຖັນ <b>ເງິນ</b> ບອກວ່າເປັນເງິນຫຍັງ. ລາຍຈ່າຍປ່ຽນເປັນກີບຕາມອັດຕາທີ່ລັອກໄວ້ໃນບິນ. ກົດແຖວເພື່ອເປີດໃບເບີກລົດ.",
   "en": "Each slip is priced in its own contract currency; the <b>Ccy</b> column says which. Expenses are always converted to LAK at the rate locked on the slip. Click a row to open the dispatch slip."
  },
+ "tdp_cho_toi": {
+  "vi": "Việc chờ tôi",
+  "lo": "ວຽກທີ່ລໍຖ້າຂ້ອຍ",
+  "en": "Waiting on me"
+ },
+ "tdp_cho_toi_goi_y": {
+  "vi": "Chỉ hiện phiếu đang chờ chính bạn làm bước kế tiếp (theo vai). Bật lên thì kỳ xem mở rộng cho đủ mọi việc đang chờ.",
+  "lo": "ສະແດງສະເພາະໃບທີ່ລໍຖ້າທ່ານເຮັດຂັ້ນຕໍ່ໄປ (ຕາມໜ້າທີ່). ເມື່ອເປີດ ໄລຍະເວລາຈະຂະຫຍາຍໃຫ້ຄົບທຸກວຽກທີ່ລໍຖ້າ.",
+  "en": "Show only slips waiting for you to do the next step (by role). Turning it on widens the period to cover all waiting work."
+ },
+ "tdp_cho_toi_trong": {
+  "vi": "Không có phiếu nào đang chờ bạn trong kỳ này.",
+  "lo": "ບໍ່ມີໃບໃດລໍຖ້າທ່ານໃນໄລຍະນີ້.",
+  "en": "Nothing is waiting for you in this period."
+ },
+ "tdp_c_xe": {
+  "vi": "Xe · biển số",
+  "lo": "ລົດ · ທະບຽນ",
+  "en": "Truck · plates"
+ },
+ "tdp_cot": {
+  "vi": "Cột",
+  "lo": "ຖັນ",
+  "en": "Columns"
+ },
+ "tdp_cot_tieu_de": {
+  "vi": "Chọn cột hiện trong bảng",
+  "lo": "ເລືອກຖັນທີ່ສະແດງໃນຕາຕະລາງ",
+  "en": "Choose the columns to show"
+ },
+ "tdp_cot_goi_y": {
+  "vi": "Lựa chọn được nhớ trên máy này. Xuất Excel luôn đủ cột.",
+  "lo": "ການເລືອກຈະຈື່ໄວ້ໃນເຄື່ອງນີ້. ສົ່ງອອກ Excel ຈະມີຄົບທຸກຖັນສະເໝີ.",
+  "en": "Your choice is remembered on this computer. Excel export always has every column."
+ },
+ "tdp_cot_mac_dinh": {
+  "vi": "Về mặc định",
+  "lo": "ກັບຄືນຄ່າເລີ່ມຕົ້ນ",
+  "en": "Reset to default"
+ },
+ "tdp_sap_goi_y": {
+  "vi": "Bấm để sắp xếp theo cột này — bấm lần nữa để đảo chiều",
+  "lo": "ກົດເພື່ອລຽງຕາມຖັນນີ້ — ກົດອີກຄັ້ງເພື່ອປີ້ນທິດ",
+  "en": "Click to sort by this column — click again to reverse"
+ },
  "back_list": {
   "vi": "Danh sách phiếu",
   "lo": "ລາຍການໃບບິນ",
@@ -5327,6 +5372,66 @@ window.EPL_TU_DIEN = {
   "lo": "ຄົ້ນຫາໜ້າທີ່… (Ctrl K)",
   "en": "Find a screen… (Ctrl K)"
  },
+ "loi_mang_ghi": {
+  "vi": "Mất mạng — chưa lưu. Dữ liệu vẫn còn trên màn, có mạng thì bấm lại.",
+  "lo": "ບໍ່ມີເນັດ — ຍັງບໍ່ໄດ້ບັນທຶກ. ຂໍ້ມູນຍັງຢູ່ໃນໜ້າຈໍ, ເມື່ອມີເນັດແລ້ວໃຫ້ກົດອີກຄັ້ງ.",
+  "en": "No connection — not saved. What you entered is still on the screen; press again once the network is back."
+ },
+ "loi_mang_tai": {
+  "vi": "Mất mạng — chưa tải được dữ liệu.",
+  "lo": "ບໍ່ມີເນັດ — ຍັງໂຫຼດຂໍ້ມູນບໍ່ໄດ້.",
+  "en": "No connection — the data could not be loaded."
+ },
+ "loi_may_chu_cham_ghi": {
+  "vi": "Máy chủ trả lời quá lâu — chưa chắc đã lưu. Tải lại để xem rồi mới bấm lại.",
+  "lo": "ເຊີບເວີຕອບຊ້າເກີນໄປ — ບໍ່ແນ່ໃຈວ່າບັນທຶກແລ້ວຫຼືຍັງ. ໂຫຼດໜ້າຄືນເພື່ອກວດເບິ່ງກ່ອນ ຈຶ່ງກົດອີກຄັ້ງ.",
+  "en": "The server took too long to answer — it may or may not have saved. Reload to check before pressing again."
+ },
+ "loi_may_chu_cham_tai": {
+  "vi": "Máy chủ trả lời quá lâu — chưa tải được dữ liệu, thử lại sau ít phút.",
+  "lo": "ເຊີບເວີຕອບຊ້າເກີນໄປ — ຍັງໂຫຼດຂໍ້ມູນບໍ່ໄດ້, ລອງໃໝ່ອີກຈັກໜ່ອຍ.",
+  "en": "The server took too long to answer — the data could not be loaded; try again in a few minutes."
+ },
+ "tp_ph": {
+  "vi": "Tìm phiếu: số DO, số xe, tài xế…",
+  "lo": "ຄົ້ນຫາໃບ: ເລກ DO, ເບີລົດ, ໂຊເຟີ…",
+  "en": "Find a slip: DO no., truck, driver…"
+ },
+ "tp_goi_y": {
+  "vi": "Gõ số DO, số xe, biển số hoặc tên tài xế (chữ Lào, chữ Latin hay mã tài xế) rồi Enter để mở phiếu. Phím / để vào ô này.",
+  "lo": "ພິມເລກ DO, ເບີລົດ, ທະບຽນ ຫຼື ຊື່ໂຊເຟີ (ຕົວລາວ, ຕົວລາແຕັງ ຫຼື ລະຫັດໂຊເຟີ) ແລ້ວກົດ Enter ເພື່ອເປີດໃບ. ກົດປຸ່ມ / ເພື່ອເຂົ້າຊ່ອງນີ້.",
+  "en": "Type a DO number, truck number, plate or driver name (Lao script, Latin or driver code), then Enter to open the slip. Press / to jump here."
+ },
+ "tp_it_nhat": {
+  "vi": "Gõ ít nhất 2 ký tự để tìm.",
+  "lo": "ພິມຢ່າງໜ້ອຍ 2 ຕົວອັກສອນເພື່ອຄົ້ນຫາ.",
+  "en": "Type at least 2 characters to search."
+ },
+ "tp_dang_tim": {
+  "vi": "Đang tìm…",
+  "lo": "ກຳລັງຄົ້ນຫາ…",
+  "en": "Searching…"
+ },
+ "tp_trong": {
+  "vi": "Không có phiếu nào khớp «{q}».",
+  "lo": "ບໍ່ມີໃບໃດກົງກັບ «{q}».",
+  "en": "No slip matches “{q}”."
+ },
+ "tp_con": {
+  "vi": "Còn phiếu khớp nữa — gõ thêm để thu hẹp.",
+  "lo": "ຍັງມີໃບທີ່ກົງກັນອີກ — ພິມຕື່ມເພື່ອໃຫ້ແຄບລົງ.",
+  "en": "More slips match — keep typing to narrow down."
+ },
+ "tp_xem_het": {
+  "vi": "Xem hết trong Theo dõi phiếu",
+  "lo": "ເບິ່ງທັງໝົດໃນ ຕິດຕາມໃບ",
+  "en": "See all in Slip tracking"
+ },
+ "tp_phim": {
+  "vi": "↑ ↓ chọn · Enter mở phiếu · Esc đóng",
+  "lo": "↑ ↓ ເລືອກ · Enter ເປີດໃບ · Esc ປິດ",
+  "en": "↑ ↓ select · Enter open · Esc close"
+ },
  "nav_none": {
   "vi": "Không có chức năng nào khớp",
   "lo": "ບໍ່ມີໜ້າທີ່ກົງກັນ",
@@ -6082,6 +6187,16 @@ window.EPL_TU_DIEN = {
   "lo": "ຈຸດຜ່ານ, ກິໂລແມັດ, ຄ່າທາງດ່ວນ",
   "en": "Stops, kilometres, toll"
  },
+ "d_tram_thu_phi": {
+  "vi": "Trạm thu phí, giá mỗi lượt, một chiều",
+  "lo": "ດ່ານເກັບຄ່າທາງ, ລາຄາຕໍ່ຖ້ຽວ, ທາງດຽວ",
+  "en": "Toll stations, fee per pass, one-way"
+ },
+ "d_khoan_muc": {
+  "vi": "Khoản mục chi phí theo mục III – VI",
+  "lo": "ລາຍການຄ່າໃຊ້ຈ່າຍ ຕາມໝວດ III – VI",
+  "en": "Cost items by section III – VI"
+ },
  "d_quy_trinh": {
   "vi": "Ai làm bước nào, sinh chứng từ gì",
   "lo": "ໃຜເຮັດຂັ້ນໃດ, ອອກເອກະສານໃດ",
@@ -6171,6 +6286,56 @@ window.EPL_TU_DIEN = {
   "vi": "Xác nhận tới điểm {n}",
   "lo": "ຢືນຢັນຮອດຈຸດ {n}",
   "en": "Confirm arrival at stop {n}"
+ },
+ "td_b_su_co": {
+  "vi": "{n} sự cố",
+  "lo": "{n} ເຫດການ",
+  "en": "{n} incident(s)"
+ },
+ "td_b_cap": {
+  "vi": "{n} chờ cấp dầu",
+  "lo": "{n} ລໍຖ້າຈ່າຍນ້ຳມັນ",
+  "en": "{n} fuel pending"
+ },
+ "td_b_gps": {
+  "vi": "Thiếu GPS",
+  "lo": "ຂາດ GPS",
+  "en": "No GPS"
+ },
+ "td_hoi_lan_banh": {
+  "vi": "Ghi xe của phiếu {so} đã lăn bánh (đang vận chuyển)?",
+  "lo": "ບັນທຶກວ່າລົດຂອງບິນ {so} ອອກເດີນທາງແລ້ວ (ກຳລັງຂົນສົ່ງ)?",
+  "en": "Record the truck of slip {so} as departed (in transit)?"
+ },
+ "td_toi_tx_bao": {
+  "vi": "Số tài xế đã báo về trên điện thoại",
+  "lo": "ຕົວເລກທີ່ໂຊເຟີແຈ້ງກັບໃນໂທລະສັບ",
+  "en": "Number the driver reported from the phone"
+ },
+ "td_toi_uoc": {
+  "vi": "Tài xế chưa báo — ước tính ~{km} km (km lúc đi + tuyến), chỉ để tham khảo",
+  "lo": "ໂຊເຟີຍັງບໍ່ແຈ້ງ — ຄາດຄະເນ ~{km} ກມ (ກມ ຕອນອອກ + ເສັ້ນທາງ), ສຳລັບອ້າງອີງເທົ່ານັ້ນ",
+  "en": "Not reported by the driver — estimate ~{km} km (departure km + route), for reference only"
+ },
+ "td_toi_can_trong": {
+  "vi": "Nhập số tấn lớn hơn 0",
+  "lo": "ໃສ່ຈຳນວນໂຕນທີ່ຫຼາຍກວ່າ 0",
+  "en": "Enter a weight above 0 tonnes"
+ },
+ "td_toi_phai_so": {
+  "vi": "Phải là số",
+  "lo": "ຕ້ອງເປັນຕົວເລກ",
+  "en": "Must be a number"
+ },
+ "td_toi_hao_vuot": {
+  "vi": "Vượt mức 1,5 %",
+  "lo": "ເກີນ 1,5 %",
+  "en": "Above the 1.5 % limit"
+ },
+ "td_bat_buoc": {
+  "vi": "ô bắt buộc",
+  "lo": "ຊ່ອງບັງຄັບ",
+  "en": "required field"
  },
  "td_issue_fuel": {
   "vi": "Cấp dầu theo phiếu đề nghị",
@@ -11312,6 +11477,221 @@ window.EPL_TU_DIEN = {
   "lo": "ເປີດໃບທີ່ກຳລັງລົງຄ້າງໄວ້ຄືນແລ້ວ (ຍັງບໍ່ໄດ້ບັນທຶກ). ຖ້າຕ້ອງການໃບເປົ່າ ໃຫ້ກົດ + ບິນໃໝ່.",
   "en": "Reopened the unsaved slip you were filling in. Press + New slip for a blank one."
  },
+ "px_dh_truoc": {
+  "vi": "Phiếu trước",
+  "lo": "ໃບກ່ອນ",
+  "en": "Previous"
+ },
+ "px_dh_sau": {
+  "vi": "Phiếu sau",
+  "lo": "ໃບຖັດໄປ",
+  "en": "Next"
+ },
+ "px_dh_ke_tiep": {
+  "vi": "Phiếu kế tiếp",
+  "lo": "ໄປໃບຕໍ່ໄປ",
+  "en": "Next slip"
+ },
+ "px_dh_het": {
+  "vi": "Đã hết phiếu trong danh sách.",
+  "lo": "ໝົດໃບໃນລາຍການແລ້ວ.",
+  "en": "No more slips in this list."
+ },
+ "px_chon_muc_de_sua": {
+  "vi": "Chọn một mục ở cột phải để sửa / duyệt",
+  "lo": "ເລືອກໜ້າໃດໜຶ່ງຢູ່ຖັນຂວາ ເພື່ອແກ້ໄຂ / ອະນຸມັດ",
+  "en": "Pick a section on the right to edit / approve"
+ },
+ "px_nhap_co": {
+  "vi": "Có bản nháp chưa lưu: <b>{so}</b> · xe {xe} · lúc {luc}",
+  "lo": "ມີຮ່າງທີ່ຍັງບໍ່ໄດ້ບັນທຶກ: <b>{so}</b> · ລົດ {xe} · ເວລາ {luc}",
+  "en": "Unsaved draft: <b>{so}</b> · truck {xe} · at {luc}"
+ },
+ "px_nhap_dung": {
+  "vi": "Dùng bản nháp",
+  "lo": "ໃຊ້ຮ່າງ",
+  "en": "Use draft"
+ },
+ "px_nhap_bo": {
+  "vi": "Bỏ nháp",
+  "lo": "ຖິ້ມຮ່າງ",
+  "en": "Discard"
+ },
+ "px_nhap_da_bo": {
+  "vi": "Đã bỏ bản nháp.",
+  "lo": "ຖິ້ມຮ່າງແລ້ວ.",
+  "en": "Draft discarded."
+ },
+ "px_nhap_dung_xong": {
+  "vi": "Đã mở bản nháp — kiểm lại rồi bấm Lưu.",
+  "lo": "ເປີດຮ່າງແລ້ວ — ກວດຄືນແລ້ວກົດ ບັນທຶກ.",
+  "en": "Draft opened — check it, then press Save."
+ },
+ "px_loai_doi": {
+  "vi": "Đổi loại",
+  "lo": "ປ່ຽນປະເພດ",
+  "en": "Change type"
+ },
+ "px_ve_sau_mo": {
+  "vi": "Phần điền khi xe về (bấm để mở)",
+  "lo": "ສ່ວນທີ່ໃສ່ເມື່ອລົດກັບ (ກົດເພື່ອເປີດ)",
+  "en": "Fields filled when the truck returns (click to open)"
+ },
+ "px_ve_sau_dong": {
+  "vi": "Thu gọn phần điền khi xe về",
+  "lo": "ຫຍໍ້ສ່ວນທີ່ໃສ່ເມື່ອລົດກັບ",
+  "en": "Collapse the fields filled on return"
+ },
+ "px_odo_di_cm": {
+  "vi": "Km lúc đi (công-tơ-mét)",
+  "lo": "ກມ ຕອນອອກ (ເລກກົງເຕີ)",
+  "en": "Km out (odometer)"
+ },
+ "px_odo_ve_cm": {
+  "vi": "Km lúc về (công-tơ-mét)",
+  "lo": "ກມ ຕອນກັບ (ເລກກົງເຕີ)",
+  "en": "Km back (odometer)"
+ },
+ "px_ban_chay": {
+  "vi": "Đang chạy{do} — chỉ nhắc, vẫn chọn được.",
+  "lo": "ກຳລັງແລ່ນ{do} — ພຽງແຈ້ງເຕືອນ, ຍັງເລືອກໄດ້.",
+  "en": "On trip{do} — reminder only, you can still pick it."
+ },
+ "px_ban_sua": {
+  "vi": "Đang sửa — chỉ nhắc, vẫn chọn được.",
+  "lo": "ກຳລັງສ້ອມແປງ — ພຽງແຈ້ງເຕືອນ, ຍັງເລືອກໄດ້.",
+  "en": "In maintenance — reminder only, you can still pick it."
+ },
+ "px_ban_nghi": {
+  "vi": "Đang nghỉ — chỉ nhắc, vẫn chọn được.",
+  "lo": "ກຳລັງພັກ — ພຽງແຈ້ງເຕືອນ, ຍັງເລືອກໄດ້.",
+  "en": "On leave — reminder only, you can still pick them."
+ },
+ "px_tu_dien_tx": {
+  "vi": "Tự điền tài xế thường lái xe này — đổi được.",
+  "lo": "ໃສ່ໂຊເຟີທີ່ຂັບລົດຄັນນີ້ປະຈຳໃຫ້ແລ້ວ — ປ່ຽນໄດ້.",
+  "en": "Filled in this truck's regular driver — you can change it."
+ },
+ "px_tu_dien_xe": {
+  "vi": "Tự điền xe {xe} — xe thường lái của tài xế này, đổi được.",
+  "lo": "ໃສ່ລົດ {xe} ໃຫ້ແລ້ວ — ລົດທີ່ໂຊເຟີຄົນນີ້ຂັບປະຈຳ, ປ່ຽນໄດ້.",
+  "en": "Filled in truck {xe} — this driver's regular truck, you can change it."
+ },
+ "px_loai_theo_xe": {
+  "vi": "Loại xe theo xe đã chọn (xe công ty / xe thuê của chủ xe)",
+  "lo": "ປະເພດລົດຕາມລົດທີ່ເລືອກ (ລົດບໍລິສັດ / ລົດເຊົ່າຂອງເຈົ້າຂອງລົດ)",
+  "en": "Truck type follows the chosen truck (company / hired from an owner)"
+ },
+ "px_giong": {
+  "vi": "Lập phiếu giống phiếu này",
+  "lo": "ສ້າງໃບຄືໃບນີ້",
+  "en": "New slip like this one"
+ },
+ "px_giong_xong": {
+  "vi": "Phiếu mới đã điền sẵn theo {so} — chọn xe, tài xế rồi Lưu.",
+  "lo": "ໃບໃໝ່ໃສ່ໄວ້ແລ້ວຕາມ {so} — ເລືອກລົດ, ໂຊເຟີ ແລ້ວກົດ ບັນທຶກ.",
+  "en": "New slip prefilled from {so} — pick the truck and driver, then Save."
+ },
+ "px_ck_tieu": {
+  "vi": "Chưa khoá được vì…",
+  "lo": "ຍັງລັອກບໍ່ໄດ້ ເພາະ…",
+  "en": "Cannot lock yet because…"
+ },
+ "px_ck_xe_chua_ve": {
+  "vi": "Xe chưa về tới — Bãi bấm «Xe đã tới · nhập cân cuối» trước.",
+  "lo": "ລົດຍັງບໍ່ຮອດ — ສະໜາມກົດ «ລົດຮອດແລ້ວ · ໃສ່ນ້ຳໜັກປາຍທາງ» ກ່ອນ.",
+  "en": "The truck has not arrived — the yard presses «Truck arrived · enter destination weight» first."
+ },
+ "px_ck_san_sang": {
+  "vi": "Khoá được — không còn chỗ chặn",
+  "lo": "ລັອກໄດ້ — ບໍ່ມີຈຸດກີດຂວາງ",
+  "en": "Ready to lock — nothing blocking"
+ },
+ "px_ck_xem": {
+  "vi": "{n} điểm cần xem khi khoá",
+  "lo": "{n} ຈຸດທີ່ຕ້ອງເບິ່ງເມື່ອລັອກ",
+  "en": "{n} point(s) to review when locking"
+ },
+ "px_ck_nut_mo": {
+  "vi": "Còn chỗ chặn khoá — xem «Chưa khoá được vì…» ở cột phải",
+  "lo": "ຍັງມີຈຸດກີດຂວາງການລັອກ — ເບິ່ງ «ຍັງລັອກບໍ່ໄດ້ ເພາະ…» ຢູ່ຖັນຂວາ",
+  "en": "Locking is still blocked — see «Cannot lock yet because…» on the right"
+ },
+ "px_thieu_gia": {
+  "vi": "Mục {muc}: dòng {n} ({khoan}) chưa có đơn giá — nhập đơn giá rồi bấm «Xác nhận kiểm tra».",
+  "lo": "ໜ້າ {muc}: ແຖວ {n} ({khoan}) ຍັງບໍ່ມີລາຄາຕໍ່ໜ່ວຍ — ໃສ່ລາຄາແລ້ວກົດ «ຢືນຢັນກວດແລ້ວ».",
+  "en": "Section {muc}: line {n} ({khoan}) has no unit price — enter it, then press «Confirm verified»."
+ },
+ "px_thieu_gia_kho": {
+  "vi": "Mục {muc}: dòng {n} ({khoan}) lấy từ kho chưa có giá — kho đó chưa có phiếu nhập nào có giá.",
+  "lo": "ໜ້າ {muc}: ແຖວ {n} ({khoan}) ເອົາຈາກສາງ ຍັງບໍ່ມີລາຄາ — ສາງນັ້ນຍັງບໍ່ມີໃບນຳເຂົ້າທີ່ມີລາຄາ.",
+  "en": "Section {muc}: line {n} ({khoan}) taken from the depot has no price — that depot has no priced receipt yet."
+ },
+ "px_tra_tieu": {
+  "vi": "Trả lại mục {muc}",
+  "lo": "ສົ່ງຄືນໜ້າ {muc}",
+  "en": "Return section {muc}"
+ },
+ "px_tra_ly_do": {
+  "vi": "Lý do trả lại — người nhập mục này đọc để sửa",
+  "lo": "ເຫດຜົນທີ່ສົ່ງຄືນ — ຜູ້ລົງໜ້ານີ້ອ່ານເພື່ອແກ້ໄຂ",
+  "en": "Reason for returning — the person who entered this section reads it to fix"
+ },
+ "px_tra_thieu": {
+  "vi": "Ghi lý do trả lại.",
+  "lo": "ຂຽນເຫດຜົນທີ່ສົ່ງຄືນ.",
+  "en": "Enter the reason for returning."
+ },
+ "px_bi_tra": {
+  "vi": "Bị trả lại",
+  "lo": "ຖືກສົ່ງຄືນ",
+  "en": "Returned"
+ },
+ "px_tra_log": {
+  "vi": "Lý do trả lại mục {muc}",
+  "lo": "ເຫດຜົນສົ່ງຄືນໜ້າ {muc}",
+  "en": "Reason for returning section {muc}"
+ },
+ "px_xt_tx_bao": {
+  "vi": "Số tài xế đã báo (Báo đã về)",
+  "lo": "ເລກທີ່ໂຊເຟີແຈ້ງ (ແຈ້ງກັບຮອດ)",
+  "en": "Number reported by the driver (Report return)"
+ },
+ "px_xt_goi_y_km": {
+  "vi": "Tài xế chưa báo — ước tính {km} km (km lúc đi + tuyến), chỉ để đối chiếu",
+  "lo": "ໂຊເຟີຍັງບໍ່ແຈ້ງ — ຄາດຄະເນ {km} ກມ (ກມ ຕອນອອກ + ເສັ້ນທາງ), ພຽງເພື່ອທຽບ",
+  "en": "Not reported by the driver — estimate {km} km (km out + route), for comparison only"
+ },
+ "px_xt_can_trong": {
+  "vi": "Ô bắt buộc — nhập số.",
+  "lo": "ຊ່ອງບັງຄັບ — ໃສ່ຕົວເລກ.",
+  "en": "Required — enter a number."
+ },
+ "px_xt_khong_so": {
+  "vi": "Phải là số (ví dụ 40.5).",
+  "lo": "ຕ້ອງເປັນຕົວເລກ (ຕົວຢ່າງ 40.5).",
+  "en": "Must be a number (e.g. 40.5)."
+ },
+ "px_xt_can_duong": {
+  "vi": "Số tấn phải lớn hơn 0.",
+  "lo": "ຈຳນວນໂຕນຕ້ອງຫຼາຍກວ່າ 0.",
+  "en": "Tonnage must be greater than 0."
+ },
+ "px_xt_km_nho": {
+  "vi": "Km về nhỏ hơn km lúc đi ({km}).",
+  "lo": "ກມ ຕອນກັບ ໜ້ອຍກວ່າ ກມ ຕອນອອກ ({km}).",
+  "en": "Km back is below km out ({km})."
+ },
+ "px_xt_ngay_trong": {
+  "vi": "Chọn ngày xe về.",
+  "lo": "ເລືອກວັນທີລົດກັບ.",
+  "en": "Pick the return date."
+ },
+ "px_in_luc": {
+  "vi": "In lúc {luc} · {ai}",
+  "lo": "ພິມເວລາ {luc} · {ai}",
+  "en": "Printed {luc} · {ai}"
+ },
  "tq_hao_chua_can": {
   "vi": "Chưa có chuyến nào có cân cuối trong tháng này",
   "lo": "ເດືອນນີ້ຍັງບໍ່ມີຖ້ຽວໃດມີນໍ້າໜັກປາຍທາງ",
@@ -15328,9 +15708,9 @@ window.EPL_TU_DIEN = {
   "en": "Waiting to send"
  },
  "tx_da_gui_hang": {
-  "vi": "Đã gửi {n} thao tác chờ (xuất phát, báo hỏng, khai dầu)",
-  "lo": "ສົ່ງ {n} ລາຍການທີ່ລໍຖ້າແລ້ວ (ອອກລົດ, ແຈ້ງລົດເສຍ, ແຈ້ງໃສ່ນໍ້າມັນ)",
-  "en": "Sent {n} waiting action(s) (departure, incident, refuelling)"
+  "vi": "Đã gửi {n} thao tác chờ (xuất phát, báo hỏng, khai dầu, báo về)",
+  "lo": "ສົ່ງ {n} ລາຍການທີ່ລໍຖ້າແລ້ວ (ອອກລົດ, ແຈ້ງລົດເສຍ, ແຈ້ງໃສ່ນໍ້າມັນ, ແຈ້ງກັບ)",
+  "en": "Sent {n} waiting action(s) (departure, incident, refuelling, return report)"
  },
  "tx_gps_cho_n": {
   "vi": "GPS chờ gửi: {n} điểm",
@@ -15343,9 +15723,9 @@ window.EPL_TU_DIEN = {
   "en": "Sharing location. The screen stays on; without signal the phone keeps the points and sends them when the signal returns. Keep this page open."
  },
  "tx_hang_doi_trong2": {
-  "vi": "Xuất phát, báo hỏng, khai dầu, báo cân, ký giao nhận và điểm GPS được lưu trong máy khi mất sóng; có mạng lại tự gửi, giữ đúng giờ đã bấm.",
-  "lo": "ອອກລົດ, ແຈ້ງລົດເສຍ, ແຈ້ງໃສ່ນໍ້າມັນ, ແຈ້ງນ້ຳໜັກ, ເຊັນຮັບ ແລະ ຈຸດ GPS ຈະເກັບໄວ້ໃນເຄື່ອງເມື່ອບໍ່ມີສັນຍານ; ມີເນັດຄືນຈະສົ່ງເອງ ຕາມເວລາທີ່ກົດແທ້.",
-  "en": "Departure, incident and refuelling reports, mine weights, delivery signatures and GPS points are kept on the phone without signal and sent automatically when it returns, with the time you pressed."
+  "vi": "Xuất phát, báo hỏng, khai dầu, báo cân, ký giao nhận, báo về và điểm GPS được lưu trong máy khi mất sóng; có mạng lại tự gửi, giữ đúng giờ đã bấm.",
+  "lo": "ອອກລົດ, ແຈ້ງລົດເສຍ, ແຈ້ງໃສ່ນໍ້າມັນ, ແຈ້ງນ້ຳໜັກ, ເຊັນຮັບ, ແຈ້ງກັບ ແລະ ຈຸດ GPS ຈະເກັບໄວ້ໃນເຄື່ອງເມື່ອບໍ່ມີສັນຍານ; ມີເນັດຄືນຈະສົ່ງເອງ ຕາມເວລາທີ່ກົດແທ້.",
+  "en": "Departure, incident and refuelling reports, mine weights, delivery signatures, return reports and GPS points are kept on the phone without signal and sent automatically when it returns, with the time you pressed."
  },
  "tx_gui_ngay": {
   "vi": "Gửi ngay",
@@ -15356,6 +15736,31 @@ window.EPL_TU_DIEN = {
   "vi": "Đã bấm xuất phát lúc mất mạng — đang chờ gửi. Có mạng lại sẽ tự gửi, rồi mới báo về được.",
   "lo": "ກົດອອກລົດຕອນບໍ່ມີເນັດ — ກຳລັງລໍຖ້າສົ່ງ. ມີເນັດຄືນຈະສົ່ງເອງ ແລ້ວຈຶ່ງແຈ້ງກັບໄດ້.",
   "en": "Departure was pressed while offline — waiting to send. It sends itself when the network returns; then you can report back."
+ },
+ "tx_n_ve_cho": {
+  "vi": "Đã báo về lúc mất mạng — đang chờ gửi, có mạng lại sẽ tự gửi. Cần sửa số thì báo lại.",
+  "lo": "ແຈ້ງກັບຕອນບໍ່ມີເນັດ — ກຳລັງລໍຖ້າສົ່ງ, ມີເນັດຄືນຈະສົ່ງເອງ. ຖ້າຕ້ອງແກ້ຕົວເລກໃຫ້ແຈ້ງໃໝ່.",
+  "en": "Return reported while offline — waiting to send; it sends itself when the network returns. Report again to correct the numbers."
+ },
+ "tx_moi_chuyen": {
+  "vi": "Có chuyến mới giao cho bạn: {so}",
+  "lo": "ມີຖ້ຽວໃໝ່ມອບໃຫ້ທ່ານ: {so}",
+  "en": "New trip assigned to you: {so}"
+ },
+ "tx_moi_doi_xe": {
+  "vi": "Chuyến {so} đã đổi sang xe {xe}",
+  "lo": "ຖ້ຽວ {so} ປ່ຽນເປັນລົດ {xe} ແລ້ວ",
+  "en": "Trip {so} has moved to truck {xe}"
+ },
+ "tx_moi_mat": {
+  "vi": "Chuyến {so} không còn giao cho bạn (đã đổi xe / tài xế hoặc đã huỷ)",
+  "lo": "ຖ້ຽວ {so} ບໍ່ໄດ້ມອບໃຫ້ທ່ານແລ້ວ (ປ່ຽນລົດ / ໂຊເຟີ ຫຼື ຍົກເລີກແລ້ວ)",
+  "en": "Trip {so} is no longer assigned to you (truck / driver changed or cancelled)"
+ },
+ "tx_mo_chuyen": {
+  "vi": "Mở",
+  "lo": "ເປີດ",
+  "en": "Open"
  },
  "ct_tieu_de": {
   "vi": "Chi thật của tài xế",

@@ -316,3 +316,92 @@
 .px-gt.nhac{background:var(--amber-soft);color:var(--amber);border:1px solid #E3CB98}
 .px-gt-chu{color:var(--ink-2);padding:0 2px}
 select.px-gt-vuong{border-color:var(--red)!important;box-shadow:0 0 0 2px var(--red-soft)}
+
+/* ---- 20/10 rà điều xe ---- */
+/* D16: đi phiếu trước / sau trong danh sách vừa mở; «Phiếu kế tiếp →» sau khi Kiểm / Khoá / Trả lại */
+.px-dh{display:inline-flex;align-items:center;gap:4px;align-self:center}
+.px-dh[hidden]{display:none}
+.px-dh .btn{padding:4px 8px}
+.px-dh-so{font-variant-numeric:tabular-nums;font-size:13px;min-width:44px;text-align:center}
+.px-luu-nhac{align-self:center;max-width:220px;line-height:1.3}
+.px-luu-nhac[hidden]{display:none}
+/* A2: dải «Có bản nháp chưa lưu · Dùng / Bỏ» */
+.px-nhap-dai{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px;padding:8px 12px;border:1px solid #E3CB98;border-radius:var(--r);
+  background:var(--amber-soft);color:var(--amber);font-weight:600;font-size:13px}
+.px-nhap-dai[hidden]{display:none}
+/* B9: Gom / Giao đã chọn → chip nhỏ; ô điền khi xe về gập thành một dòng */
+.px-loai-chip{display:flex;align-items:center;gap:8px;margin:8px 0 0}
+.px-loai-chip[hidden]{display:none}
+.px-loai-chip button{display:inline-flex;align-items:center;gap:8px;padding:3px 10px 3px 4px;border:1px solid var(--line-2);border-radius:999px;
+  background:var(--paper);font:inherit;font-size:12.5px;color:var(--ink-2);cursor:pointer}
+.px-loai-chip button:hover{border-color:var(--green-2)}
+.px-loai-chip .px-cl-nhan{min-width:0;height:22px;padding:0 8px;border-radius:999px;font-size:12px}
+.px-phieu.px-gap-ve .px-ve-sau{display:none!important}
+.px-ve-sau-mo{grid-column:1/-1;display:flex;align-items:center;gap:6px;width:100%;padding:6px 10px;border:1px dashed var(--line-2);border-radius:var(--r);
+  background:var(--bg);color:var(--ink-2);font:inherit;font-size:12.5px;text-align:left;cursor:pointer}
+.px-ve-sau-mo:hover{border-color:var(--green-2);color:var(--ink)}
+.px-ve-sau-mo[hidden]{display:none}
+/* B6: xe / tài xế đang chạy phiếu khác, đang sửa, đang nghỉ — chỉ nhắc */
+.px-dang-ban{display:block;margin-top:4px;padding:4px 8px;border-radius:6px;background:var(--amber-soft);color:var(--amber);border:1px solid #E3CB98;
+  font-size:12px;font-weight:600;line-height:1.35}
+.px-dang-ban[hidden]{display:none}
+/* B7: nút lập phiếu giống phiếu này — một dòng nhỏ dưới số phiếu */
+.px-giong{align-self:flex-start;padding:2px 8px;font-size:12px}
+.px-giong[hidden]{display:none}
+/* D18: chỗ còn chặn khoá phiếu */
+.px-chan-khoa[hidden]{display:none}
+.px-chan-khoa{padding:6px 8px;border:1px solid #E3B4B4;border-radius:var(--r);background:var(--red-soft);font-size:12px;line-height:1.4}
+.px-chan-khoa.ok{border-color:#B7D8CB;background:var(--green-soft)}
+.px-chan-khoa h5{margin:0 0 3px;color:var(--red)} .px-chan-khoa.ok h5{color:var(--green)}
+.px-chan-khoa ul{margin:0;padding-left:16px;color:var(--red)} .px-chan-khoa li{margin:2px 0}
+.px-chan-khoa .px-cb-dem{color:var(--ink-2);margin-top:3px}
+.btn[data-hd-phieu="khoa"]:disabled{opacity:.5;cursor:not-allowed}
+/* D20: mục bị trả lại — lý do cho người nhập mục */
+.px-tra-lai{padding:6px 14px;background:var(--red-soft);color:var(--red);border-bottom:1px solid #E3B4B4;font-size:13px;line-height:1.4}
+.px-ben .px-tab .st-chu.tra{background:var(--red-soft);color:var(--red)}
+/* B9: ô số không nhận chữ — chớp đỏ khi vừa bỏ ký tự sai */
+.px-phieu input.px-so-sai,.hop-thoai input.px-so-sai{border-color:var(--red)!important;box-shadow:0 0 0 2px var(--red-soft)}
+/* B13: hộp «Xe đã tới» — km chạy, hao hụt tính ngay; câu lỗi dưới ô */
+.px-xt-tinh{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;margin-top:10px;padding:8px 10px;border-radius:var(--r);background:var(--bg);font-size:13px}
+.px-xt-tinh div{display:flex;justify-content:space-between;gap:8px} .px-xt-tinh b{font-variant-numeric:tabular-nums}
+.px-xt-tinh .neg{color:var(--red)}
+.hop-thoai .px-xt-loi{display:block;margin-top:3px;color:var(--red);font-size:12px;font-weight:600}
+
+/* A3: tờ in riêng — chỉ hiện khi in; màn nhập liệu không in */
+.px-to-in{display:none}
+@media print{
+  .px-khung,.px-nhap-dai,#px-chua-chon{display:none!important}
+  .px-to-in{display:block;zoom:var(--px-in-zoom,1)}
+}
+/* khổ giấy (@page A4 dọc, lề 9 × 10 mm) do JS gắn lúc in rồi gỡ — @page ở đây sẽ áp cả khi in màn khác */
+.px-to-in,.px-in-do{font-family:var(--font,'Be Vietnam Pro','Noto Sans Lao',system-ui,sans-serif);color:#1C2229;font-size:11px;line-height:1.35;background:#fff}
+.px-in-do{position:absolute;left:-10000px;top:0;width:190mm;display:block}
+.px-to-in [lang="lo"],.px-in-do [lang="lo"]{font-family:'Noto Sans Lao','Be Vietnam Pro',sans-serif}
+.pi-dau{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1C2229;padding-bottom:6px;margin-bottom:6px}
+.pi-dau>div:first-child{display:flex;gap:8px;align-items:center}
+.pi-logo{width:38px;height:38px;border-radius:6px;object-fit:cover}
+.pi-dc{font-size:9.5px;color:#4A5560}
+.pi-so{text-align:right;font-size:10.5px} .pi-so b{display:block;font-family:ui-monospace,Consolas,monospace;font-size:14px}
+.pi-tieu{text-align:center;font-size:16px;font-weight:700;letter-spacing:.02em;margin:2px 0 0}
+.pi-phu{text-align:center;color:#4A5560;font-size:10px;margin-bottom:4px}
+.pi-loai{text-align:center;font-weight:600;margin-bottom:6px}
+.pi-loai span{display:inline-block;padding:1px 8px;border:1px solid #1C2229;border-radius:999px;margin:0 3px}
+.pi-muc{margin-top:6px;break-inside:avoid}
+.pi-muc h4{display:flex;justify-content:space-between;gap:8px;margin:0 0 3px;padding:2px 6px;background:#EDF0EC;font-size:11px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.pi-muc h4 small{font-weight:500;color:#4A5560}
+.pi-luoi{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px 14px}
+.pi-luoi>div{display:flex;justify-content:space-between;gap:6px;border-bottom:1px dotted #BFC8C0;padding:1px 0;min-width:0}
+.pi-luoi>div span{color:#4A5560;white-space:nowrap} .pi-luoi>div b{font-weight:600;text-align:right;overflow-wrap:anywhere}
+.pi-luoi>.rong{grid-column:span 2} .pi-luoi>.het{grid-column:1/-1}
+.pi-bang{width:100%;border-collapse:collapse;margin-top:3px}
+.pi-bang th,.pi-bang td{border:1px solid #BFC8C0;padding:1px 4px;text-align:left;vertical-align:top}
+.pi-bang th{background:#F4F6F3;font-weight:600;font-size:10px}
+.pi-bang .num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.pi-bang tfoot td{font-weight:700}
+.pi-khong{margin-top:5px;color:#4A5560}
+.pi-tong{display:flex;justify-content:flex-end;gap:18px;margin-top:6px;font-size:11.5px}
+.pi-tong b{font-variant-numeric:tabular-nums}
+.pi-ky{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;text-align:center;font-size:10.5px;break-inside:avoid}
+.pi-ky .line{height:40px;border-bottom:1px solid #7A858F;margin-bottom:3px}
+.pi-ky small{display:block;color:#4A5560}
+.pi-chan{margin-top:6px;color:#7A858F;font-size:9px;display:flex;justify-content:space-between}
