@@ -35,7 +35,7 @@
         r = await fetch(duong, { method, headers: dau, body: tuy_chon.body !== undefined ? JSON.stringify(tuy_chon.body) : undefined, signal: tin });
       } catch (e) {
         if (tin && tin.aborted) throw new LoiAPI(0, 'HUY', NN.t('loading'));
-        throw e;
+        throw loiMang(method);           // 20/10: không ném nguyên TypeError "Failed to fetch" ra màn (xem loiMang)
       }
       let d = null; try { d = await r.json(); } catch (e) { d = null; }
       if (tin && tin.aborted) throw new LoiAPI(0, 'HUY', NN.t('loading'));   // huỷ giữa lúc đọc thân: đừng trả null như "không có dữ liệu"
@@ -47,6 +47,7 @@
       }
       if (!r.ok) {
         const ct = (d && d.detail) || {};
+        if (d === null && CONG_LOI.includes(r.status)) throw loiCong(r.status, method);
         // Lỗi NGHIỆP VỤ của mình luôn có dạng {ma, loi} bằng tiếng người. Còn 404 kèm chuỗi thô
         // "Not Found" là của FastAPI: đường API không tồn tại, gần như luôn vì máy chủ đang chạy
         // bản cũ hơn giao diện. Nói thẳng câu đó ra, đừng bày chữ tiếng Anh kỹ thuật lên màn.
@@ -66,8 +67,10 @@
     /** Gửi tệp (multipart) — không đặt Content-Type để trình duyệt tự ghi boundary. */
     async tep(duong, formData) {
       const dau = { 'Accept': 'application/json' }; const tk = API.token(); if (tk) dau['Authorization'] = 'Bearer ' + tk;
-      const r = await fetch(duong, { method: 'POST', headers: dau, body: formData });
+      let r;
+      try { r = await fetch(duong, { method: 'POST', headers: dau, body: formData }); } catch (e) { throw loiMang('POST'); }   // 20/10: như API.goi
       let d = null; try { d = await r.json(); } catch (e) { d = null; }
+      if (!r.ok && d === null && CONG_LOI.includes(r.status)) throw loiCong(r.status, 'POST');
       if (!r.ok) { const ct = (d && d.detail) || {}; throw new LoiAPI(r.status, ct.ma || 'LOI', chuLoi(ct) || NN.t('err_generic')); }
       return d;
     },
@@ -100,6 +103,22 @@
   // `o`: ô bị lỗi máy chủ chỉ ra (vd TK_SAI → "acct_no") — hộp nhập mở lại, đánh dấu đúng ô đó
   class LoiAPI extends Error { constructor(status, ma, loi, o) { super(loi); this.status = status; this.ma = ma; this.o = o; } }
   EPL.LoiAPI = LoiAPI;
+  /* 20/10 (A2, rà điều xe): LỖI MẠNG. fetch ném TypeError khi mất mạng, máy chủ tắt, rớt kết nối giữa chừng — trước đây toast hiện
+   * nguyên chữ "Failed to fetch" tiếng Anh. Nay là LoiAPI status 0, mã MAT_MANG, câu ba thứ tiếng: lệnh GET «chưa tải được dữ liệu»,
+   * lệnh ghi «chưa lưu — dữ liệu còn trên màn, có mạng thì bấm lại» (màn không xoá ô đã gõ khi lưu hỏng). status 0 giữ đúng cách màn
+   * tài xế nhận ra mất mạng (phieu-cua-toi laMatMang: không phải LoiAPI HOẶC status rỗng) → thao tác vẫn vào hàng đợi như cũ.
+   * Cổng trước máy chủ (nginx ở host) trả 502 / 503 khi máy chủ đang khởi động lại, 504 khi chờ quá lâu — thân là trang HTML, không
+   * phải {ma, loi}: 502 / 503 yêu cầu chưa tới máy chủ → câu mất mạng; 504 máy chủ CÓ THỂ đã làm xong → nói rõ chưa chắc. Giữ status
+   * thật (màn tài xế xếp hàng gửi lại theo 502–504). Lỗi máy chủ có {ma, loi} không đổi gì. */
+  const CONG_LOI = [502, 503, 504];
+  const loiMang = (method) => new LoiAPI(0, 'MAT_MANG', NN.t(method === 'GET' ? 'loi_mang_tai' : 'loi_mang_ghi'));
+  const loiCong = (status, method) => status === 504
+    ? new LoiAPI(504, 'MAY_CHU_CHAM', NN.t(method === 'GET' ? 'loi_may_chu_cham_tai' : 'loi_may_chu_cham_ghi'))
+    : new LoiAPI(status, 'MAT_MANG', NN.t(method === 'GET' ? 'loi_mang_tai' : 'loi_mang_ghi'));
+  /** Lỗi mạng của một fetch gọi THẲNG (không qua API — tìm địa danh ở màn Tuyến đường…): TypeError "Failed to fetch" (Chrome) ·
+   *  "NetworkError…" (Firefox) · "Load failed" (Safari). TypeError khác (lỗi mã) thì không phải. */
+  EPL.laLoiMang = (e) => !!e && ((e instanceof LoiAPI && e.ma === 'MAT_MANG') ||
+    (e instanceof TypeError && /failed to fetch|networkerror|load failed|network request failed/i.test(e.message || '')));
   // Bộ huỷ GET của lượt nạp màn hiện tại (xem API.goi, napModule). Khai ở đây vì API.goi dùng trước khi tới phần điều hướng.
   let MOD_AC = null;
 
@@ -277,8 +296,12 @@
     const t = document.getElementById('toast'); t.textContent = chu; t.className = 'toast ' + (loai || ''); t.hidden = false;
     clearTimeout(t._h); t._h = setTimeout(() => { t.hidden = true; }, 3200);
   };
-  // GET bị huỷ vì người dùng đã rời màn (ma 'HUY') không phải lỗi — không bày lên màn mới
-  EPL.baoLoi = (e) => { if (e && e.ma === 'HUY') return; EPL.toast(e && e.message ? e.message : String(e), 'loi'); };
+  // GET bị huỷ vì người dùng đã rời màn (ma 'HUY') không phải lỗi — không bày lên màn mới.
+  // 20/10: lỗi mạng của fetch gọi thẳng (không qua API) cũng ra câu ba thứ tiếng, không phải "Failed to fetch".
+  EPL.baoLoi = (e) => {
+    if (e && e.ma === 'HUY') return;
+    EPL.toast(!(e instanceof LoiAPI) && EPL.laLoiMang(e) ? NN.t('loi_mang_tai') : e && e.message ? e.message : String(e), 'loi');
+  };
   /** Hộp xác nhận trong ứng dụng. Trả true/false. `noiDungHtml` tuỳ chọn. */
   EPL.hoi = (tieuDe, noiDungHtml, nhanOk) => new Promise(res => {
     const dlg = document.getElementById('hop-thoai');
@@ -512,6 +535,7 @@
     dangXuat(xoaHash = true) {
       try { localStorage.removeItem(KHOA_PHIEN); sessionStorage.removeItem(KHOA_PHIEN); } catch (e) { /* bỏ qua */ }
       USER = null; apLopVai();
+      clearInterval(henDem); DEM = {}; datTimPhieu();      // 20/10: thôi đếm việc định kỳ, cất ô tìm phiếu (người sau là vai khác)
       // Dọn màn đang mở (đồng hồ, tải nền, GPS): không thì nó còn gọi API sau khi đã đăng xuất. Màn còn đang nạp thì lượt
       // nạp đó tự dọn khi xong (gốc đã bị tháo bên dưới).
       const mc = EPL.modules[moduleHienTai];
@@ -564,7 +588,7 @@
     document.getElementById('uRole').innerHTML = NN.h('r_' + USER.role);
     // tên khoản mục chi phí thêm mới (08/10) — nạp một lần, màn đầu tiên chờ xong rồi mới dựng (napModule)
     EPL.tuKhoanMuc = EPL.napTenKhoanMuc();
-    noiVoBoc(); apKieuXem(); veNav(); dieuHuong(); taiDem();
+    noiVoBoc(); apKieuXem(); veNav(); dieuHuong(); EPL.lamMoiDem(); batDemDinhKy(); datTimPhieu();
   }
   /** Nạp lại tên khoản mục chi phí thêm mới vào từ điển. Lỗi mạng → bỏ qua (màn Phiếu xuất xe tự nạp lại khi mở). */
   EPL.napTenKhoanMuc = async () => {
@@ -757,12 +781,132 @@
   }
   EPL.datKieuXem = (k) => { kieuXem = k === 'top' ? 'top' : 'side'; ghiLS(K_VIEW, kieuXem); apKieuXem(); veNav(); };
 
+  /* Số việc đang chờ cạnh mục menu. 20/10 (D16): trước đây chỉ tải MỘT lần lúc đăng nhập (EPL.lamMoiDem không ai gọi) — kiểm xong
+   * một phiếu mà số vẫn đứng nguyên tới khi đăng xuất. Nay tải lại: mỗi 60 giây khi trang đang mở (thẻ bị ẩn thì thôi, hiện lại mà đã
+   * quá một phút thì tải ngay) · mỗi lần đổi màn (cách lần trước ít nhất 5 giây) · khi màn khác gọi EPL.lamMoiDem() (Phiếu xuất xe gọi
+   * sau khi lưu / kiểm). Mất mạng thì GIỮ số cũ — trang vẫn dùng được khi rớt mạng; lỗi máy chủ thật thì bỏ số. */
+  let henDem = 0, lanDem = 0, choDem = null;
   async function taiDem() {
-    try { DEM = await API.get('/api/dem-viec', { giu: true }); } catch (e) { DEM = {}; }
+    const u = USER; if (!u) return DEM;
+    lanDem = Date.now();
+    try { const d = await API.get('/api/dem-viec', { giu: true }); if (USER === u) DEM = d || {}; }
+    catch (e) { if (USER === u && !EPL.laLoiMang(e)) DEM = {}; }
     // Người dùng có thể đăng xuất hoặc đóng trang trong lúc chờ; vẽ vào trang đã mất thì bỏ qua.
     try { veNav(); } catch (e) { /* trang không còn */ }
+    return DEM;
   }
-  EPL.lamMoiDem = taiDem;
+  /** Gọi từ màn khác (Phiếu xuất xe sau khi lưu / kiểm / ghi sổ…). Nhiều lần liền nhau thì gộp một lượt hỏi. Trả lời hứa → DEM. */
+  EPL.lamMoiDem = () => (choDem = choDem || taiDem().finally(() => { choDem = null; }));
+  function batDemDinhKy() {
+    clearInterval(henDem);
+    henDem = setInterval(() => { if (USER && document.visibilityState !== 'hidden') EPL.lamMoiDem(); }, 60000);
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (USER && document.visibilityState === 'visible' && Date.now() - lanDem > 60000) EPL.lamMoiDem();
+  });
+  /** HỢP ĐỒNG điều hướng giữa các phiếu (20/10, với màn Phiếu xuất xe): mở một phiếu TỪ DANH SÁCH (bảng Theo dõi phiếu, chip «Việc của
+   *  tôi» ở Tổng quan, bộ lọc «Việc chờ tôi») thì ghi sessionStorage["epl_ds_phieu"] = JSON {ids: [mã phiếu theo thứ tự đang hiện],
+   *  ve: hash đầy đủ của danh sách kèm bộ lọc, nhan: chữ ngắn — «Theo dõi phiếu» / «Việc chờ tôi»}. Màn Phiếu xuất xe đọc khoá này để
+   *  hiện ‹ Phiếu trước · Phiếu sau › và nút Quay lại. `ids` rỗng → xoá khoá (mở phiếu từ ô tìm phiếu: không thuộc danh sách nào). */
+  EPL.KHOA_DS_PHIEU = 'epl_ds_phieu';
+  EPL.ghiDsPhieu = (ids, ve, nhan) => {
+    try {
+      if (!ids || !ids.length) sessionStorage.removeItem(EPL.KHOA_DS_PHIEU);
+      else sessionStorage.setItem(EPL.KHOA_DS_PHIEU, JSON.stringify({ ids, ve: ve || location.hash, nhan: nhan || '' }));
+    } catch (e) { /* chế độ riêng tư / đầy bộ nhớ: chỉ mất nút trước · sau, phiếu vẫn mở */ }
+  };
+
+  /* ---------------------------------------------------------------- ô tìm PHIẾU (B10, 20/10)
+   * Ô trên thanh đầu trang (index.html #timPhieu): gõ số DO, số xe, biển số, tên tài xế (chữ Lào, chữ Latin, mã) → /api/tim-phieu (chỉ
+   * các cột để nhận ra phiếu, KHÔNG có tiền — Bãi dùng nguyên gói) → danh sách thả xuống; ↑ ↓ chọn, Enter / bấm là mở phiếu. Phím "/"
+   * đưa con trỏ vào ô (không khi đang gõ ở ô khác hay đang mở hộp thoại). Ctrl+K vẫn là tìm MÀN (ô ở thanh bên). Chỉ vai mở được màn
+   * Phiếu xuất xe mới có ô (tài xế, thủ kho không có) — máy chủ chặn y như vậy (bao_cao.XEM_PHIEU). */
+  const TP = { hen: 0, luot: 0, ds: [], chon: -1, q: '', con: false, trangThai: '' };
+  const tpO = () => document.getElementById('tpO');
+  const tpDs = () => document.getElementById('tpDs');
+  const coManPhieu = () => !!USER && EPL.manCuaVai(USER.role).some(m => m.id === 'phieu-xuat-xe');
+  function datTimPhieu() {
+    const o = document.getElementById('timPhieu'); if (!o) return;
+    o.hidden = !coManPhieu();
+    const i = tpO(); if (i) i.value = '';
+    TP.ds = []; TP.q = ''; TP.trangThai = ''; dongTimPhieu();
+  }
+  function dongTimPhieu() {
+    const ds = tpDs(), i = tpO(); if (ds) ds.hidden = true;
+    if (i) { i.setAttribute('aria-expanded', 'false'); i.removeAttribute('aria-activedescendant'); }
+  }
+  function veTimPhieu() {
+    const ds = tpDs(), i = tpO(); if (!ds || !i) return;
+    const dongDuoi = (khoa, thay, lop) => `<div class="tp-ghi ${lop || ''}">${NN.h(khoa, thay)}</div>`;
+    let html = '';
+    if (TP.trangThai === 'ngan') html = dongDuoi('tp_it_nhat');
+    else if (TP.trangThai === 'dang') html = dongDuoi('tp_dang_tim');
+    else if (TP.trangThai === 'loi') html = `<div class="tp-ghi tp-loi">${esc(TP.loi)}</div>`;
+    else if (!TP.ds.length) html = dongDuoi('tp_trong', { q: TP.q });
+    else {
+      html = TP.ds.map((p, k) => {
+        const xe = [p.truck_no, [p.plate_head, p.plate_trailer].filter(Boolean).join(' / ')].filter(Boolean).join(' · ');
+        const tuyen = p.origin || p.destination ? `${esc(p.origin || '—')} → ${esc(p.destination || '—')}` : '';
+        return `<button type="button" class="tp-muc ${k === TP.chon ? 'chon' : ''}" id="tp-${k}" role="option" aria-selected="${k === TP.chon}" data-k="${k}">
+          <span class="tp-dong1"><b class="mono">${esc(p.doc_no || '—')}</b><span class="tp-ngay">${EPL.ngay(p.doc_date)}</span>${p.kind ? `<span class="tp-loai">${NN.h(p.kind === 'gom' ? 'dn_gom' : 'dn_giao')}</span>` : ''}${p.transport_status ? EPL.tag(p.transport_status) : ''}</span>
+          <span class="tp-dong2" lang="lo">${esc(xe)}${xe ? ' · ' : ''}${esc(EPL.tenTaiXe(p, false)) || '—'}${p.driver_code ? ` <small>${esc(p.driver_code)}</small>` : ''}${tuyen ? ' · ' + tuyen : ''}</span></button>`;
+      }).join('') + (TP.con ? dongDuoi('tp_con', null, 'tp-con') : '')
+        + `<div class="tp-chan">${NN.h('tp_phim')}${thayTheoDoi() ? `<button type="button" class="tp-het" data-het="1">${NN.h('tp_xem_het')}</button>` : ''}</div>`;
+    }
+    ds.innerHTML = html; ds.hidden = false;
+    i.setAttribute('aria-expanded', 'true');
+    if (TP.chon >= 0) i.setAttribute('aria-activedescendant', 'tp-' + TP.chon); else i.removeAttribute('aria-activedescendant');
+    ds.querySelectorAll('.tp-muc').forEach(b => b.addEventListener('mousedown', (e) => { e.preventDefault(); moPhieuTim(+b.dataset.k); }));
+    const het = ds.querySelector('[data-het]');
+    if (het) het.addEventListener('mousedown', (e) => { e.preventDefault(); const q = TP.q; datTimPhieu(); tpO().blur(); EPL.di('theo-doi', { q }); });
+    const dang = ds.querySelector('.tp-muc.chon'); if (dang) dang.scrollIntoView({ block: 'nearest' });
+  }
+  const thayTheoDoi = () => !!USER && EPL.manCuaVai(USER.role).some(m => m.id === 'theo-doi');
+  async function timPhieu() {
+    const q = (tpO().value || '').trim();
+    TP.q = q; TP.chon = -1;
+    if (q.length < 2) { TP.ds = []; TP.trangThai = q ? 'ngan' : ''; return q ? veTimPhieu() : dongTimPhieu(); }
+    const luot = ++TP.luot;
+    TP.trangThai = 'dang'; if (!TP.ds.length) veTimPhieu();
+    try {
+      const r = await API.get('/api/tim-phieu?co=8&q=' + encodeURIComponent(q), { giu: true });
+      if (luot !== TP.luot) return;
+      TP.ds = (r && r.ds) || []; TP.con = !!(r && r.con); TP.trangThai = ''; TP.chon = TP.ds.length ? 0 : -1;
+    } catch (e) {
+      if (luot !== TP.luot) return;
+      TP.ds = []; TP.trangThai = 'loi'; TP.loi = e && e.message ? e.message : String(e);
+    }
+    if (document.activeElement === tpO()) veTimPhieu();
+  }
+  function moPhieuTim(k) {
+    const p = TP.ds[k]; if (!p) return;
+    EPL.ghiDsPhieu(null);              // phiếu tìm lẻ: không thuộc danh sách nào — màn phiếu không hiện ‹ trước · sau › của danh sách cũ
+    datTimPhieu(); tpO().blur();
+    EPL.di('phieu-xuat-xe', { id: p.id });
+  }
+  function noiTimPhieu() {
+    const i = tpO(); if (!i || i.dataset.noi) return;
+    i.dataset.noi = '1';
+    i.addEventListener('input', () => { clearTimeout(TP.hen); TP.hen = setTimeout(() => timPhieu(), 250); });
+    i.addEventListener('focus', () => { if (TP.q && (TP.ds.length || TP.trangThai)) veTimPhieu(); });
+    i.addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== i) dongTimPhieu(); }, 120));
+    i.addEventListener('keydown', (e) => {
+      const n = TP.ds.length;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        if (!n) return;
+        e.preventDefault();
+        TP.chon = (TP.chon + (e.key === 'ArrowDown' ? 1 : -1) + n) % n; veTimPhieu();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        // gõ xong bấm Enter ngay (chưa hết 250 ms chờ): tìm luôn rồi mở dòng đầu
+        if (TP.q !== i.value.trim()) { clearTimeout(TP.hen); timPhieu().then(() => { if (TP.ds.length) moPhieuTim(0); }); return; }
+        if (n) moPhieuTim(TP.chon >= 0 ? TP.chon : 0);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        if (!tpDs().hidden) dongTimPhieu(); else { i.value = ''; TP.q = ''; TP.ds = []; i.blur(); }
+      }
+    });
+  }
 
   const tenMod = (m, ngan) => NN.h(ngan && m.nav_s ? m.nav_s : m.nav);
   const tenModTho = (m) => NN.t(m.nav);
@@ -921,9 +1065,17 @@
           const t = document.getElementById('navTim');
           if (t && kieuThuc() === 'side' && !thanhHep) { e.preventDefault(); t.focus(); t.select(); }
         }
+        // 20/10 (B10): "/" → ô tìm phiếu. Không cướp phím khi đang gõ trong ô khác, đang mở hộp thoại, hay có phím bổ trợ
+        if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !dangGo(e.target) && !document.querySelector('dialog[open]')) {
+          const o = document.getElementById('timPhieu'), i = tpO();
+          if (o && !o.hidden && i && o.getClientRects().length) { e.preventDefault(); i.focus(); i.select(); }
+        }
       });
     }
+    noiTimPhieu();
   }
+  /** Phần tử đang nhận chữ gõ (ô nhập, ô chọn, vùng soạn) — phím tắt một chữ cái không được cướp phím của nó. */
+  const dangGo = (el) => !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
   EPL.noiVoBoc = noiVoBoc;
 
   function datTieuDe() {
@@ -988,7 +1140,7 @@
       let cu = null;
       try { cu = localStorage.getItem(khoaHTML(id)); } catch (e2) { cu = null; }
       if (cu) { HTML_DEM.set(id, cu); return cu; }
-      throw e;
+      throw EPL.laLoiMang(e) ? loiMang('GET') : e;      // 20/10: mất mạng, màn chưa từng mở → câu ba thứ tiếng
     }
   }
   // Tệp .js / .css của module: mỗi tệp nạp MỘT lần, hai lượt cùng cần thì dùng chung một lời hứa.
@@ -997,7 +1149,7 @@
     if (!JS_NAP.has(id)) JS_NAP.set(id, new Promise((res, rej) => {
       const s = document.createElement('script'); s.src = themVer(goc + '.js'); s.onload = res;
       // hỏng (mất mạng) thì gỡ thẻ và quên lời hứa, lần vào màn sau còn thử lại được
-      s.onerror = () => { JS_NAP.delete(id); s.remove(); rej(new Error('Không nạp được ' + goc + '.js')); };
+      s.onerror = () => { JS_NAP.delete(id); s.remove(); rej(navigator.onLine === false ? loiMang('GET') : new Error('Không nạp được ' + goc + '.js')); };
       document.head.appendChild(s);
     }));
     return JS_NAP.get(id);
@@ -1044,6 +1196,7 @@
     // thì gắn lại — nhưng chính các GET ấy chiếm kết nối, màn người dùng vừa chọn phải xếp hàng chờ.
     huyGetCu();
     moduleHienTai = m.id; veNav(); datTieuDe(); if (EPL.veNutXuat) EPL.veNutXuat(m.id);
+    if (Date.now() - lanDem > 5000) EPL.lamMoiDem();      // 20/10 (D16): đổi màn là lúc người ta vừa làm xong việc ở màn trước
     const cu = dangNap.get(m.id);
     // MỖI LƯỢT NẠP MỘT GỐC RIÊNG. Trước đây mọi module vẽ thẳng vào #noi-dung, nên khi người
     // dùng bấm sang module khác trong lúc module cũ còn đang chờ API, module cũ vẽ xong sẽ đè

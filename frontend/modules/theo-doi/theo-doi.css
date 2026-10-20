@@ -1,38 +1,44 @@
-/* Theo dõi phiếu vận chuyển — bảng rộng 29 cột, cuộn ngang, đầu bảng dính */
-.td-tim{min-width:260px}
+/* Theo dõi phiếu vận chuyển — bảng một dòng một phiếu, cuộn ngang, đầu bảng dính.
+   20/10: bảng dựng từ danh sách cột (theo-doi.js COT) — không còn bề rộng cố định 2.960px: bảng rộng theo các cột đang hiện, ô xuống
+   dòng (tuyến, tài xế hai dòng Lào / Latin, xe hai dòng số xe / biển số). Ba cột ghim trái theo LỚP (td-g1 · td-g2 · td-g3), không theo
+   thứ tự cột — ẩn / hiện cột không làm lệch chỗ ghim. */
+.td-tim{min-width:220px}
 .td-cuon{max-height:calc(100vh / var(--ty-le, 1) - 235px);overflow:auto}
-.td-bang{min-width:2960px;font-size:12.5px}
+.td-bang{font-size:12.5px}
 .td-bang thead tr:nth-child(2) th{top:var(--td-h1, 37px)}   /* theo-doi.js đo chiều cao hàng một (VI + ລາວ cao gấp đôi) */
 .td-bang td.num{font-variant-numeric:tabular-nums}
-.td-bang tr{cursor:pointer}
+.td-bang th.num{text-align:right}
+.td-bang tbody tr{cursor:pointer}
 .td-hao{color:var(--red);font-size:11px;margin-left:4px}
 /* Cột "Tiền": mã tiền tệ của chính phiếu đó, để con số bên cạnh không phải đoán đơn vị. */
 .td-bang td.td-ccy{font-size:11.5px;letter-spacing:.3px;color:var(--muted);text-align:center}
 /* Dòng tổng: mỗi loại tiền một dòng, không cộng táo với cam. */
 .td-gop{display:inline-block;line-height:1.5;text-align:right;font-variant-numeric:tabular-nums}
-/* rà giao diện 23/09: tiêu đề một dòng (hàng 2 dính ở top:37px — hàng 1 gãy chữ là đè lên nhau); Bãi đã ẩn 14 cột
-   tiền nên bảng không cần rộng 2.960px — để khoảng trống lớn bên phải */
+/* tiêu đề một dòng (hàng 2 dính ngay dưới hàng 1 — hàng 1 gãy chữ là đè lên nhau) */
 .td-bang thead th{white-space:nowrap}
-body.vai-yard .td-bang,body.vai-driver .td-bang,body.vai-depot .td-bang,body.vai-parts .td-bang,body.vai-repair .td-bang{min-width:1700px}
+/* ô hai dòng: dòng phụ nhỏ, nhạt (tên Latin của tài xế · biển đầu / rơ-moóc) */
+.td-bang td.td-hai small{display:block;font-size:11px;color:var(--ink-3);line-height:1.35;white-space:nowrap}
+.td-bang td.td-tuyen{min-width:150px;max-width:210px}
+.td-bang td.td-khach{min-width:90px;max-width:170px}
+.td-bang td.td-quang{white-space:nowrap}
 
 /* phân trang (24/09, dữ liệu cả năm) */
 .td-trang{display:flex;gap:8px;align-items:center;justify-content:flex-end;padding:8px 14px;font-variant-numeric:tabular-nums}
 .td-trang:empty{display:none}
 
-/* 30/09 — cuộn ngang mà không mất dòng đang đọc: ba cột đầu (#, Ngày, Số phiếu) đứng yên */
-.td-bang thead tr:first-child th:first-child,.td-bang tbody td:first-child{position:sticky;left:0;width:40px;min-width:40px;max-width:40px}
-.td-bang thead tr:first-child th:nth-child(2){position:sticky;left:40px}
-.td-bang thead tr:nth-child(2) th:nth-child(1),.td-bang tbody td:nth-child(2){position:sticky;left:40px;width:100px;min-width:100px;max-width:100px}
-.td-bang thead tr:nth-child(2) th:nth-child(2),.td-bang tbody td:nth-child(3){position:sticky;left:140px;width:160px;min-width:160px;max-width:160px;
-  box-shadow:inset -1px 0 0 var(--line-2)}
-.td-bang tbody td:nth-child(-n+3){background:var(--paper);z-index:1}
-.td-bang thead tr:first-child th:nth-child(-n+2),.td-bang thead tr:nth-child(2) th:nth-child(-n+2){z-index:3}
-.td-bang tbody tr:hover td:nth-child(-n+3){background:#F6F8F5}
-.td-bang tbody tr.sel td:nth-child(-n+3){background:var(--green-soft)}
-.td-tim{min-width:220px}
+/* ghim trái: #, Ngày, Số phiếu (và ô nhóm "Số phiếu VC" trên chúng) đứng yên khi cuộn ngang */
+.td-bang .td-g1{position:sticky;left:0;width:38px;min-width:38px;max-width:38px}
+.td-bang .td-g2{position:sticky;left:38px;width:92px;min-width:92px;max-width:92px}
+.td-bang .td-g3{position:sticky;left:130px;width:148px;min-width:148px;max-width:148px}
+.td-bang thead th.td-gso{position:sticky;left:38px}
+.td-bang tbody td.td-g1,.td-bang tbody td.td-g2,.td-bang tbody td.td-g3{background:var(--paper);z-index:1}
+.td-bang thead th.td-g1,.td-bang thead th.td-g2,.td-bang thead th.td-g3,.td-bang thead th.td-gso{z-index:3}
+.td-bang tbody tr:hover td.td-g1,.td-bang tbody tr:hover td.td-g2,.td-bang tbody tr:hover td.td-g3{background:#F6F8F5}
 
-/* 01/10 — dòng tổng: ô nhãn ba cột đầu đứng yên khi cuộn ngang (như ba cột đầu của thân bảng) */
-.td-bang tfoot td.td-chan-nhan{position:sticky;left:0;z-index:2;white-space:nowrap;box-shadow:inset -1px 0 0 var(--line-2)}
+/* 01/10 — dòng tổng: ô nhãn ba cột đầu đứng yên khi cuộn ngang (như ba cột đầu của thân bảng). 20/10: nhãn được xuống dòng — nhãn dài
+   (dòng «tạm tính · n DO chưa có cân cuối…») mà một dòng thì nới rộng cả ba cột ghim, lệch chỗ ghim (đo được 57 / 138 / 223 thay vì
+   38 / 92 / 148) và cột Số phiếu trượt đè lên cột kế bên khi kéo ngang */
+.td-bang tfoot td.td-chan-nhan{position:sticky;left:0;z-index:2;white-space:normal}
 /* kiểu thanh trên: đầu trang cao hơn ~96px — trừ 235px thì đáy bảng lọt dưới cửa sổ */
 .app[data-view="top"] .td-cuon{max-height:calc(100vh / var(--ty-le, 1) - 318px)}
 
@@ -54,19 +60,68 @@ table.tbl.td-bang{border-collapse:separate;border-spacing:0}   /* table.tbl (chu
 .td-bang tr > :last-child{border-right:0}
 .td-bang tbody tr:last-child td{border-bottom:0}
 .td-bang tfoot td{border-top:2px solid var(--ink-3);border-bottom:0}   /* màu đậm: 1366 (thu 0,853) 2px làm tròn còn 1 điểm ảnh */
-/* mép phải ba cột dính (#, Ngày, Số phiếu): viền đậm, là viền của chính ô nên cuộn ngang vẫn còn (thay bóng inset cũ) */
-.td-bang thead tr:nth-child(2) th:nth-child(2),.td-bang tbody td:nth-child(3),.td-bang tfoot td.td-chan-nhan{box-shadow:none;border-right-color:var(--line-2)}
+/* mép phải cột ghim cuối (Số phiếu) và ô nhãn dòng tổng: viền đậm, là viền của chính ô nên cuộn ngang vẫn còn */
+.td-bang .td-g3,.td-bang tfoot td.td-chan-nhan{border-right-color:var(--line-2)}
 
-/* 01/10 — hai số 235 / 318 chưa tính dòng ghi chú dưới bảng và lề đáy trang: trang vẫn cuộn dọc ~77px (thanh trên) / ~96px
-   (thanh bên) dù bảng đã cuộn trong khung. theo-doi.js (datCao) đo lại chiều cao thật sau mỗi lần vẽ, đổi tiếng, đổi cỡ cửa
-   sổ, đặt vào --td-cao (biến chứ không style trực tiếp: quy tắc in vẫn thắng) — hai dòng dưới chỉ là số ban đầu (đo bằng Chrome 1680×934 · 1366×768, tiếng Việt, không thanh chia trang). */
+/* 01/10 — hai số 235 / 318 chưa tính dòng ghi chú dưới bảng và lề đáy trang: theo-doi.js (datCao) đo lại chiều cao thật sau mỗi lần
+   vẽ, đổi tiếng, đổi cỡ cửa sổ, đặt vào --td-cao (biến chứ không style trực tiếp: quy tắc in vẫn thắng) — hai dòng dưới chỉ là số ban đầu. */
 .td-cuon{max-height:var(--td-cao, calc(100vh / var(--ty-le, 1) - 332px))}
 .app[data-view="top"] .td-cuon{max-height:var(--td-cao, calc(100vh / var(--ty-le, 1) - 396px))}
-/* ô tìm giãn vào chỗ trống của thanh lọc (rà 01/10: 1366 tiếng Anh chữ gợi ý bị cắt "…driver, tr"), tối đa 420px — như màn Xe */
-.toolbar .td-tim{flex:1 1 260px;min-width:220px;max-width:420px}
+/* ô tìm giãn vào chỗ trống của thanh lọc, tối đa 340px (20/10: nhường chỗ cho bốn ô lọc nhanh — một hàng ở 1366) */
+.toolbar .td-tim{flex:1 1 200px;min-width:170px;max-width:340px}
 
 /* 12/10 — doanh thu TẠM TÍNH (DO chưa có cân cuối): chữ nghiêng nhạt + nhãn nhỏ; dòng tổng riêng dưới dòng tổng chính */
 .td-tam{font-style:italic;color:var(--ink-3);cursor:help}
 .td-tam-nhan{display:block;margin-top:1px;font-size:10.5px;font-weight:600;font-style:italic;color:var(--amber);white-space:nowrap;cursor:help}
 .td-bang tfoot tr.td-chan-tam td{font-weight:500;color:var(--ink-3);border-top:1px dashed var(--line-2)}
 .td-bang tfoot tr.td-chan-tam td.td-chan-nhan{font-style:italic;font-weight:600;color:var(--amber)}
+
+/* 20/10 (D21) — bấm tiêu đề để sắp: chữ đổi màu khi rê, mũi tên ▲ tăng / ▼ giảm; cột chưa sắp thì mũi tên mờ hai chiều */
+.td-bang th.td-sap{cursor:pointer;user-select:none}
+.td-bang th.td-sap:hover{color:var(--green)}
+.td-bang th.td-sap:focus-visible{outline:2px solid var(--green-2);outline-offset:-2px}
+.td-mui{display:inline-block;margin-left:4px;font-style:normal;font-size:9px;line-height:1;vertical-align:1px;color:var(--ink-3);opacity:.45}
+.td-mui::after{content:"▲▼";letter-spacing:-1px}
+.td-bang th.sap-tang .td-mui,.td-bang th.sap-giam .td-mui{opacity:1;color:var(--green);font-size:10px}
+.td-bang th.sap-tang .td-mui::after{content:"▲"}
+.td-bang th.sap-giam .td-mui::after{content:"▼"}
+.td-bang th.sap-tang,.td-bang th.sap-giam{color:var(--green)}
+
+/* 20/10 — thanh lọc MỘT hàng ở 1366 (khung ~1.309px, kể cả kế toán có ô «Quy về Kíp»): mỗi ô một bề rộng cố định, nhãn dài (tiếng
+   Lào) thì cắt bằng «…» thay vì đẩy ô rộng ra; ô tìm co giãn vào phần còn lại. Tên khách / tuyến dài: đọc đủ khi mở danh sách. */
+.toolbar.td-loc{gap:10px}
+.td-loc > .field:not(.td-tim){flex:0 0 auto;width:112px}
+.td-loc > .field label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.td-loc > .field select{width:100%}
+.td-loc > .field.td-st{width:136px}
+.td-loc > .field.td-cty{width:104px}
+.td-loc > .field.td-loai{width:86px}
+.td-loc > .field.td-chon{width:124px}
+.td-loc > .field.td-chon-tuyen{width:128px}
+.td-loc > .field.td-chon-xe{width:104px}
+.td-loc > .field.tien{width:78px}
+.toolbar.td-loc .td-tim{flex:1 1 150px;min-width:140px;max-width:340px}
+
+/* đầu thẻ bảng: tiêu đề, dòng tỷ giá, số dòng, ba nút trên MỘT hàng — dòng tỷ giá co lại cắt «…» (rê chuột đọc đủ) */
+.td-hd h3,.td-hd #td-dem,.td-hd .btn{white-space:nowrap}
+.td-hd #td-ty-gia{flex:0 1 auto;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.td-hd #td-ty-gia > span{white-space:nowrap}
+/* tên tài xế (chữ Lào) một dòng, tên Latin dòng dưới — không gãy tên người làm ba dòng */
+.td-bang td.td-hai > span{white-space:nowrap}
+
+/* 20/10 (D16) — nút «Việc chờ tôi»: bật thì nền xanh; số = mọi việc đang chờ người đăng nhập (như số trên menu) */
+.td-cho-toi{display:inline-flex;align-items:center;gap:6px;height:37px;padding:0 12px;border:1px solid var(--line-2);border-radius:var(--r);
+  background:var(--paper);color:var(--ink);font:inherit;font-weight:600;cursor:pointer;white-space:nowrap}
+.td-cho-toi svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.td-cho-toi b{min-width:20px;padding:1px 7px;border-radius:999px;background:var(--bg-2);color:var(--ink-2);font-size:12px;text-align:center}
+.td-cho-toi b[hidden]{display:none}
+.td-cho-toi:hover{border-color:var(--green-2)}
+.td-cho-toi.bat{background:var(--green);border-color:var(--green);color:#fff}
+.td-cho-toi.bat b{background:#fff;color:var(--green)}
+
+/* 20/10 — nút «Cột» và hộp chọn cột */
+.td-cot-ic{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
+.hop-thoai:has(.td-cot-luoi){width:min(680px,calc(94vw / var(--ty-le, 1)))}     /* hộp mặc định 440px: ba cột ô đánh dấu không đủ chỗ */
+.td-cot-luoi{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px 16px}
+.td-cot-muc{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;cursor:pointer}
+.td-cot-muc small{color:var(--ink-3)}

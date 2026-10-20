@@ -21,6 +21,8 @@
   // 09/10 (anh Khampla): kỳ xem là KHOẢNG NGÀY {tu, den} chọn ở bộ lọc thời gian dùng chung (KY) — trước đây chỉ một tháng.
   // Trọn một tháng thì gọi API bằng `thang` như cũ (KTG.thamSo), còn lại tu/den; tối đa một năm (máy chủ đệm báo cáo theo ngày).
   let root, ky, KY, d, xh, ty_gia, charts = {};
+  // 20/10 (D16): «Việc của tôi» của kỳ đang xem — /api/viec-cho-toi (mã phiếu theo thứ tự ưu tiên + số phiếu); null = chưa có / hỏng
+  let VIEC = null;
   const laKyThang = () => !!KTG.laThang(ky);
   /* Tháng trống (01/10). BAO: vào màn mà tháng này chưa có phiếu → đã tự sang tháng gần nhất có phiếu. GAN: tháng gần nhất
    * có phiếu khi người dùng TỰ chọn một tháng trống — nút trên thanh công cụ đưa về đó. */
@@ -114,11 +116,13 @@
   async function taiThat() {
     ky = KY.giaTri;
     const ts = KTG.thamSo(ky).toString();
-    const [a, b, c] = await Promise.all([
+    const [a, b, c, v] = await Promise.all([
       API.get('/api/bao-cao/tong-quan?' + ts),
       API.get('/api/bao-cao/xu-huong?' + ts).catch(() => null),   // endpoint mới; thiếu thì vẫn vẽ phần cũ
       API.get('/api/rates'),
+      API.get('/api/viec-cho-toi?' + ts).catch(() => null),       // 20/10: chip «Việc của tôi» — hỏng thì chip lấy số cũ của xu-huong
     ]);
+    VIEC = v;
     // kỳ trống mà người dùng tự chọn: tìm tháng gần nhất có phiếu cho nút trên thanh công cụ (chỉ hỏi khi trống)
     const g = a && !a.so_phieu ? await KTG.gan(ky, {}) : null;
     GAN = g && !g.co ? g.gan : null;
@@ -280,7 +284,10 @@
       ['tq_q_late', q.di_lau, 'bad', 'theo-doi-tuyen', { o: 'di_lau' }],
       ['tq_q_incident', q.su_co, 'bad', 'theo-doi-tuyen', { o: 'su_co_mo' }],
       ['tq_q_cho_so', q.cho_hoa_don, 'warn', 'theo-doi-tuyen', { o: 'cho_hoa_don' }],
-      ['tq_q_my_work', q.viec_toi, 'info', 'phieu-xuat-xe', q.viec_phieu ? { id: q.viec_phieu } : {}],
+      // 20/10 (D16): số = PHIẾU đang chờ chính người đăng nhập trong kỳ (/api/viec-cho-toi — cùng luật bộ lọc «Việc chờ tôi» của Theo dõi
+      // phiếu); bấm là ghi cả danh sách (EPL.ghiDsPhieu) rồi mở phiếu đầu tiên — màn phiếu có ‹ trước · sau ›, Quay lại về Theo dõi phiếu
+      // lọc «Việc chờ tôi» cùng kỳ. Trước đây chỉ mở phiếu đầu, số là số MỤC (một phiếu ba mục chờ đếm ba).
+      ['tq_q_my_work', VIEC ? VIEC.dem : q.viec_toi, 'info', 'viec-toi', {}],
       ['tq_q_fuel', q.phieu_linh_cho, 'tan', 'kho:chung-tu', {}],       // G8 06/10: Web kho anh Tune → Danh sách chứng từ
       ['tq_q_unpaid', q.chua_thu_lak != null ? so(q.chua_thu_lak / 1e6, 1) + 'M LAK' : null, 'warn', 'theo-doi', { finance_status: 'unpaid', ...KTG.diaChi(ky) }],
     ].filter(ch => !(laBai() && ['tq_q_unpaid', 'tq_q_cho_so'].includes(ch[0])));   // hoá đơn và thu tiền không phải việc của Bãi
@@ -289,11 +296,20 @@
       `<span class="sep"></span><span class="right"><span id="tq-quick-stamp"></span><label><input type="checkbox" id="tq-auto">${NN.h('tq_auto')}</label></span>`;
     root.querySelector('#tq-quick-stamp').textContent = `${NN.t('tq_updated')} ${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
     root.querySelectorAll('.tq-chip').forEach(el => { const ch = chips[+el.dataset.i];
-      el.addEventListener('click', () => (ch[3] === 'kho:chung-tu' ? moKhoChungTu() : ch[3].startsWith('kt:') ? EPL.moKeToan(ch[3].slice(3), ch[4]) : EPL.di(ch[3], ch[4]))); });
+      el.addEventListener('click', () => (ch[3] === 'viec-toi' ? moViecToi(q) : ch[3] === 'kho:chung-tu' ? moKhoChungTu() : ch[3].startsWith('kt:') ? EPL.moKeToan(ch[3].slice(3), ch[4]) : EPL.di(ch[3], ch[4]))); });
     const auto = root.querySelector('#tq-auto'); auto.checked = !!autoTimer;
     auto.addEventListener('change', () => { clearInterval(autoTimer); autoTimer = auto.checked ? setInterval(() => tai().catch(EPL.baoLoi), 60000) : null; });
   }
   let autoTimer = null;
+  /** Chip «Việc của tôi»: có việc → ghi danh sách theo hợp đồng điều hướng (js/chung.js EPL.ghiDsPhieu) rồi mở phiếu đầu tiên; không có
+   *  việc → Theo dõi phiếu lọc «Việc chờ tôi» (thấy rõ là trống, thay vì mở một tờ phiếu trắng như trước). */
+  function moViecToi(q) {
+    const ve = '#/theo-doi?' + new URLSearchParams({ ...KTG.diaChi(ky), cho_toi: '1' });
+    const ids = VIEC ? VIEC.ids || [] : (q.viec_phieu ? [q.viec_phieu] : []);
+    if (!ids.length) { location.hash = ve; return; }
+    EPL.ghiDsPhieu(ids, ve, NN.t('tq_q_my_work'));
+    EPL.di('phieu-xuat-xe', { id: ids[0] });
+  }
 
   /* ---------- B2. Dòng thời gian chuyến: Gantt theo ngày, 5 giai đoạn nối tiếp ---------- */
   const GD = [['s_dispatched', 'xuat_xe'], ['s_transit', 'toi_bai'], ['tq_g_border', 'cua_khau'], ['s_arrived', 'cang'], ['dt_st_da_tao_so', 'hoa_don']];   // mốc kết thúc mỗi đoạn; 'thanh_toan' là chấm cuối

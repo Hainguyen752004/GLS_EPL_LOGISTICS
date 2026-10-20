@@ -148,6 +148,13 @@ def viec_dang_cho(vai, muc, trang_thai):
     return False
 
 
+def cap_dang_cho(vai):
+    """20/10 (D16 «Việc chờ tôi»): mọi cặp (mục, trạng thái) đang chờ CHÍNH vai này — đúng luật viec_dang_cho, bỏ trạng thái CUỐI chuỗi
+    của mục (mục I–II dừng ở "đã kiểm": Sếp có quyền ghi sổ mọi mục nhưng hai mục đó không có bước ghi sổ, không phải việc chờ).
+    Trả list [(mục, trạng thái)] theo thứ tự MUC × chuỗi; vai không làm mục nào (KT Doanh thu, tài xế, thủ kho) → []."""
+    return [(m, s) for m in MUC for s in CHUOI[m][:-1] if viec_dang_cho(vai, m, s)]
+
+
 def chuyen_muc(vai, muc, trang_thai_hien_tai, hanh_dong):
     """Trả trạng thái mới, hoặc bật lỗi 403/409 nói rõ vì sao."""
     if muc not in MUC:

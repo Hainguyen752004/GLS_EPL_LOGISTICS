@@ -1,0 +1,45 @@
+/* Ô TÌM PHIẾU trên thanh đầu trang (B10, 20/10) — index.html #timPhieu, js/chung.js (timPhieu).
+ * Số đo theo khung 1600 px của ứng dụng (.app zoom = --ty-le, chung.css). Danh sách thả xuống neo mép phải ô, đè lên màn (z-index
+ * dưới hộp thoại / toast). Không có ô tiền nào trong gợi ý — Bãi dùng nguyên. */
+.tim-phieu{position:relative;display:flex;align-items:center;gap:6px;flex:0 1 300px;min-width:210px;height:34px;padding:0 8px 0 10px;
+  border:1px solid var(--line-2);border-radius:var(--r);background:var(--paper)}
+.tim-phieu[hidden]{display:none}
+.tim-phieu:focus-within{border-color:var(--green-2);box-shadow:0 0 0 3px var(--green-soft)}
+.tim-phieu > svg{width:15px;height:15px;flex:none;fill:none;stroke:var(--ink-3);stroke-width:2;stroke-linecap:round}
+.tim-phieu input{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:13px;color:var(--ink);padding:0}
+.tim-phieu input:focus{outline:none}
+.tim-phieu input::placeholder{color:var(--ink-3)}
+/* gợi ý phím "/" — tắt khi đang gõ */
+.tim-phieu kbd{flex:none;font:600 11px/1 ui-monospace,Consolas,monospace;color:var(--ink-3);border:1px solid var(--line-2);border-bottom-width:2px;
+  border-radius:4px;padding:2px 6px;background:var(--bg)}
+.tim-phieu:focus-within kbd{display:none}
+
+.tp-ds{position:absolute;top:calc(100% + 6px);right:0;z-index:45;width:min(580px,calc(100vw / var(--ty-le, 1) - 40px));
+  max-height:min(470px,calc(100vh / var(--ty-le, 1) - 120px));overflow:auto;padding:6px;
+  background:var(--paper);border:1px solid var(--line-2);border-radius:var(--r-lg);box-shadow:0 14px 40px rgba(17,24,39,.18)}
+.tp-ds[hidden]{display:none}
+/* thanh đầu trang là lớp z-index 5 (chung.css); thanh xem nhanh của Tổng quan cũng dính ở lớp 5 và đứng sau trong trang → vẽ đè lên
+   danh sách. Chỉ lúc danh sách đang mở mới nâng thanh lên 7 (trên cả thanh menu kiểu thanh trên, lớp 6 — lúc đó menu đã đóng). */
+.topbar:has(#tpDs:not([hidden])){z-index:7}
+.tp-muc{display:flex;flex-direction:column;gap:3px;width:100%;text-align:left;border:0;background:none;padding:8px 10px;border-radius:8px;
+  cursor:pointer;font:inherit;color:var(--ink)}
+.tp-muc:hover{background:var(--bg)}
+.tp-muc.chon{background:var(--green-soft);box-shadow:inset 3px 0 0 var(--green-2)}
+.tp-dong1{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tp-dong1 b{font-size:13.5px}
+.tp-ngay{font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.tp-loai{font-size:11px;font-weight:600;color:var(--ink-2);background:var(--bg-2);border-radius:999px;padding:1px 8px}
+.tp-dong1 .tag{margin-left:auto}
+.tp-dong2{font-size:12.5px;color:var(--ink-2);line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tp-dong2 small{color:var(--ink-3);font-size:11px}
+.tp-ghi{padding:12px 10px;font-size:13px;color:var(--ink-2)}
+.tp-loi{color:var(--red)}
+.tp-ghi.tp-con{padding:6px 10px;font-size:12px;color:var(--amber)}
+.tp-chan{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px;padding:7px 8px 3px;
+  border-top:1px solid var(--line);font-size:11.5px;color:var(--ink-3)}
+.tp-het{border:0;background:none;color:var(--green);font:inherit;font-weight:600;cursor:pointer;padding:2px 4px;white-space:nowrap}
+.tp-het:hover{text-decoration:underline}
+
+/* màn hẹp (điện thoại): ô xuống một hàng riêng, trải hết chiều ngang */
+@media (max-width:900px){ .tim-phieu{flex:1 1 100%;order:5} .tp-ds{left:0;right:auto;width:100%} }
+@media print{ .tim-phieu{display:none!important} }

@@ -172,16 +172,77 @@ CHI_MUC = [
     ("ix_chung_tu_chua_day", "chung_tu", "(loai) WHERE da_day IS false"),        # tờ chưa đẩy sang kế toán
     ("ix_chung_tu_day_luc", "chung_tu", "(day_luc DESC) WHERE day_luc IS NOT NULL"),
     ("ix_trip_events_luc", "trip_events", "(ts DESC)"),
+    # 20/10 (D16 «Việc chờ tôi», số trên menu tự làm mới mỗi phút): mục đang ở giữa chuỗi duyệt — cả năm ~2 triệu dòng mục mà
+    # phần lớn đã "đã chi"; câu đếm (mục, trạng thái) của một vai đi thẳng vào đây thay vì quét cả bảng (routes/bao_cao._dk_cho_toi)
+    ("ix_trip_sections_cho", "trip_sections", "(section, status, trip_id) WHERE status <> 'paid'"),
 ]
 
 
 # Ô TÌM phiếu (số phiếu, tài xế, số xe, khách, biển số, nơi đi / đến, số phiếu quặng) — gộp thành MỘT biểu thức
 # để một chỉ mục trigram (pg_trgm) phục vụ được "chứa chữ …" trên 365.000 phiếu. Câu tìm ở routes/phieu.py phải
 # dùng ĐÚNG biểu thức này thì PostgreSQL mới dùng chỉ mục.
+# 20/10 (D21): thêm `tim_tai_xe` = tên Latin + mã tài xế (bảng drivers) — gõ "Bounmi" hay "TX-012" cũng ra phiếu, không chỉ tên Lào
+# chép trên phiếu. Cột này KHÔNG có trong models.Trip: DB tự điền bằng trigger (_cot_tim_tai_xe) — lập / đổi tài xế của phiếu, sửa tên
+# Latin / mã của tài xế đều tự cập nhật, mã Python không phải nhớ ghi.
 TIM_PHIEU_COT = ("doc_no", "driver_name", "truck_no", "customer_name", "plate_head", "plate_trailer",
-                 "origin", "destination", "ore_bill_no")
+                 "origin", "destination", "ore_bill_no", "tim_tai_xe")
 BIEU_THUC_TIM_PHIEU = " || ' ' || ".join("coalesce(%s, '')" % c for c in TIM_PHIEU_COT)
+# Biểu thức đổi thì TÊN chỉ mục đổi theo: "IF NOT EXISTS" chỉ xét tên, giữ tên cũ là giữ chỉ mục của biểu thức cũ — PostgreSQL
+# không dùng nó cho câu tìm mới (quét cả bảng). Tên trước đó bỏ ở CHI_MUC_TIM_CU.
+TEN_CHI_MUC_TIM = "ix_trips_tim_tx"
+CHI_MUC_TIM_CU = ("ix_trips_tim",)
 CO_TRGM = {"co": False}
+
+
+def _cot_tim_tai_xe():
+    """Cột trips.tim_tai_xe + hai trigger giữ nó đúng — chạy lại mỗi lần khởi động (đã có thì bỏ qua, như CHI_MUC).
+      · phiếu: lập mới / đổi driver_id → lấy tên Latin + mã của tài xế (trước khi ghi dòng);
+      · tài xế: sửa tên Latin / mã → ghi lại các phiếu của người đó.
+    Lần đầu thêm cột thì điền cho phiếu cũ; các lần sau chỉ điền dòng còn trống (phiếu chép vào lúc trigger chưa có)."""
+    from sqlalchemy import text
+    with engine.begin() as c:
+        if not c.execute(text("SELECT to_regclass('public.trips') IS NOT NULL AND to_regclass('public.drivers') IS NOT NULL")).scalar():
+            return
+        # cột PHẢI có (câu tìm của routes/phieu.loc_phieu đọc nó) — cùng quyền với ADD COLUMN của tao_bang, hỏng thì máy chủ không lên
+        c.execute(text("ALTER TABLE trips ADD COLUMN IF NOT EXISTS tim_tai_xe varchar"))
+    try:                     # hàm + trigger hỏng (DB không cho tạo hàm) thì tìm vẫn chạy, chỉ thiếu tên Latin / mã của phiếu mới
+        _trigger_tim_tai_xe()
+    except Exception as e:  # noqa: BLE001
+        print("  (không dựng được trigger tìm tên Latin tài xế: %s)" % str(e).splitlines()[0])
+
+
+def _trigger_tim_tai_xe():
+    from sqlalchemy import text
+    with engine.begin() as c:
+        c.execute(text("""
+            CREATE OR REPLACE FUNCTION epl_phieu_tim_tai_xe() RETURNS trigger LANGUAGE plpgsql AS $$
+            BEGIN
+              IF NEW.driver_id IS NULL THEN
+                NEW.tim_tai_xe := NULL;
+              ELSE
+                SELECT concat_ws(' ', d.name_latin, d.driver_code) INTO NEW.tim_tai_xe FROM drivers d WHERE d.id = NEW.driver_id;
+              END IF;
+              RETURN NEW;
+            END $$"""))
+        c.execute(text("""
+            CREATE OR REPLACE FUNCTION epl_tai_xe_tim_phieu() RETURNS trigger LANGUAGE plpgsql AS $$
+            BEGIN
+              UPDATE trips SET tim_tai_xe = concat_ws(' ', NEW.name_latin, NEW.driver_code)
+               WHERE driver_id = NEW.id AND tim_tai_xe IS DISTINCT FROM concat_ws(' ', NEW.name_latin, NEW.driver_code);
+              RETURN NULL;
+            END $$"""))
+        # chưa có thì dựng (không dùng CREATE OR REPLACE TRIGGER — chỉ có từ PostgreSQL 14; máy chủ host có thể cũ hơn). Đã có thì
+        # thôi: dựng lại mỗi lần khởi động là khoá cả bảng phiếu một nhịp. Thân hàm vẫn thay ở trên (CREATE OR REPLACE FUNCTION).
+        co = {r[0] for r in c.execute(text("SELECT tgname FROM pg_trigger WHERE NOT tgisinternal "
+                                           "AND tgname IN ('tg_trips_tim_tai_xe', 'tg_drivers_tim_phieu')"))}
+        if "tg_trips_tim_tai_xe" not in co:
+            c.execute(text("CREATE TRIGGER tg_trips_tim_tai_xe BEFORE INSERT OR UPDATE OF driver_id ON trips "
+                           "FOR EACH ROW EXECUTE PROCEDURE epl_phieu_tim_tai_xe()"))
+        if "tg_drivers_tim_phieu" not in co:
+            c.execute(text("CREATE TRIGGER tg_drivers_tim_phieu AFTER UPDATE OF name_latin, driver_code ON drivers "
+                           "FOR EACH ROW EXECUTE PROCEDURE epl_tai_xe_tim_phieu()"))
+        c.execute(text("UPDATE trips t SET tim_tai_xe = concat_ws(' ', d.name_latin, d.driver_code) FROM drivers d "
+                       "WHERE d.id = t.driver_id AND t.tim_tai_xe IS NULL"))
 
 
 def tao_chi_muc():
@@ -192,10 +253,13 @@ def tao_chi_muc():
             if bang in co_bang:
                 c.execute(text("CREATE INDEX IF NOT EXISTS %s ON %s %s" % (ten, bang, cot)))
     _gps_thang_toi()
+    _cot_tim_tai_xe()        # trước chỉ mục tìm: biểu thức của chỉ mục có cột này
     try:                     # pg_trgm cài THEO TỪNG DB (không đụng cấu hình chung của máy chủ); không cài được thì tìm vẫn chạy, chỉ chậm hơn
         with engine.begin() as c:
             c.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
-            c.execute(text("CREATE INDEX IF NOT EXISTS ix_trips_tim ON trips USING gin ((%s) gin_trgm_ops)" % BIEU_THUC_TIM_PHIEU))
+            c.execute(text("CREATE INDEX IF NOT EXISTS %s ON trips USING gin ((%s) gin_trgm_ops)" % (TEN_CHI_MUC_TIM, BIEU_THUC_TIM_PHIEU)))
+            for cu in CHI_MUC_TIM_CU:
+                c.execute(text("DROP INDEX IF EXISTS %s" % cu))
         CO_TRGM["co"] = True
     except Exception as e:  # noqa: BLE001
         print("  (không dựng được chỉ mục tìm pg_trgm: %s)" % str(e).splitlines()[0])

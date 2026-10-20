@@ -13,16 +13,16 @@ import datetime as dt
 from collections import defaultdict
 
 from fastapi import APIRouter, Depends, HTTPException, Response
-from sqlalchemy import func, literal, or_
+from sqlalchemy import and_, case, exists, false, func, literal, or_, select
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import (ChungTu, Driver, GuiSoTune, Part, Route, RouteStop, Supplier, TollCard,
+from models import (MUC_CHI, ChungTu, Driver, GuiSoTune, Part, Route, RouteStop, Supplier, TollCard,
                     TollCardMove, Trip, TripEvent, TripExpense, TripSection, Voucher)
 from routes.phieu import CO_TOI_DA, da_thu_theo_phieu, loc_phieu, nap_lo, xuat_phieu
 from routes.theo_doi import NGAY_COI_LA_LAU
 from services.bao_mat import can_vai, nguoi_hien_tai
-from services.phan_quyen import QUYEN, thay_tien_ban, thay_tien_chi, viec_dang_cho
+from services.phan_quyen import QUYEN, cap_dang_cho, thay_tien_ban, thay_tien_chi, viec_dang_cho
 from services.tinh_toan import cach_tra, tien_dong, tinh_phieu, ty_gia
 from services import dem_bao_cao as DEM
 from services import khoang_ngay as KN
@@ -36,6 +36,10 @@ router = APIRouter()
 # kho phụ tùng, tổ sửa chữa không có màn Tổng quan / Theo dõi phiếu / Tiền chuyến & nước / Xe liên kết — trước đây chỉ
 # ẩn ở giao diện, gọi thẳng API vẫn đọc được tiền chuyến của mọi tài xế. Admin luôn qua (can_vai).
 XEM_BAO_CAO = can_vai("yard", "acct", "expacct", "fuel", "treasury", "cash", "rev")
+# 20/10 (D16 «Việc chờ tôi», B10 ô tìm phiếu): vai CÓ màn phiếu — Theo dõi phiếu hoặc Phiếu xuất xe (chung.js MODULES · MAN_CUA_VAI:
+# tổ sửa chữa có Phiếu xuất xe, không có Theo dõi). Tài xế (màn Phiếu của tôi), thủ kho nhiên liệu, kho phụ tùng không có. Admin luôn qua.
+VAI_CO_PHIEU = ("yard", "acct", "expacct", "fuel", "treasury", "cash", "rev", "repair")
+XEM_PHIEU = can_vai(*VAI_CO_PHIEU)
 
 
 def _thang(thang):
@@ -530,43 +534,192 @@ def _dao(chuoi):
     return "".join(chr(0x10FFFF - ord(c)) for c in chuoi) if chuoi else chr(0x10FFFF) * 11
 
 
-def _trang_phieu(response, qs, trang, co):
+def _trang_phieu(response, qs, trang, co, thu_tu=None):
     """Phân trang chung cho các bảng một-dòng-một-phiếu: X-Tong = tổng số dòng khớp; không có `co` thì trả CẢ THÁNG
-    (xuất Excel cần đủ), có `co` thì một trang (tối đa CO_TOI_DA)."""
+    (xuất Excel cần đủ), có `co` thì một trang (tối đa CO_TOI_DA). `thu_tu` (20/10, bấm tiêu đề cột) — không có thì ngày, số phiếu."""
     response.headers["X-Tong"] = str(qs.order_by(None).count())
-    qs = qs.order_by(Trip.doc_date, Trip.doc_no)
+    qs = qs.order_by(*(thu_tu or (Trip.doc_date, Trip.doc_no)))
     if co:
         co = max(1, min(int(co), CO_TOI_DA))
         qs = qs.offset((max(1, int(trang or 1)) - 1) * co).limit(co)
     return qs.all()
 
 
-def _loc_td(qs, q=None, transport_status=None, finance_status=None, company=None):
-    """Bộ lọc của bảng theo dõi — chạy trong SQL (trước đây lọc trên trình duyệt, phải tải cả tháng về)."""
+# ---------------------------------------------------------------- «Việc chờ tôi» (20/10, D16)
+# Phiếu đang chờ CHÍNH người đăng nhập làm bước kế tiếp — luật services/phan_quyen.viec_dang_cho (bảng "ໜ້າວຽກ" của khách), qua
+# cap_dang_cho. Thêm hai điều cho bước NHẬP (mục còn "chờ" của Bãi / tổ sửa chữa), để con số chỉ đếm việc bấm được ngay:
+#   · phiếu đã khoá thì Bãi, tổ sửa không ghi được nữa (phieu._chan_khoa) — mục "chờ" của phiếu đã khoá không còn là việc của họ;
+#   · mục chi (III–VI) chưa có dòng nào thì không gửi kiểm được (phieu.duyet_muc: MUC_TRONG) — chuyến không có chi phí khác thì mục VI
+#     nằm "chờ" mãi, đếm vào là mọi phiếu đều thành việc của Bãi (trước 20/10 số ở Theo dõi là MỌI phiếu chưa xong — Bãi thấy 22).
+# KT Doanh thu không lo mục nào — việc ở MỨC PHIẾU như ô "Việc của tôi" của Tổng quan (xu_huong): đã khoá chưa tạo SO, SO chưa thu đủ.
+def _chua_khoa():
+    return or_(Trip.locked.is_(None), Trip.locked.is_(False))
+
+
+def _cap_cho(vai):
+    """(điều kiện mục ở bước SAU — kiểm · ghi sổ · chi, điều kiện mục ở bước NHẬP) trên một dòng TripSection; bước nhập còn phải
+    xét phiếu chưa khoá (_chua_khoa, ở câu ngoài). Vai không có bước nào thì None."""
+    cap = cap_dang_cho(vai)
+    sau = [and_(TripSection.section == m, TripSection.status == s) for m, s in cap if s != "wait"]
+    tt = [m for m, s in cap if s == "wait" and m not in MUC_CHI]
+    chi = [m for m, s in cap if s == "wait" and m in MUC_CHI]
+    co_dong = exists().where(TripExpense.trip_id == TripSection.trip_id, TripExpense.section == TripSection.section)
+    nhap = ([TripSection.section.in_(tt)] if tt else []) + ([and_(TripSection.section.in_(chi), co_dong)] if chi else [])
+    return (or_(*sau) if sau else None), (and_(TripSection.status == "wait", or_(*nhap)) if nhap else None)
+
+
+def _co_so():
+    return select(GuiSoTune.trip_id).where(GuiSoTune.status == "synced", GuiSoTune.trip_id.isnot(None))
+
+
+def _dk_cho_toi(vai):
+    """Điều kiện SQL trên Trip: phiếu đang chờ vai `vai`. `status <> 'paid'` viết rõ để PostgreSQL dùng chỉ mục một phần
+    ix_trip_sections_cho (database.CHI_MUC). Phiếu KHÔNG có ngày lập bỏ ra: màn Theo dõi lọc theo kỳ nên không bao giờ hiện được nó —
+    đếm vào là số trên menu lớn hơn danh sách «Việc chờ tôi» (bấm thử 20/10: phiếu thử LOHONG-… không ngày)."""
+    if vai == "rev":
+        return and_(Trip.doc_date.isnot(None), or_(
+            and_(Trip.locked.is_(True), Trip.id.notin_(_co_so())),
+            and_(Trip.id.in_(_co_so()), or_(Trip.finance_status.is_(None), Trip.finance_status != "paid"))))
+    sau, nhap = _cap_cho(vai)
+    dk = []
+    if sau is not None:
+        dk.append(Trip.id.in_(select(TripSection.trip_id).where(TripSection.status != "paid", sau)))
+    if nhap is not None:
+        dk.append(and_(_chua_khoa(), Trip.id.in_(select(TripSection.trip_id).where(TripSection.status != "paid", nhap))))
+    return and_(Trip.doc_date.isnot(None), or_(*dk)) if dk else false()
+
+
+@router.get("/api/viec-cho-toi")
+def viec_cho_toi(thang: str = None, tu: str = None, den: str = None, co: int = CO_TOI_DA, db: Session = Depends(get_db),
+                 user=Depends(XEM_PHIEU)):
+    """«Việc chờ tôi» của người đăng nhập: mã phiếu theo THỨ TỰ ƯU TIÊN (chờ lâu nhất trước — ngày lập phiếu, số phiếu tăng dần; như
+    phiếu đầu tiên của ô "Việc của tôi" ở Tổng quan), tối đa `co` (≤ CO_TOI_DA) mã · `dem` tổng số phiếu · `theo_muc` số phiếu theo
+    mục đang chờ (KT Doanh thu: cho_tao_so · cho_thu) · `tu_som` / `den_muon` ngày lập phiếu cũ nhất / mới nhất trong số đó (màn Theo dõi
+    mở rộng kỳ cho đủ). Không gửi kỳ thì mọi ngày; gửi `thang` hoặc `tu` … `den` thì chỉ phiếu lập trong kỳ (chip ở Tổng quan)."""
+    vai = user.role
+    ky = _trong(*_ky(thang, tu, den)) if (thang or tu or den) else (Trip.doc_date.isnot(None),)     # không ngày lập: xem _dk_cho_toi
+    qs = db.query(Trip.id).filter(_dk_cho_toi(vai), *ky)
+    dem = qs.order_by(None).count()
+    co = max(1, min(int(co or CO_TOI_DA), CO_TOI_DA))
+    ids = [r.id for r in qs.order_by(Trip.doc_date.asc().nullslast(), Trip.doc_no.asc()).limit(co)]
+    som, muon = (db.query(func.min(Trip.doc_date), func.max(Trip.doc_date)).filter(_dk_cho_toi(vai), *ky).one()
+                 if dem else (None, None))
+    if vai == "rev":
+        theo_muc = {"cho_tao_so": db.query(func.count(Trip.id)).filter(Trip.locked.is_(True), Trip.id.notin_(_co_so()), *ky).scalar(),
+                    "cho_thu": db.query(func.count(Trip.id)).filter(Trip.id.in_(_co_so()), or_(
+                        Trip.finance_status.is_(None), Trip.finance_status != "paid"), *ky).scalar()}
+    else:
+        sau, nhap = _cap_cho(vai)
+        dk = [x for x in (sau, and_(_chua_khoa(), nhap) if nhap is not None else None) if x is not None]
+        theo_muc = dict(db.query(TripSection.section, func.count(TripSection.trip_id)).join(Trip, Trip.id == TripSection.trip_id)
+                        .filter(TripSection.status != "paid", or_(*dk), *ky).group_by(TripSection.section).all()) if dk else {}
+    return {"ids": ids, "dem": dem, "theo_muc": {k: v for k, v in theo_muc.items() if v},
+            "tu_som": som.isoformat() if som else None, "den_muon": muon.isoformat() if muon else None}
+
+
+@router.get("/api/tim-phieu")
+def tim_phieu(q: str = "", co: int = 8, db: Session = Depends(get_db), user=Depends(XEM_PHIEU)):
+    """B10 (20/10) — Ô TÌM PHIẾU trên thanh đầu trang: gõ số DO, số xe, biển số, tên tài xế (Lào, Latin) hoặc mã tài xế → vài phiếu gợi ý.
+    Cùng bộ lọc chữ với /api/trips (loc_phieu — chỉ mục trigram), nhưng chỉ các cột để NHẬN RA phiếu: không có ô tiền nào (Bãi dùng được
+    nguyên gói), không tính dòng chi từng phiếu như /api/trips. Số phiếu BẮT ĐẦU bằng chữ gõ lên trước, rồi mới nhất trước.
+    Trả {ds: [...], con: còn phiếu khớp ngoài `co` dòng này}. Dưới 2 ký tự → rỗng (một chữ cái khớp gần hết bảng)."""
+    t = (q or "").strip()
+    if len(t) < 2:
+        return {"ds": [], "con": False}
+    co = max(1, min(int(co or 8), 20))
+    dau = t.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+    qs = loc_phieu(db.query(Trip.id, Trip.doc_no, Trip.doc_date, Trip.kind, Trip.company, Trip.truck_no, Trip.plate_head,
+                            Trip.plate_trailer, Trip.driver_name, Trip.customer_name, Trip.origin, Trip.destination,
+                            Trip.transport_status, Trip.locked, Driver.name_latin, Driver.driver_code)
+                   .outerjoin(Driver, Driver.id == Trip.driver_id), t)
+    ds = qs.order_by(case((Trip.doc_no.ilike(dau, escape="\\"), 0), else_=1), Trip.doc_date.desc().nullslast(),
+                     Trip.doc_no.desc()).limit(co + 1).all()
+    return {"ds": [{"id": r.id, "doc_no": r.doc_no, "doc_date": r.doc_date.isoformat() if r.doc_date else None, "kind": r.kind,
+                    "company": r.company, "truck_no": r.truck_no, "plate_head": r.plate_head, "plate_trailer": r.plate_trailer,
+                    "driver_name": r.driver_name, "driver_latin": r.name_latin, "driver_code": r.driver_code,
+                    "customer_name": r.customer_name, "origin": r.origin, "destination": r.destination,
+                    "transport_status": r.transport_status, "locked": bool(r.locked)} for r in ds[:co]],
+            "con": len(ds) > co}
+
+
+# 20/10 (D21): bấm tiêu đề cột để sắp. Chỉ cột nằm sẵn trên phiếu — tiền (doanh thu, lãi, chi) tính ra từ dòng chi, không sắp trong SQL
+# được. Trạng thái xếp theo thứ tự của QUY TRÌNH, không theo chữ cái ("arrived" đứng trước "dispatched" là đọc ngược).
+SAP_TD = {
+    "ngay": (Trip.doc_date,), "so": (Trip.doc_no,), "quang": (Trip.ore_bill_no,), "tuyen": (Trip.origin, Trip.destination),
+    "loai": (Trip.company,), "tai_xe": (Trip.driver_name,), "xe": (Trip.truck_no,), "khach": (Trip.customer_name,),
+    "hang": (Trip.goods_type,), "can_dau": (Trip.weight_origin,), "can_cuoi": (Trip.weight_dest,),
+    "vc": (case((Trip.transport_status == "dispatched", 1), (Trip.transport_status == "transit", 2),
+                (Trip.transport_status == "arrived", 3), else_=4),),
+    "tc": (case((Trip.finance_status == "unpaid", 1), (Trip.finance_status == "partial", 2),
+                (Trip.finance_status == "paid", 3), else_=4),),
+}
+
+
+def _thu_tu_td(sap):
+    """`sap` = khoá SAP_TD (tăng dần) hoặc '-khoá' (giảm dần); trống / lạ → None (mặc định ngày, số phiếu tăng dần). Ô trống luôn
+    xuống cuối; hoà nhau thì theo ngày, số phiếu — chia trang không nhảy dòng."""
+    s = (sap or "").strip()
+    cot = SAP_TD.get(s.lstrip("-"))
+    if not cot:
+        return None
+    giam = s.startswith("-")
+    return tuple((c.desc() if giam else c.asc()).nullslast() for c in cot) + (Trip.doc_date, Trip.doc_no, Trip.id)
+
+
+def _loc_td(qs, q=None, transport_status=None, finance_status=None, company=None, customer_id=None, route_id=None,
+            vehicle_id=None, kind=None, cho_toi=None):
+    """Bộ lọc của bảng theo dõi — chạy trong SQL (trước đây lọc trên trình duyệt, phải tải cả tháng về).
+    20/10 (D21 · D16): lọc nhanh theo khách · tuyến · xe · Gom / Giao; `cho_toi` = VAI người gọi → chỉ phiếu đang chờ vai đó."""
     if transport_status: qs = qs.filter(Trip.transport_status == transport_status)
     if finance_status: qs = qs.filter(Trip.finance_status == finance_status)
     if company: qs = qs.filter(Trip.company == company)
+    if customer_id: qs = qs.filter(Trip.customer_id == customer_id)
+    if route_id: qs = qs.filter(Trip.route_id == route_id)
+    if vehicle_id: qs = qs.filter(Trip.vehicle_id == vehicle_id)
+    if kind: qs = qs.filter(Trip.kind == kind)
+    if cho_toi: qs = qs.filter(_dk_cho_toi(cho_toi))
     return loc_phieu(qs, q)
+
+
+@router.get("/api/bao-cao/theo-doi/loc")
+def theo_doi_loc(db: Session = Depends(get_db), user=Depends(XEM_BAO_CAO)):
+    """20/10 (D21): dòng cho ba ô lọc nhanh của bảng theo dõi — khách · tuyến · xe, mỗi dòng [id, tên hiện]. Chỉ hai cột mỗi bảng: các
+    đường danh mục đầy đủ (/api/vehicles: ảnh, giấy tờ, số chuyến từng xe…) nặng gấp trăm lần cho một ô chọn. Đang dùng trước, đã ngưng
+    sau (phiếu cũ vẫn mang khách / xe đã ngưng)."""
+    from models import Customer, Vehicle
+    kh = db.query(Customer.id, Customer.name).order_by(Customer.active.desc(), Customer.name).all()
+    tuyen = db.query(Route.id, Route.name).order_by(Route.active.desc(), Route.name).all()
+    xe = db.query(Vehicle.id, Vehicle.truck_no, Vehicle.plate_head).order_by(Vehicle.active.desc(), Vehicle.truck_no).all()
+    return {"khach": [[r.id, r.name or ""] for r in kh], "tuyen": [[r.id, r.name or ""] for r in tuyen],
+            "xe": [[r.id, " · ".join(x for x in (r.truck_no, r.plate_head) if x)] for r in xe]}
 
 
 @router.get("/api/bao-cao/theo-doi/tong")
 def theo_doi_tong(thang: str = None, q: str = None, transport_status: str = None, finance_status: str = None,
                   company: str = None, quy: str = None, tu: str = None, den: str = None, tu_tim: bool = False,
-                  db: Session = Depends(get_db), user=Depends(XEM_BAO_CAO)):
+                  customer_id: str = None, route_id: str = None, vehicle_id: str = None, kind: str = None,
+                  cho_toi: bool = False, db: Session = Depends(get_db), user=Depends(XEM_BAO_CAO)):
     """Dòng TỔNG của bảng theo dõi trên TOÀN BỘ phiếu khớp bộ lọc (không chỉ trang đang xem) — cộng riêng từng loại
     tiền; `quy` (LAK · USD · …) thì mọi phiếu quy theo tỷ giá đã khoá trên chính phiếu đó, còn một con số. Cùng cách
     cộng với giao diện trước đây (modules/theo-doi: cong / ve_tien). Kỳ: tháng `thang` hoặc (09/10) khoảng `tu` … `den`.
     12/10 (Web, Việc 12): `tu_tim` + kỳ trống → thêm `gan` = tháng gần nhất có phiếu khớp bộ lọc ('YYYY-MM' | None) — màn Web
-    tự sang tháng đó lúc mới mở, như màn cũ (khoang_thoi_gian.js gan) nhưng tính ở máy chủ."""
+    tự sang tháng đó lúc mới mở, như màn cũ (khoang_thoi_gian.js gan) nhưng tính ở máy chủ.
+    20/10: thêm lọc khách · tuyến · xe · Gom / Giao và `cho_toi` (như bảng)."""
     dau, cuoi = _ky(thang, tu, den)
     # ghép từ phần tính sẵn của từng NGÀY cho đúng bộ lọc này (tính một lần cho mọi vai, bỏ khoá theo vai trên bản chép)
     loc = (q or "", transport_status or "", finance_status or "", company or "", (quy or "").strip().upper())
+    them = (customer_id or "", route_id or "", vehicle_id or "", kind or "")
+    loc += them if any(them) else ()         # 20/10: bốn lọc mới chỉ vào khoá đệm khi có — khoá cũ (không lọc thêm) vẫn dùng lại được
     cac = _cac_ngay(dau, cuoi)
     # 12/10: đổi khoá tdt6 → tdt7 — phần mỗi ngày tách thêm «tạm tính» (DO chưa có cân cuối, không cộng vào tổng)
     viec = [(("tdt7", d.isoformat()) + loc, [d.isoformat()], None) for d in cac]
     khoan = ("doanh_thu", "da_thu", "con_lai", "lai", "tam_tinh", "tam_con_lai")
     tong = {"so_phieu": 0, "tong_chi_lak": 0.0, "so_tam": 0, **{k: {} for k in khoan}}
-    for phan in DEM.lay_nhieu(db, viec, tinh_lo=lambda thieu: _tdt_lo(db, [cac[i] for i in thieu], *loc)):
+    # «Việc chờ tôi» KHÔNG qua bộ đệm: tập phiếu theo vai, và đổi theo SO bên kế toán (gui_so_tune không tăng phiên bản ngày) — tính
+    # thẳng; tập này nhỏ (chỉ phiếu còn việc)
+    cac_phan = (_tdt_lo(db, cac, *loc, cho_toi=user.role) if cho_toi else
+                DEM.lay_nhieu(db, viec, tinh_lo=lambda thieu: _tdt_lo(db, [cac[i] for i in thieu], *loc)))
+    for phan in cac_phan:
         tong["so_phieu"] += phan["so_phieu"]; tong["tong_chi_lak"] += phan["tong_chi_lak"]; tong["so_tam"] += phan["so_tam"]
         for k in khoan:
             _cong(tong[k], phan[k])
@@ -578,14 +731,16 @@ def theo_doi_tong(thang: str = None, q: str = None, transport_status: str = None
     if not thay_tien_chi(user.role):
         ra.pop("tong_chi_lak", None)
     if tu_tim and not ra["so_phieu"]:
-        ra["gan"] = _thang_gan(db, dau, cuoi, q, transport_status, finance_status, company)
+        ra["gan"] = _thang_gan(db, dau, cuoi, q, transport_status, finance_status, company, customer_id=customer_id,
+                               route_id=route_id, vehicle_id=vehicle_id, kind=kind, cho_toi=user.role if cho_toi else None)
     return ra
 
 
-def _thang_gan(db, dau, cuoi, q, transport_status, finance_status, company):
+def _thang_gan(db, dau, cuoi, q, transport_status, finance_status, company, **them):
     """Tháng gần nhất có phiếu khớp bộ lọc ngoài kỳ [dau, cuoi] — phiếu sát nhất trước `dau` và sau `cuoi`, chọn bên cách kỳ ít
-    tháng hơn (hoà thì bên trước), y cách màn cũ (frontend/js/khoang_thoi_gian.js gan). Không có phiếu nào → None."""
-    goc = lambda: _loc_td(db.query(Trip.doc_date), q, transport_status, finance_status, company)
+    tháng hơn (hoà thì bên trước), y cách màn cũ (frontend/js/khoang_thoi_gian.js gan). Không có phiếu nào → None.
+    `them` (20/10): các lọc mới của _loc_td (khách · tuyến · xe · Gom / Giao · cho_toi)."""
+    goc = lambda: _loc_td(db.query(Trip.doc_date), q, transport_status, finance_status, company, **them)
     truoc = goc().filter(Trip.doc_date < dau).order_by(Trip.doc_date.desc()).limit(1).scalar()
     sau = goc().filter(Trip.doc_date > cuoi).order_by(Trip.doc_date.asc()).limit(1).scalar()
     so_thang = lambda d: d.year * 12 + d.month
@@ -613,10 +768,13 @@ def _quy_dong(p, r, dich):
             "phi": doi(c.get("phi"), mh), "tru_vuot": doi(c.get("tru_vuot"), mh)}
 
 
-def _tdt_lo(db, cac_ngay, q, transport_status, finance_status, company, quy):
-    """Phần DÒNG TỔNG của từng ngày cho một bộ lọc: số phiếu · tổng chi LAK · bốn khoản theo từng loại tiền."""
+def _tdt_lo(db, cac_ngay, q, transport_status, finance_status, company, quy, customer_id="", route_id="", vehicle_id="",
+            kind="", cho_toi=None):
+    """Phần DÒNG TỔNG của từng ngày cho một bộ lọc: số phiếu · tổng chi LAK · bốn khoản theo từng loại tiền.
+    20/10: thêm lọc khách · tuyến · xe · Gom / Giao · `cho_toi` (vai — chỉ gọi thẳng, không qua bộ đệm)."""
     loc = _loc_td(db.query(Trip.id).filter(Trip.doc_date.in_(cac_ngay)), q or None, transport_status or None,
-                  finance_status or None, company or None).subquery()
+                  finance_status or None, company or None, customer_id or None, route_id or None, vehicle_id or None,
+                  kind or None, cho_toi).subquery()
     ds = db.query(*COT_TINH).filter(Trip.id.in_(db.query(loc.c.id))).all()
     dong = _dong_loc(db, Trip.id.in_(db.query(loc.c.id)))
     thu = _da_thu_loc(db, Trip.id.in_(db.query(loc.c.id)))
@@ -688,20 +846,29 @@ def _tron_tien(theo_tien):
 @router.get("/api/bao-cao/theo-doi")
 def theo_doi(response: Response, thang: str = None, trang: int = 1, co: int = None, q: str = None,
              transport_status: str = None, finance_status: str = None, company: str = None, tu: str = None, den: str = None,
-             quy: str = None, db: Session = Depends(get_db), user=Depends(XEM_BAO_CAO)):
+             quy: str = None, customer_id: str = None, route_id: str = None, vehicle_id: str = None, kind: str = None,
+             cho_toi: bool = False, sap: str = None, db: Session = Depends(get_db), user=Depends(XEM_BAO_CAO)):
     """Bảng "ລາຍງານ ຕິດຕາມໃບຂົນສົ່ງສິນຄ້າ" — một dòng một phiếu, đủ 29 cột như Excel.
 
     Vai không được thấy tiền bán thì các cột cước, doanh thu, lãi **không có trong gói trả về** —
     không phải chỉ ẩn cột ở giao diện.
     Dữ liệu cả năm (24/09): không ghi tháng thì là THÁNG NÀY — trước đây là mọi phiếu từ trước tới nay.
     09/10: `tu` … `den` (bộ lọc khoảng thời gian) thay cho tháng khi có.
-    12/10 (Web, Việc 12): `quy` (LAK · USD · …) → mỗi dòng thêm khối "quy" (_quy_dong) — Web hiện số đã quy, không tự đổi tiền."""
+    12/10 (Web, Việc 12): `quy` (LAK · USD · …) → mỗi dòng thêm khối "quy" (_quy_dong) — Web hiện số đã quy, không tự đổi tiền.
+    20/10 (D21 · D16): lọc nhanh `customer_id` · `route_id` · `vehicle_id` · `kind` (gom | giao); `cho_toi` → chỉ phiếu đang chờ người
+    gọi (_dk_cho_toi); `sap` = cột sắp (SAP_TD, '-' đứng trước là giảm dần) — không gửi thì như cũ (ngày, số phiếu tăng dần)."""
     dau, cuoi = _ky(thang, tu, den)
-    ds = _trang_phieu(response, _loc_td(db.query(Trip).filter(*_trong(dau, cuoi)), q, transport_status, finance_status, company),
-                      trang, co)
+    ds = _trang_phieu(response, _loc_td(db.query(Trip).filter(*_trong(dau, cuoi)), q, transport_status, finance_status, company,
+                                        customer_id, route_id, vehicle_id, kind, user.role if cho_toi else None),
+                      trang, co, _thu_tu_td(sap))
     thu = da_thu_theo_phieu(db, [p.id for p in ds])
     nap = nap_lo(db, ds)
     ra = [xuat_phieu(db, p, day_du=False, da_thu=thu.get(p.id, 0), vai=user.role, nap=nap) for p in ds]
+    # 20/10 (D21): tên Latin của tài xế (một câu cho cả trang) — ô tìm khớp cả tên Latin, bảng phải hiện tên đó cho người ta nhận ra dòng
+    ma_tx = {p.driver_id for p in ds if p.driver_id}
+    latin = dict(db.query(Driver.id, Driver.name_latin).filter(Driver.id.in_(ma_tx)).all()) if ma_tx else {}
+    for p, r in zip(ds, ra):
+        r["driver_latin"] = latin.get(p.driver_id)
     from models import TIEN_TE
     dich = (quy or "").strip().upper()
     if dich in TIEN_TE:                      # tiền lạ → bỏ qua (ty_gia sẽ ra 1.0, số quy sai)
@@ -944,10 +1111,12 @@ def dem_viec(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
                               if getattr(user, "driver_id", None) else 0)
         return {k: v for k, v in r.items() if v}
 
-    # Phiếu chưa xong: chưa về, hoặc về rồi mà chưa xong phần tiền
-    if admin or vai in ("yard", "acct", "expacct", "rev", "cash", "treasury", "fuel"):
-        r["theo-doi"] = db.query(Trip).filter(
-            (Trip.transport_status != "arrived") | (Trip.finance_status != "paid")).count()
+    # 20/10 (D16): số ở Theo dõi phiếu = phiếu đang chờ CHÍNH người đăng nhập (theo vai — _dk_cho_toi, như bộ lọc «Việc chờ tôi» của
+    # màn đó). Trước đây là MỌI phiếu chưa về / chưa thu xong, vai nào cũng cùng một số (Bãi thấy 22 mà không biết phiếu nào của mình).
+    # Tổ sửa chữa không có màn Theo dõi → số gắn ở Phiếu xuất xe. Mỗi vai MỘT chỗ: thanh trên cộng số các màn trong nhóm, gắn hai chỗ
+    # là nhóm Vận tải ra gấp đôi.
+    if admin or vai in VAI_CO_PHIEU:
+        r["phieu-xuat-xe" if vai == "repair" else "theo-doi"] = db.query(func.count(Trip.id)).filter(_dk_cho_toi(vai)).scalar()
 
     # "Phiếu lĩnh · tạm ứng đang chờ cấp" đi theo màn Cấp phát, Kho nhiên liệu sang trang kế toán (28/09)
     if vai == "depot":
