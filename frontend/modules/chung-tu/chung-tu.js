@@ -263,10 +263,17 @@
     const h = CT[x.trip_id];
     const nhom = ghepNL(h ? h.nhom : x.nhom, NL[x.trip_id]);
     const coDong = h && h.dong ? h.dong.length + (h.thue ? 1 : 0) : null;
+    // 21/10: ba nút ĐI sang màn khác của DO này là <a href> — mở được ở thẻ mới
+    const diMo = {
+      phieu: EPL.href('phieu-xuat-xe', { id: x.trip_id }),
+      bt: EPL.href('but-toan-cho', { trip_id: x.trip_id, doc: x.doc_no }),
+      ttdt: EPL.href('tat-toan-doi-tac', { ky: (x.doc_date || '').slice(0, 7), owner_id: x.owner_id || '' }),
+    };
+    const nutMo = (m, khoa) => `<a class="btn sm lk-nut" role="button" href="${diMo[m]}" data-mo="${m}">${NN.h(khoa)}</a>`;
     const nut = [
-      duocVao('phieu-xuat-xe') ? `<button type="button" class="btn sm" data-mo="phieu">${NN.h('open_slip')}</button>` : '',
-      duocVao('but-toan-cho') ? `<button type="button" class="btn sm" data-mo="bt">${NN.h('hs_bt_cua_phieu')}</button>` : '',
-      x.company === 'joint' && duocVao('tat-toan-doi-tac') ? `<button type="button" class="btn sm" data-mo="ttdt">${NN.h('nav_tt_doi_tac')}</button>` : '',
+      duocVao('phieu-xuat-xe') ? nutMo('phieu', 'open_slip') : '',
+      duocVao('but-toan-cho') ? nutMo('bt', 'hs_bt_cua_phieu') : '',
+      x.company === 'joint' && duocVao('tat-toan-doi-tac') ? nutMo('ttdt', 'nav_tt_doi_tac') : '',
     ].join('');
     const coNhom = NHOM.filter(k => nhom[k] && nhom[k].muc !== 'khong'), khong = NHOM.filter(k => !nhom[k] || nhom[k].muc === 'khong');
     const dem = {}; coNhom.forEach(k => { dem[nhom[k].muc] = (dem[nhom[k].muc] || 0) + 1; });
@@ -284,13 +291,17 @@
         <span class="grow"></span><span class="tom">${MUC.filter(m => dem[m]).map(m => `${dem[m]} ${esc(NN.t('hs_m_' + m).toLowerCase())}`).join(' · ')}</span></div>
       <div class="ct2-cuon">${than}</div>`;
     ct.querySelectorAll('[data-tct]').forEach(b => b.addEventListener('click', () => { tabCt = b.dataset.tct; veCt(); }));
-    ct.querySelectorAll('[data-mo]').forEach(b => b.addEventListener('click', () => {
+    ct.querySelectorAll('[data-mo]').forEach(b => EPL.noiLink(b, () => {
       const m = b.dataset.mo;
       if (m === 'phieu') EPL.di('phieu-xuat-xe', { id: x.trip_id });
       else if (m === 'bt') EPL.di('but-toan-cho', { trip_id: x.trip_id, doc: x.doc_no });
       else EPL.di('tat-toan-doi-tac', { ky: (x.doc_date || '').slice(0, 7), owner_id: x.owner_id || '' });
     }));
-    ct.querySelectorAll('a[data-bt]').forEach(a => a.addEventListener('click', () => EPL.di('but-toan-cho', { trip_id: x.trip_id, doc: x.doc_no, id: a.dataset.bt })));
+    ct.querySelectorAll('a[data-bt]').forEach(a => {
+      const t = { trip_id: x.trip_id, doc: x.doc_no, id: a.dataset.bt };
+      a.setAttribute('href', EPL.href('but-toan-cho', t));             // 21/10: có href — chuột phải / Ctrl mở ở thẻ mới
+      EPL.noiLink(a, () => EPL.di('but-toan-cho', t));
+    });
     datCao();
     // nạp hồ sơ đầy đủ (từng dòng tiền) và SO nhiên liệu — xong thì vẽ lại nếu vẫn đang xem DO này
     const id = x.trip_id;

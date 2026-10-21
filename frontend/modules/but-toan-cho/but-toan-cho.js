@@ -182,8 +182,8 @@
         <div class="grow"></div>${EPL.tag(s.mau, s.nhan)}
         ${guiDuoc() && (b.status === 'cho_gui' || b.can_dao) ? `<button type="button" class="btn sm primary" data-btc="gui">${NN.h('btc_gui')}</button>` : ''}
         ${guiDuoc() && b.status === 'da_gui' && !b.can_dao ? `<button type="button" class="btn sm" data-btc="cap-nhat">${NN.h('ck_cap_nhat')}</button>` : ''}
-        ${b.trip_id && b.trip_doc_no && duocVao('chung-tu') ? `<button type="button" class="btn sm" data-mo-do="hs">${NN.h('btc_mo_ho_so')}</button>` : ''}
-        ${b.trip_id && b.trip_doc_no && duocVao('phieu-xuat-xe') ? `<button type="button" class="btn sm" data-mo-do="phieu">${NN.h('btc_mo_do')}</button>` : ''}</div>
+        ${b.trip_id && b.trip_doc_no && duocVao('chung-tu') ? `<a class="btn sm lk-nut" role="button" href="${EPL.href('chung-tu', { id: b.trip_id })}" data-mo-do="hs">${NN.h('btc_mo_ho_so')}</a>` : ''}
+        ${b.trip_id && b.trip_doc_no && duocVao('phieu-xuat-xe') ? `<a class="btn sm lk-nut" role="button" href="${EPL.href('phieu-xuat-xe', { id: b.trip_id })}" data-mo-do="phieu">${NN.h('btc_mo_do')}</a>` : ''}</div>
       <div class="btc-nguon-gt">${DK[b.nguon] ? `<b>${esc(DK[b.nguon])}</b>` : ''}<span>${NN.h(NGUON.includes(b.nguon) ? GIAI[b.nguon] || 'btc_g_' + b.nguon : 'btc_g_khac')}</span></div>
       <div class="btc-the">
         <div><span>${NN.h('btc_ngay')}</span><b>${EPL.ngay(b.ngay)}</b></div>
@@ -200,7 +200,7 @@
         ${b.loi_gui && b.status !== 'huy' ? `<span class="neg">${b.attempts ? '#' + b.attempts + ' · ' : ''}${esc(b.loi_gui)}</span>` : ''}
       </div>`;
     o.querySelectorAll('[data-btc]').forEach(n => n.addEventListener('click', () => viec(b, n.dataset.btc, n)));
-    o.querySelectorAll('[data-mo-do]').forEach(n => n.addEventListener('click', () => (n.dataset.moDo === 'hs'
+    o.querySelectorAll('[data-mo-do]').forEach(n => EPL.noiLink(n, () => (n.dataset.moDo === 'hs'      // 21/10: <a href>
       ? EPL.di('chung-tu', { id: b.trip_id }) : EPL.di('phieu-xuat-xe', { id: b.trip_id }))));
   }
 

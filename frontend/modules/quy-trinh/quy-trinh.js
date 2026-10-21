@@ -168,7 +168,7 @@
           <div class="qt-b-vai">${b.vai.map(v => `<span class="qt-vai">${tenVai(v)}</span>`).join('')}
             ${b.o ? `<span class="qt-man qt-man-kt qt-o-${b.o}">${NN.h(NOI[b.o])}</span>` : ''}
             ${b.o === 'kho' || !b.man ? ''
-              : vaoDuoc(b.man) ? `<button class="qt-man" data-man="${b.man}">${NN.h('qt_man', { ten: tenMan(b.man) })}</button>`
+              : vaoDuoc(b.man) ? `<a class="qt-man lk-nut" href="${EPL.href(b.man)}" data-man="${b.man}">${NN.h('qt_man', { ten: tenMan(b.man) })}</a>`
               : `<span class="qt-man qt-man-khoa" title="${esc(NN.t('qt_man_khoa_t'))}">${NN.h('qt_man_khoa', { ten: tenMan(b.man) })}</span>`}</div></div>
         ${coKhoa(khoaSau(b)) ? `<span class="qt-sau">${NN.h(khoaSau(b))}</span>` : ''}</div>
       <div class="qt-b-than">
@@ -236,7 +236,7 @@
     ['chuyen', 'ngoai', 'ma-tran', 'chung-tu'].forEach(k => { q('#qt-' + k).hidden = k !== x; });
   }
   function noiNut() {
-    root.querySelectorAll('[data-man]').forEach(b => b.addEventListener('click', () => EPL.di(b.dataset.man)));
+    root.querySelectorAll('[data-man]').forEach(b => EPL.noiLink(b, () => EPL.di(b.dataset.man)));   // 21/10: <a href>
     root.querySelectorAll('[data-ct]').forEach(b => b.addEventListener('click', () => {
       doiXem('chung-tu');
       const tr = q('#qt-ct-' + b.dataset.ct);
@@ -249,7 +249,7 @@
     async init(r) {
       root = r; xem = 'chuyen';
       root.querySelectorAll('.qt-tab button').forEach(b => b.addEventListener('click', () => doiXem(b.dataset.xem)));
-      q('#qt-mo-so').addEventListener('click', () => EPL.di('chung-tu', { tab: 'so' }));
+      EPL.noiLink(q('#qt-mo-so'), () => EPL.di('chung-tu', { tab: 'so' }));
       D = await API.get('/api/quy-trinh');
       veHet();
     },

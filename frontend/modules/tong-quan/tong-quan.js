@@ -184,16 +184,14 @@
     /* 2. Tiến trình 5 bước */
     const P = [['s_dispatched', d.dem.dispatched, 'dispatched'], ['s_transit', d.dem.transit, 'transit'], ['s_arrived', d.dem.arrived, 'arrived'], ['dt_st_da_tao_so', d.dem.invoiced, 'invoiced'], ['s_paid', d.dem.paid, 'paid']];
     const tongP = P.reduce((a, p) => a + (p[1] || 0), 0) || 1;
-    root.querySelector('#tq-tien-do').innerHTML = P.map((p, i) => `<div class="tq-step" role="button" tabindex="0" data-i="${i}" data-st="${p[2]}">
+    // 21/10: mỗi bước là <a href> (mở được ở thẻ mới) — Enter có sẵn, phím cách: chung.js (a[role=button])
+    root.querySelector('#tq-tien-do').innerHTML = P.map((p, i) => `<a class="tq-step lk-khoi" role="button" href="${EPL.href('theo-doi', { transport_status: p[2], ...KTG.diaChi(ky) })}" data-i="${i}" data-st="${p[2]}">
         <div class="n">${p[1]}<small>${so(p[1] / tongP * 100)}%</small></div>
         <div class="l"><i></i>${NN.h(p[0])}</div>
         <div class="m"><b style="width:${p[1] / tongP * 100}%"></b></div>
-      </div>`).join('');
+      </a>`).join('');
     root.querySelector('#tq-phan-bo').innerHTML = P.map((p, i) => `<span style="width:${p[1] / tongP * 100}%;background:${c.steps[i]}" title="${esc(NN.t(p[0]))}: ${p[1]}"></span>`).join('');
-    root.querySelectorAll('.tq-step').forEach(el => {
-      const go = () => EPL.di('theo-doi', { transport_status: el.dataset.st, ...KTG.diaChi(ky) });
-      el.addEventListener('click', go); el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
-    });
+    root.querySelectorAll('.tq-step').forEach(el => EPL.noiLink(el, () => EPL.di('theo-doi', { transport_status: el.dataset.st, ...KTG.diaChi(ky) })));
     const vh = (xh && xh.van_hanh) || {};
     const ring = (p, col) => `<span class="ring" style="--p:${Math.max(0, Math.min(100, p || 0))};--c:${col}" data-v="${p != null ? Math.round(p) + '%' : '—'}"></span>`;
     root.querySelector('#tq-ops').innerHTML = `
@@ -227,9 +225,9 @@
     // Tổng của vòng tròn cộng theo DÒNG CHI trên phiếu (kể cả khoản ứng cho xe thuê, trừ vào tiền trả chủ xe); ô "Tổng chi phí"
     // là chi của EPL (xe thuê tính tiền thuê). Hai số khác nhau thì nói rõ vì sao, đừng để hai con số "chi phí" lệch không lời.
     const tongMuc = Object.values(cm).reduce((a, b) => a + b, 0);
-    root.querySelector('#tq-co-cau').innerHTML = M.map(m => `<div class="row" data-muc="${m[1]}"><i style="background:${m[2]}"></i><span>${NN.h(m[0])}</span><span class="v">${so(cm[m[1]] || 0)}</span><span class="p">${so((cm[m[1]] || 0) / tong * 100)}%</span></div>`).join('')
+    root.querySelector('#tq-co-cau').innerHTML = M.map(m => `<a class="row lk-khoi" href="${EPL.href('theo-doi', KTG.diaChi(ky))}" data-muc="${m[1]}"><i style="background:${m[2]}"></i><span>${NN.h(m[0])}</span><span class="v">${so(cm[m[1]] || 0)}</span><span class="p">${so((cm[m[1]] || 0) / tong * 100)}%</span></a>`).join('')
       + (d.chi_lak != null && Math.abs(tongMuc - d.chi_lak) >= 1 ? `<p class="tq-co-cau-ghi small muted">${NN.h('tq_co_cau_ghi_chu')}</p>` : '');
-    root.querySelectorAll('#tq-co-cau .row').forEach(el => el.addEventListener('click', () => EPL.di('theo-doi', KTG.diaChi(ky))));
+    root.querySelectorAll('#tq-co-cau .row').forEach(el => EPL.noiLink(el, () => EPL.di('theo-doi', KTG.diaChi(ky))));
 
     /* 4a. Hao hụt cân theo chuyến — cột %, vạch ngưỡng 1,5 %, cột vượt ngưỡng đổi màu xấu */
     const hh = ((xh && xh.hao_hut) || []).map(x => Object.assign({ pct: x.can_dau ? (x.can_dau - (x.can_cuoi ?? x.can_dau)) / x.can_dau * 100 : 0 }, x)).filter(x => x.can_cuoi != null);
@@ -241,7 +239,10 @@
       data: { labels: hh.map(x => x.doc_no.replace(/\/EPL$/, '')), datasets: [{ data: hh.map(x => +x.pct.toFixed(2)), backgroundColor: hh.map(x => x.pct > HAO_HUT_MUC ? c.bad : c.info), borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: 'bottom', maxBarThickness: 24, categoryPercentage: .55 }] },
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: Object.assign(tooltipBase(c), { callbacks: { title: (t) => hh[t[0].dataIndex].doc_no, label: (t) => { const x = hh[t.dataIndex]; return [` ${so(x.can_dau, 2)} → ${so(x.can_cuoi, 2)} t`, ` ${NN.t('tq_loss')}: ${so(x.pct, 2)}%`]; } } }) },
         scales: { x: { grid: { display: false }, ticks: Object.assign(tickBase(c), { font: { family: 'ui-monospace, JetBrains Mono, monospace', size: 10.5 } }), border: { color: c.line } }, y: { beginAtZero: true, suggestedMax: Math.max(2, ...hh.map(x => x.pct)) * 1.15, grid: gridBase(c), border: { display: false }, ticks: Object.assign(tickBase(c), { callback: (v) => v + '%' }) } },
-        onClick: (_, els) => { if (els.length) EPL.di('theo-doi', { q: hh[els[0].index].doc_no }); } } });
+        // 21/10: Ctrl / ⌘ / Shift + bấm cột → thẻ mới; nút giữa: noiGiuaHaoHut
+        onClick: (ev, els) => { if (!els.length) return; const t = { q: hh[els[0].index].doc_no };
+          if (EPL.moTabMoi(ev && ev.native)) EPL.moTab(EPL.href('theo-doi', t)); else EPL.di('theo-doi', t); } } });
+    HH_DS = hh; noiGiuaHaoHut();
     khungTrong('tq-c-haohut', !hh.length, d.so_phieu ? 'tq_hao_chua_can' : null);
 
     /* 4b. Hiệu suất xe — thanh đo doanh thu cùng một màu, sắp theo doanh thu */
@@ -252,11 +253,11 @@
     // 500 xe thì vẽ 20 xe đứng đầu (Excel vẫn xuất đủ) — thanh đo cho cả đội xe dài vài màn hình là không đọc được
     const XE_HIEN = 20;
     root.querySelector('#tq-xe').innerHTML = xe.length ? `<div class="tq-fleet-head"><span>${NN.h('tq_vehicle')}</span><span>${NN.h('tq_trips_tons_km')}</span><span>${laBai() ? NN.h('ton') : 'M LAK'}</span></div>` +
-      xe.slice(0, XE_HIEN).map(x => `<div class="tq-veh" data-xe="${esc(x.so_xe)}"><span class="code">${esc(x.so_xe)}</span><div><div class="meta">${x.so_chuyen} ${NN.t('trips')} · ${so(x.tan, 1)} t · ${so(x.km)} km</div><div class="track"><b style="width:${(laBai() ? x.tan / maxTan : x.doanh_thu_lak / maxDT) * 100}%"></b></div></div>${laBai()
+      xe.slice(0, XE_HIEN).map(x => `<a class="tq-veh lk-khoi" href="${EPL.href('theo-doi', { q: x.so_xe })}" data-xe="${esc(x.so_xe)}"><span class="code">${esc(x.so_xe)}</span><div><div class="meta">${x.so_chuyen} ${NN.t('trips')} · ${so(x.tan, 1)} t · ${so(x.km)} km</div><div class="track"><b style="width:${(laBai() ? x.tan / maxTan : x.doanh_thu_lak / maxDT) * 100}%"></b></div></div>${laBai()
         ? `<div class="v">${so(x.tan, 1)}<small>${so(x.km / Math.max(1, x.so_chuyen))} km/${NN.t('trips').toLowerCase()}</small></div>`
-        : `<div class="v">${so(x.doanh_thu_lak / 1e6, 1)}<small>${so(x.doanh_thu_lak / Math.max(1, x.tan) / 1e3)} k LAK/t</small></div>`}</div>`).join('')
+        : `<div class="v">${so(x.doanh_thu_lak / 1e6, 1)}<small>${so(x.doanh_thu_lak / Math.max(1, x.tan) / 1e3)} k LAK/t</small></div>`}</a>`).join('')
       : `<div class="tq-empty">${chuaCo()}</div>`;
-    root.querySelectorAll('.tq-veh').forEach(el => el.addEventListener('click', () => EPL.di('theo-doi', { q: el.dataset.xe })));
+    root.querySelectorAll('.tq-veh').forEach(el => EPL.noiLink(el, () => EPL.di('theo-doi', { q: el.dataset.xe })));
 
     /* Tỷ giá */
     root.querySelector('#tq-ty-gia').innerHTML = `<div class="tq-ty-gia">${['USD', 'CNY', 'THB', 'VND'].map(m => `<div><span class="small muted">1 ${m} =</span><b>${so(ty_gia[m], m === 'VND' ? 2 : 0)} LAK</b></div>`).join('')}</div>`;
@@ -269,10 +270,28 @@
     // câu trong từ điển đã có {doc_no} ở đầu — trước đây còn in thêm mã phiếu đậm ngay trước, đọc thành hai lần (rà 01/10)
     const cy = d.chu_y || [];
     root.querySelector('#tq-chu-y-n').textContent = cy.length || '';
+    EPL.datLink(root.querySelector('#tq-chu-y-all'), EPL.href('theo-doi', KTG.diaChi(ky)));   // 21/10: «Xem hết» theo kỳ đang xem
     root.querySelector('#tq-chu-y').innerHTML = cy.length
-      ? `<div class="tq-chu-y">${cy.map(x => `<div class="it ${MUC[x.loai] || 'warn'}" data-doc="${esc(x.doc_no || '')}"><i></i><div class="t">${NN.h('attention_' + (x.loai === 'chua_hoa_don' ? 'chua_tao_so' : x.loai), x)}${x.ngay ? `<small>${esc(x.ngay)}</small>` : ''}</div><button class="btn sm" type="button">${NN.h('tq_open')}</button></div>`).join('')}</div>`
+      ? `<div class="tq-chu-y">${cy.map(x => `<div class="it ${MUC[x.loai] || 'warn'}" data-doc="${esc(x.doc_no || '')}"><i></i><div class="t">${NN.h('attention_' + (x.loai === 'chua_hoa_don' ? 'chua_tao_so' : x.loai), x)}${x.ngay ? `<small>${esc(x.ngay)}</small>` : ''}</div><a class="btn sm lk-nut" role="button" href="${hrefChuY(x.doc_no)}">${NN.h('tq_open')}</a></div>`).join('')}</div>`
       : `<div class="tq-empty ok">✓ ${NN.h('none_attention')}</div>`;
-    root.querySelectorAll('.tq-chu-y .it').forEach(el => el.addEventListener('click', () => { if (el.dataset.doc) EPL.di('theo-doi', { q: el.dataset.doc }); else EPL.di('phieu-xuat-xe'); }));
+    // 21/10: bấm thường như cũ; Ctrl / ⌘ / Shift / nút giữa → thẻ mới (nút «Mở» là <a href>: chuột phải được). Gắn một lần vào khung.
+    const cy0 = root.querySelector('#tq-chu-y');
+    if (cy0 && !cy0.dataset.noi) {
+      cy0.dataset.noi = '1';
+      EPL.noiMo(cy0, '.it', (el) => hrefChuY(el.dataset.doc),
+        (el) => { if (el.dataset.doc) EPL.di('theo-doi', { q: el.dataset.doc }); else EPL.di('phieu-xuat-xe'); });
+    }
+  }
+  const hrefChuY = (doc) => doc ? EPL.href('theo-doi', { q: doc }) : EPL.href('phieu-xuat-xe');
+  /** Nút giữa trên một cột của biểu đồ hao hụt → Theo dõi phiếu của chuyến đó ở thẻ mới (Chart.js không nghe auxclick). Gắn một lần. */
+  let HH_DS = [];
+  function noiGiuaHaoHut() {
+    const cv = root.querySelector('#tq-c-haohut'); if (!cv || cv.dataset.giua) return;
+    cv.dataset.giua = '1';
+    const cot = (e) => { const ch = charts['tq-c-haohut']; if (!ch) return null;
+      const els = ch.getElementsAtEventForMode(e, 'nearest', { intersect: true }, false); return els.length ? HH_DS[els[0].index] : null; };
+    cv.addEventListener('mousedown', (e) => { if (e.button === 1 && cot(e)) e.preventDefault(); });
+    cv.addEventListener('auxclick', (e) => { if (e.button !== 1) return; const x = cot(e); if (x) { e.preventDefault(); EPL.moTab(EPL.href('theo-doi', { q: x.doc_no })); } });
   }
 
   /* ---------- B1. Thanh xem nhanh: 7 chip = 7 bộ lọc của màn Theo dõi phiếu ---------- */
@@ -292,15 +311,30 @@
       ['tq_q_unpaid', q.chua_thu_lak != null ? so(q.chua_thu_lak / 1e6, 1) + 'M LAK' : null, 'warn', 'theo-doi', { finance_status: 'unpaid', ...KTG.diaChi(ky) }],
     ].filter(ch => !(laBai() && ['tq_q_unpaid', 'tq_q_cho_so'].includes(ch[0])));   // hoá đơn và thu tiền không phải việc của Bãi
     root.querySelector('#tq-xem-nhanh').innerHTML = `<span class="lbl">${NN.h('tq_quick')}</span>` +
-      chips.map((ch, i) => { const v = ch[1]; const zero = v == null || v === 0; return `<button type="button" class="tq-chip ${ch[2]} ${zero ? 'zero' : ''}" data-i="${i}"><b>${v == null ? '—' : esc(v)}</b>${NN.h(ch[0])}</button>`; }).join('') +
+      // 21/10: chip dẫn sang màn của trang là <a href> (mở được ở thẻ mới); chip mở Web kho (địa chỉ hỏi máy chủ lúc bấm) giữ là nút
+      chips.map((ch, i) => { const v = ch[1]; const zero = v == null || v === 0; const h = hrefChip(ch, q);
+        return h ? `<a class="tq-chip lk-nut ${ch[2]} ${zero ? 'zero' : ''}" href="${h}" data-i="${i}"><b>${v == null ? '—' : esc(v)}</b>${NN.h(ch[0])}</a>`
+          : `<button type="button" class="tq-chip ${ch[2]} ${zero ? 'zero' : ''}" data-i="${i}"><b>${v == null ? '—' : esc(v)}</b>${NN.h(ch[0])}</button>`; }).join('') +
       `<span class="sep"></span><span class="right"><span id="tq-quick-stamp"></span><label><input type="checkbox" id="tq-auto">${NN.h('tq_auto')}</label></span>`;
     root.querySelector('#tq-quick-stamp').textContent = `${NN.t('tq_updated')} ${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
     root.querySelectorAll('.tq-chip').forEach(el => { const ch = chips[+el.dataset.i];
-      el.addEventListener('click', () => (ch[3] === 'viec-toi' ? moViecToi(q) : ch[3] === 'kho:chung-tu' ? moKhoChungTu() : ch[3].startsWith('kt:') ? EPL.moKeToan(ch[3].slice(3), ch[4]) : EPL.di(ch[3], ch[4]))); });
+      const lam = () => (ch[3] === 'viec-toi' ? moViecToi(q) : ch[3] === 'kho:chung-tu' ? moKhoChungTu() : ch[3].startsWith('kt:') ? EPL.moKeToan(ch[3].slice(3), ch[4]) : EPL.di(ch[3], ch[4]));
+      if (el.tagName === 'A') EPL.noiLink(el, lam); else el.addEventListener('click', lam); });
     const auto = root.querySelector('#tq-auto'); auto.checked = !!autoTimer;
     auto.addEventListener('change', () => { clearInterval(autoTimer); autoTimer = auto.checked ? setInterval(() => tai().catch(EPL.baoLoi), 60000) : null; });
   }
   let autoTimer = null;
+  /** Địa chỉ của chip (21/10): màn trong trang → hash; «Việc của tôi» → phiếu đầu tiên đang chờ (không có → Theo dõi phiếu lọc «Việc chờ
+   *  tôi»); Web kho / trang kế toán (địa chỉ hỏi máy chủ lúc bấm) → null, giữ là nút. Thẻ mới mở bằng Ctrl không có ‹ trước · sau ›
+   *  (sessionStorage không sang thẻ mới) — bấm thường thì vẫn có như cũ. */
+  function hrefChip(ch, q) {
+    if (ch[3] === 'viec-toi') {
+      const ids = VIEC ? VIEC.ids || [] : (q.viec_phieu ? [q.viec_phieu] : []);
+      return ids.length ? EPL.href('phieu-xuat-xe', { id: ids[0] }) : EPL.href('theo-doi', { ...KTG.diaChi(ky), cho_toi: '1' });
+    }
+    if (ch[3] === 'kho:chung-tu' || ch[3].startsWith('kt:')) return null;
+    return EPL.href(ch[3], ch[4]);
+  }
   /** Chip «Việc của tôi»: có việc → ghi danh sách theo hợp đồng điều hướng (js/chung.js EPL.ghiDsPhieu) rồi mở phiếu đầu tiên; không có
    *  việc → Theo dõi phiếu lọc «Việc chờ tôi» (thấy rõ là trống, thay vì mở một tờ phiếu trắng như trước). */
   function moViecToi(q) {
@@ -348,10 +382,10 @@
       if (open && td >= cur) segs += `<span class="seg open ${r.late ? 'late' : ''}" style="left:${pos(cur)}%;width:${wid(cur, Math.min(n + 1, td + 1))}%" title="${esc(NN.t(r.late ? 'tq_q_late' : 'tq_g_inprogress'))}"></span>`;
       if (done) segs += `<span class="dot paid" style="left:${pos(dayOf(mo.thanh_toan)) + 100 / n / 2}%" title="${esc(NN.t('s_paid'))}: ${esc(mo.thanh_toan)}"></span>`;
       const pill = r.late ? ['st-late', NN.t('tq_q_late')] : done ? ['st-paid', NN.t('s_paid')] : r.trang_thai === 'arrived' ? ['st-arrived', NN.t('s_arrived')] : r.trang_thai === 'planned' ? ['st-planned', NN.t('tq_g_planned')] : ['st-running', NN.t('s_transit')];
-      return `<div class="row"><div class="lab" data-doc="${esc(r.doc_no)}"><div><span class="code">${esc(r.doc_no.replace(/\/EPL$/, ''))}</span><small>${esc(r.so_xe)} · <span class="lo">${esc(r.khach || '')}</span></small></div><span class="pill ${pill[0]}">${esc(pill[1])}</span></div><div class="track">${segs}${td ? `<span class="now" style="left:${pos(td) + 100 / n / 2}%"></span>` : ''}</div></div>`;
+      return `<div class="row"><a class="lab lk-khoi" href="${EPL.href('theo-doi', { q: r.doc_no })}" data-doc="${esc(r.doc_no)}"><div><span class="code">${esc(r.doc_no.replace(/\/EPL$/, ''))}</span><small>${esc(r.so_xe)} · <span class="lo">${esc(r.khach || '')}</span></small></div><span class="pill ${pill[0]}">${esc(pill[1])}</span></a><div class="track">${segs}${td ? `<span class="now" style="left:${pos(td) + 100 / n / 2}%"></span>` : ''}</div></div>`;
     }).join('');
     box.innerHTML = hdr + body + `<div class="cap"><span><i style="background:repeating-linear-gradient(135deg,${c.steps[2]} 0 3px,transparent 3px 6px)"></i>${NN.h('tq_g_inprogress')}</span><span><i style="background:${c.bad};width:2px"></i>${NN.h('tq_g_today')}</span><span>${NN.h('tq_g_hint')}</span></div>`;
-    box.querySelectorAll('.lab').forEach(el => el.addEventListener('click', () => EPL.di('theo-doi', { q: el.dataset.doc })));
+    box.querySelectorAll('.lab').forEach(el => EPL.noiLink(el, () => EPL.di('theo-doi', { q: el.dataset.doc })));
   }
 
   EPL.modules['tong-quan'] = {
@@ -368,9 +402,9 @@
       const g = await KTG.gan(ky, {});
       if (!g.co && g.gan) { BAO = { trong: nay, xem: g.gan }; KY.dat(KTG.cuaThang(g.gan)); ky = KY.giaTri; }
       r.querySelector('#tq-so-sanh').addEventListener('change', () => d && ve());
-      r.querySelector('#tq-moi').addEventListener('click', () => EPL.di('phieu-xuat-xe', { moi: 1 }));
+      EPL.noiLink(r.querySelector('#tq-moi'), () => EPL.di('phieu-xuat-xe', { moi: 1 }));
       r.querySelector('#tq-xuat').addEventListener('click', () => EPL.di('theo-doi', { ...KTG.diaChi(ky), xuat: 1 }));
-      r.querySelector('#tq-chu-y-all').addEventListener('click', () => EPL.di('theo-doi', KTG.diaChi(ky)));
+      EPL.noiLink(r.querySelector('#tq-chu-y-all'), () => EPL.di('theo-doi', KTG.diaChi(ky)));
       dangTai = (async () => { await napChart(); await taiThat(); })();
       await dangTai;
     },

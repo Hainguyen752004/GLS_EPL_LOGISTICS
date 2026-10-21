@@ -212,7 +212,9 @@
     const xe = xeList.find(x => x.so_xe === d.xe_thuong_lai), kl = ketLuan(d);
     box.innerHTML = CLOSE_BTN + `
       <div class="tx-head">${avatar(d)}<div class="t"><b class="lo">${esc(d.ten)}</b>${d.ten_latin ? ` <span class="muted">(${esc(d.ten_latin)})</span>` : ''} ${stPill(d.trang_thai)}<small><span class="mono">${esc(d.ma)}</span> · ${NN.h(d.vai === 'phu' ? 'tx_role_assist' : 'tx_role_main')}</small>
-        <div class="acts"><button class="tx-btn-sm dark" data-act="open"><svg class="tx-i" viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>${NN.h('xe_open_profile')}</button><button class="tx-btn-sm" data-act="dispatch" ${d.trang_thai === 'idle' && kl.lv !== 'bad' ? '' : 'disabled'}>${NN.h('new_dispatch')}</button>${d.sdt ? `<a class="tx-btn-sm" href="tel:${esc(d.sdt.replace(/\s/g, ''))}">${NN.h('tx_call')}</a>` : ''}</div></div></div>
+        <div class="acts"><button class="tx-btn-sm dark" data-act="open"><svg class="tx-i" viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>${NN.h('xe_open_profile')}</button>${d.trang_thai === 'idle' && kl.lv !== 'bad'
+          ? `<a class="tx-btn-sm lk-nut" role="button" data-act="dispatch" href="${EPL.href('phieu-xuat-xe', { moi: 1, tai_xe: d._id })}">${NN.h('new_dispatch')}</a>`
+          : `<button class="tx-btn-sm" data-act="dispatch" disabled>${NN.h('new_dispatch')}</button>`}${d.sdt ? `<a class="tx-btn-sm" href="tel:${esc(d.sdt.replace(/\s/g, ''))}">${NN.h('tx_call')}</a>` : ''}</div></div></div>
       <div class="tx-kv">
         <div><span>${NN.h('tx_phone')}</span><b class="mono">${esc(d.sdt || '—')}</b></div><div><span>${NN.h('tx_dob')}</span><b>${fmt(d.ngay_sinh)}</b></div>
         <div><span>${NN.h('tx_id_card')}</span><b class="mono">${esc(d.cmnd || '—')}</b></div><div><span>${NN.h('tx_joined')}</span><b>${fmt(d.ngay_vao)}</b></div>
@@ -226,7 +228,8 @@
       ${xe ? `<div class="tx-sec">${NN.h('tx_vehicle')}</div><div class="tx-trailer"><span class="p mono">${esc(xe.so_xe)}</span><span class="m"><span class="lo">${esc(xe.bien || '')}</span>${xe.hang ? ' · ' + esc(xe.hang) : ''}${xe.ro_mooc ? ` · <span class="lo">${esc(xe.ro_mooc)}</span>` : ''}</span>${pill(xe.trang_thai === 'running' ? 'amber' : xe.trang_thai === 'repair' ? 'red' : 'green', NN.t(xe.trang_thai === 'running' ? 'xe_st_running' : xe.trang_thai === 'repair' ? 'xe_st_repair' : 'xe_st_idle'))}</div>` : ''}
       <div class="tx-hint">${NN.h('tx_quick_hint')}</div>`;
     box.querySelector('[data-act="open"]').onclick = () => napChiTiet(d).then(() => openHoSo(d));
-    box.querySelector('[data-act="dispatch"]').onclick = () => EPL.di('phieu-xuat-xe', { moi: 1, tai_xe: d._id });
+    // 21/10: tài xế rảnh → <a href> (mở được ở thẻ mới); không lập được → nút tắt như cũ
+    const lap = box.querySelector('a[data-act="dispatch"]'); if (lap) EPL.noiLink(lap, () => EPL.di('phieu-xuat-xe', { moi: 1, tai_xe: d._id }));
   }
 
   /* ---------- hộp hồ sơ có tab ---------- */
@@ -321,7 +324,7 @@
     }
     const phieuTab = () => {
       const p = o.phieu_gan_day || [];
-      return p.length ? `<div class="tx-rows tx-rows--box">${p.map(v => `<div class="tx-row click" data-doc="${esc(v._id)}"><div class="k"><b>${esc(v.doc_no)}</b><small>${fmt(v.ngay)} · ${NN.t('xe_no')} <span class="mono">${esc(v.so_xe || '—')}</span> · <span class="lo">${esc(v.tuyen || '')}</span></small></div><div class="v">${pill(v.tt === 'paid' || v.tt === 'arrived' ? 'green' : v.tt === 'transit' ? 'blue' : 'muted', NN.t('xe_tt_' + v.tt))}</div></div>`).join('')}</div>` : `<div class="tx-empty">${NN.h('xe_no_trips')}</div>`;
+      return p.length ? `<div class="tx-rows tx-rows--box">${p.map(v => `<a class="tx-row click lk-khoi" href="${EPL.href('phieu-xuat-xe', { id: v._id })}" data-doc="${esc(v._id)}"><div class="k"><b>${esc(v.doc_no)}</b><small>${fmt(v.ngay)} · ${NN.t('xe_no')} <span class="mono">${esc(v.so_xe || '—')}</span> · <span class="lo">${esc(v.tuyen || '')}</span></small></div><div class="v">${pill(v.tt === 'paid' || v.tt === 'arrived' ? 'green' : v.tt === 'transit' ? 'blue' : 'muted', NN.t('xe_tt_' + v.tt))}</div></div>`).join('')}</div>` : `<div class="tx-empty">${NN.h('xe_no_trips')}</div>`;
     };
 
     function render() {
@@ -337,7 +340,7 @@
         body.querySelectorAll('input, select, textarea').forEach(el => { el.disabled = true; });
       }
       body.querySelectorAll('[data-sub]').forEach(b => b.onclick = () => { grab(); sub = b.dataset.sub || null; render(); if (sub) setTimeout(() => { const el = body.querySelector('#s-so'); if (el) el.focus(); }, 30); });
-      body.querySelectorAll('.tx-row.click').forEach(el => el.onclick = () => { close(); EPL.di('phieu-xuat-xe', { id: el.dataset.doc }); });
+      body.querySelectorAll('.tx-row.click').forEach(el => EPL.noiLink(el, () => { close(); EPL.di('phieu-xuat-xe', { id: el.dataset.doc }); }));   // 21/10: <a href>
       const d = body.querySelector('[data-do="renew"]'); if (d) d.onclick = renew;
     }
 

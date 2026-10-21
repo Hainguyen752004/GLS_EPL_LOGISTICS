@@ -1,17 +1,18 @@
 <!-- Phiếu xuất xe đi vận chuyển — ໃບເບີກລົດອອກໄປຂົນສົ່ງ. Tờ giấy duy nhất họ làm việc: 6 mục, mỗi mục một trạng thái duyệt. -->
 <div class="toolbar no-print px-thanh">
-  <button class="btn quiet" id="px-ve">← <span id="px-ve-chu" data-i18n="back_list"></span></button>
+  <!-- 21/10: các nút ĐI (Quay lại · ‹ › · + Phiếu mới · Phiếu kế tiếp) là <a href> — mở được ở thẻ mới; href đặt ở veDieuHuong -->
+  <a class="btn quiet lk-nut" id="px-ve" role="button" href="#/theo-doi">← <span id="px-ve-chu" data-i18n="back_list"></span></a>
   <!-- 20/10 (D16): mở từ một danh sách (sessionStorage epl_ds_phieu) → đi phiếu trước / sau trong danh sách đó -->
   <div class="px-dh" id="px-dh" hidden>
-    <button type="button" class="btn quiet sm" id="px-truoc">‹ <span data-i18n="px_dh_truoc"></span></button>
+    <a class="btn quiet sm lk-nut" id="px-truoc" role="button" aria-disabled="true">‹ <span data-i18n="px_dh_truoc"></span></a>
     <b class="px-dh-so" id="px-dh-so"></b>
-    <button type="button" class="btn quiet sm" id="px-sau"><span data-i18n="px_dh_sau"></span> ›</button>
+    <a class="btn quiet sm lk-nut" id="px-sau" role="button" aria-disabled="true"><span data-i18n="px_dh_sau"></span> ›</a>
   </div>
   <!-- Một năm ~365.000 phiếu: ô chọn chỉ nạp 50 phiếu mới nhất; gõ vào ô tìm thì máy chủ tìm trên TOÀN BỘ phiếu -->
   <div class="field"><label data-i18n="doc_no"></label><div class="px-chon-hang"><input id="px-tim" type="search" autocomplete="off" data-i18n-ph="td_search"><select id="px-chon"></select></div></div>
-  <button class="btn" id="px-moi">+ <span data-i18n="new_slip"></span></button>
+  <a class="btn lk-nut" id="px-moi" role="button" href="#/phieu-xuat-xe?moi=1">+ <span data-i18n="new_slip"></span></a>
   <div class="grow"></div>
-  <button type="button" class="btn ok" id="px-ke-tiep" hidden><span data-i18n="px_dh_ke_tiep"></span> →</button>
+  <a class="btn ok lk-nut" id="px-ke-tiep" role="button" aria-disabled="true" hidden><span data-i18n="px_dh_ke_tiep"></span> →</a>
   <!-- 20/10 (A3): In = tờ in riêng một trang A4 (#px-to-in), không in màn nhập liệu -->
   <button class="btn" id="px-in" type="button"><span data-i18n="print"></span></button>
   <span class="small muted px-luu-nhac" id="px-luu-nhac" data-i18n="px_chon_muc_de_sua" hidden></span>
@@ -189,7 +190,7 @@
     <div class="px-ben-nut">
       <button class="btn" id="px-chung-tu"><span data-i18n="voucher_payment"></span></button>
       <button class="btn" id="px-phieu-linh"><span data-i18n="v_fuel"></span></button>
-      <button class="btn" id="px-hoa-don"><span data-i18n="nav_de_nghi_thu"></span></button>
+      <a class="btn lk-nut" id="px-hoa-don" role="button" aria-disabled="true"><span data-i18n="nav_de_nghi_thu"></span></a>
     </div>
   </div>
   <!-- Phiếu kho HÀNG khách gửi (05/10): máy tự lập theo DO — DO gom tới bãi là phiếu nhập (PNK_HH), DO giao lấy hàng ở bãi là

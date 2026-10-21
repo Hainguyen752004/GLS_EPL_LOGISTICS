@@ -54,7 +54,8 @@
   const tenNgan = (x) => tenChinh(x).replace(/^(Kho dầu|ສາງນໍ້າມັນ)\s+/i, '');
   // số phiếu mở phiếu xuất xe — chỉ vai vào được màn đó (thủ kho, thủ kho phụ tùng thì chỉ là chữ)
   const moDuoc = () => EPL.manCuaVai(EPL.AUTH.role).some(m => m.id === 'phieu-xuat-xe');
-  const moPhieu = (id, chu) => id && moDuoc() ? `<button type="button" class="link" data-mo-phieu="${esc(id)}">${esc(chu)}</button>` : `<span class="code">${esc(chu)}</span>`;
+  // 21/10: <a href> — chuột phải / Ctrl / nút giữa mở phiếu ở thẻ mới; bấm thường như cũ (onClick)
+  const moPhieu = (id, chu) => id && moDuoc() ? `<a class="link" href="${EPL.href('phieu-xuat-xe', { id })}" data-mo-phieu="${esc(id)}">${esc(chu)}</a>` : `<span class="code">${esc(chu)}</span>`;
 
   /* ================= Dữ liệu từ máy chủ → khuôn của màn ================= */
   function chuanHoa(r) {
@@ -410,7 +411,7 @@
   const icX = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
   const nutDong = () => '<button type="button" class="kh-dong-x" data-kh-dong title="' + esc(t('close')) + '" aria-label="' + esc(t('close')) + '">' + icX + '</button>';
   // số DO mở Phiếu xuất xe — chỉ vai vào được màn đó (cùng luật moPhieu ở trên)
-  const moDo = (id, so) => id && so && moDuoc() ? '<button type="button" class="link code" data-mo-phieu="' + esc(id) + '" title="' + esc(t('khh_mo_do', { do: so })) + '">' + esc(so) + '</button>'
+  const moDo = (id, so) => id && so && moDuoc() ? '<a class="link code" href="' + EPL.href('phieu-xuat-xe', { id }) + '" data-mo-phieu="' + esc(id) + '" title="' + esc(t('khh_mo_do', { do: so })) + '">' + esc(so) + '</a>'
     : '<span class="code">' + esc(so || '—') + '</span>';
 
   /** Một lượt hỏi tồn — lượt cũ về sau lượt mới (gõ tìm nhanh) thì bỏ. Trả false khi bị bỏ. */
@@ -865,7 +866,7 @@
   /* ================= Sự kiện ================= */
   function onClick(e) {
     const mp = e.target.closest('[data-mo-phieu]');
-    if (mp) { EPL.di('phieu-xuat-xe', { id: mp.dataset.moPhieu }); return; }
+    if (mp) { if (EPL.moTabMoi(e)) return; e.preventDefault(); EPL.di('phieu-xuat-xe', { id: mp.dataset.moPhieu }); return; }   // 21/10: phím phụ → thẻ mới
     const o = e.target.closest('[data-open]');
     if (o) {
       // lô hàng gửi bãi (kết quả tìm) · hàng chờ duyệt (việc cần xử lý): đặt trước khi vẽ để khung bên phải ra đúng ngay

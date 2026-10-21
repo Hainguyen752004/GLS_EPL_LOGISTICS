@@ -213,7 +213,8 @@
     box.innerHTML = CLOSE_BTN + `
       <div class="xe-head"><div class="xe-photo">${x.anh ? `<img src="${esc(x.anh)}" alt="">` : truck}</div>
         <div class="t"><b class="mono lo">${esc(x.so_xe)}</b> · <span class="lo">${esc(x.bien)}</span> ${stPill(x.trang_thai)}<small>${esc(x.hang)} · ${x.nam_sx || '—'} · ${NN.t(x.so_huu === 'thue-ngoai' ? 'xe_rented' : 'xe_company')}${x.chu_xe ? ' · ' + esc(x.chu_xe) : ''}</small>
-          <div class="acts"><button class="xe-btn-sm dark" data-act="open"><svg class="xe-i" viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>${NN.h('xe_open_profile')}</button><button class="xe-btn-sm" data-act="dispatch" ${x.trang_thai !== 'idle' ? 'disabled' : ''}>${NN.h('new_dispatch')}</button></div></div></div>
+          <div class="acts"><button class="xe-btn-sm dark" data-act="open"><svg class="xe-i" viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>${NN.h('xe_open_profile')}</button>${x.trang_thai !== 'idle' ? `<button class="xe-btn-sm" data-act="dispatch" disabled>${NN.h('new_dispatch')}</button>`
+            : `<a class="xe-btn-sm lk-nut" role="button" data-act="dispatch" href="${EPL.href('phieu-xuat-xe', { moi: 1, xe: x._id })}">${NN.h('new_dispatch')}</a>`}</div></div></div>
       <div class="xe-kv">
         <div><span>${NN.h('xe_engine')}</span><b class="mono">${esc(x.so_may || '—')}</b></div><div><span>${NN.h('xe_chassis')}</span><b class="mono">${esc(x.so_khung || '—')}</b></div>
         <div><span>${NN.h('xe_depot')}</span><b class="lo">${esc(x.bai || '—')}</b></div><div><span>${NN.h('xe_trips_done')}</span><b>${x._chi_tiet ? (x.so_phieu ?? 0) : '·'}</b></div>
@@ -229,7 +230,8 @@
       ${trailerBlock(x)}
       <div class="xe-hint">${NN.h('xe_quick_hint')}</div>`;
     box.querySelector('[data-act="open"]').onclick = () => openHoSo(x, false, 'chung');
-    box.querySelector('[data-act="dispatch"]').onclick = () => EPL.di('phieu-xuat-xe', { moi: 1, xe: x._id });
+    // 21/10: xe rảnh → <a href> (mở được ở thẻ mới); xe đang chạy → nút tắt như cũ
+    const lap = box.querySelector('a[data-act="dispatch"]'); if (lap) EPL.noiLink(lap, () => EPL.di('phieu-xuat-xe', { moi: 1, xe: x._id }));
   }
   function veDetailRM(box) {
     const r = rm.find(v => v.bien === ui.sel); if (!r) { box.innerHTML = `<div class="xe-empty">${NN.h('xe_pick')}</div>`; return; }
@@ -342,9 +344,9 @@
     }
     // vai không thấy tiền sửa / giá vốn kho: dòng đó không có số (máy chủ bỏ) — tổng không cộng thiếu (30/09)
     const suaTab = () => { const c = o.chi_phi || [], tong = c.some(v => v.tien == null) ? null : c.reduce((a, v) => a + (v.tien || 0), 0);
-      return `<div class="xe-sec" style="padding:0 0 6px">${NN.h('xe_tab_repair_full')}<span class="grow"></span><button class="xe-btn-sm tan" type="button" data-go="incident">+ ${NN.h('xe_incident')}</button></div>` + (o.lenh_loi ? `<div class="xe-empty" style="text-align:left">${esc(o.lenh_loi)}</div>` : '') + (c.length ? `<div class="xe-rows xe-rows--box">${c.map(v => `<div class="xe-row"><div class="k"><span style="font-weight:600">${esc(v.khoan ? NN.t(v.khoan) : v.ten)}</span><small>${fmt(v.ngay)} · ${esc(NN.t(v.nguon))}${v.phieu && v.phieu !== '—' ? ` · <span class="mono">${esc(v.phieu)}</span>` : ''}${v.ma_kt ? ` · <span class="tien">${esc(v.ma_kt)}</span>` : ''}</small></div><div class="v"><b class="mono">${so(v.tien)}</b><small>LAK</small></div></div>`).join('')}<div class="xe-foot"><span>${NN.h('xe_total_repair')}: <b style="color:var(--xe-ink)">${so(tong)} LAK</b></span><span>${NN.h('xe_cost_source')}</span></div></div>` : `<div class="xe-empty">${NN.h('xe_no_cost')}</div>`); };
+      return `<div class="xe-sec" style="padding:0 0 6px">${NN.h('xe_tab_repair_full')}<span class="grow"></span><a class="xe-btn-sm tan lk-nut" role="button" href="${EPL.href('theo-doi-tuyen')}" data-go="incident">+ ${NN.h('xe_incident')}</a></div>` + (o.lenh_loi ? `<div class="xe-empty" style="text-align:left">${esc(o.lenh_loi)}</div>` : '') + (c.length ? `<div class="xe-rows xe-rows--box">${c.map(v => `<div class="xe-row"><div class="k"><span style="font-weight:600">${esc(v.khoan ? NN.t(v.khoan) : v.ten)}</span><small>${fmt(v.ngay)} · ${esc(NN.t(v.nguon))}${v.phieu && v.phieu !== '—' ? ` · <span class="mono">${esc(v.phieu)}</span>` : ''}${v.ma_kt ? ` · <span class="tien">${esc(v.ma_kt)}</span>` : ''}</small></div><div class="v"><b class="mono">${so(v.tien)}</b><small>LAK</small></div></div>`).join('')}<div class="xe-foot"><span>${NN.h('xe_total_repair')}: <b style="color:var(--xe-ink)">${so(tong)} LAK</b></span><span>${NN.h('xe_cost_source')}</span></div></div>` : `<div class="xe-empty">${NN.h('xe_no_cost')}</div>`); };
     const phieuTab = () => { const p = o.phieu_gan_day || [];
-      return p.length ? `<div class="xe-rows xe-rows--box">${p.map(v => `<div class="xe-row click" data-doc="${esc(v.doc_no)}"><div class="k"><b>${esc(v.doc_no)}</b><small>${fmt(v.ngay)} · <span class="lo">${esc(v.khach)}</span>${v.tan != null ? ` · ${so(v.tan, 2)} ${NN.t('ton')}` : ''}</small></div><div class="v">${pill(v.tt === 'paid' || v.tt === 'arrived' ? 'green' : v.tt === 'transit' ? 'blue' : 'muted', NN.t('xe_tt_' + v.tt))}</div></div>`).join('')}</div>` : `<div class="xe-empty">${NN.h('xe_no_trips')}</div>`; };
+      return p.length ? `<div class="xe-rows xe-rows--box">${p.map(v => `<a class="xe-row click lk-khoi" href="${EPL.href('theo-doi', { q: v.doc_no })}" data-doc="${esc(v.doc_no)}"><div class="k"><b>${esc(v.doc_no)}</b><small>${fmt(v.ngay)} · <span class="lo">${esc(v.khach)}</span>${v.tan != null ? ` · ${so(v.tan, 2)} ${NN.t('ton')}` : ''}</small></div><div class="v">${pill(v.tt === 'paid' || v.tt === 'arrived' ? 'green' : v.tt === 'transit' ? 'blue' : 'muted', NN.t('xe_tt_' + v.tt))}</div></a>`).join('')}</div>` : `<div class="xe-empty">${NN.h('xe_no_trips')}</div>`; };
 
     function render() {
       rt.querySelector('#m-tabs').innerHTML = TABS.map(([id, k]) => `<button type="button" class="xe-tab ${cur === id ? 'active' : ''}" data-mt="${id}">${NN.h(k)}</button>`).join('');
@@ -358,8 +360,9 @@
         body.querySelectorAll('input, select, textarea').forEach(el => { el.disabled = true; });
       }
       body.querySelectorAll('[data-sub]').forEach(b => b.onclick = () => { sub = b.dataset.sub || null; render(); if (sub) setTimeout(() => body.querySelector('#s-lydo')?.focus(), 30); });
-      body.querySelectorAll('.xe-row.click').forEach(el => el.onclick = () => { close(); EPL.di('theo-doi', { q: el.dataset.doc }); });
-      const inc = body.querySelector('[data-go="incident"]'); if (inc) inc.onclick = () => { close(); EPL.di('theo-doi-tuyen', {}); };   // báo sự cố nằm ở màn Theo dõi tuyến
+      // 21/10: dòng chuyến và «+ Báo sự cố» là <a href> — bấm thường đóng hộp rồi sang màn như cũ; phím phụ → thẻ mới (hộp giữ nguyên)
+      body.querySelectorAll('.xe-row.click').forEach(el => EPL.noiLink(el, () => { close(); EPL.di('theo-doi', { q: el.dataset.doc }); }));
+      const inc = body.querySelector('[data-go="incident"]'); if (inc) EPL.noiLink(inc, () => { close(); EPL.di('theo-doi-tuyen', {}); });   // báo sự cố nằm ở màn Theo dõi tuyến
       const d = body.querySelector('[data-do]'); if (d) d.onclick = () => doSub(d.dataset.do);
     }
     async function doSub(kind) {

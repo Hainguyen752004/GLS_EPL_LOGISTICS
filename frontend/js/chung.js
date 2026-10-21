@@ -12,13 +12,65 @@
   const EPL = window.EPL = { modules: {} };
 
   /* ================================================================ API */
-  const KHOA_PHIEN = 'epl_lao_phien';
+  /* 21/10 — PHIÊN THEO TỪNG THẺ (chủ dự án thử nhiều tài khoản cùng lúc). Trước đây phiên nằm ở localStorage dùng chung mọi thẻ: thẻ B
+   * đăng nhập ketoan là thẻ A (đang vẽ màn thabok) âm thầm gọi API bằng phiên ketoan. Nay:
+   *   · sessionStorage[epl_lao_phien] = phiên CỦA THẺ NÀY — mọi lệnh gọi (API, tệp, ảnh, in, hàng đợi app tài xế) đọc ở đây trước;
+   *     '' = thẻ này đã đăng xuất (không lấy phiên của ai khác cho tới khi tải lại trang);
+   *   · localStorage[epl_lao_phien]   = PHIÊN MẶC ĐỊNH cho thẻ MỚI (chỉ khi tick «ghi nhớ»). Thẻ chưa có phiên riêng nhận bản này lúc mở
+   *     trang rồi GIỮ LUÔN — thẻ khác đăng nhập / đăng xuất sau đó không đổi người của thẻ này (không nghe sự kiện storage);
+   *   · mở liên kết sang thẻ mới (Ctrl / ⌘ / Shift + bấm, nút giữa, chuột phải) thì phiên của thẻ đang bấm thành mặc định → thẻ mới mở
+   *     ra cùng người với thẻ vừa bấm (PHIEN.giaoTheMoi);
+   *   · đăng xuất chỉ xoá phiên của thẻ này, và xoá bản mặc định nếu đúng là phiên đó.
+   * Không tick «ghi nhớ»: chỉ phiên của thẻ (đóng thẻ / trình duyệt là hết), bản mặc định bị xoá như trước — máy không nhớ ai. */
+  const KHOA_PHIEN = 'epl_lao_phien', KHOA_NHO = 'epl_lao_phien_nho', KHOA_GIAO = 'epl_lao_phien_giao';
+  let phienBoNho = '';                 // trình duyệt chặn sessionStorage: giữ phiên trong bộ nhớ của trang
+  const PHIEN = {
+    /** null = thẻ chưa có phiên riêng · '' = thẻ đã đăng xuất · chuỗi = phiên của thẻ. */
+    the() { try { return sessionStorage.getItem(KHOA_PHIEN); } catch (e) { return null; } },
+    macDinh() { try { return localStorage.getItem(KHOA_PHIEN) || ''; } catch (e) { return ''; } },
+    nho() { try { return sessionStorage.getItem(KHOA_NHO) === '1'; } catch (e) { return false; } },
+    dat(tk, nho) {
+      phienBoNho = '';
+      try { sessionStorage.setItem(KHOA_PHIEN, tk); sessionStorage.setItem(KHOA_NHO, nho ? '1' : '0'); } catch (e) { phienBoNho = tk; }
+      try { if (nho) localStorage.setItem(KHOA_PHIEN, tk); else localStorage.removeItem(KHOA_PHIEN); } catch (e) { /* bỏ qua */ }
+    },
+    xoa() {
+      const cu = API.token();
+      phienBoNho = '';
+      try { sessionStorage.setItem(KHOA_PHIEN, ''); sessionStorage.removeItem(KHOA_NHO); } catch (e) { /* bỏ qua */ }
+      try { if (cu && localStorage.getItem(KHOA_PHIEN) === cu) localStorage.removeItem(KHOA_PHIEN); } catch (e) { /* bỏ qua */ }
+    },
+    /** Lúc mở trang: thẻ chưa có phiên riêng (thẻ mới, hoặc đã đăng xuất ở thẻ này rồi tải lại) → nhận phiên mặc định và giữ luôn. */
+    nhan() {
+      if (PHIEN.the()) return;
+      // 21/10: thẻ vừa mở từ liên kết của thẻ KHÔNG ghi nhớ → nhận phiếu chuyển dùng một lần (hết hạn sau 15 giây, đọc xong là xoá)
+      let giao = null;
+      try { giao = JSON.parse(localStorage.getItem(KHOA_GIAO) || 'null'); localStorage.removeItem(KHOA_GIAO); } catch (e) { giao = null; }
+      if (giao && giao.tk && Date.now() - (giao.luc || 0) < 15000) {
+        try { sessionStorage.setItem(KHOA_PHIEN, giao.tk); sessionStorage.setItem(KHOA_NHO, '0'); } catch (e) { phienBoNho = giao.tk; }
+        return;
+      }
+      const md = PHIEN.macDinh(); if (!md) return;
+      try { sessionStorage.setItem(KHOA_PHIEN, md); sessionStorage.setItem(KHOA_NHO, '1'); } catch (e) { phienBoNho = md; }
+    },
+    /** Sắp mở một liên kết của trang sang thẻ mới: thẻ mới vào đúng người của thẻ này. Ghi nhớ → phiên thành mặc định; không ghi nhớ
+     *  → phiếu chuyển dùng một lần trong localStorage (KHOA_GIAO, 15 giây) — máy vẫn không nhớ ai sau khi đóng trình duyệt. */
+    giaoTheMoi() {
+      const t = PHIEN.the();
+      if (!t || !USER) return;
+      try {
+        if (PHIEN.nho()) localStorage.setItem(KHOA_PHIEN, t);
+        else localStorage.setItem(KHOA_GIAO, JSON.stringify({ tk: t, luc: Date.now() }));
+      } catch (e) { /* bỏ qua */ }
+    },
+  };
+  EPL.PHIEN = PHIEN;
   const API = EPL.API = {
-    // Không tick "ghi nhớ" thì phiên nằm ở sessionStorage: đóng trình duyệt là mất, đúng thói quen
-    // của máy dùng chung ngoài bãi. Đọc thì phải dò cả hai chỗ.
+    /** Phiên của THẺ NÀY; thẻ chưa có phiên riêng (hoặc trình duyệt chặn sessionStorage) thì phiên mặc định. */
     token() {
-      try { return localStorage.getItem(KHOA_PHIEN) || sessionStorage.getItem(KHOA_PHIEN) || ''; }
-      catch (e) { return ''; }
+      const t = PHIEN.the();
+      if (t !== null) return t;
+      return phienBoNho || PHIEN.macDinh();
     },
     async goi(duong, tuy_chon = {}) {
       const dau = { 'Accept': 'application/json' };
@@ -512,11 +564,7 @@
     async dangNhap(u, p) {
       const g = await API.post('/api/dang-nhap', { username: u, password: p });
       const nho = document.getElementById('lgNho');
-      try {
-        const kho = (nho && !nho.checked) ? sessionStorage : localStorage;
-        localStorage.removeItem(KHOA_PHIEN); sessionStorage.removeItem(KHOA_PHIEN);
-        kho.setItem(KHOA_PHIEN, g.token);
-      } catch (e) { /* bỏ qua */ }
+      PHIEN.dat(g.token, !(nho && !nho.checked));          // 21/10: phiên của thẻ này + (ghi nhớ) mặc định cho thẻ mới
       USER = g.user;
       // C9.2 (anh Khampla): máy ở bãi mặc định tiếng Lào. Chỉ áp khi máy này CHƯA từng chọn ngôn ngữ và
       // người vào là người ở hiện trường (Bãi · thủ kho · tài xế); ai đã chọn rồi thì giữ nguyên chọn của họ.
@@ -533,7 +581,7 @@
       hienApp();
     },
     dangXuat(xoaHash = true) {
-      try { localStorage.removeItem(KHOA_PHIEN); sessionStorage.removeItem(KHOA_PHIEN); } catch (e) { /* bỏ qua */ }
+      PHIEN.xoa();                       // 21/10: chỉ phiên của thẻ này (thẻ khác giữ người của nó)
       USER = null; apLopVai();
       clearInterval(henDem); DEM = {}; datTimPhieu();      // 20/10: thôi đếm việc định kỳ, cất ô tìm phiếu (người sau là vai khác)
       // Dọn màn đang mở (đồng hồ, tải nền, GPS): không thì nó còn gọi API sau khi đã đăng xuất. Màn còn đang nạp thì lượt
@@ -847,18 +895,25 @@
       html = TP.ds.map((p, k) => {
         const xe = [p.truck_no, [p.plate_head, p.plate_trailer].filter(Boolean).join(' / ')].filter(Boolean).join(' · ');
         const tuyen = p.origin || p.destination ? `${esc(p.origin || '—')} → ${esc(p.destination || '—')}` : '';
-        return `<button type="button" class="tp-muc ${k === TP.chon ? 'chon' : ''}" id="tp-${k}" role="option" aria-selected="${k === TP.chon}" data-k="${k}">
+        // 21/10: mỗi gợi ý là <a href> — chuột phải / Ctrl / nút giữa mở phiếu ở thẻ mới (danh sách vẫn mở, ô tìm giữ chữ)
+        return `<a class="tp-muc lk-nut ${k === TP.chon ? 'chon' : ''}" href="${EPL.href('phieu-xuat-xe', { id: p.id })}" id="tp-${k}" role="option" aria-selected="${k === TP.chon}" data-k="${k}">
           <span class="tp-dong1"><b class="mono">${esc(p.doc_no || '—')}</b><span class="tp-ngay">${EPL.ngay(p.doc_date)}</span>${p.kind ? `<span class="tp-loai">${NN.h(p.kind === 'gom' ? 'dn_gom' : 'dn_giao')}</span>` : ''}${p.transport_status ? EPL.tag(p.transport_status) : ''}</span>
-          <span class="tp-dong2" lang="lo">${esc(xe)}${xe ? ' · ' : ''}${esc(EPL.tenTaiXe(p, false)) || '—'}${p.driver_code ? ` <small>${esc(p.driver_code)}</small>` : ''}${tuyen ? ' · ' + tuyen : ''}</span></button>`;
+          <span class="tp-dong2" lang="lo">${esc(xe)}${xe ? ' · ' : ''}${esc(EPL.tenTaiXe(p, false)) || '—'}${p.driver_code ? ` <small>${esc(p.driver_code)}</small>` : ''}${tuyen ? ' · ' + tuyen : ''}</span></a>`;
       }).join('') + (TP.con ? dongDuoi('tp_con', null, 'tp-con') : '')
-        + `<div class="tp-chan">${NN.h('tp_phim')}${thayTheoDoi() ? `<button type="button" class="tp-het" data-het="1">${NN.h('tp_xem_het')}</button>` : ''}</div>`;
+        + `<div class="tp-chan">${NN.h('tp_phim')}${thayTheoDoi() ? `<a class="tp-het lk-nut" href="${EPL.href('theo-doi', { q: TP.q })}" data-het="1">${NN.h('tp_xem_het')}</a>` : ''}</div>`;
     }
     ds.innerHTML = html; ds.hidden = false;
     i.setAttribute('aria-expanded', 'true');
     if (TP.chon >= 0) i.setAttribute('aria-activedescendant', 'tp-' + TP.chon); else i.removeAttribute('aria-activedescendant');
-    ds.querySelectorAll('.tp-muc').forEach(b => b.addEventListener('mousedown', (e) => { e.preventDefault(); moPhieuTim(+b.dataset.k); }));
+    // Bấm thường: mở ngay lúc nhấn chuột như trước (mousedown — ô tìm không mất con trỏ). Phím phụ / nút giữa / chuột phải: để trình duyệt
+    // tự làm (mở thẻ mới, hiện menu), ô tìm vẫn giữ con trỏ nên danh sách không đóng.
+    const nhan = (el, lam) => {
+      el.addEventListener('mousedown', (e) => { e.preventDefault(); if (e.button === 0 && !EPL.moTabMoi(e)) lam(); });
+      el.addEventListener('click', (e) => { if (!EPL.moTabMoi(e)) e.preventDefault(); });
+    };
+    ds.querySelectorAll('.tp-muc').forEach(b => nhan(b, () => moPhieuTim(+b.dataset.k)));
     const het = ds.querySelector('[data-het]');
-    if (het) het.addEventListener('mousedown', (e) => { e.preventDefault(); const q = TP.q; datTimPhieu(); tpO().blur(); EPL.di('theo-doi', { q }); });
+    if (het) nhan(het, () => { const q = TP.q; datTimPhieu(); tpO().blur(); EPL.di('theo-doi', { q }); });
     const dang = ds.querySelector('.tp-muc.chon'); if (dang) dang.scrollIntoView({ block: 'nearest' });
   }
   const thayTheoDoi = () => !!USER && EPL.manCuaVai(USER.role).some(m => m.id === 'theo-doi');
@@ -913,10 +968,10 @@
   const svgIc = (d, cls) => `<svg class="${cls || ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"><path d="${d}"/></svg>`;
   const pillDem = (id) => DEM[id] ? `<span class="dem">${DEM[id]}</span>` : '';
 
-  /** Một mục ở thanh bên. `data-ten` để chế độ hẹp còn hiện được mách nhỏ. */
+  /** Một mục ở thanh bên. `data-ten` để chế độ hẹp còn hiện được mách nhỏ. 21/10: <a href> — mở được ở thẻ mới. */
   function nutBen(m) {
-    return `<button type="button" class="muc ${m.id === moduleHienTai ? 'active' : ''}" data-mod="${m.id}" data-ten="${esc(tenModTho(m))}" title="${esc(tenModTho(m))}">
-      ${svgIc(m.ic, 'ic')}<span class="ten">${tenMod(m, true)}</span>${pillDem(m.id)}</button>`;
+    return `<a class="muc lk-nut ${m.id === moduleHienTai ? 'active' : ''}" href="${EPL.href(m.id)}" data-mod="${m.id}" data-ten="${esc(tenModTho(m))}" title="${esc(tenModTho(m))}"${m.id === moduleHienTai ? ' aria-current="page"' : ''}>
+      ${svgIc(m.ic, 'ic')}<span class="ten">${tenMod(m, true)}</span>${pillDem(m.id)}</a>`;
   }
 
   function veThanhBen() {
@@ -934,7 +989,7 @@
       if (!gap) html += trong.map(nutBen).join('');
     });
     nav.innerHTML = html;
-    nav.querySelectorAll('[data-mod]').forEach(b => b.addEventListener('click', () => { location.hash = '#/' + b.dataset.mod; }));
+    nav.querySelectorAll('[data-mod]').forEach(b => EPL.noiLink(b, () => { location.hash = '#/' + b.dataset.mod; }));
     nav.querySelectorAll('[data-nhom]').forEach(b => b.addEventListener('click', () => {
       const id = b.dataset.nhom;
       if (nhomGap.has(id)) nhomGap.delete(id); else nhomGap.add(id);
@@ -952,18 +1007,18 @@
     const dau = hien[0];
     const rieng = dau && dau.nhom === NHOM_MOD[0].id ? dau : null;   // màn đứng riêng ngoài menu
     const demNhom = (n) => hien.filter(m => m.nhom === n).reduce((a, m) => a + (DEM[m.id] || 0), 0);
-    const mucPanel = (m) => `<button type="button" class="mn-muc ${m.id === moduleHienTai ? 'active' : ''}" data-mod="${m.id}">
+    const mucPanel = (m) => `<a class="mn-muc lk-nut ${m.id === moduleHienTai ? 'active' : ''}" href="${EPL.href(m.id)}" data-mod="${m.id}"${m.id === moduleHienTai ? ' aria-current="page"' : ''}>
       <span class="ic">${svgIc(m.ic)}</span>
       <span class="tt"><b>${NN.h(m.nav)}</b><small>${NN.h('d_' + m.id.replace(/-/g, '_'))}</small></span>
-      ${DEM[m.id] ? `<span class="dem">${DEM[m.id]}</span>` : ''}</button>`;
+      ${DEM[m.id] ? `<span class="dem">${DEM[m.id]}</span>` : ''}</a>`;
 
     // Vẽ lại thanh (đổi màn, số việc về) đúng lúc người dùng đang mở một menu thì giữ menu đó mở — trước đây nó tự cụp
     // ngay dưới tay, bấm hụt mục định chọn (rà 01/10)
     const moCu = o2.querySelector('.mn.mo[data-nhom]'), nhomMo = moCu ? moCu.dataset.nhom : '';
     let html = '';
     if (rieng) {
-      html += `<div class="mn"><button type="button" class="mn-nut ${rieng.id === moduleHienTai ? 'dang' : ''}" data-mod="${rieng.id}">
-        ${svgIc(rieng.ic)}<span>${NN.h(rieng.nav)}</span></button></div>`;
+      html += `<div class="mn"><a class="mn-nut lk-nut ${rieng.id === moduleHienTai ? 'dang' : ''}" href="${EPL.href(rieng.id)}" data-mod="${rieng.id}">
+        ${svgIc(rieng.ic)}<span>${NN.h(rieng.nav)}</span></a></div>`;
     }
     NHOM_MOD.forEach(n => {
       const trong = hien.filter(m => m.nhom === n.id && m !== rieng);
@@ -976,7 +1031,7 @@
         <div class="mn-panel ${trong.length < 4 ? 'mot-cot' : ''}" hidden>${trong.map(mucPanel).join('')}</div></div>`;
     });
     o2.innerHTML = html;
-    o2.querySelectorAll('[data-mod]').forEach(b => b.addEventListener('click', () => {
+    o2.querySelectorAll('[data-mod]').forEach(b => EPL.noiLink(b, () => {
       dongMenuTren(); location.hash = '#/' + b.dataset.mod;
     }));
     o2.querySelectorAll('.mn[data-nhom] > .mn-nut').forEach(b => b.addEventListener('click', (e) => {
@@ -1070,7 +1125,19 @@
           const o = document.getElementById('timPhieu'), i = tpO();
           if (o && !o.hidden && i && o.getClientRects().length) { e.preventDefault(); i.focus(); i.select(); }
         }
+        // 21/10: nút đổi thành <a role="button"> — phím cách bấm được như nút cũ (Enter thì thẻ <a> tự có)
+        if (e.key === ' ' && !e.ctrlKey && !e.metaKey && !e.altKey && e.target && e.target.matches && e.target.matches('a[role="button"][href]')) {
+          e.preventDefault(); e.target.click();
+        }
       });
+      // 21/10: sắp mở một liên kết của trang sang thẻ mới (phím phụ + bấm, nút giữa, chuột phải) → thẻ mới vào cùng người với thẻ này
+      const lienKetTrang = (e) => {
+        const a = e.target && e.target.closest && e.target.closest('a[href]');
+        return !!a && a.origin === location.origin && a.pathname === location.pathname;
+      };
+      document.addEventListener('click', (e) => { if (EPL.moTabMoi(e) && lienKetTrang(e)) PHIEN.giaoTheMoi(); }, true);
+      document.addEventListener('mousedown', (e) => { if (e.button === 1 && lienKetTrang(e)) PHIEN.giaoTheMoi(); }, true);
+      document.addEventListener('contextmenu', (e) => { if (lienKetTrang(e)) PHIEN.giaoTheMoi(); }, true);
     }
     noiTimPhieu();
   }
@@ -1104,9 +1171,59 @@
     }, 60);
   });
 
-  EPL.di = (id, tham) => {
+  /* 21/10 — MỞ TAB MỚI. Chỗ điều hướng (menu, ô tìm phiếu, «Mở phiếu», dòng danh sách…) là <a href> thật: chuột phải «Mở trong thẻ mới»,
+   * Ctrl / ⌘ / Shift + bấm, bấm chuột giữa làm đúng như trình duyệt. Bấm thường (chuột trái, không phím phụ) vẫn chạy đúng việc cũ.
+   *   EPL.href(id, tham)  → chuỗi hash y như EPL.di đặt lên thanh địa chỉ (EPL.di dùng lại hàm này)
+   *   EPL.moTabMoi(e)     → người bấm muốn thẻ / cửa sổ mới (Ctrl · ⌘ · Shift · nút giữa) — trình bấm của <a> gặp lượt này thì để yên
+   *   EPL.noiLink(a, lam) → <a> do mã dựng: bấm thường → chặn đi theo href, chạy lam(e); phím phụ → trình duyệt tự mở
+   *   EPL.datLink(a, h)   → nút tĩnh mà đích theo lựa chọn hiện tại: có đích thì href, chưa có thì bỏ href + aria-disabled
+   *   EPL.noiMo(goc, chon, layHref, lam) → cả dòng bấm được (dòng bảng, mục danh sách): bấm thường → lam(el, e); phím phụ / nút giữa trên
+   *                         chỗ không phải <a> của dòng → window.open(href) (thẻ mới)
+   * Không dùng cho app tài xế (phieu-cua-toi, điện thoại) và nút hành động (lưu, duyệt, khoá…). */
+  EPL.href = (id, tham) => {
     const q = tham ? new URLSearchParams(tham).toString() : '';   // không tham số thì đừng để dấu '?' trơ ra trên thanh địa chỉ
-    const moi = '#/' + id + (q ? '?' + q : '');
+    return '#/' + id + (q ? '?' + q : '');
+  };
+  EPL.moTabMoi = (e) => !!e && (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1);
+  EPL.noiLink = (a, lam) => {
+    if (!a) return a;
+    a.addEventListener('click', (e) => {
+      if (EPL.moTabMoi(e)) return;                       // để trình duyệt tự mở thẻ / cửa sổ mới — KHÔNG preventDefault
+      e.preventDefault();
+      if (a.getAttribute('aria-disabled') === 'true') return;
+      lam(e);
+    });
+    return a;
+  };
+  EPL.datLink = (a, h) => {
+    if (!a) return;
+    if (h) { a.setAttribute('href', h); a.removeAttribute('aria-disabled'); }
+    else { a.removeAttribute('href'); a.setAttribute('aria-disabled', 'true'); }
+  };
+  /** Mở một địa chỉ của trang ở thẻ mới (noopener: như Ctrl + bấm liên kết — thẻ mới không chép sessionStorage, nhận phiên mặc định). */
+  EPL.moTab = (h) => { if (!h) return; PHIEN.giaoTheMoi(); window.open(h, '_blank', 'noopener'); };
+  EPL.noiMo = (goc, chon, layHref, lam) => {
+    if (!goc) return;
+    const cua = (e) => { const el = e.target.closest && e.target.closest(chon); return el && goc.contains(el) ? el : null; };
+    const trongA = (e, el) => { const a = e.target.closest('a[href]'); return a && el.contains(a) ? a : null; };
+    goc.addEventListener('click', (e) => {
+      const el = cua(e); if (!el) return;
+      const a = trongA(e, el);
+      if (EPL.moTabMoi(e)) { if (!a) { e.preventDefault(); EPL.moTab(layHref(el)); } return; }
+      if (a) e.preventDefault();
+      lam(el, e);
+    });
+    // nút giữa trên chỗ không phải liên kết: không bật cuộn tự động, nhả nút là mở thẻ mới
+    goc.addEventListener('mousedown', (e) => { if (e.button === 1) { const el = cua(e); if (el && !trongA(e, el)) e.preventDefault(); } });
+    goc.addEventListener('auxclick', (e) => {
+      if (e.button !== 1) return;
+      const el = cua(e); if (!el || trongA(e, el)) return;
+      e.preventDefault(); EPL.moTab(layHref(el));
+    });
+  };
+
+  EPL.di = (id, tham) => {
+    const moi = EPL.href(id, tham);
     // Đang đứng đúng địa chỉ đó rồi (ví dụ vừa lưu phiếu mới ở #/phieu-xuat-xe?moi=1 rồi bấm "Tạo phiếu"
     // lần nữa): trình duyệt không bắn hashchange, khung phải tự nạp lại — không thì nút bấm như chết.
     if (location.hash === moi) { dieuHuong(); return; }
@@ -1266,8 +1383,21 @@
       mat.title = NN.t(hien ? 'hide_pw' : 'show_pw');
       o.focus();
     });
+    PHIEN.nhan();                        // 21/10: thẻ mới / chưa có phiên riêng → nhận phiên mặc định rồi giữ
     if (API.token()) {
-      try { USER = await API.get('/api/toi', { giu: true }); hienApp(); return; } catch (e) { /* phiên hết hạn → về đăng nhập */ }
+      // 21/10: chỉ phiên hết hạn / sai (401 — tầng API tự đăng xuất) mới bỏ phiên. Mất mạng, máy chủ chập chờn / đang khởi động lại
+      // thì GIỮ phiên của thẻ (mỗi thẻ một vai khi thử nhiều tài khoản), thử lại vài nhịp; vẫn lỗi thì hiện màn đăng nhập kèm câu báo
+      // nhưng không xoá phiên — tải lại trang khi có mạng là vào đúng người cũ.
+      for (let lan = 0; ; lan++) {
+        try { USER = await API.get('/api/toi', { giu: true }); hienApp(); return; } catch (e) {
+          if (!e || e.status === 401 || !API.token()) break;
+          if (lan < 2) { await new Promise((r) => setTimeout(r, 1500)); continue; }
+          document.getElementById('app').hidden = true; document.getElementById('login').hidden = false;
+          const loi = document.getElementById('lgErr');
+          if (loi) { loi.textContent = NN.t('lg_chua_noi'); loi.hidden = false; }
+          return;
+        }
+      }
     }
     AUTH.dangXuat(false);
   }

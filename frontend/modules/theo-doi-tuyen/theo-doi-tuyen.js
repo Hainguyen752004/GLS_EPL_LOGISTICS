@@ -353,10 +353,10 @@
       ? (suaDuoc ? `<button type="button" class="tdt2-btn sm" id="tdt-ghi-chu">+ ${NN.h('add_note')}</button>` : '')
       : tab === 'chi-phi'
         ? (khaiSuaDuoc ? `<button type="button" class="tdt2-btn sm tan" id="tdt-khai-sua">+ ${NN.h('report_incident')}</button>` : '')
-        : `<button type="button" class="tdt2-btn sm" id="tdt-mo-so-ct">${NN.h('ct_so')}</button>`;
+        : `<a class="tdt2-btn sm lk-nut" role="button" id="tdt-mo-so-ct" href="${EPL.href('chung-tu', { tab: 'so' })}">${NN.h('ct_so')}</a>`;   // 21/10: <a href>
     const ghi = q('#tdt-ghi-chu'); if (ghi) ghi.addEventListener('click', ghiChu);
     const khai = q('#tdt-khai-sua'); if (khai) khai.addEventListener('click', moSuCo);
-    const moCt = q('#tdt-mo-so-ct'); if (moCt) moCt.addEventListener('click', () => EPL.di('chung-tu', { tab: 'so' }));
+    const moCt = q('#tdt-mo-so-ct'); if (moCt) EPL.noiLink(moCt, () => EPL.di('chung-tu', { tab: 'so' }));
 
     if (tab === 'dien-bien') veTabDienBien();
     else if (tab === 'chi-phi') veTabChiPhi();
@@ -510,8 +510,8 @@
       <div>
         <div class="tdt2-muc-dau"><span>${NN.h('td_sections')}</span><span>${MUC_MA.filter(x => ['verified', 'booked', 'paid'].includes(m[x])).length}/6</span></div>
         <div class="tdt2-duyet">${MUC_MA.map((ma, i) => { const tt = tenTT(m[ma]);
-          return `<button type="button" class="tdt2-ap ${m[ma] || 'wait'}" data-muc="${ma}" title="${esc(NN.t(MUC_KHOA[i]) + ' — ' + tt)}">
-          <b>${MUC_SO[i]}</b><span class="vong"></span></button>`; }).join('')}</div>
+          return `<a class="tdt2-ap lk-nut ${m[ma] || 'wait'}" href="${EPL.href('phieu-xuat-xe', { id: P.id })}" data-muc="${ma}" title="${esc(NN.t(MUC_KHOA[i]) + ' — ' + tt)}">
+          <b>${MUC_SO[i]}</b><span class="vong"></span></a>`; }).join('')}</div>
       </div>
       <div class="tdt2-tien tien">
         <div><small>${NN.h('td_fare_est')}</small><b>${so(cuoc)} LAK</b></div>
@@ -531,7 +531,7 @@
     const le = [...chan.children].filter(b => !b.classList.contains('rong'));
     if (le.length % 2) le[le.length - 1].classList.add('rong');           // hai cột; nút lẻ cuối trải hết hàng
 
-    q('#tdt-xe').querySelectorAll('[data-muc]').forEach(b => b.addEventListener('click', () => EPL.di('phieu-xuat-xe', { id: P.id })));
+    q('#tdt-xe').querySelectorAll('[data-muc]').forEach(b => EPL.noiLink(b, () => EPL.di('phieu-xuat-xe', { id: P.id })));   // 21/10: <a href>
     const nutToi = chan.querySelector('[data-toi]'); if (nutToi) nutToi.addEventListener('click', () => toiDiem(+nutToi.dataset.toi, diem.length));
     const nutCap = chan.querySelector('[data-cap]'); if (nutCap) nutCap.addEventListener('click', moKhoChungTu);   // G8 06/10: Web kho anh Tune, không còn /#/cap-phat kho tạm
     const nutSC = chan.querySelector('[data-su-co]'); if (nutSC) nutSC.addEventListener('click', moSuCo);
@@ -542,7 +542,8 @@
   /* ---------------------------------------------------------------- vẽ cả màn chi tiết */
   function ve() {
     const co = !!P;
-    q('#tdt-su-co').disabled = q('#tdt-mo-phieu').disabled = !co;
+    q('#tdt-su-co').disabled = !co;
+    EPL.datLink(q('#tdt-mo-phieu'), co ? EPL.href('phieu-xuat-xe', { id: P.id }) : null);   // 21/10: «Mở phiếu» là <a href> theo chuyến đang chọn
     veMoc(); veTabs(); veHoSo(); veBanDo();
     caoCot(); ghiDiaChi();
   }
@@ -829,7 +830,7 @@
         try { await tai(true); } catch (x) { EPL.baoLoi(x); } finally { nut.disabled = false; }
       });
       q('#tdt-so-su-co').addEventListener('click', moSo);
-      q('#tdt-mo-phieu').addEventListener('click', () => P && EPL.di('phieu-xuat-xe', { id: P.id }));
+      EPL.noiLink(q('#tdt-mo-phieu'), () => P && EPL.di('phieu-xuat-xe', { id: P.id }));
       q('#tdt-dong-hs').addEventListener('click', () => moHoSo(false));
       q('#tdt-su-co').addEventListener('click', moSuCo);
       q('#tdt-f-co-sua').addEventListener('change', e => { q('#tdt-f-sua').hidden = !e.target.checked; });

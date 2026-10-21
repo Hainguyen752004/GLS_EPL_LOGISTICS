@@ -202,7 +202,8 @@
     return {
       stt: dau + i + 1,
       ngay: EPL.ngay(p.doc_date),
-      so: `<b>${esc(p.doc_no)}</b>`,
+      // 21/10: số phiếu là <a href> — chuột phải «Mở trong thẻ mới»; Ctrl / nút giữa trên chỗ khác của dòng cũng mở thẻ mới (init)
+      so: `<a class="td-so-lk" href="${EPL.href('phieu-xuat-xe', { id: p.id })}"><b>${esc(p.doc_no)}</b></a>`,
       quang: esc(p.ore_bill_no) || d,
       tuyen: p.origin || p.destination ? `<span lang="lo">${esc(p.origin) || '—'} → ${esc(p.destination) || '—'}</span>` : d,
       loai: p.company === 'joint' ? tag('plain', 'co_joint') : 'EPL',
@@ -447,16 +448,16 @@
       bang.addEventListener('click', (e) => {
         const th = e.target.closest('th[data-sap]');
         if (th) return bamSap(th.dataset.sap).catch(EPL.baoLoi);
-        const tr = e.target.closest('#td-than tr[data-id]');
-        if (tr) moPhieu(tr.dataset.id);
       });
+      // 21/10: bấm thường như cũ (ghi danh sách cho ‹ trước · sau › rồi mở phiếu); Ctrl / ⌘ / Shift / nút giữa → phiếu ở thẻ mới
+      EPL.noiMo(bang, '#td-than tr[data-id]', (tr) => EPL.href('phieu-xuat-xe', { id: tr.dataset.id }), (tr) => moPhieu(tr.dataset.id));
       bang.addEventListener('keydown', (e) => {
         const th = e.target.closest && e.target.closest('th[data-sap]');
         if (th && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); bamSap(th.dataset.sap).catch(EPL.baoLoi); }
       });
       window.removeEventListener('resize', khiDoiCo); window.addEventListener('resize', khiDoiCo);
       r.querySelector('#td-xuat').addEventListener('click', xuatBaoCao);
-      r.querySelector('#td-moi').addEventListener('click', () => EPL.di('phieu-xuat-xe', { moi: 1 }));
+      EPL.noiLink(r.querySelector('#td-moi'), () => EPL.di('phieu-xuat-xe', { moi: 1 }));
       veNutChoToi();
       // tỷ giá chỉ cho dòng chú thích — hỏi SONG SONG với bảng, bảng không phải chờ nó (rà 01/10: 40–465 ms đứng trước bảng)
       tyGia = {};

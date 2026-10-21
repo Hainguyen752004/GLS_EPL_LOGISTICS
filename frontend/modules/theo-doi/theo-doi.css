@@ -9,6 +9,8 @@
 .td-bang td.num{font-variant-numeric:tabular-nums}
 .td-bang th.num{text-align:right}
 .td-bang tbody tr{cursor:pointer}
+/* 21/10: số phiếu là <a href> (mở thẻ mới) — trông y chữ đậm cũ */
+.td-bang a.td-so-lk{color:inherit;text-decoration:none}
 .td-hao{color:var(--red);font-size:11px;margin-left:4px}
 /* Cột "Tiền": mã tiền tệ của chính phiếu đó, để con số bên cạnh không phải đoán đơn vị. */
 .td-bang td.td-ccy{font-size:11.5px;letter-spacing:.3px;color:var(--muted);text-align:center}

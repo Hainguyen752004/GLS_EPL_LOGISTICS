@@ -66,10 +66,10 @@
           <div class="l">${NN.h('tk_cong_doan', { n: cua.length })}</div>
           <ol class="tk-buoc">${cua.map(b => `<li><b>${esc(String(b.so))}.</b> ${esc(b.ten)}</li>`).join('') || '<li class="muted">—</li>'}</ol>
           <div class="l">${NN.h('tk_ct_sinh')}</div>
-          <div class="tk-ct">${ct.map(ma => `<button class="tk-ctb" data-mo-ct="${ma}"><b>${ma}</b> ${esc(ctTen(ma))}</button>`).join(' ') || `<span class="muted small">${NN.h('tk_khong_ct')}</span>`}</div>
+          <div class="tk-ct">${ct.map(ma => `<a class="tk-ctb lk-nut" href="${EPL.href('quy-trinh')}" data-mo-ct="${ma}"><b>${ma}</b> ${esc(ctTen(ma))}</a>`).join(' ') || `<span class="muted small">${NN.h('tk_khong_ct')}</span>`}</div>
         </div></article>`;
     }).join('');
-    root.querySelectorAll('[data-mo-ct]').forEach(b => b.addEventListener('click', () => EPL.di('quy-trinh')));
+    root.querySelectorAll('[data-mo-ct]').forEach(b => EPL.noiLink(b, () => EPL.di('quy-trinh')));   // 21/10: <a href>
   }
   function doiTab(t) {
     root.querySelectorAll('.tk-tab button').forEach(b => b.classList.toggle('active', b.dataset.tk === t));

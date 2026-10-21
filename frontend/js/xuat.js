@@ -150,7 +150,7 @@ ${xmlSheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml"
 
   /* ------------------------------------------------------------------ đọc bảng trên màn */
   const hien = (el) => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
-  const BO_QUA = 'button, .btn, svg, .no-print, script, style, template, .xuat-bo';
+  const BO_QUA = 'button, .btn, a.lk-nut, svg, .no-print, script, style, template, .xuat-bo';   // 21/10: a.lk-nut = nút đổi thành <a href> (mở thẻ mới)
   const KHOI = /^(DIV|P|LI|TR|BR|H[1-6]|SECTION|UL|OL|TABLE)$/;
   /** Chữ NGƯỜI ĐỌC thấy trong ô — bỏ nút, ô ẩn; ô nhập lấy giá trị; khối con xuống dòng. */
   function chu(el) {

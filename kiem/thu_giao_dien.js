@@ -38,7 +38,13 @@ async function main() {
   const dom = new JSDOM(html, { url: GOC + '/', runScripts: 'dangerously', resources: new ChiNoiBo(), pretendToBeVisual: true });
   const w = dom.window;
   // jsdom thiếu fetch và <dialog>.showModal — vá tối thiểu
-  w.fetch = (u, o) => fetch(new URL(u, GOC).href, o);
+  // 21/10: tín hiệu huỷ GET của màn (chung.js MOD_AC) là AbortSignal của jsdom — fetch của Node từ chối nó ("Expected signal to be an
+  // instance of AbortSignal") nên mọi GET của màn thành «Mất mạng». Nối sang một AbortController của Node.
+  w.fetch = (u, o) => {
+    const tc = Object.assign({}, o), s = tc.signal; delete tc.signal;
+    if (s) { const ac = new AbortController(); if (s.aborted) ac.abort(); else s.addEventListener('abort', () => ac.abort()); tc.signal = ac.signal; }
+    return fetch(new URL(u, GOC).href, tc);
+  };
   w.HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', ''); };
   w.HTMLDialogElement.prototype.close = function (v) { this.returnValue = v || this.returnValue; this.removeAttribute('open'); this.dispatchEvent(new w.Event('close')); };
   const loiJS = []; w.addEventListener('error', e => loiJS.push(String(e.message || e.error)));

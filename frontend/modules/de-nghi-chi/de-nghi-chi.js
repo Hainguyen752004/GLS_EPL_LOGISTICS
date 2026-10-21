@@ -125,7 +125,7 @@
     ghiDiaChi(new URLSearchParams(v ? { id: v.trip_id, v: v.id } : {}));
     q('#dnc-giay').scrollTop = 0;            // tờ cuộn trong khung riêng (01/10): chọn tờ khác thì về đầu tờ
     q('#dnc-giay').hidden = !DS.length;       // danh sách trống: khung trống bên trái nói lý do, bỏ tờ "Chọn một tờ bên trái"
-    q('#dnc-mo-phieu').disabled = !v; q('#dnc-in').disabled = !v;
+    EPL.datLink(q('#dnc-mo-phieu'), v ? EPL.href('phieu-xuat-xe', { id: v.trip_id }) : null); q('#dnc-in').disabled = !v;   // 21/10: <a href>
     if (!v) { q('#dnc-so').innerHTML = ''; q('#dnc-kt').innerHTML = ''; q('#dnc-kt-muc').innerHTML = ''; q('#dnc-to').innerHTML = `<div class="ct-trong">${NN.h('dn_chon_to')}</div>`; return; }
     veKT(v, v.chi_ke_toan);
     q('#dnc-kt-muc').innerHTML = '';
@@ -231,7 +231,7 @@
       await tai();
       chonId = null; phieuLe = t.id; veDs();
       await veLe();
-      q('#dnc-mo-phieu').onclick = () => EPL.di('phieu-xuat-xe', { id: t.id });
+      // 21/10: «Mở phiếu» của phiếu lẻ — bộ nghe chung (init) mở theo phieuLe
       return true;
     }
     return false;
@@ -240,7 +240,7 @@
   async function veLe() {
     ghiDiaChi(new URLSearchParams({ id: phieuLe || '' }));
     q('#dnc-giay').hidden = false;           // phiếu chưa có tờ tạm ứng: vẫn in nội dung tạm ứng của phiếu, dù danh sách trống
-    q('#dnc-mo-phieu').disabled = false; q('#dnc-in').disabled = false;
+    EPL.datLink(q('#dnc-mo-phieu'), EPL.href('phieu-xuat-xe', { id: phieuLe })); q('#dnc-in').disabled = false;
     try { const [d] = await Promise.all([API.get(`/api/trips/${phieuLe}/phieu-chi`), accSan]); veTamUng(d, null); } catch (e) { EPL.baoLoi(e); }
   }
 
@@ -270,7 +270,10 @@
           await tai();
         } catch (e) { EPL.baoLoi(e); }
       });
-      q('#dnc-mo-phieu').addEventListener('click', () => { const v = DS.find(x => x.id === chonId); if (v) EPL.di('phieu-xuat-xe', { id: v.trip_id }); });
+      EPL.noiLink(q('#dnc-mo-phieu'), () => {
+        const v = DS.find(x => x.id === chonId);
+        if (v) EPL.di('phieu-xuat-xe', { id: v.trip_id }); else if (phieuLe) EPL.di('phieu-xuat-xe', { id: phieuLe });
+      });
       const t = (ctx && ctx.tham) || {};
       // đường cũ ?loai=fuel → màn Phiếu đề nghị xuất kho
       if (t.loai === 'fuel') return EPL.di('de-nghi-xuat-kho', { id: t.id || '', v: t.v || '' });

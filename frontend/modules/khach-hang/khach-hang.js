@@ -292,7 +292,7 @@
         : x.locked ? '<span class="k3-tag k3-tag--warn">' + h('k3_chua_tao_so') + '</span>' : '<span class="k3-tag k3-tag--muted">' + h('k3_chua_khoa') + '</span>';
       const tuyenX = [x.origin, x.destination].filter(Boolean).join(' → ');
       return '<tr><td>' + esc(ngay(x.doc_date)) + '</td><td><span class="mv ' + (x.kind === 'gom' ? 'mv--in" title="' + esc(t('do_gom')) + '">' + h('k3_gom') : 'mv--out" title="' + esc(t('do_giao')) + '">' + h('k3_giao')) + '</span></td>' +
-        '<td>' + (mo ? '<button type="button" class="link code" data-mo-phieu="' + esc(x.id) + '">' + esc(x.doc_no) + '</button>' : '<span class="code">' + esc(x.doc_no) + '</span>') + '</td>' +
+        '<td>' + (mo ? '<a class="link code" href="' + EPL.href('phieu-xuat-xe', { id: x.id }) + '" data-mo-phieu="' + esc(x.id) + '">' + esc(x.doc_no) + '</a>' : '<span class="code">' + esc(x.doc_no) + '</span>') + '</td>' +   // 21/10: <a href>
         '<td>' + (x.truck_no ? esc(x.truck_no) : '<span class="dash">–</span>') + '</td><td class="route-cell" lang="lo" title="' + esc(tuyenX) + '">' + (tuyenX ? esc(tuyenX) : '<span class="dash">–</span>') + '</td>' +
         '<td class="num">' + n2(ti.tan_tinh) + '</td>' +
         (g ? '<td class="num">' + EPL.tien(ti.don_gia, ccy) + '</td><td class="num"><b>' + EPL.tien(ti.doanh_thu, ccy) + '</b></td>' : '') + '<td>' + inv + '</td></tr>';
@@ -704,7 +704,7 @@
   /* ================= Sự kiện ================= */
   async function onClick(e) {
     const mp = e.target.closest('[data-mo-phieu]');
-    if (mp) { EPL.di('phieu-xuat-xe', { id: mp.dataset.moPhieu }); return; }
+    if (mp) { if (EPL.moTabMoi(e)) return; e.preventDefault(); EPL.di('phieu-xuat-xe', { id: mp.dataset.moPhieu }); return; }   // 21/10: phím phụ → thẻ mới
     const c = e.target.closest('[data-cust]');
     if (c) { chon(c.dataset.cust); return; }
     const tb = e.target.closest('[role="tab"][data-tab]');

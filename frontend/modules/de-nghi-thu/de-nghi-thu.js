@@ -114,9 +114,9 @@
       <span class="grow"></span>
       ${laKt && d.trang_thai === 'chua_lap' ? `<button class="btn primary" id="dnt-lap">${NN.h('dt_lap')}</button>` : ''}
       ${laKt && d.locked && !(sk && sk.da_tao_so) ? `<button class="btn primary" id="dnt-so-gui">${NN.h('dt_so_nut')}</button>` : ''}
-      <button class="btn" id="dnt-mo">${NN.h('open_slip')}</button>
+      <a class="btn lk-nut" id="dnt-mo" role="button" href="${EPL.href('phieu-xuat-xe', { id: x.trip_id })}">${NN.h('open_slip')}</a>
       <button class="btn ${d.pdt ? '' : 'quiet'}" id="dnt-in">${NN.h('print')}</button>`;
-    q('#dnt-mo').addEventListener('click', () => EPL.di('phieu-xuat-xe', { id: x.trip_id }));
+    EPL.noiLink(q('#dnt-mo'), () => EPL.di('phieu-xuat-xe', { id: x.trip_id }));   // 21/10: <a href> — mở được ở thẻ mới
     q('#dnt-in').addEventListener('click', () => window.print());
     const lap = q('#dnt-lap'); if (lap) lap.addEventListener('click', async () => {
       lap.disabled = true;

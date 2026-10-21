@@ -1125,7 +1125,7 @@
   }
   function anPhieu(an) {
     q('#px-phieu').hidden = an; const b = q('.px-buoc'); if (b) b.hidden = an;
-    ['px-luu', 'px-chung-tu', 'px-phieu-linh', 'px-hoa-don', 'px-in'].forEach(id => { const el = g(id); if (el) el.disabled = an; });
+    ['px-luu', 'px-chung-tu', 'px-phieu-linh', 'px-in'].forEach(id => { const el = g(id); if (el) el.disabled = an; });   // px-hoa-don (<a>): veDieuHuong
     let nhac = g('px-chua-chon');
     if (an) {
       if (!nhac) { nhac = document.createElement('div'); nhac.id = 'px-chua-chon'; nhac.className = 'card'; q('#px-phieu').before(nhac); }
@@ -1184,9 +1184,16 @@
     const dh = dsDieuHuong(), o = g('px-dh'); if (!o) return;
     const co = !!(dh && dh.i >= 0 && !moi);
     o.hidden = !co;
+    // 21/10: nút đi là <a href> — chuột phải / Ctrl / nút giữa mở phiếu trước · sau ở thẻ mới (thẻ mới không có ‹ › vì sessionStorage
+    // không sang thẻ mới); hết phiếu thì mờ như nút tắt cũ
+    const hPhieu = (id) => id ? EPL.href('phieu-xuat-xe', { id }) : null;
+    const sau = co ? dh.ids[dh.i + 1] : null;
+    EPL.datLink(g('px-truoc'), co && dh.i > 0 ? hPhieu(dh.ids[dh.i - 1]) : null);
+    EPL.datLink(g('px-sau'), hPhieu(sau)); EPL.datLink(g('px-ke-tiep'), hPhieu(sau));
+    EPL.datLink(g('px-ve'), dh && dh.ve && location.hash !== dh.ve ? dh.ve : EPL.href('theo-doi'));
+    EPL.datLink(g('px-hoa-don'), P && P.id ? EPL.href('de-nghi-thu', { id: P.id, thang: String(P.doc_date || '').slice(0, 7) }) : null);
     if (co) {
       g('px-dh-so').textContent = (dh.i + 1) + '/' + dh.ids.length;
-      g('px-truoc').disabled = dh.i <= 0; g('px-sau').disabled = dh.i >= dh.ids.length - 1;
       g('px-dh-so').title = dh.nhan || '';
     }
     const chu = g('px-ve-chu');                         // nút Quay lại mang tên danh sách vừa mở («← Việc chờ tôi»)
@@ -1262,16 +1269,57 @@
    * không có nháp thì KHÔNG tự đổ vào (luật "vào màn nhập liệu không tự mở bản ghi cũ") — dải «Có bản nháp chưa lưu · Dùng / Bỏ».
    * Dải đang chờ trả lời thì không ghi đè nháp cũ bằng tờ đang gõ. Lưu thành công / bấm Bỏ là xoá. Mọi lần đọc / ghi bọc try/catch
    * (trình duyệt chặn bộ nhớ thì thôi, màn vẫn chạy). */
-  const khoaNhap = () => 'epl_px_nhap_' + uidNay();
-  let nhapCho = null, henNhap = null;              // nhapCho: bản nháp ở máy đang chờ người dùng chọn Dùng / Bỏ
+  /* ---- 21/10: NHÁP THEO THẺ. Mở được nhiều thẻ (Ctrl + bấm…) nên hai thẻ cùng lập phiếu mới sẽ ghi đè nháp của nhau nếu chung một khoá.
+   * Khoá nay theo tài khoản + MÃ THẺ: "epl_px_nhap_<uid>_<mã thẻ>"; mã thẻ ở sessionStorage ("epl_ma_the") — F5 trong cùng thẻ giữ mã
+   * (thấy lại nháp của thẻ đó), thẻ mới ra mã mới. Mở phiếu mới: nháp của chính thẻ này trước; không có thì nháp MỚI NHẤT của thẻ khác /
+   * thẻ đã đóng (cùng tài khoản) — vẫn chỉ HỎI bằng dải «Có bản nháp chưa lưu · Dùng / Bỏ», không tự đổ vào. «Dùng» chuyển nháp đó về
+   * thẻ này (xoá khoá cũ — thẻ kia còn mở mà gõ tiếp thì nó tự ghi lại); «Bỏ» xoá đúng nháp đang hỏi; lưu thành công chỉ xoá nháp của thẻ
+   * này. Khoá cũ không có mã thẻ (trước 21/10) đọc như nháp của một thẻ khác. Mỗi tài khoản giữ tối đa 10 nháp (bỏ bản cũ nhất). */
+  const maThe = (() => {
+    const moiMa = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    try {
+      // F5 / lùi-tiến: giữ mã của thẻ. Mở mới: luôn mã mới — thẻ mở bằng window.open (không noopener) có chép sessionStorage của thẻ gốc
+      const nav = (performance.getEntriesByType && performance.getEntriesByType('navigation')[0]) || {};
+      let ma = nav.type === 'reload' || nav.type === 'back_forward' ? sessionStorage.getItem('epl_ma_the') : '';
+      if (!ma) { ma = moiMa(); sessionStorage.setItem('epl_ma_the', ma); }
+      return ma;
+    } catch (e) { return moiMa(); }
+  })();
+  const NHAP_TOI_DA = 10;
+  const goiNhap = () => 'epl_px_nhap_' + uidNay();
+  const khoaNhap = () => goiNhap() + '_' + maThe;
+  let nhapCho = null, henNhap = null;              // nhapCho: bản nháp ở máy đang chờ người dùng chọn Dùng / Bỏ (_khoa: khoá của nó)
+  function docKhoaNhap(k) {
+    try { const n = JSON.parse(localStorage.getItem(k) || 'null'); return n && n.uid === uidNay() && n.P ? n : null; } catch (e) { return null; }
+  }
+  /** Mọi nháp của tài khoản này ở máy (mọi thẻ, kể cả khoá cũ không mã thẻ), mới nhất trước: [{k, n}]. */
+  function cacNhapMay() {
+    const goc = goiNhap(), ra = [];
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k === goc || k.startsWith(goc + '_'))) { const n = docKhoaNhap(k); if (n) ra.push({ k, n }); }
+      }
+    } catch (e) { /* bộ nhớ bị chặn */ }
+    return ra.sort((a, b) => (b.n.luc || 0) - (a.n.luc || 0));
+  }
   function docNhapMay() {
-    try { const n = JSON.parse(localStorage.getItem(khoaNhap()) || 'null'); return n && n.uid === uidNay() && n.P ? n : null; } catch (e) { return null; }
+    const k = khoaNhap(), cua = docKhoaNhap(k);
+    if (cua) return Object.assign(cua, { _khoa: k });
+    const khac = cacNhapMay()[0];
+    return khac ? Object.assign(khac.n, { _khoa: khac.k }) : null;
   }
   function ghiNhapMay() {
-    if (nhapCho || !uidNay()) return;
-    try { if (moi && coNoiDung()) localStorage.setItem(khoaNhap(), JSON.stringify(banNhap())); } catch (e) { /* bộ nhớ đầy / bị chặn */ }
+    // dải đang hỏi nháp của CHÍNH thẻ này (sau F5) thì chưa ghi đè; đang hỏi nháp của thẻ khác thì tờ đang gõ vẫn ghi vào khoá của thẻ này
+    if ((nhapCho && nhapCho._khoa === khoaNhap()) || !uidNay()) return;
+    try {
+      if (!(moi && coNoiDung())) return;
+      const k = khoaNhap(), moiKhoa = localStorage.getItem(k) === null;
+      localStorage.setItem(k, JSON.stringify(banNhap()));
+      if (moiKhoa) cacNhapMay().slice(NHAP_TOI_DA).forEach(x => localStorage.removeItem(x.k));
+    } catch (e) { /* bộ nhớ đầy / bị chặn */ }
   }
-  function xoaNhapMay() { try { localStorage.removeItem(khoaNhap()); } catch (e) { /* bỏ qua */ } }
+  function xoaNhapMay(k) { try { localStorage.removeItem(k || khoaNhap()); } catch (e) { /* bỏ qua */ } }
   const henGhiNhap = () => { clearTimeout(henNhap); henNhap = setTimeout(ghiNhapMay, 600); };
   let phimLuu = null, khiRoiTrang = null;          // bộ nghe Ctrl+S (B10) · rời trang (A2) — gắn ở init, gỡ ở destroy
   /** "+ Phiếu mới": tờ mới đang gõ dở thì cất vào máy trước (dải nháp trên tờ trắng hỏi Dùng / Bỏ — bấm nhầm vẫn lấy lại được). */
@@ -1414,7 +1462,7 @@
       const laMoi = moi;
       P = await guiPhieu(body);
       // 20/10 (A2): phiếu mới lưu xong → bỏ nháp ở máy (dải nháp cũ đang chờ chọn thì giữ — đó là tờ khác)
-      if (laMoi) { clearTimeout(henNhap); if (!nhapCho) xoaNhapMay(); }
+      if (laMoi) { clearTimeout(henNhap); if (!nhapCho || nhapCho._khoa !== khoaNhap()) xoaNhapMay(); }   // 21/10: chỉ nháp của thẻ này
       moi = false; HD_DOI = {}; NHAP = null; EPL.toast(NN.t('saved'), 'ok'); veHet(); napToKhoHang();
       if (EPL.lamMoiDem) EPL.lamMoiDem();                              // 20/10 (D16): phiếu mới / sửa đổi việc chờ của người khác   // lưu phiếu giao có lấy hàng → máy lập phiếu xuất kho hàng
       history.replaceState(null, '', '#/phieu-xuat-xe?id=' + P.id);
@@ -1862,18 +1910,21 @@
         API.get('/api/vehicles'), API.get('/api/drivers'), API.get('/api/routes'), API.get('/api/parts'),
         API.get('/api/fuel-places'), API.get('/api/the-cao-toc')]);
       EPL.themTu(KM.names);              // tên khoản mục thêm ở màn Khoản mục chi phí (08/10) — NN.t(item_key) như khoản có sẵn
-      g('px-ve').addEventListener('click', quayLai);                  // 20/10 (D16): về đúng danh sách vừa mở (giữ bộ lọc)
-      g('px-truoc').addEventListener('click', () => diPhieu(-1));
-      g('px-sau').addEventListener('click', () => diPhieu(1));
-      g('px-ke-tiep').addEventListener('click', () => diPhieu(1));
+      EPL.noiLink(g('px-ve'), quayLai);                               // 20/10 (D16): về đúng danh sách vừa mở (giữ bộ lọc) · 21/10: <a href>
+      EPL.noiLink(g('px-truoc'), () => diPhieu(-1));
+      EPL.noiLink(g('px-sau'), () => diPhieu(1));
+      EPL.noiLink(g('px-ke-tiep'), () => diPhieu(1));
       // "+ Phiếu mới" bỏ nháp TRONG BỘ NHỚ như cũ; nháp Ở MÁY (A2) vẫn còn — dải «Có bản nháp chưa lưu» hỏi Dùng / Bỏ
-      g('px-moi').addEventListener('click', () => { NHAP = null; giuNhapMayRoiMoi().catch(EPL.baoLoi); });
+      EPL.noiLink(g('px-moi'), () => { NHAP = null; giuNhapMayRoiMoi().catch(EPL.baoLoi); });
       g('px-luu').addEventListener('click', luu);
       g('px-luu').title = 'Ctrl+S';
       g('px-in').addEventListener('click', () => { if (!P) return; chuanBiIn(); window.print(); });
       g('px-giong').addEventListener('click', () => lapGiong().catch(EPL.baoLoi));
-      g('px-nhap-dung').addEventListener('click', () => { const n = nhapCho; nhapCho = null; if (n) moNhap(n).then(() => EPL.toast(NN.t('px_nhap_dung_xong'), 'ok')).catch(EPL.baoLoi); });
-      g('px-nhap-bo').addEventListener('click', () => { nhapCho = null; xoaNhapMay(); veDaiNhap(); EPL.toast(NN.t('px_nhap_da_bo'), 'ok'); henGhiNhap(); });
+      // 21/10: «Dùng» nháp của thẻ khác → chuyển về khoá của thẻ này; «Bỏ» xoá đúng nháp đang hỏi
+      g('px-nhap-dung').addEventListener('click', () => { const n = nhapCho; nhapCho = null; if (n) moNhap(n).then(() => {
+        if (n._khoa && n._khoa !== khoaNhap()) { xoaNhapMay(n._khoa); ghiNhapMay(); }
+        EPL.toast(NN.t('px_nhap_dung_xong'), 'ok'); }).catch(EPL.baoLoi); });
+      g('px-nhap-bo').addEventListener('click', () => { const k = nhapCho && nhapCho._khoa; nhapCho = null; xoaNhapMay(k); veDaiNhap(); EPL.toast(NN.t('px_nhap_da_bo'), 'ok'); henGhiNhap(); });
       // 20/10 (A2): ghi nháp phiếu mới ngầm sau mỗi lần sửa (gõ, chọn, thêm / xoá dòng, bấm EPL ứng…)
       q('#px-phieu').addEventListener('input', henGhiNhap);
       q('#px-phieu').addEventListener('click', henGhiNhap);
@@ -1900,7 +1951,7 @@
       // lập tờ đề nghị tạm ứng / xuất nhiên liệu: đúng các vai máy chủ cho lập (POST /api/trips/{id}/vouchers)
       const lapDeNghi = AUTH.la('yard', 'acct', 'expacct', 'fuel', 'cash', 'treasury');
       g('px-chung-tu').hidden = !lapDeNghi; g('px-phieu-linh').hidden = !lapDeNghi;
-      g('px-hoa-don').addEventListener('click', () => P && P.id && EPL.di('de-nghi-thu', { id: P.id, thang: String(P.doc_date || '').slice(0, 7) }));
+      EPL.noiLink(g('px-hoa-don'), () => P && P.id && EPL.di('de-nghi-thu', { id: P.id, thang: String(P.doc_date || '').slice(0, 7) }));   // 21/10: <a href>
       root.querySelectorAll('#px-chon-loai button').forEach(b => b.addEventListener('click', () => {
         const el = g('f-kind'); if (!el || el.disabled) return;
         loaiDaChon = true;                     // 20/10 (B9): đã chọn → hai thẻ lớn thu thành chip nhỏ

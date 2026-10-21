@@ -104,7 +104,7 @@
     ghiDiaChi(new URLSearchParams(v ? { id: v.trip_id, v: v.id } : {}));
     q('#dnx-giay').scrollTop = 0;            // tờ cuộn trong khung riêng (01/10): chọn tờ khác thì về đầu tờ
     q('#dnx-giay').hidden = !loc().length;    // danh sách trống: khung trống bên trái nói lý do, bỏ tờ "Chọn một tờ bên trái"
-    q('#dnx-mo-phieu').disabled = !v; q('#dnx-in').disabled = !v;
+    EPL.datLink(q('#dnx-mo-phieu'), v ? EPL.href('phieu-xuat-xe', { id: v.trip_id }) : null); q('#dnx-in').disabled = !v;   // 21/10: <a href>
     if (!v) { q('#dnx-so').innerHTML = ''; q('#dnx-to').innerHTML = `<div class="ct-trong">${NN.h('dn_chon_to')}</div>`; return; }
     try { veTo(v, await API.get(`/api/trips/${v.trip_id}`)); } catch (e) { q('#dnx-to').innerHTML = `<div class="ct-trong neg">${esc(e.message)}</div>`; }
   }
@@ -138,7 +138,7 @@
       q('#dnx-tim').addEventListener('input', (e) => { clearTimeout(hen); hen = setTimeout(() => { tim = e.target.value.trim(); tai(); }, 300); });
       q('#dnx-in').addEventListener('click', () => window.print());
       window.removeEventListener('resize', khiDoiCo); window.addEventListener('resize', khiDoiCo);
-      q('#dnx-mo-phieu').addEventListener('click', () => { const v = DS.find(x => x.id === chonId); if (v) EPL.di('phieu-xuat-xe', { id: v.trip_id }); });
+      EPL.noiLink(q('#dnx-mo-phieu'), () => { const v = DS.find(x => x.id === chonId); if (v) EPL.di('phieu-xuat-xe', { id: v.trip_id }); });
       // mở từ phiếu xuất xe / Đề nghị theo DO (?id=<phiếu>&v=<tờ>): đúng tờ của phiếu đó, bộ lọc theo trạng thái của tờ
       const t = (ctx && ctx.tham) || {};
       if (t.id) {

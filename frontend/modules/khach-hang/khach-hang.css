@@ -326,6 +326,7 @@
 .kh3 .file-chip svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.8; flex: none; }
 .kh3 .file-chip button { border: 0; background: none; color: var(--muted); cursor: pointer; padding: 0 2px; font-size: 14px; line-height: 1; }
 .kh3 .link { border: 0; padding: 0; background: none; color: var(--primary); font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.kh3 a.link[data-mo-phieu] { display: inline-block; text-align: center; }   /* 21/10: số DO là <a href> — khung như nút cũ */
 .kh3 .aging-note { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); }
 .kh3 .debt-top small { display: block; font-size: 12px; color: var(--muted); font-weight: 500; }
 .kh3 .row-tools { white-space: nowrap; }

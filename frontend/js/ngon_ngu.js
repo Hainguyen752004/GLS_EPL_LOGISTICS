@@ -1782,6 +1782,11 @@ window.EPL_TU_DIEN = {
   "lo": "ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດ ບໍ່ຖືກ",
   "en": "Wrong username or password"
  },
+ "lg_chua_noi": {
+  "vi": "Chưa nối được máy chủ (mất mạng hoặc máy chủ đang khởi động lại). Phiên đăng nhập của thẻ này vẫn giữ — có mạng thì tải lại trang (F5).",
+  "lo": "ຍັງເຊື່ອມຕໍ່ເຊີບເວີບໍ່ໄດ້ (ບໍ່ມີເນັດ ຫຼື ເຊີບເວີກຳລັງເປີດໃໝ່). ການເຂົ້າລະບົບຂອງແຖບນີ້ຍັງຢູ່ — ເມື່ອມີເນັດແລ້ວໃຫ້ໂຫຼດໜ້າໃໝ່ (F5).",
+  "en": "Cannot reach the server (offline or the server is restarting). This tab stays signed in — reload the page (F5) when the connection is back."
+ },
  "switch_acct": {
   "vi": "Đổi tài khoản",
   "lo": "ປ່ຽນບັນຊີ",

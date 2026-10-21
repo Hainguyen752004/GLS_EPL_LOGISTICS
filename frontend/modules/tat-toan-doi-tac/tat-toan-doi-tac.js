@@ -210,7 +210,7 @@
         <div><h3 lang="lo">${esc(d.ten || '—')}</h3><div class="small muted">${d.ma_ke_toan ? esc(d.ma_ke_toan) + ' · ' : ''}${NN.h('ccy_hire')} ${esc(ma)} · ${NN.h('tt_period')} ${nhanThang(BANG.ky)}</div></div>
         <div class="grow"></div>${tagTT(d.trang_thai, 'ttd_st_')}
         ${lapDuoc() ? `<button type="button" class="btn primary no-print" id="ttd-lap" ${chon.length ? '' : 'disabled'}>${NN.h('ttd_lap', { n: chon.length })}</button>` : ''}
-        ${EPL.manCuaVai(AUTH.role).some(m => m.id === 'xe-lien-ket') ? `<button type="button" class="btn no-print" id="ttd-xlk">${NN.h('nav_joint')}</button>` : ''}</div>
+        ${EPL.manCuaVai(AUTH.role).some(m => m.id === 'xe-lien-ket') ? `<a class="btn no-print lk-nut" role="button" id="ttd-xlk" href="${EPL.href('xe-lien-ket')}">${NN.h('nav_joint')}</a>` : ''}</div>
       <div class="ttd-cong">${cong.map(([k, v], i) => `${i ? '<i>−</i>' : ''}<span>${NN.h(k)} <b>${t$(v || 0, ma)}</b></span>`).join('')}<i>=</i>
         <span class="kq">${NN.h('ttd_c_con_tra')} ${t$(d.con_tra, ma)}</span>${ma !== 'LAK' && d.con_tra_lak != null ? `<span class="muted">≈ ${lak(d.con_tra_lak)}</span>` : ''}</div>
       ${veQuay(d)}
@@ -234,7 +234,7 @@
     const moHet = o.querySelector('#ttd-mo-het');
     if (moHet) moHet.addEventListener('click', () => { if (MO.size) MO.clear(); else ds.forEach(c => MO.add(c.trip_id)); veXem(); });
     const lap = o.querySelector('#ttd-lap'); if (lap) lap.addEventListener('click', () => lapDeNghi(d, chon));
-    const xlk = o.querySelector('#ttd-xlk'); if (xlk) xlk.addEventListener('click', () => EPL.di('xe-lien-ket'));
+    const xlk = o.querySelector('#ttd-xlk'); if (xlk) EPL.noiLink(xlk, () => EPL.di('xe-lien-ket'));   // 21/10: <a href>
     o.querySelectorAll('[data-dn]').forEach(b => b.addEventListener('click', () => viecDN(d, (d.de_nghi || [])[+b.dataset.i], b.dataset.dn, b)));
     datCao();
     if (!CT[d.owner_id]) taiMot(d.owner_id);
