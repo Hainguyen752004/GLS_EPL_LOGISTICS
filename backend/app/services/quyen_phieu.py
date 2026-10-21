@@ -191,8 +191,8 @@ def quyen(p, vai, moi=False):
         if _la(vai, "yard") and not khoa and tts != "arrived":
             phieu.append("doi-xe")
             phieu.append("arrived")
-        if _la(vai, "yard") and not khoa and all(st(m) in ("wait", "entered") for m in MUC):
-            phieu.append("xoa")
+        if _la(vai, "yard") and not khoa and all(st(m) in ("wait", "entered") for m in MUC) and p.get("xoa_duoc", True):
+            phieu.append("xoa")                     # 21/10: xoa_duoc (routes/phieu._bai_xoa_duoc) — đã xuất kho / lô đã có DO giao lấy thì ẩn
     ctu = p.get("chi_tam_ung") or {}
     nhac_ung = ({"nhan": "px_nhac_ung_loi" if ctu["status"] == "loi" else "px_nhac_ung_cho", "so": ctu.get("document_no") or ""}
                 if "transit" in phieu and ctu.get("o_ke_toan") and ctu.get("status") and ctu["status"] != "da_chi" else None)

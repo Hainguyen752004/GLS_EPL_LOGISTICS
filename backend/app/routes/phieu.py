@@ -360,6 +360,21 @@ def _dem_tep(db, trip_id):
     return t
 
 
+def _bai_xoa_duoc(db, p):
+    """21/10 (chạy kịch bản test): Bãi thấy nút Xoá trên DO gom đã tới, lô đã có DO giao lấy — bấm thì xoa_phieu mới chặn. Cờ này cho
+    màn (và quyen_phieu) ẩn nút ở các chặn hay gặp: phiếu đã có dòng xuất kho / đã cấp (DA_XUAT_KHO), lô quặng của DO gom đã có phiếu
+    giao lấy (KH.kiem_xoa · LO_DA_XUAT). Chặn hiếm (SO đã gửi, đã trả chủ xe…) vẫn để xoa_phieu báo lúc bấm."""
+    if any(e.stock_move_id for e in _dong_chi(db, p)):
+        return False
+    if p.kind == "gom" and p.transport_status == "arrived":
+        try:
+            if (KK.hang_cua_phieu(db, p.id) or {}).get("lay_boi"):
+                return False
+        except Exception:  # noqa: BLE001 — sổ kho hàng không đọc được thì để nút (máy chủ vẫn chặn lúc bấm)
+            pass
+    return True
+
+
 def xuat_phieu(db, phieu, day_du=True, da_thu=None, vai=None, nap=None):
     """Gói dữ liệu một tờ phiếu. `vai` là vai người gọi: vai không được thấy tiền bán thì các khoá đó
     bị BỎ HẲN ở đây — trước 22/09 chỉ giao diện che, mở công cụ trình duyệt là đọc được hết.
@@ -432,6 +447,8 @@ def xuat_phieu(db, phieu, day_du=True, da_thu=None, vai=None, nap=None):
             toi = max(toi, len(ra["route_stops"]))
         ra["stop_reached"] = toi
         if vai is not None:
+            if vai == "yard":
+                ra["xoa_duoc"] = _bai_xoa_duoc(db, phieu)        # 21/10: nút Xoá của Bãi chỉ hiện khi máy chủ sẽ cho xoá
             # Việc 11 (màn Web): ô nào sửa được, nút nào hiện ở mục nào, việc mức phiếu — tính trên bản đầy đủ, trước khi bỏ tiền
             ra["quyen"] = QP.quyen(ra, vai)
     if vai is not None and not thay_tien_chi(vai):

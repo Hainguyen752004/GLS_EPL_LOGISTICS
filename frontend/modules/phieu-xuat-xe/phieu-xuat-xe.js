@@ -526,7 +526,8 @@
       // Hoá đơn, thu tiền khách (01/10): KHÔNG còn nút sang trang kế toán tạm (hoá đơn lẻ, hoá đơn gộp, ghi thu) — số bên đó là
       // số thử, đã cắt sổ. Khoá phiếu là máy lập phiếu đề nghị thu → gửi hệ kế toán anh Tune lập SO, hoá đơn, thu tiền (nút
       // "Phiếu đề nghị thu" trên đầu màn); công nợ khách xem ở màn Khách hàng → Công nợ.
-      if (AUTH.la('yard') && !P.locked && MUC.every(m => ['wait', 'entered'].includes(s[m] || 'wait'))) ta.push(`<button class="btn sm danger" data-hd-phieu="xoa">${NN.h('delete')}</button>`);
+      // 21/10: P.xoa_duoc (máy chủ) — phiếu đã xuất kho / lô quặng đã có DO giao lấy thì không hiện Xoá (bấm cũng bị chặn)
+      if (AUTH.la('yard') && !P.locked && P.xoa_duoc !== false && MUC.every(m => ['wait', 'entered'].includes(s[m] || 'wait'))) ta.push(`<button class="btn sm danger" data-hd-phieu="xoa">${NN.h('delete')}</button>`);
     }
     // không có việc mức phiếu thì giấu cả khối: trạng thái đã có ở đầu cột bên, lặp lại chỉ đẩy cột dài ra (01/10)
     const hd = g('px-hanh-dong'); hd.hidden = !ta.length;
@@ -1617,7 +1618,7 @@
     if (laGom()) { try { kho = await API.get('/api/kho-hang/kho-bai'); } catch (e) { kho = []; } }
     const khoMd = (kho.find(k => k.mac_dinh) || kho[0] || {}).id || '';
     let cu = { weight_origin: P.weight_origin ?? '', weight_dest: P.weight_dest ?? '', back_date: P.back_date || EPL.homNay(), odo_back: P.odo_back ?? '',
-      pod_no: P.pod_no || '', pod_receiver: P.pod_receiver || '', kho_id: khoMd }, loi = '';
+      pod_no: P.pod_no || '', pod_receiver: P.pod_receiver || '', kho_id: khoMd }, loi = '', loiO = '';
     /* 20/10 (rà điều xe B13) — KHUÔN HỘP «Xe đã tới» (theo-doi-tuyen làm theo):
      *  · Km về: điền sẵn số TÀI XẾ ĐÃ BÁO (P.odo_back — nút «Báo đã về»); chưa báo thì để trống, số ước tính (km lúc đi + km cả tuyến)
      *    chỉ hiện làm chữ mờ trong ô + dòng gợi ý, KHÔNG điền.
@@ -1672,7 +1673,7 @@
         if (nd) { const t = document.createElement('div'); t.id = 'px-xt-tinh'; t.className = 'px-xt-tinh'; nd.appendChild(t); }
         ['weight_origin', 'weight_dest', 'odo_back'].forEach(id => { const el = document.getElementById('hn-' + id); if (el) el.addEventListener('input', veTinh); });
         veTinh();
-        if (loi) baoLoiTrongHop(loi, 'weight_dest');           // máy chủ vừa chặn (THIEU_CAN_BAI · KHO_SAI): câu ở đầu hộp
+        if (loi) baoLoiTrongHop(loi, loiO);                    // máy chủ vừa chặn: câu ở đầu hộp (thiếu cân / sai kho thì tô ô cân)
       });
       if (!v) return;
       const body = { status: 'arrived', weight_dest: v.weight_dest, back_date: v.back_date };
@@ -1683,7 +1684,14 @@
       let r;
       try { r = await API.post(`/api/trips/${P.id}/transport-status`, body); }
       catch (e) {
-        if (e && (e.ma === 'THIEU_CAN_BAI' || e.ma === 'KHO_SAI')) { cu = Object.assign(cu, v); loi = e.message || NN.t('w_dest_gom'); continue; }
+        // 21/10 (chạy kịch bản test): máy chủ từ chối (vd chưa chi tạm ứng — CHUA_NHAN_TAM_UNG) hay mất mạng → mở lại hộp, giữ nguyên số
+        // đã gõ, câu báo ở đầu hộp — như hộp ở Theo dõi tuyến. Trước đây chỉ THIEU_CAN_BAI / KHO_SAI giữ hộp, lỗi khác đóng hộp, mất số.
+        // 401 (hết phiên) thì thôi: tầng API đã đưa về màn đăng nhập.
+        if (e && e.status !== 401 && (e.ma || e.status === 0)) {
+          cu = Object.assign(cu, v); loi = e.message || NN.t('w_dest_gom');
+          loiO = e.ma === 'THIEU_CAN_BAI' || e.ma === 'KHO_SAI' ? 'weight_dest' : '';
+          continue;
+        }
         return EPL.baoLoi(e);
       }
       P = r;
